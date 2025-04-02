@@ -1,0 +1,217 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ApplicationConfiguration
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
+xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
+>
+  <!-- A human readable but not necessarily unique name for the application instance -->
+  <ApplicationName>SampleCompany OPC UA Sample Client</ApplicationName>
+  <!-- A globally unique identifier for the application instance.
+       This is overridden with the value contained in the application certificate. -->
+  <ApplicationUri>urn:localhost:SampleCompany:SampleClient</ApplicationUri>
+  <!-- A globally unique URI for the product (usually assigned by the product vendor) -->
+  <ProductUri>uri:SampleCompany.com:SampleClient</ProductUri>
+  <!-- Indicates the type of application (Server_0, Client_1, ClientAndServer_2 or DiscoveryServer_3). -->
+  <ApplicationType>Client_1</ApplicationType>
+  <!-- Specifies security related configuration information -->
+  <SecurityConfiguration>
+
+    <!-- Where the application instance certificate is stored (MachineDefault) -->
+    <ApplicationCertificates>
+      <CertificateIdentifier>
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=SampleCompany OPC UA Sample Client, C=CH, S=Aargau, O=SampleCompany, DC=localhost</SubjectName>
+        <CertificateTypeString>RsaSha256</CertificateTypeString>
+      </CertificateIdentifier>
+      <CertificateIdentifier>
+        <!-- <TypeId>NistP256</TypeId> -->
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=SampleCompany OPC UA Sample Client, C=CH, S=Aargau, O=SampleCompany, DC=localhost</SubjectName>
+        <CertificateTypeString>NistP256</CertificateTypeString>
+      </CertificateIdentifier>
+      <CertificateIdentifier>
+        <!-- <TypeId>NistP384</TypeId> -->
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=SampleCompany OPC UA Sample Client, C=CH, S=Aargau, O=SampleCompany, DC=localhost</SubjectName>
+        <CertificateTypeString>NistP384</CertificateTypeString>
+      </CertificateIdentifier>
+      <CertificateIdentifier>
+        <!-- <TypeId>BrainpoolP256r1</TypeId> -->
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=SampleCompany OPC UA Sample Client, C=CH, S=Aargau, O=SampleCompany, DC=localhost</SubjectName>
+        <CertificateTypeString>BrainpoolP256r1</CertificateTypeString>
+      </CertificateIdentifier>
+      <CertificateIdentifier>
+        <!-- <TypeId>BrainpoolP384r1</TypeId> -->
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=SampleCompany OPC UA Sample Client, C=CH, S=Aargau, O=SampleCompany, DC=localhost</SubjectName>
+        <CertificateTypeString>BrainpoolP384r1</CertificateTypeString>
+      </CertificateIdentifier>
+    </ApplicationCertificates>
+
+    <!-- Where the issuer certificate are stored (certificate authorities) -->
+    <TrustedIssuerCertificates>
+      <StoreType>Directory</StoreType>
+      <StorePath>%LocalApplicationData%/OPC Foundation/pki/issuer</StorePath>
+    </TrustedIssuerCertificates>
+
+    <!-- Where the trust list is stored -->
+    <TrustedPeerCertificates>
+      <StoreType>Directory</StoreType>
+      <StorePath>%LocalApplicationData%/OPC Foundation/pki/trusted</StorePath>
+    </TrustedPeerCertificates>
+
+    <!-- The directory used to store invalid certificates for later review by the administrator. -->
+    <RejectedCertificateStore>
+      <StoreType>Directory</StoreType>
+      <StorePath>%LocalApplicationData%/OPC Foundation/pki/rejected</StorePath>
+    </RejectedCertificateStore>
+    <MaxRejectedCertificates>5</MaxRejectedCertificates>
+
+    <!-- WARNING: The following setting (to automatically accept untrusted certificates) should be used
+    for easy debugging purposes ONLY and turned off for production deployments! -->
+    <AutoAcceptUntrustedCertificates>false</AutoAcceptUntrustedCertificates>
+
+    <!-- WARNING: SHA1 signed certificates are by default rejected and should be phased out. 
+       only nano and embedded profiles are allowed to use sha1 signed certificates. -->
+    <RejectSHA1SignedCertificates>true</RejectSHA1SignedCertificates>
+    <RejectUnknownRevocationStatus>true</RejectUnknownRevocationStatus>
+    <MinimumCertificateKeySize>2048</MinimumCertificateKeySize>
+    <AddAppCertToTrustedStore>false</AddAppCertToTrustedStore>
+    <SendCertificateChain>true</SendCertificateChain>
+
+    <!-- Where the User trust list is stored-->
+    <TrustedUserCertificates>
+      <StoreType>Directory</StoreType>
+      <StorePath>%LocalApplicationData%/OPC Foundation/pki/trustedUser</StorePath>
+    </TrustedUserCertificates>
+
+  </SecurityConfiguration>
+  <!-- Maps different transports onto a .NET implementation of a WCF Binding
+       WCF bindings are very complex and have many parameters that can be tweaked. To ensure
+       interoperability the SDK has defined 3 standard bindings which can be selected with this
+       element. Developers may define their own Bindings as well provided the inherit from the 
+       Opc.Ua.Binding.BaseBinding type and implement the same constructor as the built-in binding
+       provide.
+       Note protocols other than HTTP or UA-TCP are not considered to be interoperable -->
+  <TransportConfigurations>
+  </TransportConfigurations>
+  <!-- Specifies quotas used to by the transport layer -->
+  <TransportQuotas>
+    <!-- The default timeout in milliseconds for operations (used by clients) -->
+    <OperationTimeout>120000</OperationTimeout>
+    <!-- The maximum length for a string value in any message -->
+    <MaxStringLength>4194304</MaxStringLength>
+    <!-- The maximum length for a byte string value in any message -->
+    <MaxByteStringLength>4194304</MaxByteStringLength>
+    <!-- The maximum length for any array in a message. 
+         Note that some protocols do not distinguish between bytes and arrays. 
+         In these cases the binding will choose the larger of 
+         MaxByteStringLength or MaxArrayLength-->
+    <MaxArrayLength>65535</MaxArrayLength>
+    <!-- The maximum size of any message -->
+    <MaxMessageSize>4194304</MaxMessageSize>
+    <!-- The maximum buffer size 
+         This value controls how big a block of memory the transport layer allocates.
+         Setting this value to a large value will reduce performance and use a lot of RAM -->
+    <MaxBufferSize>65535</MaxBufferSize>
+    <!-- The lifetime of a SecureChannel in milliseconds.
+         This specifies how long the server will keep a broken channel around while waiting 
+         for a client to reconnect.
+         Not used by HTTP or .NET TCP bindings -->
+    <ChannelLifetime>300000</ChannelLifetime>
+    <!-- The lifetime of a SecurityToken in milliseconds.
+         This specifies how long a security token can be used without renewal. -->
+    <SecurityTokenLifetime>3600000</SecurityTokenLifetime>
+  </TransportQuotas>
+
+  <!-- This element is only required for Client and ClientServer applications -->
+  <ClientConfiguration>
+    <!-- The default timeout for new sessions -->
+    <DefaultSessionTimeout>60000</DefaultSessionTimeout>
+    <!-- The well-known URLs for the local discovery servers
+         URLs are tested in the order they appear in this list. -->
+    <WellKnownDiscoveryUrls>
+      <ua:String>opc.tcp://{0}:4840</ua:String>
+      <ua:String>http://{0}:52601/UADiscovery</ua:String>
+      <ua:String>http://{0}/UADiscovery/Default.svc</ua:String>
+    </WellKnownDiscoveryUrls>
+    <!-- EndpointDescriptions for system wide discovery servers -->
+    <DiscoveryServers></DiscoveryServers>
+
+    <!-- The minimum lifetime for a subscription. -->
+    <MinSubscriptionLifetime>10000</MinSubscriptionLifetime>
+
+    <OperationLimits>
+      <MaxNodesPerRead>2500</MaxNodesPerRead>
+      <MaxNodesPerHistoryReadData>1000</MaxNodesPerHistoryReadData>
+      <MaxNodesPerHistoryReadEvents>1000</MaxNodesPerHistoryReadEvents>
+      <MaxNodesPerWrite>2500</MaxNodesPerWrite>
+      <MaxNodesPerHistoryUpdateData>1000</MaxNodesPerHistoryUpdateData>
+      <MaxNodesPerHistoryUpdateEvents>1000</MaxNodesPerHistoryUpdateEvents>
+      <MaxNodesPerMethodCall>2500</MaxNodesPerMethodCall>
+      <MaxNodesPerBrowse>2500</MaxNodesPerBrowse>
+      <MaxNodesPerRegisterNodes>2500</MaxNodesPerRegisterNodes>
+      <MaxNodesPerTranslateBrowsePathsToNodeIds>2500</MaxNodesPerTranslateBrowsePathsToNodeIds>
+      <MaxNodesPerNodeManagement>2500</MaxNodesPerNodeManagement>
+      <MaxMonitoredItemsPerCall>2500</MaxMonitoredItemsPerCall>
+    </OperationLimits>
+
+  </ClientConfiguration>
+
+  <Extensions>  </Extensions>
+
+  <!--
+  Masks supported by the trace feature. 
+  Servers will detect changes within 5 seconds.
+  Do not output any messages.
+  None = 0x0;
+  Output error messages.
+  Error = 0x1;
+  Output informational messages.
+  Information = 0x2;
+  Output stack traces.
+  StackTrace = 0x4;
+  Output basic messages for service calls.
+  Service = 0x8;
+  Output detailed messages for service calls.
+  ServiceDetail = 0x10;
+  Output basic messages for each operation.
+  Operation = 0x20;
+  Output detailed messages for each operation.
+  OperationDetail = 0x40;
+  Output messages related to application initialization or shutdown
+  StartStop = 0x80;
+  Output messages related to a call to an external system.
+  ExternalSystem = 0x100;
+  Output messages related to security
+  Security = 0x200;
+  
+  All above
+  AllAbove = 0x3FF;
+  -->
+  <TraceConfiguration>
+    <OutputFilePath>./Logs/SampleCompany.SampleClient.log</OutputFilePath>
+    <DeleteOnLoad>true</DeleteOnLoad>
+    <!-- Show Only Errors -->
+    <!-- <TraceMasks>1</TraceMasks> -->
+    <!-- Show Only Security and Errors -->
+    <!-- <TraceMasks>513</TraceMasks> -->
+    <!-- Show Only Security, Errors and Trace -->
+    <!-- <TraceMasks>515</TraceMasks> -->
+    <!-- Show Only Security, COM Calls, Errors and Trace -->
+    <!-- <TraceMasks>771</TraceMasks> -->
+    <!-- Show Only Security, Service Calls, Errors and Trace -->
+    <!-- <TraceMasks>523</TraceMasks> -->
+    <!-- Show Only Security, ServiceResultExceptions, Errors and Trace -->
+    <!-- <TraceMasks>519</TraceMasks> -->
+    <!-- Show Error, Information, StackTrace, Service, ServiceDetail, Operation, OperationDetail, StartStop, ExternalSystem and Security. -->
+    <TraceMasks>1023</TraceMasks>
+  </TraceConfiguration>
+
+</ApplicationConfiguration>

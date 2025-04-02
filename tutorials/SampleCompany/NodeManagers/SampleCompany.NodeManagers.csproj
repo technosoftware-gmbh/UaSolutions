@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+    <AssemblyName>SampleCompany.NodeManagers</AssemblyName>
+    <TargetFrameworks>$(AppTargetFrameworks)</TargetFrameworks>
+    <PackageId>SampleCompany.NodeManagers</PackageId>
+    <RootNamespace>SampleCompany.NodeManagers</RootNamespace>
+    <Company>SampleCompany</Company>
+    <Product>OPC UA Solutions .NET Sample NodeManagers</Product>
+    <Description>SampleCompany NodeManagers Library</Description>
+    <Copyright>Copyright © 2023 - 2025 SampleCompany</Copyright>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <NoWarn>CS1591;CS1573;RCS1139</NoWarn>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.0.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.0.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.0.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.0.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaStandardServer" Version="4.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Properties\**" />
+    <EmbeddedResource Remove="Properties\**" />
+    <None Remove="Properties\**" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
+    <DefineConstants>$(DefineConstants);SIGNASSEMBLY</DefineConstants>
+  </PropertyGroup>
+
+  <Target Name="GetPackagingOutputs" />
+
+</Project>
