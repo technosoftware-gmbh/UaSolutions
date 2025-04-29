@@ -1,29 +1,19 @@
 # Technosoftware GmbH OPC UA Solutions .NET
 
-The OPC UA Solutions .NET offers everything to be able to develop OPC UA Clients and OPC UA Servers with only one solution needed:
-
- * [OPC UA Bundle .NET](https://technosoftware.com/product/opc-ua-bundle-net/)
+The OPC UA Solutions .NET offers everything to be able to develop OPC UA Clients and OPC UA Servers:
 
 ## OPC UA Client .NET
 
 The OPC UA Client .NET offers a fast and easy access to the OPC Unified Architecture (UA) technology. Develop OPC UA compliant Clients with C# targeting .NET 9.0, or .NET 8.0. For backward compatibility we also provide .NET 4.8and .NET 4.7.2 support.
 
-.NET 9.0, or .NET 8.0 allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
-
-The **OPC UA Client .NET API** defines classes which can be used to implement an OPC client capable to access OPC servers supporting different profiles with the same API. These classes manage client side state information; provide higher level abstractions for OPC tasks such as managing sessions and subscriptions or saving and restoring connection information for later use.
-
 ## OPC UA Server .NET
 
 The OPC UA Server NET offers a fast and easy access to the OPC Unified Architecture (UA) technology. Develop OPC UA compliant Servers with C# targeting NET 9.0, or .NET 8.0. For backward compatibility we also provide .NET 4.8and .NET 4.7.2 support.
 
-.NET 9.0, or .NET 8.0 allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
+## OPC UA Bundle .NET
 
-The developer can concentrate on his application and servers can be developed fast and easily without the need to spend a lot of time learning how to implement the OPC Unified Architecture specification. The server API is easy to use and many OPC specific functions are handled by the framework.
-
-The included OPC Foundation Model Compiler can be used to create the necessary C# classes of Information Model’s specified in XML and CSV based files. At the moment the XML files must be edited by a text editor. 
-
-Documentation of the Model Compiler can be found [here](https://github.com/OPCFoundation/UA-ModelCompiler).
-
+The Bundle allows client and server development as well as support of PubSub.
+ 
 ## Supported Frameworks
 
  * .NET 9.0, .NET 8.0
@@ -37,15 +27,7 @@ This repository includes tutorials using the NuGet packages of the OPC UA Soluti
 
 [![Build and Test .NET 9.0](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/buildandtest.yml/badge.svg)](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/buildandtest.yml)
 
-## Getting started
-
- * [Installation and Administration of .NET based OPC UA Applications](./documentation/Installation.md)
- * [Distribution Guide](./documentation/Distribution.md)
- * [OPC UA Development](./documentation/Development.md)
- * [OPC UA Client Development](./documentation/ClientDevelopment.md)
- * [OPC UA Server Development](./documentation/ServerDevelopment.md)
- 
-### Online Help
+### Getting Started / Online Help
 
 We provide an online help for the current version: [OPC UA Solutions NET Online Help](https://technosoftware.com/help/UaSolutions/40/)
 
@@ -66,8 +48,15 @@ You can find the version 3 samples [here](https://github.com/technosoftware-gmbh
 
 ### Product license
 
-A license must be purchased to enable all features. It is available via
+A license must be purchased to enable all features. We offer two different versions:
 
+ * DataAccess: includes DataAccess support only
+ * Full Functionality: includes all UA features like DataAccess, Alarms&Conditions, HistoricalAccess …
+
+#### Available Solutions   
+
+ * [OPC UA Client .NET](https://technosoftware.com/product/opc-ua-client-net/)
+ * [OPC UA Server .NET](https://technosoftware.com/product/opc-ua-server-net/)
  * [OPC UA Bundle .NET](https://technosoftware.com/product/opc-ua-bundle-net/)
 
 The license includes
@@ -106,9 +95,3 @@ Support for the Solution without a Support Subscription is available as a paid s
 
  * [Support Email Incident](https://technosoftware.com/product/support-email-incident/) handling a single question or a very specific issue about one of Technosoftware GmbH’s solutions.
  * [Support or Consulting Hour](https://technosoftware.com/product/support-or-consulting-hour/) can involve application design or OPC related issues such as compatibility issues between server and clients, programming issues or design questions.
-
-## Contribution
-
-We strongly encourage community participation and contribution to this project. First, please fork the repository and commit your changes there. Once happy with your changes you can generate a 'pull request'.
-
-You must agree to the contributor license agreement before we can accept your changes. The CLA and "I AGREE" button is automatically displayed when you perform the pull request. You can preview CLA [here](https://cla-assistant.io/technosoftware-gmbh/UaSolutions).
