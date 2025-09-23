@@ -9,7 +9,7 @@
     <Company>SampleCompany</Company>
     <Product>SampleCompany SampleClient</Product>
     <Description>SampleCompany SampleClient</Description>
-    <Copyright>Copyright © 2011 - 2024 SampleCompany</Copyright>
+    <Copyright>Copyright © 2011 - 2025 SampleCompany</Copyright>
 	<DefineConstants>$(DefineConstants);SERILOG</DefineConstants>
   </PropertyGroup>
 
@@ -26,13 +26,11 @@
     <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
-    <PackageReference Include="Technosoftware.UaSolution.UaBindings.Https" Version="3.4.1" />
-  </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolution.UaCore" Version="3.4.1" />
-    <PackageReference Include="Technosoftware.UaSolution.UaConfiguration" Version="3.4.1" />
-    <PackageReference Include="Technosoftware.UaSolution.UaClient" Version="3.4.1" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaClient" Version="4.0.3" />
   </ItemGroup>
 
   <ItemGroup>

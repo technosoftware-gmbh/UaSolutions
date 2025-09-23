@@ -65,7 +65,7 @@ This repository includes tutorials using the NuGet packages of the OPC UA Soluti
 
 # Getting Started / Online Help
 
-We provide an online help for the current version: [OPC UA Solutions NET Online Help](https://technosoftware.com/help/UaSolutions/34/)
+We provide an online help for the current version: [OPC UA Solutions NET Online Help](https://technosoftware.com/help/UaSolutions/40/)
 
 ## Workshop
 
