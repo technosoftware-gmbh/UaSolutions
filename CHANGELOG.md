@@ -1,6 +1,103 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 4.0.3
+
+### Changes:
+
+- Documentation related changes
+
+-------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 4.0.2
+
+This release is based on the 1.05.05 Nodeset with generated files from the ModelCompiler.
+It contains important bug fixes which were found after the last OPC UA Core Stack 1.05.376 release,
+as well as new features.
+
+### Integrated OPC UA Stack Versions
+
+The following OPC UA Foundation releases of the OPC UA Stack were integrated:
+
+- 1.5.376.244
+- 1.5.376.235
+- 1.5.376.213
+- 1.5.375.457
+- 1.5.374.176
+- 1.5.375.443
+- 1.5.374.168
+- 1.5.374.158
+- 1.5.374.126
+- 1.5.374.124
+- 1.5.374.118
+
+Detailed release notes are available [here](https://github.com/OPCFoundation/UA-.NETStandard/releases). Some of the changes are listed below.
+
+### Enhancements
+
+- Enhance enum definition handling and validation.
+- Enhance role permission validation on server.
+
+### New Features
+
+- Implement Support for PEM Public Keys in Directory Certificate Store.
+- Allow to modify sensitivity of KeepAliveStopped on Client.
+- Add support for Async Service Calls in the generated files.
+- Allow setting a temporary Context for using IEncoders in custom code
+- Add Support for Durable Subscriptions by implementing needed persistence code in custom Interfaces.
+
+### Breaking Changes:
+
+- Updated XML-Encoding / XML-Decoding of Matrix Element in Variant to conform to Specification
+- Interface extensions in the Server to support Durable Subscriptions
+- A valid CertificateStore Configuration is now enforced on Startup
+
+### Fixes
+
+- Fix Client removing subscription if publish response is received before createSubscriptionResponse.
+- Fix Subscription Diagnostics DataChangeNotificationsCount being calcualted incorrectly.
+- Fix XML Encoding and decoding of Matrix element to conform to specification.
+- Fix closing of shared Transport Channel in Recreate Scenario on client.
+- Fix Regression - Sampling Group disposing m_shutdownEvent in Shutdown Method on server.
+- Fix ValueRank for Base Variable State
+- UserIdentityToken now uses UTF-8 Encoded byte Array for storing unencrypted password.
+- Fix: SecurityToken renewal
+- Remove oldest channel if not used by session
+- Fix reconnect when ReverseConnection is used
+- Add support for SupportsFilteredRetain
+- Fix RegisterWithDiscoveryServer method not using a certificate for the secure channel
+
+### NET target added
+
+- The NET 9.0 target has been added.
+
+### NET target removed
+
+- The NET 7.0 outdated target has been removed.
+- The NET 6.0 outdated target has been removed.
+
+-------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 4.0.1
+
+### Enhancements
+- Update to 1.05.04 nodeset
+
+### Fixes
+- Fixed handling of fields if they are not in the exact same order (CompareDistinguishedNameFields)
+
+-------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 4.0.0
+
+### New Features
+- Support of .NET 9.0
+
+### Enhancements
+- Security Enhancements
+
+### Breaking Changes
+- Removed support of .NET 7.0. End of Support was 14-MAY-2024.
+- Splitted UaCore and added Technosoftware.UaCore.Security.Certificates and Technosoftware.UaUtilities
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 3.4.1
 
 ### Changes:

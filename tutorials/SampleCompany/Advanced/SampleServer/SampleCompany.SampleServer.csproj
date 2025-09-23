@@ -42,13 +42,14 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
-    <PackageReference Include="Technosoftware.UaSolution.UaBindings.Https" Version="3.4.1" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.0.3" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolution.UaCore" Version="3.4.1" />
-    <PackageReference Include="Technosoftware.UaSolution.UaConfiguration" Version="3.4.1" />
-    <PackageReference Include="Technosoftware.UaSolution.UaServer" Version="3.4.1" />
-    <PackageReference Include="Technosoftware.UaSolution.UaStandardServer" Version="3.4.1" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaStandardServer" Version="4.0.3" />
   </ItemGroup>
 
   <ItemGroup>

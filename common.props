@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Product>OPC UA Solutions .NET</Product>
     <RepositoryUrl>https://github.com/technosoftware-gmbh/UaSolutions</RepositoryUrl>
-    <VersionPrefix>3.4.1</VersionPrefix>
+    <VersionPrefix>4.0.3</VersionPrefix>
     <VersionSuffix>rc-$([System.DateTime]::Now.ToString("yyyyMMdd"))</VersionSuffix>
     <Copyright>Copyright © 2011 - 2025 Technosoftware GmbH</Copyright>
     <PackagePrefix>Technosoftware.UaSolution</PackagePrefix>
@@ -18,7 +18,7 @@
     <LangVersion>12</LangVersion>
     <EnablePackageValidation>true</EnablePackageValidation>
     <!-- to check the package validation on a release build, uncomment here -->
-    <!--<PackageValidationBaselineVersion>3.4.1</PackageValidationBaselineVersion>-->
+    <!--<PackageValidationBaselineVersion>4.0.3</PackageValidationBaselineVersion>-->
     <!-- to regenerate the compatibility suppression file, uncomment here -->
     <!--<GenerateCompatibilitySuppressionFile>true</GenerateCompatibilitySuppressionFile>-->
     <NuGetAuditMode>all</NuGetAuditMode>
