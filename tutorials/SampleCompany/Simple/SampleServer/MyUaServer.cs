@@ -20,7 +20,7 @@ using Opc.Ua;
 using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer;
 using Technosoftware.UaServer.Sessions;
-using Technosoftware.UaStandardServer;
+using Technosoftware.UaBaseServer;
 using SampleCompany.Common;
 #endregion
 
@@ -29,8 +29,7 @@ namespace SampleCompany.SampleServer
     /// <summary>
     /// Main class for the Sample UA server
     /// </summary>
-    /// <typeparam name="T">Any class based on the UaStandardServer class.</typeparam>
-    public class MyUaServer<T> where T : UaStandardServer, new()
+    public class MyUaServer
     {
         #region Public Properties
         /// <summary>
@@ -61,7 +60,7 @@ namespace SampleCompany.SampleServer
         /// <summary>
         /// The server object
         /// </summary>
-        public T Server => server_;
+        public UaServer Server => server_;
         #endregion
 
         #region Constructors, Destructor, Initialization
@@ -140,29 +139,6 @@ namespace SampleCompany.SampleServer
         }
 
         /// <summary>
-        /// Create server instance and add node managers.
-        /// </summary>
-        public void Create(IList<IUaNodeManagerFactory> nodeManagerFactories)
-        {
-            try
-            {
-                // create the server.
-                server_ = new T();
-                if (nodeManagerFactories != null)
-                {
-                    foreach (IUaNodeManagerFactory factory in nodeManagerFactories)
-                    {
-                        server_.AddNodeManager(factory);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new ErrorExitException(ex.Message, ExitCode);
-            }
-        }
-
-        /// <summary>
         /// Start the server.
         /// </summary>
         public async Task StartAsync()
@@ -170,16 +146,16 @@ namespace SampleCompany.SampleServer
             try
             {
                 // create the server.
-                server_ = server_ ?? new T();
+                server_ = server_ ?? new UaServer();
 
                 // start the server
-                await Application.StartAsync(server_).ConfigureAwait(false);
+                await server_.StartAsync(uaServerPlugin_, Configuration, null).ConfigureAwait(false);
 
                 // save state
                 ExitCode = ExitCode.ErrorRunning;
 
                 // print endpoint info
-                IEnumerable<string> endpoints = Application.BaseServer.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
+                IEnumerable<string> endpoints = server_.BaseServer.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
                 foreach (var endpoint in endpoints)
                 {
                     output_.WriteLine(endpoint);
@@ -189,9 +165,9 @@ namespace SampleCompany.SampleServer
                 status_ = Task.Run(StatusThreadAsync);
 
                 // print notification on session events
-                server_.CurrentInstance.SessionManager.SessionActivatedEvent += OnEventStatus;
-                server_.CurrentInstance.SessionManager.SessionClosingEvent += OnEventStatus;
-                server_.CurrentInstance.SessionManager.SessionCreatedEvent += OnEventStatus;
+                server_.BaseServer.CurrentInstance.SessionManager.SessionActivatedEvent += OnEventStatus;
+                server_.BaseServer.CurrentInstance.SessionManager.SessionClosingEvent += OnEventStatus;
+                server_.BaseServer.CurrentInstance.SessionManager.SessionCreatedEvent += OnEventStatus;
             }
             catch (Exception ex)
             {
@@ -208,7 +184,7 @@ namespace SampleCompany.SampleServer
             {
                 if (server_ != null)
                 {
-                    using (T server = server_)
+                    using (UaServer server = server_)
                     {
                         // Stop status thread
                         server_ = null;
@@ -295,7 +271,7 @@ namespace SampleCompany.SampleServer
             {
                 if (DateTime.UtcNow - lastEventTime_ > TimeSpan.FromMilliseconds(10000))
                 {
-                    IList<Session> sessions = server_.CurrentInstance.SessionManager.GetSessions();
+                    IList<Session> sessions = server_.BaseServer.CurrentInstance.SessionManager.GetSessions();
                     for (var ii = 0; ii < sessions.Count; ii++)
                     {
                         Session session = sessions[ii];
@@ -309,8 +285,9 @@ namespace SampleCompany.SampleServer
         #endregion
 
         #region Private Fields
+        private static readonly UaServerPlugin uaServerPlugin_ = new UaServerPlugin();
         private readonly TextWriter output_;
-        private T server_;
+        private UaServer server_;
         private Task status_;
         private DateTime lastEventTime_;
         #endregion
