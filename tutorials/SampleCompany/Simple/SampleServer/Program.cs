@@ -1,6 +1,6 @@
-#region Copyright (c) 2011-2024 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2024 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 // 
 // License: 
@@ -25,89 +25,23 @@
 //
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2024 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Mono.Options;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-
 using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer.Sessions;
 using Technosoftware.UaBaseServer;
+using SampleCompany.Common;
 #endregion
 
 namespace SampleCompany.SampleServer
 {
-    #region The certificate application message
-    /// <summary>
-    /// A dialog which asks for user input.
-    /// </summary>
-    public class ApplicationMessageDlg : IUaApplicationMessageDlg
-    {
-        private string message_ = string.Empty;
-        private bool ask_;
-
-        public override void Message(string text, bool ask = false)
-        {
-            message_ = text;
-            ask_ = ask;
-        }
-
-        public override bool Show()
-        {
-            return ShowAsync().GetAwaiter().GetResult();
-        }
-
-        public override async Task<bool> ShowAsync()
-        {
-            if (ask_)
-            {
-                message_ += " (y/n, default y): ";
-                Console.Write(message_);
-            }
-            else
-            {
-                Console.WriteLine(message_);
-            }
-            if (ask_)
-            {
-                try
-                {
-                    ConsoleKeyInfo result = Console.ReadKey();
-                    Console.WriteLine();
-                    return await Task.FromResult((result.KeyChar == 'y') || (result.KeyChar == 'Y') || (result.KeyChar == '\r')).ConfigureAwait(false);
-                }
-                catch
-                {
-                    // intentionally fall through
-                }
-            }
-            return await Task.FromResult(true).ConfigureAwait(false);
-        }
-    }
-    #endregion
-
-    #region Enumerations
-    /// <summary>
-    /// The error code why the server exited.
-    /// </summary>
-    public enum ExitCode
-    {
-        Ok = 0,
-        ErrorServerNotStarted = 0x80,
-        ErrorServerRunning = 0x81,
-        ErrorServerException = 0x82,
-        ErrorInvalidCommandLine = 0x100
-    };
-    #endregion
-
     /// <summary>
     /// The program.
     /// </summary>
@@ -116,235 +50,86 @@ namespace SampleCompany.SampleServer
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
+        /// <param name="args">The arguments.</param>
         public static async Task<int> Main(string[] args)
         {
-            Console.WriteLine("SampleCompany {0} OPC UA Sample Server", Utils.IsRunningOnMono() ? "Mono" : ".NET Core");
+            TextWriter output = Console.Out;
+            await output.WriteLineAsync("OPC UA Simple Console Sample Server").ConfigureAwait(false);
+
+            // The application name and config file names
+            var applicationName = "SampleCompany.SampleServer";
+            var configSectionName = "SampleCompany.SampleServer";
 
             // command line options
             var showHelp = false;
-            var stopTimeout = -1;
             var autoAccept = false;
-            string reverseConnectUrlString = null;
-            Uri reverseConnectUrl = null;
+            var logConsole = false;
+            var appLog = false;
+            var renewCertificate = false;
             string password = null;
+            var timeout = -1;
 
+            var usage = Utils.IsRunningOnMono() ? $"Usage: mono {applicationName}.exe [OPTIONS]" : $"Usage: dotnet {applicationName}.dll [OPTIONS]";
             var options = new Mono.Options.OptionSet {
+                usage,
                 { "h|help", "show this message and exit", h => showHelp = h != null },
                 { "a|autoaccept", "auto accept certificates (for testing only)", a => autoAccept = a != null },
-                { "t|timeout=", "the number of seconds until the server stops.", (int t) => stopTimeout = t },
-                { "rc|reverseconnect=", "Connect using the reverse connection.", url => reverseConnectUrlString = url},
-                { "p|password=", "optional password for private key", p => password = p }
+                { "c|console", "log to console", c => logConsole = c != null },
+                { "l|log", "log app output", c => appLog = c != null },
+                { "p|password=", "optional password for private key", p => password = p },
+                { "r|renew", "renew application certificate", r => renewCertificate = r != null },
+                { "t|timeout=", "timeout in seconds to exit application", (int t) => timeout = t * 1000 },
             };
 
             try
             {
-                IList<string> extraArgs = options.Parse(args);
-                foreach (var extraArg in extraArgs)
+                // parse command line and set options
+                _ = ConsoleUtils.ProcessCommandLine(output, args, options, ref showHelp, "REFSERVER");
+
+                if (logConsole && appLog)
                 {
-                    Console.WriteLine("Error: Unknown option: {0}", extraArg);
-                    showHelp = true;
+                    output = new LogWriter();
                 }
-                if (reverseConnectUrlString != null)
-                {
-                    reverseConnectUrl = new Uri(reverseConnectUrlString);
-                }
-            }
-            catch (OptionException e)
-            {
-                Console.WriteLine(e.Message);
-                showHelp = true;
-            }
 
-            if (showHelp)
-            {
-                Console.WriteLine(Utils.IsRunningOnMono() ? "Usage: mono SampleCompany.SampleServer.exe [OPTIONS]" : "Usage: dotnet SampleCompany.SampleServer.dll [OPTIONS]");
-                Console.WriteLine();
-
-                Console.WriteLine("Options:");
-                options.WriteOptionDescriptions(Console.Out);
-                return (int)ExitCode.ErrorInvalidCommandLine;
-            }
-
-            stopTimeout = stopTimeout <= 0 ? Timeout.Infinite : stopTimeout * 1000;
-            var server = new MySampleServer() {
-                AutoAccept = autoAccept,
-                TimeOut = stopTimeout,
-                Password = password
-            };
-            await server.Run().ConfigureAwait(false);
-
-            return (int)server.ExitCode;
-        }
-    }
-
-    public class MySampleServer
-    {
-        #region Properties
-        private static UaServer uaServer_ = new UaServer();
-        private static readonly UaServerPlugin uaServerPlugin_ = new UaServerPlugin();
-
-        private Task Status { get; set; }
-        private DateTime LastEventTime { get; set; }
-        public bool AutoAccept { get; set; }
-        public int TimeOut { get; set; }
-        public string Password { get; set; }
-        public ExitCode ExitCode { get; private set; }
-        public Uri ReverseConnectUrl { get; private set; }
-        #endregion
-
-        #region Public Methods
-        public async Task Run()
-        {
-            try
-            {
-                ExitCode = ExitCode.ErrorServerNotStarted;
-                await SampleServerAsync().ConfigureAwait(false);
-                Console.WriteLine("Server started. Press Ctrl-C to exit...");
-                ExitCode = ExitCode.ErrorServerRunning;
-            }
-            catch (Exception ex)
-            {
-                Utils.Trace("ServiceResultException:" + ex.Message);
-                ExitCode = ExitCode.ErrorServerException;
-                return;
-            }
-
-            var quitEvent = new ManualResetEvent(false);
-            try
-            {
-                Console.CancelKeyPress += (sender, eArgs) => {
-                    _ = quitEvent.Set();
-                    eArgs.Cancel = true;
+                // create the UA server
+                var server = new MyUaServer(output) {
+                    AutoAccept = autoAccept,
+                    Password = password
                 };
+
+                // load the server configuration, validate certificates
+                output.WriteLine("Loading configuration from {0}.", configSectionName);
+                await server.LoadAsync(applicationName, configSectionName).ConfigureAwait(false);
+
+                // setup the logging
+                ConsoleUtils.ConfigureLogging(server.Configuration, applicationName, logConsole, LogLevel.Information);
+
+                // check or renew the certificate
+                await output.WriteLineAsync("Check the certificate.").ConfigureAwait(false);
+                await server.CheckCertificateAsync(renewCertificate).ConfigureAwait(false);
+
+                // start the server
+                await output.WriteLineAsync("Start the server.").ConfigureAwait(false);
+                await server.StartAsync().ConfigureAwait(false);
+
+                await output.WriteLineAsync("Server started. Press Ctrl-C to exit...").ConfigureAwait(false);
+
+                // wait for timeout or Ctrl-C
+                var quitCts = new CancellationTokenSource();
+                ManualResetEvent quitEvent = ConsoleUtils.CtrlCHandler(quitCts);
+                var ctrlc = quitEvent.WaitOne(timeout);
+
+                // stop server. May have to wait for clients to disconnect.
+                await output.WriteLineAsync("Server stopped. Waiting for exit...").ConfigureAwait(false);
+                await server.StopAsync().ConfigureAwait(false);
+
+                return (int)ExitCode.Ok;
             }
-            catch (Exception exception)
+            catch (ErrorExitException errorExitException)
             {
-                Utils.Trace("Exception:" + exception.Message);
-            }
-
-            // wait for timeout or Ctrl-C
-            _ = quitEvent.WaitOne(TimeOut);
-
-            if (uaServer_ != null)
-            {
-                Console.WriteLine("Server stopped. Waiting for exit...");
-
-                using (UaServer server = uaServer_)
-                {
-                    // Stop status thread
-                    uaServer_ = null;
-                    Status.Wait();
-                    // Stop server and dispose
-                    server.Stop();
-                }
-            }
-
-            ExitCode = ExitCode.Ok;
-        }
-        #endregion
-
-        private void OnCertificateValidation(CertificateValidator validator, CertificateValidationEventArgs e)
-        {
-            if (e.Error.StatusCode == StatusCodes.BadCertificateUntrusted)
-            {
-                if (AutoAccept)
-                {
-                    Utils.Trace(Utils.TraceMasks.Security, "Accepted Certificate: {0}", e.Certificate.Subject);
-                    e.Accept = true;
-                    return;
-                }
-            }
-            Utils.Trace(Utils.TraceMasks.Security, "Rejected Certificate: {0} {1}", e.Error, e.Certificate.Subject);
-        }
-
-        #region Task handling the startup of the OPC UA Server
-        private async Task SampleServerAsync()
-        {
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            var passwordProvider = new CertificatePasswordProvider(Password);
-
-            // start the server.
-            await uaServer_.StartAsync(uaServerPlugin_, "SampleCompany.SampleServer", passwordProvider, OnCertificateValidation, null).ConfigureAwait(false);
-
-            if (ReverseConnectUrl != null)
-            {
-                uaServer_.BaseServer.AddReverseConnection(ReverseConnectUrl);
-            }
-
-            System.Collections.ObjectModel.ReadOnlyDictionary<Uri, UaReverseConnectProperty> reverseConnections = uaServer_.BaseServer.GetReverseConnections();
-            if (reverseConnections?.Count > 0)
-            {
-                // print reverse connect info
-                Console.WriteLine("Reverse Connect Clients:");
-                foreach (KeyValuePair<Uri, UaReverseConnectProperty> connection in reverseConnections)
-                {
-                    Console.WriteLine(connection.Key);
-                }
-            }
-
-            // print endpoint info
-            Console.WriteLine("Server Endpoints:");
-            IEnumerable<string> endpoints = uaServer_.BaseServer.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
-            foreach (var endpoint in endpoints)
-            {
-                Console.WriteLine(endpoint);
-            }
-
-            // start the status thread
-            Status = Task.Run(StatusThreadAsync);
-
-            // print notification on session events
-            uaServer_.BaseServer.CurrentInstance.SessionManager.SessionActivatedEvent += EventStatus;
-            uaServer_.BaseServer.CurrentInstance.SessionManager.SessionClosingEvent += EventStatus;
-            uaServer_.BaseServer.CurrentInstance.SessionManager.SessionCreatedEvent += EventStatus;
-        }
-        #endregion
-
-        #region Private Methods
-        private void EventStatus(object sender, SessionEventArgs eventArgs)
-        {
-            LastEventTime = DateTime.UtcNow;
-            var session = sender as Session;
-            PrintSessionStatus(session, eventArgs.Reason.ToString());
-        }
-
-        private void PrintSessionStatus(Session session, string reason, bool lastContact = false)
-        {
-            lock (session.DiagnosticsLock)
-            {
-                var item = $"{reason,9}:{session.SessionDiagnostics.SessionName,20}:";
-                if (lastContact)
-                {
-                    item += $"Last Event:{session.SessionDiagnostics.ClientLastContactTime.ToLocalTime():HH:mm:ss}";
-                }
-                else
-                {
-                    if (session.Identity != null)
-                    {
-                        item += $":{session.Identity.DisplayName,20}";
-                    }
-                    item += $":{session.Id}";
-                }
-                Console.WriteLine(item);
+                output.WriteLine("The application exits with error: {0}", errorExitException.Message);
+                return (int)errorExitException.ExitCode;
             }
         }
-
-        private async void StatusThreadAsync()
-        {
-            while (uaServer_ != null)
-            {
-                if (DateTime.UtcNow - LastEventTime > TimeSpan.FromMilliseconds(6000))
-                {
-                    IList<Session> sessions = uaServer_.BaseServer.CurrentInstance.SessionManager.GetSessions();
-                    foreach (Session session in sessions)
-                    {
-                        PrintSessionStatus(session, "-Status-", true);
-                    }
-                    LastEventTime = DateTime.UtcNow;
-                }
-                await Task.Delay(1000).ConfigureAwait(false);
-            }
-        }
-        #endregion
     }
 }

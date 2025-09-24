@@ -16,14 +16,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using Opc.Ua;
-
 using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer;
 using Technosoftware.UaServer.Sessions;
 using Technosoftware.UaStandardServer;
-
 using SampleCompany.Common;
 #endregion
 

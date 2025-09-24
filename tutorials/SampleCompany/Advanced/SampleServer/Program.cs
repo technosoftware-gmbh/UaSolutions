@@ -32,11 +32,8 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.Extensions.Logging;
-
 using Opc.Ua;
-
 using SampleCompany.Common;
 using SampleCompany.NodeManagers;
 #endregion
@@ -55,7 +52,7 @@ namespace SampleCompany.SampleServer
         public static async Task<int> Main(string[] args)
         {
             TextWriter output = Console.Out;
-            await output.WriteLineAsync("OPC UA Console Sample Server").ConfigureAwait(false);
+            await output.WriteLineAsync("OPC UA Advanced Console Sample Server").ConfigureAwait(false);
 
             #region License validation
             var licenseData =
