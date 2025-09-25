@@ -11,7 +11,7 @@
 
 #region Using Directives
 using System.Runtime.Serialization;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Simulation
 {
@@ -45,7 +45,7 @@ namespace SampleCompany.NodeManagers.Simulation
         private static void Initialize()
         {
         }
-        #endregion
+        #endregion Constructors
 
         #region Public Properties
         /// <summary>
@@ -57,10 +57,10 @@ namespace SampleCompany.NodeManagers.Simulation
             get { return showCertificateValidationDialog_; }
             set { showCertificateValidationDialog_ = value; }
         }
-        #endregion
+        #endregion Public Properties
 
         #region Private Members
         private bool showCertificateValidationDialog_;
-        #endregion
+        #endregion Private Members
     }
 }

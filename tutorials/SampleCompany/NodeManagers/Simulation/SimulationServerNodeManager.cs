@@ -23,7 +23,7 @@ using ReferenceTypes = Opc.Ua.ReferenceTypes;
 
 using Technosoftware.UaServer;
 using Technosoftware.UaStandardServer;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Simulation
 {
@@ -54,7 +54,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
             dynamicNodes_ = new List<BaseDataVariableState>();
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region IDisposable Members
         /// <summary>
@@ -98,7 +98,7 @@ namespace SampleCompany.NodeManagers.Simulation
             }
             base.Dispose(disposing);
         }
-        #endregion
+        #endregion IDisposable Members
 
         #region IUaNodeManager Methods
         /// <summary>
@@ -107,7 +107,7 @@ namespace SampleCompany.NodeManagers.Simulation
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
         public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
@@ -173,7 +173,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     };
                     decimalVariable.Value = decimalValue;
                     variables.Add(decimalVariable);
-                    #endregion
+                    #endregion Scalar_Static
 
                     #region Scalar_Static_Arrays
                     ResetRandomGenerator(2);
@@ -244,7 +244,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(arraysFolder, staticArrays + "UtcTime", "UtcTime", null, DataTypeIds.UtcTime, ValueRanks.OneDimension, AccessLevels.CurrentReadOrWrite, null));
                     variables.Add(CreateBaseDataVariableState(arraysFolder, staticArrays + "Variant", "Variant", null, BuiltInType.Variant, ValueRanks.OneDimension, AccessLevels.CurrentReadOrWrite, null));
                     variables.Add(CreateBaseDataVariableState(arraysFolder, staticArrays + "XmlElement", "XmlElement", null, DataTypeIds.XmlElement, ValueRanks.OneDimension, AccessLevels.CurrentReadOrWrite, null));
-                    #endregion
+                    #endregion Scalar_Static_Arrays
 
                     #region Scalar_Static_Arrays2D
                     ResetRandomGenerator(3);
@@ -276,7 +276,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(arrays2DFolder, staticArrays2D + "UtcTime", "UtcTime", null, DataTypeIds.UtcTime, ValueRanks.TwoDimensions, AccessLevels.CurrentReadOrWrite, null));
                     variables.Add(CreateBaseDataVariableState(arrays2DFolder, staticArrays2D + "Variant", "Variant", null, BuiltInType.Variant, ValueRanks.TwoDimensions, AccessLevels.CurrentReadOrWrite, null));
                     variables.Add(CreateBaseDataVariableState(arrays2DFolder, staticArrays2D + "XmlElement", "XmlElement", null, DataTypeIds.XmlElement, ValueRanks.TwoDimensions, AccessLevels.CurrentReadOrWrite, null).MinimumSamplingInterval(1000));
-                    #endregion
+                    #endregion Scalar_Static_Arrays2D
 
                     #region Scalar_Static_ArrayDynamic
                     ResetRandomGenerator(4);
@@ -308,7 +308,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(arrayDynamicFolder, staticArraysDynamic + "UtcTime", "UtcTime", null, DataTypeIds.UtcTime, ValueRanks.OneOrMoreDimensions, AccessLevels.CurrentReadOrWrite, null));
                     variables.Add(CreateBaseDataVariableState(arrayDynamicFolder, staticArraysDynamic + "Variant", "Variant", null, BuiltInType.Variant, ValueRanks.OneOrMoreDimensions, AccessLevels.CurrentReadOrWrite, null));
                     variables.Add(CreateBaseDataVariableState(arrayDynamicFolder, staticArraysDynamic + "XmlElement", "XmlElement", null, DataTypeIds.XmlElement, ValueRanks.OneOrMoreDimensions, AccessLevels.CurrentReadOrWrite, null).MinimumSamplingInterval(1000));
-                    #endregion
+                    #endregion Scalar_Static_ArrayDynamic
 
                     #region Scalar_Static_Mass
                     ResetRandomGenerator(5);
@@ -339,7 +339,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.AddRange(CreateVariables(massFolder, staticMass + "UtcTime", "UtcTime", null, DataTypeIds.UtcTime, ValueRanks.Scalar, 100));
                     variables.AddRange(CreateVariables(massFolder, staticMass + "Variant", "Variant", null, BuiltInType.Variant, ValueRanks.Scalar, 100));
                     variables.AddRange(CreateVariables(massFolder, staticMass + "XmlElement", "XmlElement", null, DataTypeIds.XmlElement, ValueRanks.Scalar, 100));
-                    #endregion
+                    #endregion Scalar_Static_Mass
 
                     #region Scalar_Simulation
                     ResetRandomGenerator(6);
@@ -379,7 +379,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState enabledVariable = CreateBaseDataVariableState(simulationFolder, scalarSimulation + "Enabled", "Enabled", null, DataTypeIds.Boolean, ValueRanks.Scalar, AccessLevels.CurrentReadOrWrite, null);
                     enabledVariable.Value = simulationEnabled_;
                     enabledVariable.OnSimpleWriteValue = OnWriteEnabled;
-                    #endregion
+                    #endregion Scalar_Simulation
 
                     #region Scalar_Simulation_Arrays
                     ResetRandomGenerator(7);
@@ -411,7 +411,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateDynamicVariable(arraysSimulationFolder, simulationArrays + "UtcTime", "UtcTime", null, DataTypeIds.UtcTime, ValueRanks.OneDimension);
                     _ = CreateDynamicVariable(arraysSimulationFolder, simulationArrays + "Variant", "Variant", null, BuiltInType.Variant, ValueRanks.OneDimension);
                     _ = CreateDynamicVariable(arraysSimulationFolder, simulationArrays + "XmlElement", "XmlElement", null, DataTypeIds.XmlElement, ValueRanks.OneDimension);
-                    #endregion
+                    #endregion Scalar_Simulation_Arrays
 
                     #region Scalar_Simulation_Mass
                     ResetRandomGenerator(8);
@@ -443,7 +443,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateDynamicVariables(massSimulationFolder, massSimulation + "UtcTime", "UtcTime", null, DataTypeIds.UtcTime, ValueRanks.Scalar, 100);
                     _ = CreateDynamicVariables(massSimulationFolder, massSimulation + "Variant", "Variant", null, BuiltInType.Variant, ValueRanks.Scalar, 100);
                     _ = CreateDynamicVariables(massSimulationFolder, massSimulation + "XmlElement", "XmlElement", null, DataTypeIds.XmlElement, ValueRanks.Scalar, 100);
-                    #endregion
+                    #endregion Scalar_Simulation_Mass
 
                     #region DataAccess_DataItem
                     ResetRandomGenerator(9);
@@ -465,7 +465,7 @@ namespace SampleCompany.NodeManagers.Simulation
                             item.Value = String.Empty;
                         }
                     }
-                    #endregion
+                    #endregion DataAccess_DataItem
 
                     #region DataAccess_AnalogType
                     ResetRandomGenerator(10);
@@ -499,7 +499,7 @@ namespace SampleCompany.NodeManagers.Simulation
                             }
                         }
                     }
-                    #endregion
+                    #endregion DataAccess_AnalogType
 
                     #region DataAccess_AnalogType_Array
                     ResetRandomGenerator(11);
@@ -533,7 +533,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateAnalogItemVariable(analogArrayFolder, daAnalogArray + "Variant", "Variant", null, BuiltInType.Variant, ValueRanks.OneDimension, new Variant[] { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 });
                     var doc1 = new XmlDocument();
                     _ = CreateAnalogItemVariable(analogArrayFolder, daAnalogArray + "XmlElement", "XmlElement", null, BuiltInType.XmlElement, ValueRanks.OneDimension, new XmlElement[] { doc1.CreateElement("tag1"), doc1.CreateElement("tag2"), doc1.CreateElement("tag3"), doc1.CreateElement("tag4"), doc1.CreateElement("tag5"), doc1.CreateElement("tag6"), doc1.CreateElement("tag7"), doc1.CreateElement("tag8"), doc1.CreateElement("tag9"), doc1.CreateElement("tag10") });
-                    #endregion
+                    #endregion DataAccess_AnalogType_Array
 
                     #region DataAccess_DiscreteType
                     ResetRandomGenerator(12);
@@ -567,7 +567,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variable = CreateMultiStateDiscreteState(multiStateDiscreteFolder, daMultiStateDiscrete + "005", "005", null, AccessLevels.CurrentReadOrWrite, null,
                         AttributeWriteMask.None, AttributeWriteMask.None, null, null, null, "circle", "cross", "triangle");
                     variable.OnWriteValue = OnWriteDiscrete;
-                    #endregion
+                    #endregion DataAccess_DiscreteType
 
                     #region DataAccess_MultiStateValueDiscreteType
                     ResetRandomGenerator(13);
@@ -604,7 +604,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(multiStateValueDiscreteFolder, daMultiStateValueDiscrete + "UInt64", "UInt64", null, DataTypeIds.UInt64, AccessLevels.CurrentReadOrWrite, null, AttributeWriteMask.None, AttributeWriteMask.None, null, null, null, new LocalizedText[] { "left", "right", "center" });
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
 
-                    #endregion
+                    #endregion DataAccess_MultiStateValueDiscreteType
 
                     #region References
                     ResetRandomGenerator(14);
@@ -651,7 +651,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     BaseDataVariableState hasForwardAndInverseReferences = CreateMeshVariable(referencesFolder, referencesPrefix + "HasForwardAndInverseReference", "HasForwardAndInverseReference", hasForwardReference, hasInverseReference, has3InverseReference, has3InverseReferences, variables[0]);
                     variables.Add(hasForwardAndInverseReferences);
-                    #endregion
+                    #endregion References
 
                     #region AccessRights
                     ResetRandomGenerator(15);
@@ -818,7 +818,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     arSessionRequired.UserAccessLevel = AccessLevels.CurrentRead;
                     arSessionRequired.AccessRestrictions = AccessRestrictionType.SessionRequired;
                     variables.Add(arSessionRequired);
-                    #endregion
+                    #endregion AccessRights
 
                     #region NodeIds
                     ResetRandomGenerator(16);
@@ -842,7 +842,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState opaqueNodeId = CreateBaseDataVariableState(nodeIdsFolder, nodeIds + "Int16Opaque", "Int16Opaque", null, DataTypeIds.Int16, ValueRanks.Scalar, AccessLevels.CurrentReadOrWrite, null);
                     opaqueNodeId.NodeId = new NodeId(new byte[] { 9, 2, 0, 5 }, NamespaceIndex);
                     variables.Add(opaqueNodeId);
-                    #endregion
+                    #endregion NodeIds
 
                     #region Methods
                     FolderState methodsFolder = CreateFolderState(root, "Methods", "Methods", null);
@@ -854,7 +854,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Void Method
                     _ = CreateMethodState(methodsFolder, methods + "Void", "Void", OnVoidCall);
-                    #endregion
+                    #endregion Void Method
 
                     #region Add Method
                     MethodState addMethod = CreateMethodState(methodsFolder, methods + "Add", "Add", OnAddCall);
@@ -866,7 +866,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     // set output arguments
                     Argument outputArgument1 = CreateArgument("Add Result", "Add Result", BuiltInType.Float, ValueRanks.Scalar);
                     _ = AddOutputArguments(addMethod, new[] { outputArgument1 });
-                    #endregion
+                    #endregion Add Method
 
                     #region Multiply Method
                     MethodState multiplyMethod = CreateMethodState(methodsFolder, methods + "Multiply", "Multiply", OnMultiplyCall);
@@ -887,7 +887,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     outputArgument1 = CreateArgument("Multiply Result", "Multiply Result", BuiltInType.Int32, ValueRanks.Scalar);
                     _ = AddOutputArguments(multiplyMethod, new[] { outputArgument1 });
-                    #endregion
+                    #endregion Multiply Method
 
                     #region Divide Method
                     MethodState divideMethod = CreateMethodState(methodsFolder, methods + "Divide", "Divide", new GenericMethodCalledEventHandler2(OnDivideCall));
@@ -899,7 +899,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     // set output arguments
                     outputArgument1 = CreateArgument("Divide Result", "Divide Result", BuiltInType.Float, ValueRanks.Scalar);
                     _ = AddOutputArguments(divideMethod, new[] { outputArgument1 });
-                    #endregion
+                    #endregion Divide Method
 
                     #region Substract Method
                     MethodState substractMethod = CreateMethodState(methodsFolder, methods + "Substract", "Substract", new GenericMethodCalledEventHandler2(OnSubstractCall));
@@ -911,7 +911,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     // set output arguments
                     outputArgument1 = CreateArgument("Substract Result", "Substract Result", BuiltInType.Int16, ValueRanks.Scalar);
                     _ = AddOutputArguments(substractMethod, new[] { outputArgument1 });
-                    #endregion
+                    #endregion Substract Method
 
                     #region Hello Method
                     MethodState helloMethod = CreateMethodState(methodsFolder, methods + "Hello", "Hello", new GenericMethodCalledEventHandler2(OnHelloCall));
@@ -922,14 +922,14 @@ namespace SampleCompany.NodeManagers.Simulation
                     // set output arguments
                     outputArgument1 = CreateArgument("Hello Result", "Hello Result", BuiltInType.String, ValueRanks.Scalar);
                     _ = AddOutputArguments(helloMethod, new[] { outputArgument1 });
-                    #endregion
+                    #endregion Hello Method
 
                     #region Input Method
                     MethodState inputMethod = CreateMethodState(methodsFolder, methods + "Input", "Input", new GenericMethodCalledEventHandler2(OnInputCall));
                     // set input arguments
                     inputArgument1 = CreateArgument("String value", "String value", BuiltInType.String, ValueRanks.Scalar);
                     _ = AddInputArguments(inputMethod, new[] { inputArgument1 });
-                    #endregion
+                    #endregion Input Method
 
                     #region Output Method
                     MethodState outputMethod = CreateMethodState(methodsFolder, methods + "Output", "Output", new GenericMethodCalledEventHandler2(OnOutputCall));
@@ -937,8 +937,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     // set output arguments
                     outputArgument1 = CreateArgument("Output Result", "Output Result", BuiltInType.String, ValueRanks.Scalar);
                     _ = AddOutputArguments(outputMethod, new[] { outputArgument1 });
-                    #endregion
-                    #endregion
+                    #endregion Output Method
+                    #endregion Methods
 
                     #region Views
                     ResetRandomGenerator(18);
@@ -947,7 +947,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     ViewState viewStateOperations = CreateViewState(viewsFolder, externalReferences, views + "Operations", "Operations", null);
                     ViewState viewStateEngineering = CreateViewState(viewsFolder, externalReferences, views + "Engineering", "Engineering", null);
-                    #endregion
+                    #endregion Views
 
                     #region Locales
                     ResetRandomGenerator(19);
@@ -1034,7 +1034,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     ltKlingonVariable.Description = new LocalizedText("en", "Klingon");
                     ltKlingonVariable.Value = new LocalizedText("ko", "qo' vIvan");
                     variables.Add(ltKlingonVariable);
-                    #endregion
+                    #endregion Locales
 
                     #region Attributes
                     ResetRandomGenerator(20);
@@ -1154,7 +1154,7 @@ namespace SampleCompany.NodeManagers.Simulation
                             AttributeWriteMask.MinimumSamplingInterval | AttributeWriteMask.NodeClass | AttributeWriteMask.NodeId | AttributeWriteMask.Symmetric | AttributeWriteMask.UserAccessLevel | AttributeWriteMask.UserExecutable |
                             AttributeWriteMask.UserWriteMask | AttributeWriteMask.ValueForVariableType | AttributeWriteMask.ValueRank | AttributeWriteMask.WriteMask;
                     variables.Add(allAccessLevel);
-                    #endregion
+                    #endregion AccessAll
 
                     #region AccessUser1
                     FolderState folderAttributesAccessUser1 = CreateFolderState(folderAttributes, "Attributes_AccessUser1", "AccessUser1", null);
@@ -1270,8 +1270,8 @@ namespace SampleCompany.NodeManagers.Simulation
                             AttributeWriteMask.MinimumSamplingInterval | AttributeWriteMask.NodeClass | AttributeWriteMask.NodeId | AttributeWriteMask.Symmetric | AttributeWriteMask.UserAccessLevel | AttributeWriteMask.UserExecutable |
                             AttributeWriteMask.UserWriteMask | AttributeWriteMask.ValueForVariableType | AttributeWriteMask.ValueRank | AttributeWriteMask.WriteMask;
                     variables.Add(allAccessUser1);
-                    #endregion
-                    #endregion
+                    #endregion AccessUser1
+                    #endregion Attributes
 
                     #region MyCompany
                     ResetRandomGenerator(21);
@@ -1281,7 +1281,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState myCompanyInstructions = CreateBaseDataVariableState(myCompanyFolder, myCompany + "Instructions", "Instructions", null, DataTypeIds.String, ValueRanks.Scalar, AccessLevels.CurrentReadOrWrite, null);
                     myCompanyInstructions.Value = "A place for the vendor to describe their address-space.";
                     variables.Add(myCompanyInstructions);
-                    #endregion
+                    #endregion MyCompany
 
                     #region StandardServerTest
                     ResetRandomGenerator(1);
@@ -1313,7 +1313,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     _ = CreateMultiStateValueDiscreteState(standardServerTestFolder, daMultiStateValueDiscrete + "001", "001", null, null, AccessLevels.CurrentReadOrWrite, null, AttributeWriteMask.None, AttributeWriteMask.None, null, null, null, new LocalizedText[] { "open", "closed", "jammed" });
 
-                    #endregion
+                    #endregion StandardServerTest
 
                 }
                 catch (Exception e)
@@ -1427,7 +1427,7 @@ namespace SampleCompany.NodeManagers.Simulation
             return variable;
 
         }
-        #endregion
+        #endregion DataAccess Server Facet related Methods
 
         private ServiceResult OnWriteDiscrete(
             ISystemContext context,
@@ -1932,10 +1932,10 @@ namespace SampleCompany.NodeManagers.Simulation
             // check if previously validated.
             return handle.Validated ? handle.Node : null;
         }
-        #endregion
+        #endregion IUaNodeManager Methods
 
         #region Overrides
-        #endregion
+        #endregion Overrides
 
         #region Private Helper Functions
         private static bool IsAnalogType(BuiltInType builtInType)
@@ -1985,7 +1985,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     return new Opc.Ua.Range(SByte.MaxValue, SByte.MinValue);
             }
         }
-        #endregion
+        #endregion Private Helper Functions
 
         #region Private Fields
         // Track whether Dispose has been called.
@@ -1998,6 +1998,6 @@ namespace SampleCompany.NodeManagers.Simulation
         private UInt16 simulationInterval_ = 1000;
         private bool simulationEnabled_ = true;
         private readonly List<BaseDataVariableState> dynamicNodes_;
-        #endregion
+        #endregion Private Fields
     }
 }

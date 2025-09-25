@@ -5,12 +5,12 @@ xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
 xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
 >
   <!-- A human readable but not necessarily unique name for the application instance -->
-  <ApplicationName>SampleCompany OPC UA Sample Client</ApplicationName>
+  <ApplicationName>SampleCompany OPC UA Advanced Sample Client</ApplicationName>
   <!-- A globally unique identifier for the application instance.
        This is overridden with the value contained in the application certificate. -->
-  <ApplicationUri>urn:localhost:SampleCompany:SampleClient</ApplicationUri>
+  <ApplicationUri>urn:localhost:SampleCompany:AdvancedSampleClient</ApplicationUri>
   <!-- A globally unique URI for the product (usually assigned by the product vendor) -->
-  <ProductUri>uri:SampleCompany.com:SampleClient</ProductUri>
+  <ProductUri>uri:SampleCompany.com:AdvancedSampleClient</ProductUri>
   <!-- Indicates the type of application (Server_0, Client_1, ClientAndServer_2 or DiscoveryServer_3). -->
   <ApplicationType>Client_1</ApplicationType>
   <!-- Specifies security related configuration information -->
@@ -29,11 +29,11 @@ xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
       <!-- The subject for the certificate 
            Note that subject names are complex structures. Only text that appears here is treated as the CommonName component.
            The first certificate found is used if multiple certificates with the same CommonName and a matching hostname exist.
-           Also a complete distinguished name can be specified here: 'CN=SampleCompany OPC UA Sample Client, DC=localhost'.
+           Also a complete distinguished name can be specified here: 'CN=SampleCompany OPC UA Advanced Sample Client, DC=localhost'.
            In this case the first certificate matching the complete distinguished name is used. localhost is replaced with the hostname.
            If no certificate is found, a new self signed application certificate is created.
            The Thumbprint should be specified if the CN or DN does not uniquely identify a certificate. -->
-      <SubjectName>CN=SampleCompany OPC UA Sample Client, C=CH, S=Aargau, O=SampleCompany, DC=localhost</SubjectName>
+      <SubjectName>CN=SampleCompany OPC UA Advanced Sample Client, C=CH, S=Aargau, O=SampleCompany, DC=localhost</SubjectName>
       <!-- The SHA1 thumbprint for the certificate.
            The thumbprint uniquely identifies a certificate.
            It should be specified in this file, however, the samples rely on quick and 
@@ -226,7 +226,7 @@ xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
   AllAbove = 0x3FF;
   -->
   <TraceConfiguration>
-    <OutputFilePath>./Logs/SampleCompany.SampleClient.log</OutputFilePath>
+    <OutputFilePath>./Logs/SampleCompany.AdvancedSampleClient.log</OutputFilePath>
     <DeleteOnLoad>true</DeleteOnLoad>
     <!-- Show Only Errors -->
     <!-- <TraceMasks>1</TraceMasks> -->

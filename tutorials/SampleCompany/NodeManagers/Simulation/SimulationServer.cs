@@ -21,7 +21,7 @@ using Technosoftware.UaServer;
 using Technosoftware.UaServer.Configuration;
 using Technosoftware.UaServer.NodeManager;
 using Technosoftware.UaStandardServer;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Simulation
 {
@@ -32,7 +32,7 @@ namespace SampleCompany.NodeManagers.Simulation
     /// Each server instance must have one instance of a StandardServer object which is
     /// responsible for reading the configuration file, creating the endpoints and dispatching
     /// incoming requests to the appropriate handler.
-    /// 
+    ///
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the SimulationServerNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
@@ -40,7 +40,7 @@ namespace SampleCompany.NodeManagers.Simulation
     {
         #region Properties
         public ITokenValidator TokenValidator { get; set; }
-        #endregion
+        #endregion Properties
 
         #region Overridden Methods
         /// <summary>
@@ -115,7 +115,7 @@ namespace SampleCompany.NodeManagers.Simulation
         /// Initializes the server before it starts up.
         /// </summary>
         /// <remarks>
-        /// This method is called before any startup processing occurs. The sub-class may update the 
+        /// This method is called before any startup processing occurs. The sub-class may update the
         /// configuration object or do any other application specific startup tasks.
         /// </remarks>
         protected override void OnServerStarting(ApplicationConfiguration configuration)
@@ -181,7 +181,7 @@ namespace SampleCompany.NodeManagers.Simulation
             }
             return policies;
         }
-        #endregion
+        #endregion Overridden Methods
 
         #region User Validation Functions
         /// <summary>
@@ -416,10 +416,10 @@ namespace SampleCompany.NodeManagers.Simulation
                     new LocalizedText(info)));
             }
         }
-        #endregion
+        #endregion User Validation Functions
 
         #region Private Fields
         private ICertificateValidator userCertificateValidator_;
-        #endregion
+        #endregion Private Fields
     }
 }

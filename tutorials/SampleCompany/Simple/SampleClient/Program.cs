@@ -29,23 +29,17 @@
 
 #region Using Directives
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Microsoft.Extensions.Logging;
 
 using Opc.Ua;
 
 using Technosoftware.UaConfiguration;
-using Technosoftware.UaClient;
 
 using SampleCompany.Common;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleClient
 {
@@ -63,18 +57,18 @@ namespace SampleCompany.SampleClient
             await output.WriteLineAsync("OPC UA Simple Console Sample Client").ConfigureAwait(false);
 
             #region License validation
-            var licenseData =
+            const string licenseData =
                     @"";
             var licensed = Technosoftware.UaClient.LicenseHandler.Validate(licenseData);
             if (!licensed)
             {
                 await output.WriteLineAsync("WARNING: No valid license applied.").ConfigureAwait(false);
             }
-            #endregion
+            #endregion License validation
 
             // The application name and config file names
-            var applicationName = "SampleCompany.SampleClient";
-            var configSectionName = "SampleCompany.SampleClient";
+            const string applicationName = "SampleCompany.SimpleSampleClient";
+            const string configSectionName = "SampleCompany.SampleClient";
             var usage = $"Usage: dotnet {applicationName}.dll [OPTIONS] [ENDPOINTURL]";
 
             // command line options
@@ -123,7 +117,7 @@ namespace SampleCompany.SampleClient
                 var extraArg = ConsoleUtils.ProcessCommandLine(output, args, options, ref showHelp, "SAMPLECLIENT");
 
                 // connect Url?
-                Uri serverUrl = !string.IsNullOrEmpty(extraArg) ? new Uri(extraArg) : new Uri("opc.tcp://localhost:62555/SampleServer");
+                Uri serverUrl = !string.IsNullOrEmpty(extraArg) ? new Uri(extraArg) : new Uri("opc.tcp://localhost:62555/SimpleSampleServer");
 
                 // Define the UA Client application
                 ApplicationInstance.MessageDlg = new ApplicationMessageDlg(output);

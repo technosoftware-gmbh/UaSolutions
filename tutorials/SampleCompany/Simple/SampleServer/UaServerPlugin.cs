@@ -28,38 +28,35 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
+using Opc.Ua;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Globalization;
 using System.IO;
-
-using Opc.Ua;
-
+using System.Reflection;
+using Technosoftware.UaBaseServer;
 using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer;
-using Technosoftware.UaBaseServer;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleServer
 {
 
     /// <summary>
     /// OPC Server Configuration and IO Handling
-    ///
-    /// This C# based plugin for the OPC UA Server .NET shows a base 
-    /// OPC UA server implementation. At startup items with several 
-    /// data types and access rights are statically defined. 
+    /// This C# based plugin for the OPC UA Server .NET shows a base
+    /// OPC UA server implementation. At startup items with several
+    /// data types and access rights are statically defined.
     /// </summary>
     public class UaServerPlugin : IUaServerPlugin, IUaOptionalServerPlugin, IUaReverseConnectServerPlugin, IDisposable
     {
         #region Private Fields
-        private IUaServer opcServer_;
-
         // Track whether Dispose has been called.
         private bool disposed_;
-        private readonly object lockDisposable_ = new object();
-        #endregion
+#pragma warning disable IDE0330 // „System.Threading.Lock“ nutzen
+        private readonly object lockDisposable_ = new();
+#pragma warning restore IDE0330 // „System.Threading.Lock“ nutzen
+        #endregion Private Fields
 
         #region Constructors, Destructor, Initialization
         // Use C# destructor syntax for finalization code.
@@ -130,7 +127,7 @@ namespace SampleCompany.SampleServer
 
             }
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region General Methods (not related to an OPC specification)
         //---------------------------------------------------------------------
@@ -159,7 +156,7 @@ namespace SampleCompany.SampleServer
         }
 
         /// <summary>
-        /// This method is called from the generic server to get the license information. 
+        /// This method is called from the generic server to get the license information.
         /// </summary>
         /// <param name="serialNumber">Serial Number</param>
         /// <remarks>Returning empty strings activates the evaluation version of the OPC UA Server .NET. The evaluation allows the usage of the full product for 30 days.</remarks>
@@ -187,7 +184,6 @@ namespace SampleCompany.SampleServer
         public void OnInitialized(IUaServer opcServer, ApplicationConfiguration configuration)
         {
             Utils.Trace(Utils.TraceMasks.Information, "OnInitialized(): Server is initialized.");
-            opcServer_ = opcServer;
         }
 
         /// <summary>
@@ -202,7 +198,7 @@ namespace SampleCompany.SampleServer
         }
 
         /// <summary>
-        /// This method is called from the generic server when the server was successfully started and is running. 
+        /// This method is called from the generic server when the server was successfully started and is running.
         /// </summary>
         /// <remarks>This method should only return if the server should be stopped.</remarks>
         /// <returns>A <see cref="StatusCode"/> code with the result of the operation. Returning from this method stops the further server execution.</returns>
@@ -242,7 +238,7 @@ namespace SampleCompany.SampleServer
 
             return properties;
         }
-        #endregion
+        #endregion General Methods (not related to an OPC specification)
 
         #region Core Server Facet Methods
         //---------------------------------------------------------------------
@@ -276,7 +272,7 @@ namespace SampleCompany.SampleServer
             }
             return StatusCodes.Good;
         }
-        #endregion
+        #endregion Core Server Facet Methods
 
         #region Optional Server Plugin methods
         public UaBaseServer OnGetServer()
@@ -290,18 +286,18 @@ namespace SampleCompany.SampleServer
             Utils.Trace(Utils.TraceMasks.Information, "OnGetNodeManager(): Request the instance of the node manager.");
             return new SampleServerNodeManager(opcServer, this, uaServer, configuration, namespaceUris);
         }
-        #endregion
+        #endregion Optional Server Plugin methods
 
         #region Reverse Connect Server Plugin methods
         public bool OnUseReverseConnect()
         {
             return true;
         }
-        #endregion
+        #endregion Reverse Connect Server Plugin methods
 
         #region Helper Methods
         /// <summary>
-        /// Returns the linker timestamp for an assembly. 
+        /// Returns the linker timestamp for an assembly.
         /// </summary>
         private static DateTime GetAssemblyTimestamp()
         {
@@ -323,8 +319,7 @@ namespace SampleCompany.SampleServer
 
             // convert to DateTime value.
             var timestamp = new DateTime(1970, 1, 1, 0, 0, 0);
-            timestamp = timestamp.AddSeconds(secondsSince1970);
-            return timestamp;
+            return timestamp.AddSeconds(secondsSince1970);
         }
 
         /// <summary>
@@ -352,6 +347,6 @@ namespace SampleCompany.SampleServer
         {
             return String.Format(CultureInfo.InvariantCulture, text, args);
         }
-        #endregion
+        #endregion Helper Methods
     }
 }

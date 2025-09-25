@@ -1,6 +1,6 @@
-#region Copyright (c) 2011-2024 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2024 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 // 
 // License: 
@@ -25,7 +25,7 @@
 //
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2024 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -36,7 +36,7 @@ using System.Threading.Tasks;
 using Opc.Ua;
 
 using Technosoftware.UaClient;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleClient
 {
@@ -54,7 +54,7 @@ namespace SampleCompany.SampleClient
             configuration_.CertificateValidator.CertificateValidation += OnCertificateValidation;
 
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region IDisposable
         /// <summary>
@@ -66,7 +66,7 @@ namespace SampleCompany.SampleClient
             configuration_.CertificateValidator.CertificateValidation -= OnCertificateValidation;
             GC.SuppressFinalize(this);
         }
-        #endregion
+        #endregion IDisposable
 
         #region Public Properties
         /// <summary>
@@ -103,7 +103,7 @@ namespace SampleCompany.SampleClient
         /// Auto accept untrusted certificates.
         /// </summary>
         public bool AutoAccept { get; set; } = false;
-        #endregion
+        #endregion Public Properties
 
         #region Public Methods
         public void DiscoverUaServers()
@@ -239,7 +239,7 @@ namespace SampleCompany.SampleClient
                 output_.WriteLine($"Disconnect Error : {ex.Message}");
             }
         }
-        #endregion
+        #endregion Public Methods
 
         #region KeepAlive and ReConnect handling
         /// <summary>
@@ -324,7 +324,7 @@ namespace SampleCompany.SampleClient
                 }
             }
         }
-        #endregion
+        #endregion KeepAlive and ReConnect handling
 
         #region Protected Methods
         /// <summary>
@@ -358,13 +358,13 @@ namespace SampleCompany.SampleClient
                 output_.WriteLine("Untrusted Certificate rejected. Subject = {0}", e.Certificate.Subject);
             }
         }
-        #endregion
+        #endregion Protected Methods
 
         #region Private Fields
         private readonly object lock_ = new object();
         private readonly ApplicationConfiguration configuration_;
         private SessionReconnectHandler reconnectHandler_;
         private readonly TextWriter output_;
-        #endregion
+        #endregion Private Fields
     }
 }

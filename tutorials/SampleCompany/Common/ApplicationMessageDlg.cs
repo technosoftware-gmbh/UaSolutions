@@ -16,7 +16,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Technosoftware.UaConfiguration;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.Common
 {
@@ -34,7 +34,7 @@ namespace SampleCompany.Common
         {
             output_ = output;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Overridden Methods
         /// <inheritdoc/>
@@ -78,13 +78,13 @@ namespace SampleCompany.Common
         {
             return ShowAsync().GetAwaiter().GetResult();
         }
-        #endregion
+        #endregion Overridden Methods
 
         #region Private Fields
         private readonly TextWriter output_;
         private string message_ = string.Empty;
         private bool ask_;
-        #endregion
+        #endregion Private Fields
     }
 }
 

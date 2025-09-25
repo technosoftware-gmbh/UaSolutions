@@ -13,7 +13,7 @@
 using System.IO;
 using System.Text;
 using static Opc.Ua.Utils;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.Common
 {
