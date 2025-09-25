@@ -28,7 +28,7 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleServer
 {

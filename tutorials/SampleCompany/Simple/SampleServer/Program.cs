@@ -34,11 +34,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
-using Technosoftware.UaConfiguration;
-using Technosoftware.UaServer.Sessions;
-using Technosoftware.UaBaseServer;
 using SampleCompany.Common;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleServer
 {
@@ -57,8 +54,8 @@ namespace SampleCompany.SampleServer
             await output.WriteLineAsync("OPC UA Simple Console Sample Server").ConfigureAwait(false);
 
             // The application name and config file names
-            var applicationName = "SampleCompany.SampleServer";
-            var configSectionName = "SampleCompany.SampleServer";
+            const string applicationName = "SampleCompany.SimpleSampleServer";
+            const string configSectionName = "SampleCompany.SampleServer";
 
             // command line options
             var showHelp = false;

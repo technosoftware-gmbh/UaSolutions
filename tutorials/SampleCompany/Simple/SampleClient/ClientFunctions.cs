@@ -17,7 +17,7 @@ using System.IO;
 using Opc.Ua;
 
 using Technosoftware.UaClient;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleClient
 {
@@ -31,7 +31,7 @@ namespace SampleCompany.SampleClient
         {
             output_ = output;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Sample Client Methods
         /// <summary>
@@ -80,7 +80,7 @@ namespace SampleCompany.SampleClient
                 {
                     output_.WriteLine("Read Value = {0} , StatusCode = {1}", result.Value, result.StatusCode);
                 }
-                #endregion
+                #endregion Read a node by calling the Read Service
 
                 #region Read the Value attribute of a node by calling the Session.ReadValue method
                 // Read Server NamespaceArray
@@ -88,7 +88,7 @@ namespace SampleCompany.SampleClient
                 DataValue namespaceArray = session.ReadValue(Variables.Server_NamespaceArray);
                 // Display the result
                 output_.WriteLine($"NamespaceArray Value = {namespaceArray}");
-                #endregion
+                #endregion Read the Value attribute of a node by calling the Session.ReadValue method
             }
             catch (Exception ex)
             {
@@ -234,7 +234,7 @@ namespace SampleCompany.SampleClient
 
                 // Define the method parameters
                 // Input argument requires a Float and an UInt32 value
-                var inputArguments = "from Call Method";
+                const string inputArguments = "from Call Method";
                 IList<object> outputArguments = null;
 
                 // Invoke Call service
@@ -254,7 +254,7 @@ namespace SampleCompany.SampleClient
                 output_.WriteLine("Method call error: {0}", ex.Message);
             }
         }
-        #endregion
+        #endregion Public Sample Client Methods
 
         #region Server Status
         /// <summary>Read some values from the server status node.</summary>
@@ -307,10 +307,10 @@ namespace SampleCompany.SampleClient
                 return false;
             }
         }
-        #endregion
+        #endregion Server Status
 
         #region Private Fieds
         private readonly TextWriter output_;
-        #endregion
+        #endregion Private Fieds
     }
 }

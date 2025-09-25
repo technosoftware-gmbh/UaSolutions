@@ -37,7 +37,7 @@ using System.Threading.Tasks;
 using Opc.Ua;
 
 using Technosoftware.UaClient;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleClient
 {
@@ -70,7 +70,7 @@ namespace SampleCompany.SampleClient
             configuration_.CertificateValidator.CertificateValidation += OnCertificateValidation;
             reverseConnectManager_ = reverseConnectManager;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region IDisposable
         /// <summary>
@@ -82,11 +82,11 @@ namespace SampleCompany.SampleClient
             configuration_.CertificateValidator.CertificateValidation -= OnCertificateValidation;
             GC.SuppressFinalize(this);
         }
-        #endregion
+        #endregion IDisposable
 
         #region Public Properties
         /// <summary>
-        /// Action used 
+        /// Action used
         /// </summary>
         Action<IList, IList> ValidateResponse => validateResponse_;
 
@@ -129,7 +129,7 @@ namespace SampleCompany.SampleClient
         /// The file to use for log output.
         /// </summary>
         public string LogFile { get; set; }
-        #endregion
+        #endregion Public Properties
 
         #region Public Methods
         public void DiscoverUaServers()
@@ -298,7 +298,7 @@ namespace SampleCompany.SampleClient
                 output_.WriteLine($"Disconnect Error : {ex.Message}");
             }
         }
-        #endregion
+        #endregion Public Methods
 
         #region KeepAlive and ReConnect handling
         /// <summary>
@@ -383,7 +383,7 @@ namespace SampleCompany.SampleClient
                 }
             }
         }
-        #endregion
+        #endregion KeepAlive and ReConnect handling
 
         #region Protected Methods
         /// <summary>
@@ -417,7 +417,7 @@ namespace SampleCompany.SampleClient
                 output_.WriteLine("Untrusted Certificate rejected. Subject = {0}", e.Certificate.Subject);
             }
         }
-        #endregion
+        #endregion Protected Methods
 
         #region Private Fields
         private readonly object lock_ = new object();
@@ -428,6 +428,6 @@ namespace SampleCompany.SampleClient
         private readonly TextWriter output_;
         private readonly bool verbose_;
         private readonly Action<IList, IList> validateResponse_;
-        #endregion
+        #endregion Private Fields
     }
 }

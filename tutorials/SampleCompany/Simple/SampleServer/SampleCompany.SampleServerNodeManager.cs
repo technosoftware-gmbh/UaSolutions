@@ -41,7 +41,7 @@ using Technosoftware.UaBaseServer;
 using DataTypeIds = Opc.Ua.DataTypeIds;
 using ObjectIds = Opc.Ua.ObjectIds;
 
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleServer
 {
@@ -63,7 +63,7 @@ namespace SampleCompany.SampleServer
         private bool simulationEnabled_ = true;
         private List<BaseDataVariableState> dynamicNodes_;
         private int cycleId_;
-        #endregion
+        #endregion Private Fields
 
         #region Constructors, Destructor, Initialization
         /// <summary>
@@ -139,10 +139,10 @@ namespace SampleCompany.SampleServer
             }
             base.Dispose(disposing);
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region INodeIdFactory Members
-        #endregion
+        #endregion INodeIdFactory Members
 
         #region Overridden Methods
         /// <summary>
@@ -175,7 +175,7 @@ namespace SampleCompany.SampleServer
             predefinedNodes.LoadFromBinaryResource(context, resourcePath, assembly, true);
             return predefinedNodes;
         }
-        #endregion
+        #endregion Overridden Methods
 
         #region IUaNodeManager Methods
         /// <summary>
@@ -184,7 +184,7 @@ namespace SampleCompany.SampleServer
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
         public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
@@ -251,7 +251,7 @@ namespace SampleCompany.SampleServer
                         Value = largeInteger.ToByteArray()
                     };
                     decimalVariable.Value = decimalValue;
-                    #endregion
+                    #endregion Scalar_Static
 
                     #region Scalar_Simulation
                     ResetRandomGenerator(6);
@@ -291,7 +291,7 @@ namespace SampleCompany.SampleServer
                     BaseDataVariableState enabledVariable = CreateBaseDataVariableState(simulationFolder, scalarSimulation + "Enabled", "Enabled", null, DataTypeIds.Boolean, ValueRanks.Scalar, AccessLevels.CurrentReadOrWrite, null);
                     enabledVariable.Value = simulationEnabled_;
                     enabledVariable.OnSimpleWriteValue = OnWriteEnabled;
-                    #endregion
+                    #endregion Scalar_Simulation
 
                     #region Methods
                     FolderState methodsFolder = CreateFolderState(root, "Methods", "Methods", null);
@@ -309,9 +309,9 @@ namespace SampleCompany.SampleServer
                     // set output arguments
                     Argument outputArgument1 = CreateArgument("Hello Result", "Hello Result", BuiltInType.String, ValueRanks.Scalar);
                     _ = AddOutputArguments(helloMethod, new[] { outputArgument1 });
-                    #endregion
+                    #endregion Hello Method
 
-                    #endregion
+                    #endregion Methods
 
                     #region Access Rights Handling
                     FolderState folderAccessRights = CreateFolderState(root, "AccessRights", "AccessRights", null);
@@ -332,7 +332,7 @@ namespace SampleCompany.SampleServer
                     arOperatorRW.OnSimpleWriteValue = OnWriteOperatorValue;
                     arOperatorRW.OnReadValue = OnReadOperatorValue;
                     dynamicNodes_.Add(arOperatorRW);
-                    #endregion
+                    #endregion Access Rights Operator Handling
 
                     #region Access Rights Administrator Handling
                     // sub-folder for "AccessAdministrator"
@@ -346,8 +346,8 @@ namespace SampleCompany.SampleServer
                     arAdministratorRW.OnSimpleWriteValue = OnWriteAdministratorValue;
                     arAdministratorRW.OnReadValue = OnReadAdministratorValue;
                     dynamicNodes_.Add(arAdministratorRW);
-                    #endregion
-                    #endregion
+                    #endregion Access Rights Administrator Handling
+                    #endregion Access Rights Handling
                 }
                 catch (Exception e)
                 {
@@ -358,7 +358,7 @@ namespace SampleCompany.SampleServer
                 simulationTimer_ = new Timer(DoSimulation, null, 1000, 1000);
             }
         }
-        #endregion
+        #endregion IUaNodeManager Methods
 
         #region Event Handlers
         private ServiceResult OnWriteInterval(ISystemContext context, NodeState node, ref object value)
@@ -423,7 +423,7 @@ namespace SampleCompany.SampleServer
                 return new ServiceResult(StatusCodes.BadInvalidArgument);
             }
         }
-        #endregion
+        #endregion Event Handlers
 
         #region Operator specific handling
         public ServiceResult OnReadOperatorUserAccessLevel(ISystemContext context, NodeState node, ref byte value)
@@ -489,7 +489,7 @@ namespace SampleCompany.SampleServer
             }
             return ServiceResult.Good;
         }
-        #endregion
+        #endregion Operator specific handling
 
         #region Administrator specific handling
         public ServiceResult OnReadAdministratorUserAccessLevel(ISystemContext context, NodeState node, ref byte value)
@@ -557,7 +557,7 @@ namespace SampleCompany.SampleServer
             }
             return ServiceResult.Good;
         }
-        #endregion
+        #endregion Administrator specific handling
 
         #region User specific Browse handling
         /// <summary>
@@ -591,7 +591,7 @@ namespace SampleCompany.SampleServer
             }
             return true;
         }
-        #endregion
+        #endregion User specific Browse handling
 
         #region Helper Methods
         /// <summary>
@@ -672,6 +672,6 @@ namespace SampleCompany.SampleServer
                 Utils.Trace(e, "Unexpected error in OnRaiseSystemEvents");
             }
         }
-        #endregion
+        #endregion Helper Methods
     }
 }

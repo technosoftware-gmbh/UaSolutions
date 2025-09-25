@@ -32,7 +32,7 @@ using Serilog.Templates;
 using Opc.Ua;
 using static Opc.Ua.Utils;
 
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.Common
 {
@@ -124,7 +124,7 @@ namespace SampleCompany.Common
         /// Configure the logging providers.
         /// </summary>
         /// <remarks>
-        /// Replaces the Opc.Ua.Core default ILogger with a Microsoft.Extension.Logger with a 
+        /// Replaces the Opc.Ua.Core default ILogger with a Microsoft.Extension.Logger with a
         /// Serilog file, debug and console logger.
         /// The debug logger is only enabled for debug builds.
         /// The console logger is enabled by the logConsole flag at the consoleLogLevel.

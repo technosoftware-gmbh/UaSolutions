@@ -26,7 +26,7 @@ using Newtonsoft.Json;
 using Opc.Ua;
 
 using Technosoftware.UaClient;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleClient
 {
@@ -37,7 +37,7 @@ namespace SampleCompany.SampleClient
     {
         #region Constants
         private const int MaxSearchDepth = 128;
-        #endregion
+        #endregion Constants
 
         #region Constructors, Destructor, Initialization
         public ClientFunctions(TextWriter output, Action<IList, IList> validateResponse, ManualResetEvent quitEvent = null, bool verbose = false)
@@ -48,7 +48,7 @@ namespace SampleCompany.SampleClient
             verbose_ = verbose;
             eventTypeMappings_ = new Dictionary<NodeId, NodeId>();
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Sample Client Methods
         /// <summary>
@@ -97,7 +97,7 @@ namespace SampleCompany.SampleClient
                 {
                     output_.WriteLine("Read Value = {0} , StatusCode = {1}", result.Value, result.StatusCode);
                 }
-                #endregion
+                #endregion Read a node by calling the Read Service
 
                 #region Read the Value attribute of a node by calling the Session.ReadValue method
                 // Read Server NamespaceArray
@@ -105,7 +105,7 @@ namespace SampleCompany.SampleClient
                 DataValue namespaceArray = session.ReadValue(Variables.Server_NamespaceArray);
                 // Display the result
                 output_.WriteLine($"NamespaceArray Value = {namespaceArray}");
-                #endregion
+                #endregion Read the Value attribute of a node by calling the Session.ReadValue method
             }
             catch (Exception ex)
             {
@@ -251,7 +251,7 @@ namespace SampleCompany.SampleClient
 
                 // Define the method parameters
                 // Input argument requires a Float and an UInt32 value
-                var inputArguments = "from Call Method";
+                const string inputArguments = "from Call Method";
                 IList<object> outputArguments = null;
 
                 // Invoke Call service
@@ -271,7 +271,7 @@ namespace SampleCompany.SampleClient
                 output_.WriteLine("Method call error: {0}", ex.Message);
             }
         }
-        #endregion
+        #endregion Public Sample Client Methods
 
         #region Server Status
         /// <summary>Read some values from the server status node.</summary>
@@ -324,7 +324,7 @@ namespace SampleCompany.SampleClient
                 return false;
             }
         }
-        #endregion
+        #endregion Server Status
 
         #region Public Methods (Subscribe)
         /// <summary>
@@ -479,7 +479,7 @@ namespace SampleCompany.SampleClient
                 return false;
             }
         }
-        #endregion
+        #endregion Public Methods (Subscribe)
 
         #region Fetch with NodeCache
         /// <summary>
@@ -617,7 +617,7 @@ namespace SampleCompany.SampleClient
 
             return result;
         }
-        #endregion
+        #endregion Fetch with NodeCache
 
         #region BrowseAddressSpace sample
         /// <summary>
@@ -804,7 +804,7 @@ namespace SampleCompany.SampleClient
 
             return result;
         }
-        #endregion
+        #endregion BrowseAddressSpace sample
 
         #region Fetch ReferenceId Types
         /// <summary>
@@ -819,14 +819,14 @@ namespace SampleCompany.SampleClient
         private static Task FetchReferenceIdTypesAsync(IUaSession session)
         {
             // fetch the reference types first, otherwise browse for e.g. hierarchical references with subtypes won't work
-            BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+            const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
             NamespaceTable namespaceUris = session.NamespaceUris;
             IEnumerable<ExpandedNodeId> referenceTypes = typeof(ReferenceTypeIds)
                      .GetFields(bindingFlags)
                      .Select(field => NodeId.ToExpandedNodeId((NodeId)field.GetValue(null), namespaceUris));
             return session.FetchTypeTreeAsync(new ExpandedNodeIdCollection(referenceTypes));
         }
-        #endregion
+        #endregion Fetch ReferenceId Types
 
         #region Read Values and output as JSON sample
         /// <summary>
@@ -909,7 +909,7 @@ namespace SampleCompany.SampleClient
 
             return (values, errors);
         }
-        #endregion
+        #endregion Read Values and output as JSON sample
 
         #region Subscribe Values
         /// <summary>
@@ -992,7 +992,7 @@ namespace SampleCompany.SampleClient
                 output_.WriteLine("Subscribe error: {0}", ex.Message);
             }
         }
-        #endregion
+        #endregion Subscribe Values
 
         #region Helper Methods
         /// <summary>
@@ -1039,7 +1039,7 @@ namespace SampleCompany.SampleClient
                 return stringWriter.ToString();
             }
         }
-        #endregion
+        #endregion Helper Methods
 
         #region Private Methods
         /// <summary>
@@ -1074,7 +1074,7 @@ namespace SampleCompany.SampleClient
                 output_.WriteLine("FastDataChangeNotification error: {0}", ex.Message);
             }
         }
-        #endregion 
+        #endregion Private Methods
 
         #region Event Handlers
         /// <summary>
@@ -1458,7 +1458,7 @@ namespace SampleCompany.SampleClient
             {
             }
         }
-        #endregion
+        #endregion Private Event related Methods
 
 
         /// <summary>
@@ -1501,7 +1501,7 @@ namespace SampleCompany.SampleClient
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
         }
-        #endregion
+        #endregion Event Handlers
 
         #region Private Fieds
         private readonly Action<IList, IList> validateResponse_;
@@ -1511,6 +1511,6 @@ namespace SampleCompany.SampleClient
 
         private IUaSession currentSession_;
         private readonly Dictionary<NodeId, NodeId> eventTypeMappings_;
-        #endregion
+        #endregion Private Fieds
     }
 }

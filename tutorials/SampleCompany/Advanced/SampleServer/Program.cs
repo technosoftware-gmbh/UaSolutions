@@ -36,7 +36,7 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using SampleCompany.Common;
 using SampleCompany.NodeManagers;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleServer
 {
@@ -55,19 +55,19 @@ namespace SampleCompany.SampleServer
             await output.WriteLineAsync("OPC UA Advanced Console Sample Server").ConfigureAwait(false);
 
             #region License validation
-            var licenseData =
+            const string licenseData =
                     @"";
             var licensed = Technosoftware.UaServer.LicenseHandler.Validate(licenseData);
             if (!licensed)
             {
                 await output.WriteLineAsync("WARNING: No valid license applied.").ConfigureAwait(false);
             }
-            #endregion
+            #endregion License validation
 
 
             // The application name and config file names
-            var applicationName = "SampleCompany.SampleServer";
-            var configSectionName = "SampleCompany.SampleServer";
+            const string applicationName = "SampleCompany.AdvancedSampleServer";
+            const string configSectionName = "SampleCompany.SampleServer";
 
             // command line options
             var showHelp = false;

@@ -11,7 +11,7 @@
 
 #region Using Directives
 using Technosoftware.UaClient;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleClient
 {

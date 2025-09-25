@@ -22,7 +22,7 @@ using Technosoftware.UaServer;
 using Technosoftware.UaServer.Sessions;
 using Technosoftware.UaStandardServer;
 using SampleCompany.Common;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleServer
 {
@@ -62,7 +62,7 @@ namespace SampleCompany.SampleServer
         /// The server object
         /// </summary>
         public T Server => server_;
-        #endregion
+        #endregion Public Properties
 
         #region Constructors, Destructor, Initialization
         /// <summary>
@@ -73,7 +73,7 @@ namespace SampleCompany.SampleServer
         {
             output_ = writer;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Methods
         /// <summary>
@@ -226,7 +226,7 @@ namespace SampleCompany.SampleServer
                 throw new ErrorExitException(ex.Message, ExitCode.ErrorStopping);
             }
         }
-        #endregion
+        #endregion Public Methods
 
         #region Event Handlers
         /// <summary>
@@ -255,7 +255,7 @@ namespace SampleCompany.SampleServer
             var session = sender as Session;
             PrintSessionStatus(session, eventArgs.Reason.ToString());
         }
-        #endregion
+        #endregion Event Handlers
 
         #region Helper Methods
         /// <summary>
@@ -306,14 +306,14 @@ namespace SampleCompany.SampleServer
                 await Task.Delay(1000).ConfigureAwait(false);
             }
         }
-        #endregion
+        #endregion Helper Methods
 
         #region Private Fields
         private readonly TextWriter output_;
         private T server_;
         private Task status_;
         private DateTime lastEventTime_;
-        #endregion
+        #endregion Private Fields
     }
 }
 

@@ -11,7 +11,7 @@
 
 #region Using Directives
 using System;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.Common
 {

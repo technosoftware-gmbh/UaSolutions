@@ -14,8 +14,8 @@
     <IsPackable>false</IsPackable>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- Highest language version supported by Visual Studio 2019 -->
-    <LangVersion>12</LangVersion>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+    <LangVersion>13.0</LangVersion>
     <EnablePackageValidation>true</EnablePackageValidation>
     <!-- to check the package validation on a release build, uncomment here -->
     <!--<PackageValidationBaselineVersion>4.0.3</PackageValidationBaselineVersion>-->
@@ -24,13 +24,21 @@
     <NuGetAuditMode>all</NuGetAuditMode>
     <NuGetAudit>true</NuGetAudit>
   </PropertyGroup>
-
+  <ItemGroup Condition="'$(SignAssembly)' == 'true'">
+    <PackageReference Include="StrongNamer" />
+  </ItemGroup>
   <PropertyGroup>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+    <AnalysisLevel>preview</AnalysisLevel>
+    <AnalysisMode>all</AnalysisMode>
+    <AnalysisModeStyle>default</AnalysisModeStyle>
   </PropertyGroup>
-
+  <ItemGroup Condition="$(NO_RCS) == ''">
+    <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" />
+    <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" />
+  </ItemGroup>
   <PropertyGroup>
     <PackageIcon>images/TechnosoftwareGmbH.png</PackageIcon>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>

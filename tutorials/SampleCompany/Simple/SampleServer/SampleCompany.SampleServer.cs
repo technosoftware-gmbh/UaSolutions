@@ -32,7 +32,7 @@ using System.Reflection;
 
 using Technosoftware.UaServer;
 using Technosoftware.UaBaseServer;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.SampleServer
 {
@@ -43,7 +43,7 @@ namespace SampleCompany.SampleServer
     /// Each server instance must have one instance of a StandardServer object which is
     /// responsible for reading the configuration file, creating the endpoints and dispatching
     /// incoming requests to the appropriate handler.
-    /// 
+    ///
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the EmptyServerNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
@@ -59,6 +59,6 @@ namespace SampleCompany.SampleServer
             // add the types defined in the information model library to the factory.
             uaServerData.Factory.AddEncodeableTypes(GetType().GetTypeInfo().Assembly);
         }
-        #endregion
+        #endregion Overridden Methods
     }
 }

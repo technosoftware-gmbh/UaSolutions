@@ -10,7 +10,7 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Simulation
 {

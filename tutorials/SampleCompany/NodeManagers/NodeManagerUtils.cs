@@ -18,7 +18,7 @@ using System.Reflection;
 using Opc.Ua;
 
 using Technosoftware.UaServer;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers
 {
@@ -81,6 +81,6 @@ namespace SampleCompany.NodeManagers
 
         #region Private Fields
         private static IList<IUaNodeManagerFactory> nodeManagerFactories_;
-        #endregion
+        #endregion Private Fields
     }
 }
