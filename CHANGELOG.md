@@ -1,6 +1,14 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 4.0.4
+
+### Changes:
+
+- Enhanced license handling for upcoming product releases
+- Updated dependencies
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 4.0.3
 
 ### Changes:

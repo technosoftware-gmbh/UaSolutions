@@ -38,7 +38,7 @@ Without an evaluation license the run-time of an application using the solutions
 
 An evaluation license is available from:
 
- * [UA Solutions Evaluation](https://technosoftware.com/product/ua-solutions-evaluation/)
+ * [UA Solutions Evaluation](https://technosoftware.com/product/ua-solutions/)
 
 Included in the evaluation are:
 
@@ -96,7 +96,7 @@ New purchases of a [OPC UA Support Subscription](https://technosoftware.com/prod
 
 When a product’s LTS period ends, it enters End of Life (EOL). From that point on, no further updates, fixes, or support are provided.
 
-If your application relies on a version that is nearing EOL, we strongly recommend upgrading to the latest mainline release. If upgrading is not possible, you may choose the source code edition of the [OPC UA Bundle .NET](https://technosoftware.com/product/opc-ua-bundle-net/) product, which allows you to maintain and fix it yourself.
+If your application relies on a version that is nearing EOL, we strongly recommend upgrading to the latest mainline release. If upgrading is not possible, you may choose the source code edition of the [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/) product, which allows you to maintain and fix it yourself.
 
 #  General Info
 

@@ -27,10 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaClient" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.0.4" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.0.4" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.0.4" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaClient" Version="4.0.4" />
   </ItemGroup>
 
   <ItemGroup>
