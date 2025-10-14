@@ -67,7 +67,7 @@ The Support Subscription is available [here](https://technosoftware.com/product/
 
 # Product Lifecycle
 
-Version 4.0 is the mainline version.
+Version 4 is the mainline version.
 
 Version 3.4 entered the long term support phase on 12-SEP-2025. Therefore all versions before are End of Life (EOL).
 

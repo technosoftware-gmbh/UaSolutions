@@ -41,14 +41,14 @@
     <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
-    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.0.4" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.0.4" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.0.4" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.0.4" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.0.4" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaStandardServer" Version="4.0.4" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.1.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.1.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.1.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.1.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaStandardServer" Version="4.1.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\ApplicationMessageDlg.cs" />
