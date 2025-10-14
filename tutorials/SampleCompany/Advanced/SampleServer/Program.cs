@@ -111,7 +111,7 @@ namespace SampleCompany.SampleServer
                 }
                 licensedString =     $"   Support Included     : {LicenseHandler.Support}";
                 await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                if (LicenseHandler.Support != Technosoftware.UaUtilities.Licensing.LicenseHandler.SupportContract.None)
+                if (LicenseHandler.Support != SupportType.None)
                 {
                     licensedString = $"   Support expire at    : {LicenseHandler.SupportExpirationDate}";
                     await output.WriteLineAsync(licensedString).ConfigureAwait(false);
