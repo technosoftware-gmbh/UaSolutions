@@ -1,6 +1,16 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 4.1.1
+
+### Security Fix
+- Fixed Microsoft Security Advisory [CVE-2025-55315](https://github.com/advisories/GHSA-5rrx-jjjq-q2r5) | NET Security Feature Bypass Vulnerability (Bump Microsoft.AspNetCore.Server.Kestrel.Core from 2.3.0 to 2.3.6)
+
+### Changes:
+
+- Updated dependencies
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 4.1.0
 
 ### Changes:
