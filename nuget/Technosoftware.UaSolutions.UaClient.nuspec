@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Technosoftware.UaSolutions.UaClient</id>
+    <version>4.2.0</version>
+    <title>OPC UA Solutions .NET Client Library</title>
+    <description>OPC UA Solutions .NET Client Library</description>
+    <readme>README.md</readme>
+    <authors>Technosoftware GmbH</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="file">licenses/LICENSE.md</license>
+    <projectUrl>https://github.com/technosoftware-gmbh/UaSolutions</projectUrl>
+    <icon>images/TechnosoftwareGmbH.png</icon>
+    <releaseNotes>https://github.com/technosoftware-gmbh/UaSolutions/releases</releaseNotes>
+    <copyright>Copyright © 2011 - 2025 Technosoftware GmbH</copyright>
+    <tags>Technosoftware OPC UA .NET 9.0 .NET 8.0  .NET 4.8 .NET 4.7.2 macOS linux dotnet netcore</tags>
+    <repository type="git" url="https://github.com/technosoftware-gmbh/UaSolutions" />
+    <dependencies>
+      <group targetFramework="net472">
+        <dependency id="Nerdbank.GitVersioning" version="3.8.118" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaUtilities" version="4.1.1" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaCore" version="4.1.1" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaConfiguration" version="4.1.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net48">
+        <dependency id="Nerdbank.GitVersioning" version="3.8.118" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaUtilities" version="4.1.1" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaCore" version="4.1.1" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaConfiguration" version="4.1.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net8.0">
+        <dependency id="Nerdbank.GitVersioning" version="3.8.118" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaUtilities" version="4.1.1" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaCore" version="4.1.1" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaConfiguration" version="4.1.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="Nerdbank.GitVersioning" version="3.8.118" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaUtilities" version="4.1.1" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaCore" version="4.1.1" exclude="Build,Analyzers" />
+        <dependency id="Technosoftware.UaSolutions.UaConfiguration" version="4.1.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="../README.md" target="/" />
+    <file src="../CHANGELOG.md" target="/" />
+    <file src="../nuget/TechnosoftwareGmbH.png" target="images/" />
+    <file src="../LICENSE.md" target="licenses/LICENSE.md"/>
+    <file src="../licenses/OPC Foundation RCL License.txt" target="licenses/OPC Foundation RCL License.txt"/>
+    <file src="../lib/net9.0/Technosoftware.UaClient.dll" target="lib/net9.0/" />
+    <file src="../lib/net9.0/Technosoftware.UaClient.xml" target="lib/net9.0/" />
+    <file src="../lib/net8.0/Technosoftware.UaClient.dll" target="lib/net8.0/" />
+    <file src="../lib/net8.0/Technosoftware.UaClient.xml" target="lib/net8.0/" />
+    <file src="../lib/net48/Technosoftware.UaClient.dll" target="lib/net48/" />
+    <file src="../lib/net48/Technosoftware.UaClient.xml" target="lib/net48/" />
+    <file src="../lib/net472/Technosoftware.UaClient.dll" target="lib/net472/" />
+    <file src="../lib/net472/Technosoftware.UaClient.xml" target="lib/net472/" />
+  </files>
+</package>
