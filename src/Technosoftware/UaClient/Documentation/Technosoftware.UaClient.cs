@@ -21,13 +21,11 @@ namespace Technosoftware.UaClient
 {
     /// <summary>
     /// The <b>Technosoftware.Client</b> namespace defines classes which can be used to implement a UA client.
-    /// These classes manage client side state information, provide higher level abstractions for UA 
-    /// tasks such as managing sessions/subscriptions and saving/restoring connection information for 
+    /// These classes manage client side state information, provide higher level abstractions for UA
+    /// tasks such as managing sessions/subscriptions and saving/restoring connection information for
     /// later use.
     /// </summary>
     ///<exclude/>
-    [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class NamespaceDoc
-    {
-    }
+    [System.Runtime.CompilerServices.CompilerGenerated]
+    public class NamespaceDoc;
 }
