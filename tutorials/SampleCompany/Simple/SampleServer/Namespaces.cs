@@ -30,7 +30,7 @@
 #region Using Directives
 #endregion Using Directives
 
-namespace SampleCompany.SampleServer
+namespace SampleCompany.SimpleServer
 {
     /// <summary>
     /// Defines constants for namespaces used by the application.

@@ -17,7 +17,7 @@ The OPC UA Server NET offers a fast and easy access to the OPC Unified Architect
 
 # Getting Started / Online Help
 
-We provide an online help for the current version: [OPC UA Solutions NET Online Help](https://technosoftware.com/help/UaSolutions/41/)
+We provide an online help for the current version: [OPC UA Solutions NET Online Help](https://technosoftware.com/help/UaSolutions/42/)
 
 ## Workshop
 

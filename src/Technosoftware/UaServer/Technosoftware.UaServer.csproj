@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
+    <AssemblyName>$(AssemblyPrefix).UaServer</AssemblyName>
+    <PackageId>$(PackagePrefix).UaServer</PackageId>
+    <AssemblyName>$(AssemblyPrefix).UaServer</AssemblyName>
+    <RootNamespace>Technosoftware.UaServer</RootNamespace>
+    <Company>Technosoftware GmbH</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>OPC UA Solutions .NET Server Library</Description>
+    <Copyright>Copyright © 2018 - 2025 Technosoftware GmbH</Copyright>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
+    <DefineConstants>$(DefineConstants);SIGNASSEMBLY</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+
+  <!-- select ECC support -->
+  <Choose>
+    <When Condition="'$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'netstandard2.0'">
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);ECC_SUPPORT</DefineConstants>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <PackageReference Update="Roslynator.Analyzers" Version="4.14.0" />
+    <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.1.1" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.1.1" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.1.1" />
+  </ItemGroup>
+
+  <Target Name="GetPackagingOutputs" />
+
+</Project>

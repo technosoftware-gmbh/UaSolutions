@@ -19,19 +19,13 @@ using System.Threading.Tasks;
 #if NET5_0_OR_GREATER
 using Microsoft.Extensions.Configuration;
 #endif
-using Mono.Options;
-
-#if SERILOG
 using Microsoft.Extensions.Logging;
-
+using Mono.Options;
 using Serilog;
 using Serilog.Events;
 using Serilog.Templates;
-#endif
-
 using Opc.Ua;
 using static Opc.Ua.Utils;
-
 #endregion Using Directives
 
 namespace SampleCompany.Common
@@ -119,7 +113,6 @@ namespace SampleCompany.Common
             return additionalArguments.FirstOrDefault();
         }
 
-#if SERILOG
         /// <summary>
         /// Configure the logging providers.
         /// </summary>
@@ -226,7 +219,6 @@ namespace SampleCompany.Common
             LogError("This is a Error message: {0}", LogLevel.Error);
             LogCritical("This is a Critical message: {0}", LogLevel.Critical);
         }
-#endif
 
         /// <summary>
         /// Create an event which is set if a user

@@ -6,7 +6,7 @@
     <PackageId>SampleCompany.NodeManagers</PackageId>
     <RootNamespace>SampleCompany.NodeManagers</RootNamespace>
     <Company>SampleCompany</Company>
-    <Product>OPC UA Solution .NET</Product>
+    <Product>OPC UA Solutions .NET</Product>
     <Description>SampleCompany NodeManagers Library</Description>
     <Copyright>Copyright © 2018 - 2025 SampleCompany</Copyright>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
@@ -18,23 +18,14 @@
     <PackageId>$(PackageId).Debug</PackageId>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Properties\**" />
-    <EmbeddedResource Remove="Properties\**" />
-    <None Remove="Properties\**" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Update="Roslynator.Analyzers" Version="4.14.0" />
     <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
-    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.1.1" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.1.1" />
     <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.1.1" />
     <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.1.1" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.1.1" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaStandardServer" Version="4.1.1" />
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
   </ItemGroup>
   <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
     <DefineConstants>$(DefineConstants);SIGNASSEMBLY</DefineConstants>
