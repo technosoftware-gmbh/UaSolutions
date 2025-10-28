@@ -36,8 +36,8 @@
     <AnalysisModeStyle>default</AnalysisModeStyle>
   </PropertyGroup>
   <ItemGroup Condition="$(NO_RCS) == ''">
-    <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" />
-    <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" />
+    <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" Version="4.14.0" />
+    <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" Version="4.14.0" />
   </ItemGroup>
   <PropertyGroup>
     <PackageIcon>images/TechnosoftwareGmbH.png</PackageIcon>
@@ -58,7 +58,7 @@
     <None Include="$(MSBuildThisFileDirectory)/CHANGELOG.md" Pack="true" PackagePath="/"/>
   </ItemGroup>
   <ItemGroup Condition="'$(NBGV_PublicRelease)' != ''">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" Version="8.0.0"/>
   </ItemGroup>
   <!-- Deterministic build is currently not supported for code coverage tests. -->
   <PropertyGroup Condition="'$(CollectCoverage)' != 'true' AND ('$(TF_BUILD)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true')">
