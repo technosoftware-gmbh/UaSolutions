@@ -1,4 +1,4 @@
-# OPC UA Solutions .NET
+# OPC UA Solutions .NET {#mainpage}
 
 [TOC]
 

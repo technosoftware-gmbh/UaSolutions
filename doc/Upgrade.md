@@ -1,4 +1,4 @@
-# Upgrade from 3.4 to 4.0
+# Upgrade from 3.4 to 4.2
 
 [TOC]
 
@@ -31,10 +31,10 @@ The affected part of the csproj file will then be:
 
 ```
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaClient" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaClient" Version="4.2.0" />
   </ItemGroup>
 ```
 
@@ -65,23 +65,22 @@ The following changes in assemblies must be done:
 - Technosoftware.UaSolution.UaConfiguration -> Technosoftware.UaSolutions.UaConfiguration
 - Technosoftware.UaSolution.UaServer -> Technosoftware.UaSolutions.UaServer
 
-Depending on what type of server you use you need to change one of the following:
+If you use the server development using the UaBaseServer you need to change one of the following:
 
 - Technosoftware.UaSolution.UaBaseServer -> Technosoftware.UaSolutions.UaBaseServer
-- Technosoftware.UaSolution.UaStandardServer -> Technosoftware.UaSolutions.UaStandardServer
 
 The affected part of the csproj file will then be:
 
 ```
   <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
-    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.2.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.0.3" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaBaseServer" Version="4.0.3" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaBaseServer" Version="4.2.0" />
   </ItemGroup>
 ```
 
