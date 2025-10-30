@@ -21,7 +21,7 @@ using SampleCompany.NodeManagers;
 using Technosoftware.UaUtilities.Licensing;
 #endregion Using Directives
 
-namespace SampleCompany.SampleServer
+namespace SampleCompany.ReferenceServer
 {
     /// <summary>
     /// The program.
@@ -35,7 +35,7 @@ namespace SampleCompany.SampleServer
         public static async Task<int> Main(string[] args)
         {
             TextWriter output = Console.Out;
-            await output.WriteLineAsync("OPC UA Console Sample Server").ConfigureAwait(false);
+            await output.WriteLineAsync("OPC UA Console Reference Server").ConfigureAwait(false);
 
             #region License validation
             const string licenseData =
@@ -48,8 +48,8 @@ namespace SampleCompany.SampleServer
             #endregion License validation
 
             // The application name and config file names
-            const string applicationName = "SampleCompany.SampleServer";
-            const string configSectionName = "SampleCompany.SampleServer";
+            const string applicationName = "SampleCompany.ReferenceServer";
+            const string configSectionName = "SampleCompany.ReferenceServer";
 
             // command line options
             bool showHelp = false;
@@ -57,6 +57,8 @@ namespace SampleCompany.SampleServer
             bool logConsole = false;
             bool appLog = false;
             bool renewCertificate = false;
+            bool shadowConfig = false;
+            bool cttMode = false;
             string password = null;
             int timeout = -1;
 
@@ -72,7 +74,9 @@ namespace SampleCompany.SampleServer
                 { "l|log", "log app output", c => appLog = c != null },
                 { "p|password=", "optional password for private key", p => password = p },
                 { "r|renew", "renew application certificate", r => renewCertificate = r != null },
-                { "t|timeout=", "timeout in seconds to exit application", (int t) => timeout = t * 1000 }
+                { "t|timeout=", "timeout in seconds to exit application", (int t) => timeout = t * 1000 },
+                { "s|shadowconfig", "create configuration in pki root", s => shadowConfig = s != null },
+                { "ctt", "CTT mode, use to preset alarms for CTT testing.", c => cttMode = c != null },
             };
 
             try
@@ -119,7 +123,7 @@ namespace SampleCompany.SampleServer
                 CertificateStoreType.RegisterCertificateStoreType(CustomDirectoryCertificateStoreType.StoreName, new CustomDirectoryCertificateStoreType());
 
                 // create the UA server
-                var server = new MyUaServer<NodeManagers.Simulation.SimulationServer>(output)
+                var server = new MyUaServer<NodeManagers.Reference.ReferenceServer>(output)
                 {
                     AutoAccept = autoAccept,
                     Password = password
@@ -128,6 +132,22 @@ namespace SampleCompany.SampleServer
                 // load the server configuration, validate certificates
                 output.WriteLine("Loading configuration from {0}.", configSectionName);
                 await server.LoadAsync(applicationName, configSectionName).ConfigureAwait(false);
+
+                // use the shadow config to map the config to an externally accessible location
+                if (shadowConfig)
+                {
+                    output.WriteLine("Using shadow configuration.");
+                    string shadowPath = Directory.GetParent(Path.GetDirectoryName(
+                        Utils.ReplaceSpecialFolderNames(server.Configuration.TraceConfiguration.OutputFilePath))).FullName;
+                    string shadowFilePath = Path.Combine(shadowPath, Path.GetFileName(server.Configuration.SourceFilePath));
+                    if (!File.Exists(shadowFilePath))
+                    {
+                        output.WriteLine("Create a copy of the config in the shadow location.");
+                        File.Copy(server.Configuration.SourceFilePath, shadowFilePath, true);
+                    }
+                    output.WriteLine("Reloading configuration from {0}.", shadowFilePath);
+                    await server.LoadAsync(applicationName, Path.Combine(shadowPath, configSectionName)).ConfigureAwait(false);
+                }
 
                 // setup the logging
                 ConsoleUtils.ConfigureLogging(server.Configuration, applicationName, logConsole, LogLevel.Information);
@@ -142,6 +162,14 @@ namespace SampleCompany.SampleServer
                 // start the server
                 await output.WriteLineAsync("Start the server.").ConfigureAwait(false);
                 await server.StartAsync().ConfigureAwait(false);
+
+                // Apply custom settings for CTT testing
+                if (cttMode)
+                {
+                    await output.WriteLineAsync("Apply settings for CTT.").ConfigureAwait(false);
+                    // start Alarms and other settings for CTT test
+                    NodeManagerUtils.ApplyCTTMode(output, server.Server);
+                }
 
                 await output.WriteLineAsync("Server started. Press Ctrl-C to exit...").ConfigureAwait(false);
 

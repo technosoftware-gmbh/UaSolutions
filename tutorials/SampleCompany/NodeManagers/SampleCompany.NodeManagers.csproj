@@ -22,10 +22,10 @@
     <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.1.1" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.1.1" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.1.1" />
-    <ProjectReference Include="..\..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.2.0" />
   </ItemGroup>
   <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
     <DefineConstants>$(DefineConstants);SIGNASSEMBLY</DefineConstants>

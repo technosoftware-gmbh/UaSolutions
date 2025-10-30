@@ -27,16 +27,16 @@
     <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.1.1" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.1.1" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.1.1" />
-    <ProjectReference Include="..\..\..\src\Technosoftware\UaClient\Technosoftware.UaClient.csproj" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaClient" Version="4.2.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Common\ApplicationMessageDlg.cs" />
     <Compile Include="..\Common\ConsoleUtils.cs" />
     <Compile Include="..\Common\ErrorExitException.cs" />
-	<Compile Include="..\Common\LogWriter.cs" />
+    <Compile Include="..\Common\LogWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Update="SampleCompany.SampleClient.Config.xml">

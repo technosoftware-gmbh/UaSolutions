@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,7 @@ using Technosoftware.UaClient;
 using SampleCompany.Common;
 #endregion Using Directives
 
-namespace SampleCompany.SampleClient
+namespace SampleCompany.ReferenceClient
 {
     /// <summary>
     /// The main program.
@@ -39,7 +40,7 @@ namespace SampleCompany.SampleClient
         public static async Task<int> Main(string[] args)
         {
             TextWriter output = Console.Out;
-            await output.WriteLineAsync("OPC UA Console Sample Client").ConfigureAwait(false);
+            await output.WriteLineAsync("OPC UA Console Reference Client").ConfigureAwait(false);
 
             #region License validation
             const string licenseData =
@@ -52,8 +53,8 @@ namespace SampleCompany.SampleClient
             #endregion License validation
 
             // The application name and config file names
-            const string applicationName = "SampleCompany.SampleClient";
-            const string configSectionName = "SampleCompany.SampleClient";
+            const string applicationName = "SampleCompany.ReferenceClient";
+            const string configSectionName = "SampleCompany.ReferenceClient";
             string usage = $"Usage: dotnet {applicationName}.dll [OPTIONS] [ENDPOINTURL]";
 
             // command line options
@@ -119,7 +120,7 @@ namespace SampleCompany.SampleClient
             try
             {
                 // parse command line and set options
-                string extraArg = ConsoleUtils.ProcessCommandLine(output, args, options, ref showHelp, "SAMPLECLIENT", true);
+                string extraArg = ConsoleUtils.ProcessCommandLine(output, args, options, ref showHelp, "REFCLIENT", true);
 
                 string licensedString = $"   Licensed Product     : {Technosoftware.UaUtilities.Licensing.LicenseHandler.LicensedProduct}";
                 await output.WriteLineAsync(licensedString).ConfigureAwait(false);
@@ -153,7 +154,7 @@ namespace SampleCompany.SampleClient
                 }
 
                 // connect Url?
-                Uri serverUrl = !string.IsNullOrEmpty(extraArg) ? new Uri(extraArg) : new Uri("opc.tcp://localhost:62557/SampleServer");
+                Uri serverUrl = !string.IsNullOrEmpty(extraArg) ? new Uri(extraArg) : new Uri("opc.tcp://localhost:62555/ReferenceServer");
 
                 // log console output to logger
                 if (logConsole && appLog)
@@ -278,7 +279,7 @@ namespace SampleCompany.SampleClient
                                 referenceDescriptions =
                                     await clientFunctions.BrowseFullAddressSpaceAsync(uaClient, Objects.RootFolder).ConfigureAwait(false);
                                 variableIds = [.. referenceDescriptions
-                                    .Where(r => r.NodeClass == NodeClass.Variable && r.TypeDefinition.NamespaceIndex != 0)
+                                        .Where(r => r.NodeClass == NodeClass.Variable && r.TypeDefinition.NamespaceIndex != 0)
                                     .Select(r => ExpandedNodeId.ToNodeId(r.NodeId, uaClient.Session.NamespaceUris))];
                             }
 
@@ -287,7 +288,7 @@ namespace SampleCompany.SampleClient
                             {
                                 allNodes = await clientFunctions.FetchAllNodesNodeCacheAsync(uaClient, Objects.RootFolder, true, true, false).ConfigureAwait(false);
                                 variableIds = [.. allNodes
-                                    .Where(r => r.NodeClass == NodeClass.Variable && r is VariableNode node && node.DataType.NamespaceIndex != 0)
+                                        .Where(r => r.NodeClass == NodeClass.Variable && r is VariableNode node && node.DataType.NamespaceIndex != 0)
                                     .Select(r => ExpandedNodeId.ToNodeId(r.NodeId, uaClient.Session.NamespaceUris))];
                             }
 
@@ -340,7 +341,7 @@ namespace SampleCompany.SampleClient
                         }
                         else
                         {
-                            // Run tests for available methods on sample server.
+                            // Run tests for available methods on reference server.
                             clientFunctions.ReadNodes(uaClient.Session);
                             clientFunctions.WriteNodes(uaClient.Session);
                             clientFunctions.Browse(uaClient.Session);

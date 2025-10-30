@@ -61,14 +61,14 @@ namespace SampleCompany.Common
                 .AddEnvironmentVariables(environmentPrefix + "_")
                 .Build();
 
-            List<string> argslist = [.. args];
+            var argslist = args.ToList();
             foreach (Option option in options)
             {
-                string[] names = option.GetNames();
-                string longest = names.MaxBy(s => s.Length);
+                var names = option.GetNames();
+                var longest = names.MaxBy(s => s.Length);
                 if (longest != null && longest.Length >= 3)
                 {
-                    string envKey = config[longest.ToUpperInvariant()];
+                    var envKey = config[longest.ToUpperInvariant()];
                     if (envKey != null)
                     {
                         if (string.IsNullOrWhiteSpace(envKey) || option.OptionValueType == OptionValueType.None)
@@ -82,7 +82,7 @@ namespace SampleCompany.Common
                     }
                 }
             }
-            args = [.. argslist];
+            args = argslist.ToArray();
 #endif
 
             IList<string> additionalArguments = null;
@@ -91,7 +91,7 @@ namespace SampleCompany.Common
                 additionalArguments = options.Parse(args);
                 if (!additionalArgs)
                 {
-                    foreach (string additionalArg in additionalArguments)
+                    foreach (var additionalArg in additionalArguments)
                     {
                         output.WriteLine("Error: Unknown option: {0}", additionalArg);
                         showHelp = true;
@@ -157,7 +157,7 @@ namespace SampleCompany.Common
             LogLevel fileLevel = LogLevel.Information;
 
             // switch for Trace/Verbose output
-            int traceMasks = configuration.TraceConfiguration.TraceMasks;
+            var traceMasks = configuration.TraceConfiguration.TraceMasks;
             if ((traceMasks & ~(TraceMasks.Information | TraceMasks.Error |
                 TraceMasks.Security | TraceMasks.StartStop | TraceMasks.StackTrace)) != 0)
             {
@@ -165,7 +165,7 @@ namespace SampleCompany.Common
             }
 
             // add file logging if configured
-            string outputFilePath = configuration.TraceConfiguration.OutputFilePath;
+            var outputFilePath = configuration.TraceConfiguration.OutputFilePath;
             if (!string.IsNullOrWhiteSpace(outputFilePath))
             {
                 loggerConfiguration.WriteTo.File(
@@ -229,8 +229,7 @@ namespace SampleCompany.Common
             var quitEvent = new ManualResetEvent(false);
             try
             {
-                Console.CancelKeyPress += (_, eArgs) =>
-                {
+                Console.CancelKeyPress += (_, eArgs) => {
                     cts.Cancel();
                     _ = quitEvent.Set();
                     eArgs.Cancel = true;

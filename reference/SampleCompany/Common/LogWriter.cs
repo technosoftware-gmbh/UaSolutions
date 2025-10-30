@@ -22,60 +22,63 @@ namespace SampleCompany.Common
     /// </summary>
     public class LogWriter : TextWriter
     {
-        private readonly StringBuilder m_builder = new();
+        private readonly StringBuilder builder_ = new StringBuilder();
 
         public override void Write(char value)
         {
-            _ = m_builder.Append(value);
+            _ = builder_.Append(value);
         }
 
         public override void WriteLine(char value)
         {
-            _ = m_builder.Append(value);
-            LogInfo("{0}", m_builder.ToString());
-            _ = m_builder.Clear();
+            _ = builder_.Append(value);
+            LogInfo("{0}", builder_.ToString());
+            _ = builder_.Clear();
         }
 
         public override void WriteLine()
         {
-            LogInfo("{0}", m_builder.ToString());
-            _ = m_builder.Clear();
+            LogInfo("{0}", builder_.ToString());
+            _ = builder_.Clear();
         }
 
         public override void WriteLine(string format, object arg0)
         {
-            _ = m_builder.Append(format);
-            LogInfo(m_builder.ToString(), arg0);
-            _ = m_builder.Clear();
+            _ = builder_.Append(format);
+            LogInfo(builder_.ToString(), arg0);
+            _ = builder_.Clear();
         }
 
         public override void WriteLine(string format, object arg0, object arg1)
         {
-            _ = m_builder.Append(format);
-            LogInfo(m_builder.ToString(), arg0, arg1);
-            _ = m_builder.Clear();
+            _ = builder_.Append(format);
+            LogInfo(builder_.ToString(), arg0, arg1);
+            _ = builder_.Clear();
         }
 
         public override void WriteLine(string format, params object[] arg)
         {
-            _ = m_builder.Append(format);
-            LogInfo(m_builder.ToString(), arg);
-            _ = m_builder.Clear();
+            _ = builder_.Append(format);
+            LogInfo(builder_.ToString(), arg);
+            _ = builder_.Clear();
         }
 
         public override void Write(string value)
         {
-            _ = m_builder.Append(value);
+            _ = builder_.Append(value);
         }
 
         public override void WriteLine(string value)
         {
-            _ = m_builder.Append(value);
-            LogInfo("{0}", m_builder.ToString());
-            _ = m_builder.Clear();
+            _ = builder_.Append(value);
+            LogInfo("{0}", builder_.ToString());
+            _ = builder_.Clear();
         }
 
-        public override Encoding Encoding => Encoding.Default;
+        public override Encoding Encoding
+        {
+            get { return Encoding.Default; }
+        }
     }
 }
 

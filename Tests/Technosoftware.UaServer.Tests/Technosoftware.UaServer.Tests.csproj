@@ -41,9 +41,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.1.1" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.1.1" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.1.1" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
     <ProjectReference Include="..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
   </ItemGroup>
 

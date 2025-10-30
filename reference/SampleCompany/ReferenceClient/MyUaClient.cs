@@ -21,7 +21,7 @@ using Opc.Ua;
 using Technosoftware.UaClient;
 #endregion Using Directives
 
-namespace SampleCompany.SampleClient
+namespace SampleCompany.ReferenceClient
 {
     /// <summary>The UA client sample functionality.</summary>
     public class MyUaClient : IMyUaClient, IDisposable

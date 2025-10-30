@@ -25,7 +25,7 @@ using Opc.Ua.Redaction;
 
 #endregion
 
-namespace SampleCompany.SampleServer
+namespace SampleCompany.ReferenceServer
 {
 
     public class CustomDirectoryCertificateStoreType : ICertificateStoreType

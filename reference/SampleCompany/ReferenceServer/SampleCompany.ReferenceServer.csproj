@@ -1,25 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>SampleCompany.SampleServer</AssemblyName>
+    <AssemblyName>SampleCompany.ReferenceServer</AssemblyName>
     <TargetFrameworks>$(AppTargetFrameworks)</TargetFrameworks>
     <OutputType>Exe</OutputType>
-    <PackageId>SampleCompany.SampleServer</PackageId>
-    <RootNamespace>SampleCompany.SampleServer</RootNamespace>
+    <PackageId>SampleCompany.ReferenceServer</PackageId>
+    <RootNamespace>SampleCompany.ReferenceServer</RootNamespace>
     <Company>SampleCompany</Company>
-    <Product>SampleCompany SampleServer</Product>
-    <Description>SampleCompany SampleServer</Description>
-    <Copyright>Copyright © 2023 - 2025 SampleCompany</Copyright>
+    <Product>SampleCompany ReferenceServer</Product>
+    <Description>SampleCompany ReferenceServer</Description>
+    <Copyright>Copyright © 2018 - 2025 SampleCompany</Copyright>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
   <Choose>
-    <When Condition="Exists('Model\SampleCompany.SampleServer.Model.PredefinedNodes.uanodes')">
+    <When Condition="Exists('Model\SampleCompany.ReferenceServer.Model.PredefinedNodes.uanodes')">
       <ItemGroup>
-        <None Remove="Model\SampleCompany.SampleServer.Model.PredefinedNodes.uanodes" />
+        <None Remove="Model\SampleCompany.ReferenceServer.Model.PredefinedNodes.uanodes" />
       </ItemGroup>
       <ItemGroup>
-        <EmbeddedResource Include="Model\SampleCompany.SampleServer.Model.PredefinedNodes.uanodes" />
+        <EmbeddedResource Include="Model\SampleCompany.ReferenceServer.Model.PredefinedNodes.uanodes" />
       </ItemGroup>
     </When>
   </Choose>
@@ -46,7 +46,7 @@
     <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
     <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
     <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.2.0" />
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
     <ProjectReference Include="..\NodeManagers\SampleCompany.NodeManagers.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -56,7 +56,7 @@
     <Compile Include="..\Common\LogWriter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="SampleCompany.SampleServer.Config.xml">
+    <None Update="SampleCompany.ReferenceServer.Config.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
