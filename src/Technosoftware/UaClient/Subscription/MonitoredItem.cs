@@ -604,7 +604,6 @@ namespace Technosoftware.UaClient
         /// </summary>
         public void SaveValueInCache(IEncodeable newValue)
         {
-            var isEventAllowed = true;
             lock (m_cache)
             {
                 EnsureCacheIsInitialized();
@@ -654,21 +653,11 @@ namespace Technosoftware.UaClient
                 {
                     if (newValue is EventFieldList eventchange)
                     {
-                        if (LicenseHandler.IsFeatureSupported(Technosoftware.UaUtilities.Licensing.ApplicationType.Client, UaUtilities.Licensing.LicenseHandler.ProductFeature.AlarmsConditions))
-                        {
-                            m_eventCache?.OnNotification(eventchange);
-                        }
-                        else
-                        {
-                            isEventAllowed = false;
-                        }
+                        m_eventCache?.OnNotification(eventchange);
                     }
                 }
 
-                if (isEventAllowed)
-                {
-                    m_Notification?.Invoke(this, new MonitoredItemNotificationEventArgs(newValue));
-                }
+                m_Notification?.Invoke(this, new MonitoredItemNotificationEventArgs(newValue));
             }
         }
         #endregion

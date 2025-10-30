@@ -733,8 +733,6 @@ namespace Technosoftware.UaClient
             ReadValueIdCollection nodesToRead,
             CancellationToken ct)
         {
-            LicenseHandler.ValidateFeatures(Technosoftware.UaUtilities.Licensing.ApplicationType.Client, UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
-
             ReadResponse response = null;
 
             uint operationLimit = OperationLimits.MaxNodesPerRead;
@@ -786,8 +784,6 @@ namespace Technosoftware.UaClient
             out HistoryReadResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            LicenseHandler.ValidateFeatures(Technosoftware.UaUtilities.Licensing.ApplicationType.Client, UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
-
             ResponseHeader responseHeader = null;
 
             uint operationLimit = OperationLimits.MaxNodesPerHistoryReadData;
@@ -837,8 +833,6 @@ namespace Technosoftware.UaClient
             HistoryReadValueIdCollection nodesToRead,
             CancellationToken ct)
         {
-            LicenseHandler.ValidateFeatures(Technosoftware.UaUtilities.Licensing.ApplicationType.Client, UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
-
             HistoryReadResponse response = null;
 
             uint operationLimit = OperationLimits.MaxNodesPerHistoryReadData;
@@ -892,8 +886,6 @@ namespace Technosoftware.UaClient
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            LicenseHandler.ValidateFeatures(Technosoftware.UaUtilities.Licensing.ApplicationType.Client, UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
-
             ResponseHeader responseHeader = null;
 
             uint operationLimit = OperationLimits.MaxNodesPerWrite;
@@ -932,8 +924,6 @@ namespace Technosoftware.UaClient
             WriteValueCollection nodesToWrite,
             CancellationToken ct)
         {
-            LicenseHandler.ValidateFeatures(Technosoftware.UaUtilities.Licensing.ApplicationType.Client, UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
-
             WriteResponse response = null;
 
             uint operationLimit = OperationLimits.MaxNodesPerWrite;
@@ -979,8 +969,6 @@ namespace Technosoftware.UaClient
             out HistoryUpdateResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            LicenseHandler.ValidateFeatures(Technosoftware.UaUtilities.Licensing.ApplicationType.Client, UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
-
             ResponseHeader responseHeader = null;
 
             // see https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.1/ as to why
@@ -1029,8 +1017,6 @@ namespace Technosoftware.UaClient
             ExtensionObjectCollection historyUpdateDetails,
             CancellationToken ct)
         {
-            LicenseHandler.ValidateFeatures(Technosoftware.UaUtilities.Licensing.ApplicationType.Client, UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
-
             HistoryUpdateResponse response = null;
 
             uint operationLimit = OperationLimits.MaxNodesPerHistoryUpdateData;

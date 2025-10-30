@@ -57,32 +57,6 @@ namespace Technosoftware.UaServer.Tests
         [OneTimeSetUp]
         public async Task OneTimeSetUp()
         {
-            var licenseData =
-                    @"<License>
-                          <Id>5d019606-c120-42da-9975-ac5a94e02d07</Id>
-                          <Type>Standard</Type>
-                          <Quantity>1</Quantity>
-                          <ProductFeatures>
-                            <Feature name=""UaClient"">Yes</Feature>
-                            <Feature name=""UaServer"">Yes</Feature>
-                            <Feature name=""UaPubSub"">Yes</Feature>
-                            <Feature name=""Product"">OPC UA Solutions</Feature>
-                            <Feature name=""Version"">4.0.4</Feature>
-                            <Feature name=""Publish Date"">09/23/2025</Feature>
-                          </ProductFeatures>
-                          <Customer>
-                            <Name></Name>
-                            <Email></Email>
-                          </Customer>
-                          <LicenseAttributes>
-                            <Attribute name=""SupportLevel"">None</Attribute>
-                            <Attribute name=""Product Identity"">a8482b9cc1d5cf8519bb80e0c979315703643f74ced77435eae31a6208b9c738</Attribute>
-                            <Attribute name=""Assembly Identity""></Attribute>
-                            <Attribute name=""Expiration Days""></Attribute>
-                          </LicenseAttributes>
-                          <Signature>MIGHAkIB2WUfonlmOB3OnizzmdhMrBZQfif6W3yOfiOoYsKru15hqCocCOBVFDKyWyIY+SdgZNapM/jBtI/TznY39H+au4ECQXDKUwR0nUJ2kATPJusCL3g+UIWtNc2+8EE7ZGB4ce9EmxUY279c8Ii/u3LTWu79L6EV0RGieLljGXRc23BkTMh+</Signature>
-                      </License>";
-            var licensed = Technosoftware.UaServer.LicenseHandler.Validate(licenseData);
             // start Ref server
             fixture_ = new ServerFixture<ReferenceServer>() {
                 AllNodeManagers = true,

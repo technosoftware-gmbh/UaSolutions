@@ -105,34 +105,6 @@ namespace Technosoftware.UaClient.Tests
             bool disableActivityLogging = false
             )
         {
-            var licenseData =
-                      @"<License>
-                          <Id>5d019606-c120-42da-9975-ac5a94e02d07</Id>
-                          <Type>Developer</Type>
-                          <ProductType>ClientAndServer</ProductType>
-                          <SupportType>Standard</SupportType>
-                          <SupportExpirationDate>Mon, 31 Dec 2029</SupportExpirationDate>
-                          <ProductFeatures>
-                            <Feature name=""DataAccess"">yes</Feature>
-                            <Feature name=""AlarmsConditions"">yes</Feature>
-                            <Feature name=""HistoricalAccess"">yes</Feature>
-                            <Feature name=""AllFeatures"">yes</Feature>
-                            <Feature name=""Product"">OPC UA Solutions</Feature>
-                            <Feature name=""Version"">4.1.1</Feature>
-                            <Feature name=""Publish Date"">Thu, 16 Oct 2025</Feature>
-                          </ProductFeatures>
-                          <Customer>
-                            <Name></Name>
-                            <Domain></Domain>
-                          </Customer>
-                          <LicenseAttributes>
-                            <Attribute name=""Product Identity"">a8482b9cc1d5cf8519bb80e0c979315703643f74ced77435eae31a6208b9c738</Attribute>
-                            <Attribute name=""Assembly Identity""></Attribute>
-                          </LicenseAttributes>
-                          <Signature>MIGIAkIAuv1PsxWocMNLCBXBvhC28YRphdJeoqzA9QHbrU+hfMq+se5MBJZiPIkjVWMmIzkIbiQrkKFhF06zl8ieLimENGwCQgFJ9tOrDCmb1gk1yddq+/U2JmL+vd4v/G6ktWCq0b20ySZADD727XVE368H8LmXTdCSL+Wa+3LhpegyCp+WHVfW/w==</Signature>
-                        </License>";
-            var licensed = Technosoftware.UaClient.LicenseHandler.Validate(licenseData);
-            TestContext.Out.WriteLine("Is Client Licensed {0}", licensed);
             // pki directory root for test runs.
             PkiRoot = Path.GetTempPath() + Path.GetRandomFileName();
             TestContext.Out.WriteLine("Using the Pki Root {0}", PkiRoot);
@@ -207,34 +179,6 @@ namespace Technosoftware.UaClient.Tests
             bool securityNone,
             TextWriter writer)
         {
-            var licenseData =
-                      @"<License>
-                          <Id>5d019606-c120-42da-9975-ac5a94e02d07</Id>
-                          <Type>Developer</Type>
-                          <ProductType>ClientAndServer</ProductType>
-                          <SupportType>Standard</SupportType>
-                          <SupportExpirationDate>Mon, 31 Dec 2029</SupportExpirationDate>
-                          <ProductFeatures>
-                            <Feature name=""DataAccess"">yes</Feature>
-                            <Feature name=""AlarmsConditions"">yes</Feature>
-                            <Feature name=""HistoricalAccess"">yes</Feature>
-                            <Feature name=""AllFeatures"">yes</Feature>
-                            <Feature name=""Product"">OPC UA Solutions</Feature>
-                            <Feature name=""Version"">4.1.1</Feature>
-                            <Feature name=""Publish Date"">Thu, 16 Oct 2025</Feature>
-                          </ProductFeatures>
-                          <Customer>
-                            <Name></Name>
-                            <Domain></Domain>
-                          </Customer>
-                          <LicenseAttributes>
-                            <Attribute name=""Product Identity"">a8482b9cc1d5cf8519bb80e0c979315703643f74ced77435eae31a6208b9c738</Attribute>
-                            <Attribute name=""Assembly Identity""></Attribute>
-                          </LicenseAttributes>
-                          <Signature>MIGIAkIAuv1PsxWocMNLCBXBvhC28YRphdJeoqzA9QHbrU+hfMq+se5MBJZiPIkjVWMmIzkIbiQrkKFhF06zl8ieLimENGwCQgFJ9tOrDCmb1gk1yddq+/U2JmL+vd4v/G6ktWCq0b20ySZADD727XVE368H8LmXTdCSL+Wa+3LhpegyCp+WHVfW/w==</Signature>
-                        </License>>";
-            var licensed = Technosoftware.UaServer.LicenseHandler.Validate(licenseData);
-            TestContext.Out.WriteLine("Is Server Licensed {0}", licensed);
             {
                 // start Ref server
                 ServerFixture = new ServerFixture<ReferenceServer>(enableTracing, disableActivityLogging) {

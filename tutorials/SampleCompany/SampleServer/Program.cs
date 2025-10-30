@@ -104,6 +104,11 @@ namespace SampleCompany.SampleServer
                     licensedString = $"   Days until Expiration: {LicenseHandler.SupportExpirationDays}";
                     await output.WriteLineAsync(licensedString).ConfigureAwait(false);
                 }
+                if (LicenseHandler.IsEvaluation)
+                {
+                    licensedString = $"   Evaluation Period    : {LicenseHandler.EvaluationPeriod} minutes.";
+                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
+                }
 
                 if (!LicenseHandler.IsLicensed && !LicenseHandler.IsEvaluation)
                 {
