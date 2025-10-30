@@ -20,7 +20,7 @@ using Opc.Ua;
 
 using Technosoftware.UaServer;
 using Technosoftware.UaServer.Sessions;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers
 {
@@ -91,8 +91,11 @@ namespace SampleCompany.NodeManagers
         {
             get
             {
-                nodeManagerFactories_ ??= GetNodeManagerFactories();
-                return new ReadOnlyList<IUaNodeManagerFactory>(nodeManagerFactories_);
+                if (m_nodeManagerFactories == null)
+                {
+                    m_nodeManagerFactories = GetNodeManagerFactories();
+                }
+                return new ReadOnlyList<IUaNodeManagerFactory>(m_nodeManagerFactories);
             }
         }
 
@@ -102,10 +105,12 @@ namespace SampleCompany.NodeManagers
         private static IUaNodeManagerFactory IsINodeManagerFactoryType(Type type)
         {
             System.Reflection.TypeInfo nodeManagerTypeInfo = type.GetTypeInfo();
-            return nodeManagerTypeInfo.IsAbstract ||
-                !typeof(IUaNodeManagerFactory).IsAssignableFrom(type)
-                ? null
-                : Activator.CreateInstance(type) as IUaNodeManagerFactory;
+            if (nodeManagerTypeInfo.IsAbstract ||
+                !typeof(IUaNodeManagerFactory).IsAssignableFrom(type))
+            {
+                return null;
+            }
+            return Activator.CreateInstance(type) as IUaNodeManagerFactory;
         }
 
         /// <summary>
@@ -120,7 +125,7 @@ namespace SampleCompany.NodeManagers
         }
 
         #region Private Fields
-        private static IList<IUaNodeManagerFactory> nodeManagerFactories_;
-        #endregion
+        private static IList<IUaNodeManagerFactory> m_nodeManagerFactories;
+        #endregion Private Fields
     }
 }

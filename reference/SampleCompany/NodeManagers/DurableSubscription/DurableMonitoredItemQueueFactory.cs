@@ -14,11 +14,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-
 using Newtonsoft.Json;
-
 using Opc.Ua;
-
 using Technosoftware.UaServer;
 using Technosoftware.UaServer.Subscriptions;
 #endregion
@@ -30,31 +27,42 @@ namespace SampleCompany.NodeManagers.DurableSubscription
     /// </summary>
     public class DurableMonitoredItemQueueFactory : IUaMonitoredItemQueueFactory
     {
-        private readonly IBatchPersistor m_batchPersistor = new BatchPersistor();
-        private static readonly JsonSerializerSettings s_settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
-        private static readonly string s_queueDirectory = "Queues";
-        private static readonly string s_base_filename = "_queue.txt";
-        private ConcurrentDictionary<uint, DurableDataChangeMonitoredItemQueue> m_dataChangeQueues = new ConcurrentDictionary<uint, DurableDataChangeMonitoredItemQueue>();
-        private ConcurrentDictionary<uint, DurableEventMonitoredItemQueue> m_eventQueues = new ConcurrentDictionary<uint, DurableEventMonitoredItemQueue>();
+        private readonly BatchPersistor m_batchPersistor = new();
+
+        private static readonly JsonSerializerSettings s_settings = new()
+        {
+            TypeNameHandling = TypeNameHandling.All
+        };
+
+        private const string kQueueDirectory = "Queues";
+        private const string kBase_filename = "_queue.txt";
+
+        private ConcurrentDictionary<uint, DurableDataChangeMonitoredItemQueue> m_dataChangeQueues
+            = new();
+
+        private ConcurrentDictionary<uint, DurableEventMonitoredItemQueue> m_eventQueues = new();
+
         /// <inheritdoc/>
         public bool SupportsDurableQueues => true;
 
         /// <inheritdoc/>
-        public IUaDataChangeMonitoredItemQueue CreateDataChangeQueue(bool createDurable, uint monitoredItemId)
+        public IUaDataChangeMonitoredItemQueue CreateDataChangeQueue(
+            bool createDurable,
+            uint monitoredItemId)
         {
             //use durable queue only if MI is durable
             if (createDurable)
             {
-                var queue = new DurableDataChangeMonitoredItemQueue(createDurable, monitoredItemId, m_batchPersistor);
+                var queue = new DurableDataChangeMonitoredItemQueue(
+                    createDurable,
+                    monitoredItemId,
+                    m_batchPersistor);
                 queue.Disposed += DataChangeQueueDisposed;
                 m_dataChangeQueues.AddOrUpdate(monitoredItemId, queue, (_, _) => queue);
                 return queue;
             }
-            else
-            {
-                return new DataChangeMonitoredItemQueue(createDurable, monitoredItemId);
-            }
 
+            return new DataChangeMonitoredItemQueue(createDurable, monitoredItemId);
         }
 
         /// <inheritdoc/>
@@ -63,15 +71,16 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             //use durable queue only if MI is durable
             if (createDurable)
             {
-                var queue = new DurableEventMonitoredItemQueue(createDurable, monitoredItemId, m_batchPersistor);
+                var queue = new DurableEventMonitoredItemQueue(
+                    createDurable,
+                    monitoredItemId,
+                    m_batchPersistor);
                 queue.Disposed += EventQueueDisposed;
                 m_eventQueues.AddOrUpdate(monitoredItemId, queue, (_, _) => queue);
                 return queue;
             }
-            else
-            {
-                return new EventMonitoredItemQueue(createDurable, monitoredItemId);
-            }
+
+            return new EventMonitoredItemQueue(createDurable, monitoredItemId);
         }
 
         private void DataChangeQueueDisposed(object sender, EventArgs eventArgs)
@@ -97,7 +106,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         /// <param name="ids">the MonitoredItem ids of the queues to store</param>
         public void PersistQueues(IEnumerable<uint> ids, string baseDirectory)
         {
-            string targetPath = Path.Combine(baseDirectory, s_queueDirectory);
+            string targetPath = Path.Combine(baseDirectory, kQueueDirectory);
             if (!Directory.Exists(targetPath))
             {
                 Directory.CreateDirectory(targetPath);
@@ -106,26 +115,39 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             {
                 try
                 {
-                    if (m_dataChangeQueues.TryGetValue(id, out DurableDataChangeMonitoredItemQueue queue))
+                    if (m_dataChangeQueues.TryGetValue(
+                        id,
+                        out DurableDataChangeMonitoredItemQueue queue))
                     {
                         //store
-                        string result = JsonConvert.SerializeObject(queue.ToStorableQueue(), s_settings);
-                        File.WriteAllText(Path.Combine(targetPath, id + s_base_filename), result);
+                        string result = JsonConvert.SerializeObject(
+                            queue.ToStorableQueue(),
+                            s_settings);
+                        File.WriteAllText(Path.Combine(targetPath, id + kBase_filename), result);
                         continue;
                     }
 
-                    if (m_eventQueues.TryGetValue(id, out DurableEventMonitoredItemQueue eventQueue))
+                    if (m_eventQueues.TryGetValue(
+                        id,
+                        out DurableEventMonitoredItemQueue eventQueue))
                     {
                         //store
-                        string result = JsonConvert.SerializeObject(eventQueue.ToStorableQueue(), s_settings);
-                        File.WriteAllText(Path.Combine(targetPath, id + s_base_filename), result);
+                        string result = JsonConvert.SerializeObject(
+                            eventQueue.ToStorableQueue(),
+                            s_settings);
+                        File.WriteAllText(Path.Combine(targetPath, id + kBase_filename), result);
                         continue;
                     }
-                    Opc.Ua.Utils.LogWarning("Failed to persist queue for monitored item with id {0} as the queue was not known to the server", id);
+                    Opc.Ua.Utils.LogWarning(
+                        "Failed to persist queue for monitored item with id {0} as the queue was not known to the server",
+                        id);
                 }
                 catch (Exception ex)
                 {
-                    Opc.Ua.Utils.LogWarning(ex, "Failed to persist queue for monitored item with id {0}", id);
+                    Opc.Ua.Utils.LogWarning(
+                        ex,
+                        "Failed to persist queue for monitored item with id {0}",
+                        id);
                 }
             }
             // Delete batches of all queues that are not in the list
@@ -139,14 +161,19 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         {
             try
             {
-                string targetFile = Path.Combine(baseDirectory, s_queueDirectory, id + s_base_filename);
+                string targetFile = Path.Combine(
+                    baseDirectory,
+                    kQueueDirectory,
+                    id + kBase_filename);
                 if (!File.Exists(targetFile))
                 {
                     return null;
                 }
                 string result = File.ReadAllText(targetFile);
                 File.Delete(targetFile);
-                StorableEventQueue template = JsonConvert.DeserializeObject<StorableEventQueue>(result, s_settings);
+                StorableEventQueue template = JsonConvert.DeserializeObject<StorableEventQueue>(
+                    result,
+                    s_settings);
 
                 var queue = new DurableEventMonitoredItemQueue(template, m_batchPersistor);
                 m_eventQueues.AddOrUpdate(id, queue, (_, _) => queue);
@@ -167,14 +194,20 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         {
             try
             {
-                string targetFile = Path.Combine(baseDirectory, s_queueDirectory, id + s_base_filename);
+                string targetFile = Path.Combine(
+                    baseDirectory,
+                    kQueueDirectory,
+                    id + kBase_filename);
                 if (!File.Exists(targetFile))
                 {
                     return null;
                 }
                 string result = File.ReadAllText(targetFile);
                 File.Delete(targetFile);
-                StorableDataChangeQueue template = JsonConvert.DeserializeObject<StorableDataChangeQueue>(result, s_settings);
+                StorableDataChangeQueue template = JsonConvert
+                    .DeserializeObject<StorableDataChangeQueue>(
+                        result,
+                        s_settings);
 
                 var queue = new DurableDataChangeMonitoredItemQueue(template, m_batchPersistor);
                 m_dataChangeQueues.AddOrUpdate(id, queue, (_, _) => queue);
@@ -191,13 +224,11 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         /// <summary>
         /// Remove all stored queues and batches that are not in the list
         /// </summary>
-        /// <param name="baseDirectory"></param>
-        /// <param name="batchesToKeep"></param>
         public void CleanStoredQueues(string baseDirectory, IEnumerable<uint> batchesToKeep)
         {
             try
             {
-                string targetPath = Path.Combine(baseDirectory, s_queueDirectory);
+                string targetPath = Path.Combine(baseDirectory, kQueueDirectory);
                 if (Directory.Exists(targetPath))
                 {
                     Directory.Delete(targetPath, true);
@@ -214,16 +245,28 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         /// <inheritdoc/>
         public void Dispose()
         {
-            foreach (DurableEventMonitoredItemQueue queue in m_eventQueues.Values)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// An overrideable version of the Dispose.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
             {
-                Opc.Ua.Utils.SilentDispose(queue);
+                foreach (DurableEventMonitoredItemQueue queue in m_eventQueues.Values)
+                {
+                    Opc.Ua.Utils.SilentDispose(queue);
+                }
+                foreach (DurableDataChangeMonitoredItemQueue queue in m_dataChangeQueues.Values)
+                {
+                    Opc.Ua.Utils.SilentDispose(queue);
+                }
+                m_dataChangeQueues = null;
+                m_eventQueues = null;
             }
-            foreach (DurableDataChangeMonitoredItemQueue queue in m_dataChangeQueues.Values)
-            {
-                Opc.Ua.Utils.SilentDispose(queue);
-            }
-            m_dataChangeQueues = null;
-            m_eventQueues = null;
         }
     }
 }

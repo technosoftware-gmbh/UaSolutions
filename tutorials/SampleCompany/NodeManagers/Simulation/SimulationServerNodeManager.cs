@@ -3930,7 +3930,6 @@ namespace SampleCompany.NodeManagers.Simulation
             BuiltInType builtInType = TypeInfo.GetBuiltInType(dataType, ServerData.TypeTree);
 
             // Simulate a mV Voltmeter
-
             Opc.Ua.Range newRange = GetAnalogRange(builtInType);
             // Using anything but 120,-10 fails a few tests
             newRange.High = Math.Min(newRange.High, 120);

@@ -46,11 +46,11 @@ namespace SampleCompany.NodeManagers
         {
             get
             {
-                if (nodeManagerFactories_ == null)
+                if (m_nodeManagerFactories == null)
                 {
-                    nodeManagerFactories_ = GetNodeManagerFactories();
+                    m_nodeManagerFactories = GetNodeManagerFactories();
                 }
-                return new ReadOnlyList<IUaNodeManagerFactory>(nodeManagerFactories_);
+                return new ReadOnlyList<IUaNodeManagerFactory>(m_nodeManagerFactories);
             }
         }
 
@@ -80,7 +80,7 @@ namespace SampleCompany.NodeManagers
         }
 
         #region Private Fields
-        private static IList<IUaNodeManagerFactory> nodeManagerFactories_;
+        private static IList<IUaNodeManagerFactory> m_nodeManagerFactories;
         #endregion Private Fields
     }
 }

@@ -10,13 +10,7 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using Opc.Ua;
+using System;
 #endregion Using Directives
 
-namespace SampleCompany.NodeManagers.Reference
-{
-    public interface ITokenValidator
-    {
-        IUserIdentity ValidateToken(IssuedIdentityToken issuedToken);
-    }
-}
+[assembly: CLSCompliant(false)]

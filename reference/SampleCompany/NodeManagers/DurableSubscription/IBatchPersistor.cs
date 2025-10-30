@@ -11,13 +11,10 @@
 
 #region Using Directives
 using System.Collections.Generic;
-using System.Threading;
-
 using Opc.Ua;
-
 using Technosoftware.UaServer;
 using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription
 {
@@ -29,24 +26,23 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         /// <summary>
         /// Request that a batch shall be persisted in a background thread
         /// </summary>
-        /// <param name="batch"></param>
         void RequestBatchPersist(BatchBase batch);
+
         /// <summary>
         /// Persist a batch in the main thread
         /// </summary>
-        /// <param name="batch"></param>
-        public void PersistSynchronously(BatchBase batch);
+        void PersistSynchronously(BatchBase batch);
+
         /// <summary>
         /// Request that a batch shall be restored in a background thread
         /// </summary>
-        /// <param name="batch"></param>
         void RequestBatchRestore(BatchBase batch);
 
         /// <summary>
         /// Restore a batch in the main thread
         /// </summary>
-        /// <param name="batch"></param>
-        public void RestoreSynchronously(BatchBase batch);
+        void RestoreSynchronously(BatchBase batch);
+
         /// <summary>
         /// Delete all batches from disk for a monitored item
         /// </summary>

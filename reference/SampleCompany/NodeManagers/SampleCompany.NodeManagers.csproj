@@ -17,15 +17,8 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <PackageId>$(PackageId).Debug</PackageId>
   </PropertyGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="SampleDataTypes\SampleCompany.NodeManagers.SampleDataTypes.PredefinedNodes.uanodes;TestData\SampleCompany.NodeManagers.TestData.PredefinedNodes.uanodes;MemoryBuffer\SampleCompany.NodeManagers.MemoryBuffer.PredefinedNodes.uanodes" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Properties\**" />
-    <EmbeddedResource Remove="Properties\**" />
-    <None Remove="Properties\**" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Alarms\Alarms.cs" />
@@ -33,9 +26,6 @@
   <ItemGroup>
     <PackageReference Update="Roslynator.Analyzers" Version="4.14.0" />
     <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
-    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.2.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />

@@ -14,15 +14,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
-
+using System.Threading.Tasks;
 using Newtonsoft.Json;
-
 using Opc.Ua;
-
 using Technosoftware.UaServer;
 using Technosoftware.UaServer.Subscriptions;
 #endregion
@@ -32,9 +29,19 @@ namespace SampleCompany.NodeManagers.DurableSubscription
     /// <inheritdoc/>
     public class BatchPersistor : IBatchPersistor
     {
-        private static readonly JsonSerializerSettings s_settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
-        private static readonly string s_storage_path = Path.Combine(Environment.CurrentDirectory, "Durable Subscriptions", "Batches");
-        private static readonly string s_baseFilename = "_batch.txt";
+        #region Constants
+        private static readonly JsonSerializerSettings s_settings = new()
+        {
+            TypeNameHandling = TypeNameHandling.All
+        };
+
+        private static readonly string s_storage_path = Path.Combine(
+            Environment.CurrentDirectory,
+            "Durable Subscriptions",
+            "Batches");
+
+        private const string kBaseFilename = "_batch.txt";
+        #endregion Constants
 
         #region IBatchPersistor Members
         /// <inheritdoc/>
@@ -67,7 +74,6 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                         batch.CancelBatchPersist?.Cancel();
                     }
                     return;
-
                 }
 
                 batch.RestoreInProgress = true;
@@ -82,7 +88,9 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         /// <inheritdoc/>
         public void RestoreSynchronously(BatchBase batch)
         {
-            string filePath = Path.Combine(s_storage_path, $"{batch.MonitoredItemId}_{batch.Id}{s_baseFilename}");
+            string filePath = Path.Combine(
+                s_storage_path,
+                $"{batch.MonitoredItemId}_{batch.Id}{kBaseFilename}");
             object result = null;
             try
             {
@@ -133,7 +141,9 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     Directory.CreateDirectory(s_storage_path);
                 }
 
-                string filePath = Path.Combine(s_storage_path, $"{batch.MonitoredItemId}_{batch.Id}{s_baseFilename}");
+                string filePath = Path.Combine(
+                    s_storage_path,
+                    $"{batch.MonitoredItemId}_{batch.Id}{kBaseFilename}");
 
                 File.WriteAllText(filePath, result);
 
@@ -166,8 +176,9 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 }
             }
         }
-        #endregion
+        #endregion IBatchPersistor Members
 
+        #region Public Methods
         /// <inheritdoc/>
         public void DeleteBatches(IEnumerable<uint> batchesToKeep)
         {
@@ -178,10 +189,12 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     var directory = new DirectoryInfo(s_storage_path);
 
                     // Create a single regex pattern that matches any of the batches to keep
-                    var pattern = string.Join("|", batchesToKeep.Select(batch => $@"{batch}_.*{s_baseFilename}$"));
+                    string pattern = string.Join(
+                        "|",
+                        batchesToKeep.Select(batch => $"{batch}_.*{kBaseFilename}$"));
                     var regex = new Regex(pattern, RegexOptions.Compiled);
 
-                    foreach (var file in directory.GetFiles())
+                    foreach (FileInfo file in directory.GetFiles())
                     {
                         if (!regex.IsMatch(file.Name))
                         {
@@ -194,7 +207,6 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             {
                 Opc.Ua.Utils.LogWarning(ex, "Failed to clean up batches");
             }
-
         }
 
         public void DeleteBatch(BatchBase batchToRemove)
@@ -204,9 +216,11 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 if (Directory.Exists(s_storage_path))
                 {
                     var directory = new DirectoryInfo(s_storage_path);
-                    var regex = new Regex($@"{batchToRemove.MonitoredItemId}_.{batchToRemove.Id}._{s_baseFilename}$", RegexOptions.Compiled);
+                    var regex = new Regex(
+                        $"{batchToRemove.MonitoredItemId}_.{batchToRemove.Id}._{kBaseFilename}$",
+                        RegexOptions.Compiled);
 
-                    foreach (var file in directory.GetFiles())
+                    foreach (FileInfo file in directory.GetFiles())
                     {
                         if (!regex.IsMatch(file.Name))
                         {
@@ -220,10 +234,12 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             {
                 Opc.Ua.Utils.LogWarning(ex, "Failed to clean up single batch");
             }
-
         }
+        #endregion Public Methods
 
-        private readonly ConcurrentDictionary<Guid, BatchBase> m_batchesToRestore = new ConcurrentDictionary<Guid, BatchBase>();
-        private readonly ConcurrentDictionary<Guid, BatchBase> m_batchesToPersist = new ConcurrentDictionary<Guid, BatchBase>();
+        #region Private Fields
+        private readonly ConcurrentDictionary<Guid, BatchBase> m_batchesToRestore = new();
+        private readonly ConcurrentDictionary<Guid, BatchBase> m_batchesToPersist = new();
+        #endregion Private Fields
     }
 }

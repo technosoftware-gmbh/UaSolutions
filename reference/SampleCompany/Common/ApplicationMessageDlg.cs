@@ -32,7 +32,7 @@ namespace SampleCompany.Common
         /// <param name="output">The TextWriter to use for the output</param>
         public ApplicationMessageDlg(TextWriter output)
         {
-            output_ = output;
+            m_output = output;
         }
         #endregion Constructors, Destructor, Initialization
 
@@ -40,25 +40,25 @@ namespace SampleCompany.Common
         /// <inheritdoc/>
         public override void Message(string text, bool ask = false)
         {
-            message_ = text;
-            ask_ = ask;
+            m_message = text;
+            m_ask = ask;
         }
 
         /// <inheritdoc/>
         public override async Task<bool> ShowAsync()
         {
-            if (ask_)
+            if (m_ask)
             {
-                var message = new StringBuilder(message_);
+                var message = new StringBuilder(m_message);
                 _ = message.Append(" (y/n, default y): ");
-                await output_.WriteAsync(message.ToString()).ConfigureAwait(false);
+                await m_output.WriteAsync(message.ToString()).ConfigureAwait(false);
 
                 try
                 {
                     ConsoleKeyInfo result = Console.ReadKey();
-                    await output_.WriteLineAsync().ConfigureAwait(false);
-                    return await Task.FromResult(result.KeyChar == 'y' ||
-                        result.KeyChar == 'Y' || result.KeyChar == '\r').ConfigureAwait(false);
+                    await m_output.WriteLineAsync().ConfigureAwait(false);
+                    return await Task.FromResult(result.KeyChar is 'y' or
+                        'Y' or '\r').ConfigureAwait(false);
                 }
                 catch
                 {
@@ -67,7 +67,7 @@ namespace SampleCompany.Common
             }
             else
             {
-                await output_.WriteLineAsync(message_).ConfigureAwait(false);
+                await m_output.WriteLineAsync(m_message).ConfigureAwait(false);
             }
 
             return await Task.FromResult(true).ConfigureAwait(false);
@@ -81,9 +81,9 @@ namespace SampleCompany.Common
         #endregion Overridden Methods
 
         #region Private Fields
-        private readonly TextWriter output_;
-        private string message_ = string.Empty;
-        private bool ask_;
+        private readonly TextWriter m_output;
+        private string m_message = string.Empty;
+        private bool m_ask;
         #endregion Private Fields
     }
 }
