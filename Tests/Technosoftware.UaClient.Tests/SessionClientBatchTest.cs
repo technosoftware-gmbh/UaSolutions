@@ -55,7 +55,8 @@ namespace Technosoftware.UaClient.Tests
             if (Session is Session session)
             {
                 session.OperationLimits = null;
-                session.OperationLimits = new OperationLimits() {
+                session.OperationLimits = new OperationLimits()
+                {
                     MaxMonitoredItemsPerCall = kOperationLimit,
                     MaxNodesPerBrowse = kOperationLimit,
                     MaxNodesPerHistoryReadData = kOperationLimit,
@@ -122,7 +123,8 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var requestHeader = new RequestHeader();
-            var sre = Assert.Throws<ServiceResultException>(() => {
+            var sre = Assert.Throws<ServiceResultException>(() =>
+            {
                 var responseHeader = Session.AddNodes(requestHeader,
                     nodesToAdd,
                     out AddNodesResultCollection results,
@@ -147,9 +149,11 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var requestHeader = new RequestHeader();
-            var sre = Assert.ThrowsAsync<ServiceResultException>(async () => {
+            var sre = Assert.ThrowsAsync<ServiceResultException>(async () =>
+            {
                 var response = await Session.AddNodesAsync(requestHeader,
-                    nodesToAdd, CancellationToken.None).ConfigureAwait(false); ;
+                    nodesToAdd, CancellationToken.None).ConfigureAwait(false);
+                ;
 
                 Assert.NotNull(response);
                 AddNodesResultCollection results = response.Results;
@@ -173,7 +177,8 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var requestHeader = new RequestHeader();
-            var sre = Assert.Throws<ServiceResultException>(() => {
+            var sre = Assert.Throws<ServiceResultException>(() =>
+            {
                 var responseHeader = Session.AddReferences(requestHeader,
                     referencesToAdd,
                     out StatusCodeCollection results,
@@ -198,9 +203,11 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var requestHeader = new RequestHeader();
-            var sre = Assert.ThrowsAsync<ServiceResultException>(async () => {
+            var sre = Assert.ThrowsAsync<ServiceResultException>(async () =>
+            {
                 var response = await Session.AddReferencesAsync(requestHeader,
-                    referencesToAdd, CancellationToken.None).ConfigureAwait(false); ;
+                    referencesToAdd, CancellationToken.None).ConfigureAwait(false);
+                ;
 
                 Assert.NotNull(response);
                 StatusCodeCollection results = response.Results;
@@ -224,7 +231,8 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var requestHeader = new RequestHeader();
-            var sre = Assert.Throws<ServiceResultException>(() => {
+            var sre = Assert.Throws<ServiceResultException>(() =>
+            {
                 var responseHeader = Session.DeleteNodes(requestHeader,
                     nodesTDelete,
                     out StatusCodeCollection results,
@@ -249,7 +257,8 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var requestHeader = new RequestHeader();
-            var sre = Assert.ThrowsAsync<ServiceResultException>(async () => {
+            var sre = Assert.ThrowsAsync<ServiceResultException>(async () =>
+            {
                 var response = await Session.DeleteNodesAsync(requestHeader,
                     nodesTDelete, CancellationToken.None).ConfigureAwait(false);
 
@@ -275,7 +284,8 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var requestHeader = new RequestHeader();
-            var sre = Assert.Throws<ServiceResultException>(() => {
+            var sre = Assert.Throws<ServiceResultException>(() =>
+            {
                 var responseHeader = Session.DeleteReferences(requestHeader,
                     referencesToDelete,
                     out StatusCodeCollection results,
@@ -300,7 +310,8 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var requestHeader = new RequestHeader();
-            var sre = Assert.ThrowsAsync<ServiceResultException>(async () => {
+            var sre = Assert.ThrowsAsync<ServiceResultException>(async () =>
+            {
                 var response = await Session.DeleteReferencesAsync(requestHeader,
                     referencesToDelete, CancellationToken.None).ConfigureAwait(false);
 
@@ -320,7 +331,8 @@ namespace Technosoftware.UaClient.Tests
         {
             // Browse template
             var startingNode = Objects.RootFolder;
-            var browseTemplate = new BrowseDescription {
+            var browseTemplate = new BrowseDescription
+            {
                 NodeId = startingNode,
                 BrowseDirection = BrowseDirection.Forward,
                 ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
@@ -340,7 +352,7 @@ namespace Technosoftware.UaClient.Tests
             while (browseDescriptionCollection.Any())
             {
                 TestContext.Out.WriteLine("Browse {0} Nodes...", browseDescriptionCollection.Count);
-                BrowseResultCollection allResults = new BrowseResultCollection();
+                BrowseResultCollection allResults = [];
                 var responseHeader = Session.Browse(
                     requestHeader, null, 5,
                     browseDescriptionCollection,
@@ -381,7 +393,8 @@ namespace Technosoftware.UaClient.Tests
 
             // read values
             var nodesToRead = new ReadValueIdCollection(referenceDescriptions.Select(r =>
-                new ReadValueId() {
+                new ReadValueId()
+                {
                     NodeId = ExpandedNodeId.ToNodeId(r.NodeId, Session.NamespaceUris),
                     AttributeId = Attributes.Value
                 }));
@@ -403,7 +416,8 @@ namespace Technosoftware.UaClient.Tests
             {
                 if (StatusCode.IsGood(result.StatusCode))
                 {
-                    var writeValue = new WriteValue() {
+                    var writeValue = new WriteValue()
+                    {
                         AttributeId = Attributes.Value,
                         NodeId = nodesToRead[ii].NodeId,
                         Value = new DataValue(result.WrappedValue)
@@ -427,7 +441,8 @@ namespace Technosoftware.UaClient.Tests
         {
             // Browse template
             var startingNode = Objects.RootFolder;
-            var browseTemplate = new BrowseDescription {
+            var browseTemplate = new BrowseDescription
+            {
                 NodeId = startingNode,
                 BrowseDirection = BrowseDirection.Forward,
                 ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
@@ -445,7 +460,7 @@ namespace Technosoftware.UaClient.Tests
             while (browseDescriptionCollection.Any())
             {
                 TestContext.Out.WriteLine("Browse {0} Nodes...", browseDescriptionCollection.Count);
-                BrowseResultCollection allResults = new BrowseResultCollection();
+                BrowseResultCollection allResults = [];
                 var response = await Session.BrowseAsync(
                     requestHeader, null, 5,
                     browseDescriptionCollection,
@@ -486,7 +501,8 @@ namespace Technosoftware.UaClient.Tests
 
             // read values
             var nodesToRead = new ReadValueIdCollection(referenceDescriptions.Select(r =>
-                new ReadValueId() {
+                new ReadValueId()
+                {
                     NodeId = ExpandedNodeId.ToNodeId(r.NodeId, Session.NamespaceUris),
                     AttributeId = Attributes.Value
                 }));
@@ -508,7 +524,8 @@ namespace Technosoftware.UaClient.Tests
             {
                 if (StatusCode.IsGood(result.StatusCode))
                 {
-                    var writeValue = new WriteValue() {
+                    var writeValue = new WriteValue()
+                    {
                         AttributeId = Attributes.Value,
                         NodeId = nodesToRead[ii].NodeId,
                         Value = new DataValue(result.WrappedValue)
@@ -533,7 +550,8 @@ namespace Technosoftware.UaClient.Tests
         public void TranslateBrowsePathsToNodeIds()
         {
             var browsePaths = new BrowsePathCollection();
-            var browsePath = new BrowsePath() {
+            var browsePath = new BrowsePath()
+            {
                 StartingNode = ObjectIds.RootFolder,
                 RelativePath = new RelativePath("Objects")
             };
@@ -558,7 +576,8 @@ namespace Technosoftware.UaClient.Tests
         public async Task TranslateBrowsePathsToNodeIdsAsync()
         {
             var browsePaths = new BrowsePathCollection();
-            var browsePath = new BrowsePath() {
+            var browsePath = new BrowsePath()
+            {
                 StartingNode = ObjectIds.RootFolder,
                 RelativePath = new RelativePath("Types")
             };
@@ -588,14 +607,16 @@ namespace Technosoftware.UaClient.Tests
             // create a mix of historizing and dynamic nodes
             var testSet = GetTestSetSimulation(Session.NamespaceUris);
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection(
-                testSet.Select(nodeId => new HistoryReadValueId {
+                testSet.Select(nodeId => new HistoryReadValueId
+                {
                     NodeId = nodeId
                 }));
 
             // add a some real history nodes
             testSet = GetTestSetHistory(Session.NamespaceUris);
             nodesToRead.AddRange(
-                testSet.Select(nodeId => new HistoryReadValueId {
+                testSet.Select(nodeId => new HistoryReadValueId
+                {
                     NodeId = nodeId
                 }));
 
@@ -621,14 +642,16 @@ namespace Technosoftware.UaClient.Tests
             // there are no historizing nodes, but create some real ones
             var testSet = GetTestSetSimulation(Session.NamespaceUris);
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection(
-                testSet.Select(nodeId => new HistoryReadValueId {
+                testSet.Select(nodeId => new HistoryReadValueId
+                {
                     NodeId = nodeId
                 }));
 
             // add a some real history nodes
             testSet = GetTestSetHistory(Session.NamespaceUris);
             nodesToRead.AddRange(
-                testSet.Select(nodeId => new HistoryReadValueId {
+                testSet.Select(nodeId => new HistoryReadValueId
+                {
                     NodeId = nodeId
                 }));
 
@@ -658,7 +681,8 @@ namespace Technosoftware.UaClient.Tests
             if (eventDetails)
             {
                 historyUpdateDetails = new ExtensionObjectCollection(
-                    testSet.Select(nodeId => new ExtensionObject(new UpdateEventDetails() {
+                    testSet.Select(nodeId => new ExtensionObject(new UpdateEventDetails()
+                    {
                         NodeId = nodeId,
                         PerformInsertReplace = PerformUpdateType.Insert
                     })));
@@ -667,7 +691,8 @@ namespace Technosoftware.UaClient.Tests
             {
                 historyUpdateDetails = new ExtensionObjectCollection(
                     testSet.Select(nodeId => new ExtensionObject(
-                        new UpdateDataDetails() {
+                        new UpdateDataDetails()
+                        {
                             NodeId = nodeId,
                             PerformInsertReplace = PerformUpdateType.Replace
                         })));
@@ -695,7 +720,8 @@ namespace Technosoftware.UaClient.Tests
             if (eventDetails)
             {
                 historyUpdateDetails = new ExtensionObjectCollection(
-                    testSet.Select(nodeId => new ExtensionObject(new UpdateEventDetails() {
+                    testSet.Select(nodeId => new ExtensionObject(new UpdateEventDetails()
+                    {
                         NodeId = nodeId,
                         PerformInsertReplace = PerformUpdateType.Insert
                     })));
@@ -704,7 +730,8 @@ namespace Technosoftware.UaClient.Tests
             {
                 historyUpdateDetails = new ExtensionObjectCollection(
                     testSet.Select(nodeId => new ExtensionObject(
-                        new UpdateDataDetails() {
+                        new UpdateDataDetails()
+                        {
                             NodeId = nodeId,
                             PerformInsertReplace = PerformUpdateType.Replace
                         })));
@@ -726,7 +753,8 @@ namespace Technosoftware.UaClient.Tests
         #region Private Methods
         private ExtensionObject ReadRawModifiedDetails()
         {
-            ReadRawModifiedDetails details = new ReadRawModifiedDetails {
+            ReadRawModifiedDetails details = new ReadRawModifiedDetails
+            {
                 StartTime = DateTime.MinValue,
                 EndTime = DateTime.UtcNow.AddDays(1),
                 NumValuesPerNode = 1,
@@ -737,7 +765,8 @@ namespace Technosoftware.UaClient.Tests
         }
         private ExtensionObject ReadEventDetails()
         {
-            ReadEventDetails details = new ReadEventDetails {
+            ReadEventDetails details = new ReadEventDetails
+            {
                 NumValuesPerNode = 10,
                 Filter = DefaultEventFilter(),
                 StartTime = DateTime.UtcNow.AddSeconds(30),

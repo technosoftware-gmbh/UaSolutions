@@ -80,7 +80,7 @@ namespace Technosoftware.UaClient
             // check for null.
             if (nodeIds == null || nodeIds.Count == 0)
             {
-                return new List<INode>();
+                return [];
             }
 
             int count = nodeIds.Count;
@@ -187,7 +187,7 @@ namespace Technosoftware.UaClient
                 return null;
             }
 
-                m_cacheLock.EnterReadLock();
+            m_cacheLock.EnterReadLock();
             try
             {
                 return m_typeTree.FindSuperType(typeId);
@@ -262,7 +262,7 @@ namespace Technosoftware.UaClient
             int count = nodeIds.Count;
             if (count == 0)
             {
-                return new List<Node>();
+                return [];
             }
 
             NodeIdCollection localIds = new NodeIdCollection(
@@ -270,8 +270,8 @@ namespace Technosoftware.UaClient
 
             // fetch nodes and references from server.
             (IList<Node> sourceNodes, IList<ServiceResult> readErrors) = await m_session.ReadNodesAsync(localIds, NodeClass.Unspecified, ct: ct).ConfigureAwait(false);
-            (IList<ReferenceDescriptionCollection> referenceCollectionList, IList<ServiceResult> fetchErrors) = await m_session.FetchReferencesAsync(localIds, ct).ConfigureAwait(false); ;
-
+            (IList<ReferenceDescriptionCollection> referenceCollectionList, IList<ServiceResult> fetchErrors) = await m_session.FetchReferencesAsync(localIds, ct).ConfigureAwait(false);
+            ;
 
             int ii = 0;
             for (ii = 0; ii < count; ii++)
@@ -329,7 +329,7 @@ namespace Technosoftware.UaClient
             bool includeSubtypes,
             CancellationToken ct)
         {
-            IList<INode> targets = new List<INode>();
+            IList<INode> targets = [];
 
             Node source = await FindAsync(nodeId, ct).ConfigureAwait(false) as Node;
 
@@ -373,12 +373,12 @@ namespace Technosoftware.UaClient
             bool includeSubtypes,
             CancellationToken ct)
         {
-            IList<INode> targets = new List<INode>();
+            IList<INode> targets = [];
             if (nodeIds.Count == 0 || referenceTypeIds.Count == 0)
             {
                 return targets;
             }
-            ExpandedNodeIdCollection targetIds = new ExpandedNodeIdCollection();
+            ExpandedNodeIdCollection targetIds = [];
             IList<INode> sources = await FindAsync(nodeIds, ct).ConfigureAwait(false);
             foreach (INode source in sources)
             {

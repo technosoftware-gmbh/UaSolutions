@@ -30,8 +30,8 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The known event types which can be constructed by ConstructEvent()
         /// </summary>
-        public static readonly NodeId[] KnownEventTypes = new NodeId[]
-        {
+        public static readonly NodeId[] KnownEventTypes =
+        [
             // BaseEventType
             ObjectTypeIds.BaseEventType,
             ObjectTypeIds.AuditEventType,
@@ -73,7 +73,7 @@ namespace Technosoftware.UaClient
             // LimitAlarmType
             ObjectTypeIds.ExclusiveLimitAlarmType,
             ObjectTypeIds.NonExclusiveLimitAlarmType,
-        };
+        ];
 
         /// <summary>
         /// Finds the type of the event for the notification.
@@ -195,7 +195,8 @@ namespace Technosoftware.UaClient
             try
             {
                 // find all of the children of the field.
-                var nodeToBrowse = new BrowseDescription {
+                var nodeToBrowse = new BrowseDescription
+                {
                     NodeId = typeId,
                     BrowseDirection = BrowseDirection.Inverse,
                     ReferenceTypeId = ReferenceTypeIds.HasSubtype,
@@ -320,46 +321,70 @@ namespace Technosoftware.UaClient
             switch (id.Value)
             {
                 // BaseEventType
-                case ObjectTypes.BaseEventType: { e = new BaseEventState(null); break; }
-                case ObjectTypes.AuditEventType: { e = new AuditEventState(null); break; }
-                case ObjectTypes.BaseModelChangeEventType: { e = new BaseModelChangeEventState(null); break; }
-                case ObjectTypes.ConditionType: { e = new ConditionState(null); break; }
-                case ObjectTypes.EventQueueOverflowEventType: { e = new EventQueueOverflowEventState(null); break; }
-                case ObjectTypes.ProgressEventType: { e = new ProgressEventState(null); break; }
-                case ObjectTypes.SemanticChangeEventType: { e = new SemanticChangeEventState(null); break; }
-                case ObjectTypes.SystemEventType: { e = new SystemEventState(null); break; }
-                case ObjectTypes.TransitionEventType: { e = new TransitionEventState(null); break; }
+                case ObjectTypes.BaseEventType:
+                { e = new BaseEventState(null); break; }
+                case ObjectTypes.AuditEventType:
+                { e = new AuditEventState(null); break; }
+                case ObjectTypes.BaseModelChangeEventType:
+                { e = new BaseModelChangeEventState(null); break; }
+                case ObjectTypes.ConditionType:
+                { e = new ConditionState(null); break; }
+                case ObjectTypes.EventQueueOverflowEventType:
+                { e = new EventQueueOverflowEventState(null); break; }
+                case ObjectTypes.ProgressEventType:
+                { e = new ProgressEventState(null); break; }
+                case ObjectTypes.SemanticChangeEventType:
+                { e = new SemanticChangeEventState(null); break; }
+                case ObjectTypes.SystemEventType:
+                { e = new SystemEventState(null); break; }
+                case ObjectTypes.TransitionEventType:
+                { e = new TransitionEventState(null); break; }
 
                 // AuditEventType
-                case ObjectTypes.AuditNodeManagementEventType: { e = new AuditNodeManagementEventState(null); break; }
-                case ObjectTypes.AuditSecurityEventType: { e = new AuditSecurityEventState(null); break; }
-                case ObjectTypes.AuditUpdateEventType: { e = new AuditUpdateEventState(null); break; }
-                case ObjectTypes.AuditUpdateMethodEventType: { e = new AuditUpdateMethodEventState(null); break; }
+                case ObjectTypes.AuditNodeManagementEventType:
+                { e = new AuditNodeManagementEventState(null); break; }
+                case ObjectTypes.AuditSecurityEventType:
+                { e = new AuditSecurityEventState(null); break; }
+                case ObjectTypes.AuditUpdateEventType:
+                { e = new AuditUpdateEventState(null); break; }
+                case ObjectTypes.AuditUpdateMethodEventType:
+                { e = new AuditUpdateMethodEventState(null); break; }
 
                 // BaseModelChangeEventType
-                case ObjectTypes.GeneralModelChangeEventType: { e = new GeneralModelChangeEventState(null); break; }
+                case ObjectTypes.GeneralModelChangeEventType:
+                { e = new GeneralModelChangeEventState(null); break; }
 
                 // ConditionType
-                case ObjectTypes.AcknowledgeableConditionType: { e = new AcknowledgeableConditionState(null); break; }
-                case ObjectTypes.DialogConditionType: { e = new DialogConditionState(null); break; }
+                case ObjectTypes.AcknowledgeableConditionType:
+                { e = new AcknowledgeableConditionState(null); break; }
+                case ObjectTypes.DialogConditionType:
+                { e = new DialogConditionState(null); break; }
 
                 // SystemEventType
-                case ObjectTypes.DeviceFailureEventType: { e = new DeviceFailureEventState(null); break; }
+                case ObjectTypes.DeviceFailureEventType:
+                { e = new DeviceFailureEventState(null); break; }
 
                 // TransitionEventType
-                case ObjectTypes.ProgramTransitionEventType: { e = new ProgramTransitionEventState(null); break; }
+                case ObjectTypes.ProgramTransitionEventType:
+                { e = new ProgramTransitionEventState(null); break; }
 
                 // AcknowledgeableConditionType
-                case ObjectTypes.AlarmConditionType: { e = new AlarmConditionState(null); break; }
+                case ObjectTypes.AlarmConditionType:
+                { e = new AlarmConditionState(null); break; }
 
                 // AlarmConditionType
-                case ObjectTypes.DiscrepancyAlarmType: { e = new DiscrepancyAlarmState(null); break; }
-                case ObjectTypes.DiscreteAlarmType: { e = new DiscreteAlarmState(null); break; }
-                case ObjectTypes.LimitAlarmType: { e = new LimitAlarmState(null); break; }
+                case ObjectTypes.DiscrepancyAlarmType:
+                { e = new DiscrepancyAlarmState(null); break; }
+                case ObjectTypes.DiscreteAlarmType:
+                { e = new DiscreteAlarmState(null); break; }
+                case ObjectTypes.LimitAlarmType:
+                { e = new LimitAlarmState(null); break; }
 
                 // LimitAlarmType
-                case ObjectTypes.ExclusiveLimitAlarmType: { e = new ExclusiveLimitAlarmState(null); break; }
-                case ObjectTypes.NonExclusiveLimitAlarmType: { e = new NonExclusiveLimitAlarmState(null); break; }
+                case ObjectTypes.ExclusiveLimitAlarmType:
+                { e = new ExclusiveLimitAlarmState(null); break; }
+                case ObjectTypes.NonExclusiveLimitAlarmType:
+                { e = new NonExclusiveLimitAlarmState(null); break; }
 
                 default:
                 {

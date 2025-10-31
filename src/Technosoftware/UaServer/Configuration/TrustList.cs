@@ -134,7 +134,8 @@ namespace Technosoftware.UaServer.Configuration
                 m_sessionId = context.SessionId;
                 fileHandle = ++m_fileHandle;
 
-                TrustListDataType trustList = new TrustListDataType() {
+                TrustListDataType trustList = new TrustListDataType()
+                {
                     SpecifiedLists = (uint)masks
                 };
 
@@ -286,7 +287,6 @@ namespace Technosoftware.UaServer.Configuration
             return ServiceResult.Good;
         }
 
-
         private ServiceResult Close(
             ISystemContext context,
             MethodState method,
@@ -322,7 +322,7 @@ namespace Technosoftware.UaServer.Configuration
             uint fileHandle,
             ref bool restartRequired)
         {
-            object[] inputParameters = new object[] { fileHandle };
+            object[] inputParameters = [fileHandle];
             m_node.ReportTrustListUpdateRequestedAuditEvent(context, objectId, "Method/CloseAndUpdate", method.NodeId, inputParameters);
             HasSecureWriteAccess(context);
 
@@ -354,7 +354,7 @@ namespace Technosoftware.UaServer.Configuration
                     // test integrity of all CRLs
                     if ((masks & TrustListMasks.IssuerCertificates) != 0)
                     {
-                        issuerCertificates = new X509Certificate2Collection();
+                        issuerCertificates = [];
                         foreach (var cert in trustList.IssuerCertificates)
                         {
                             issuerCertificates.Add(X509CertificateLoader.LoadCertificate(cert));
@@ -362,7 +362,7 @@ namespace Technosoftware.UaServer.Configuration
                     }
                     if ((masks & TrustListMasks.IssuerCrls) != 0)
                     {
-                        issuerCrls = new X509CRLCollection();
+                        issuerCrls = [];
                         foreach (var crl in trustList.IssuerCrls)
                         {
                             issuerCrls.Add(new X509CRL(crl));
@@ -370,7 +370,7 @@ namespace Technosoftware.UaServer.Configuration
                     }
                     if ((masks & TrustListMasks.TrustedCertificates) != 0)
                     {
-                        trustedCertificates = new X509Certificate2Collection();
+                        trustedCertificates = [];
                         foreach (var cert in trustList.TrustedCertificates)
                         {
                             trustedCertificates.Add(X509CertificateLoader.LoadCertificate(cert));
@@ -378,7 +378,7 @@ namespace Technosoftware.UaServer.Configuration
                     }
                     if ((masks & TrustListMasks.TrustedCrls) != 0)
                     {
-                        trustedCrls = new X509CRLCollection();
+                        trustedCrls = [];
                         foreach (var crl in trustList.TrustedCrls)
                         {
                             trustedCrls.Add(new X509CRL(crl));
@@ -450,7 +450,7 @@ namespace Technosoftware.UaServer.Configuration
             byte[] certificate,
             bool isTrustedCertificate)
         {
-            object[] inputParameters = new object[] { certificate, isTrustedCertificate };
+            object[] inputParameters = [certificate, isTrustedCertificate];
             m_node.ReportTrustListUpdateRequestedAuditEvent(context, objectId, "Method/AddCertificate", method.NodeId, inputParameters);
             HasSecureWriteAccess(context);
 
@@ -513,7 +513,7 @@ namespace Technosoftware.UaServer.Configuration
             string thumbprint,
             bool isTrustedCertificate)
         {
-            object[] inputParameters = new object[] { thumbprint };
+            object[] inputParameters = [thumbprint];
             m_node.ReportTrustListUpdateRequestedAuditEvent(context, objectId, "Method/RemoveCertificate", method.NodeId, inputParameters);
 
             HasSecureWriteAccess(context);
@@ -525,7 +525,7 @@ namespace Technosoftware.UaServer.Configuration
                 {
                     result = StatusCodes.BadInvalidState;
                 }
-                else if (String.IsNullOrEmpty(thumbprint))
+                else if (string.IsNullOrEmpty(thumbprint))
                 {
                     result = StatusCodes.BadInvalidArgument;
                 }
@@ -596,7 +596,8 @@ namespace Technosoftware.UaServer.Configuration
             TrustListDataType trustList
             )
         {
-            IServiceMessageContext messageContext = new ServiceMessageContext() {
+            IServiceMessageContext messageContext = new ServiceMessageContext()
+            {
                 NamespaceUris = context.NamespaceUris,
                 ServerUris = context.ServerUris,
                 Factory = context.EncodeableFactory
@@ -615,7 +616,8 @@ namespace Technosoftware.UaServer.Configuration
             Stream strm)
         {
             TrustListDataType trustList = new TrustListDataType();
-            IServiceMessageContext messageContext = new ServiceMessageContext() {
+            IServiceMessageContext messageContext = new ServiceMessageContext()
+            {
                 NamespaceUris = context.NamespaceUris,
                 ServerUris = context.ServerUris,
                 Factory = context.EncodeableFactory

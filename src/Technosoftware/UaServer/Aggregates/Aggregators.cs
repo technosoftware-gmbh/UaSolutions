@@ -44,15 +44,15 @@ namespace Technosoftware.UaServer.Aggregates
         {
             public NodeId AggregateId { get; set; }
             public QualifiedName AggregateName { get; set; }
-            public Type Calculator { get; set; } 
+            public Type Calculator { get; set; }
         }
 
         /// <summary>
         /// Mapping for all of the standard aggregates.
         /// </summary>
-        private static FactoryMapping[] s_Mappings = new FactoryMapping[]
-        {
-            new FactoryMapping() { AggregateId = ObjectIds.AggregateFunction_Interpolative, AggregateName = BrowseNames.AggregateFunction_Interpolative, Calculator = typeof(AggregateCalculator) },        
+        private static FactoryMapping[] s_Mappings =
+        [
+            new FactoryMapping() { AggregateId = ObjectIds.AggregateFunction_Interpolative, AggregateName = BrowseNames.AggregateFunction_Interpolative, Calculator = typeof(AggregateCalculator) },
             new FactoryMapping() { AggregateId = ObjectIds.AggregateFunction_Average, AggregateName = BrowseNames.AggregateFunction_Average, Calculator = typeof(AverageAggregateCalculator) },
             new FactoryMapping() { AggregateId = ObjectIds.AggregateFunction_TimeAverage, AggregateName = BrowseNames.AggregateFunction_TimeAverage, Calculator = typeof(AverageAggregateCalculator) },
             new FactoryMapping() { AggregateId = ObjectIds.AggregateFunction_TimeAverage2, AggregateName = BrowseNames.AggregateFunction_TimeAverage2, Calculator = typeof(AverageAggregateCalculator) },
@@ -94,7 +94,7 @@ namespace Technosoftware.UaServer.Aggregates
             new FactoryMapping() { AggregateId = ObjectIds.AggregateFunction_VariancePopulation, AggregateName = BrowseNames.AggregateFunction_VariancePopulation, Calculator = typeof(StdDevAggregateCalculator) },
             new FactoryMapping() { AggregateId = ObjectIds.AggregateFunction_StandardDeviationSample, AggregateName = BrowseNames.AggregateFunction_StandardDeviationSample, Calculator = typeof(StdDevAggregateCalculator) },
             new FactoryMapping() { AggregateId = ObjectIds.AggregateFunction_VarianceSample, AggregateName = BrowseNames.AggregateFunction_VarianceSample, Calculator = typeof(StdDevAggregateCalculator) },
-        };
+        ];
 
         /// <summary>
         /// Returns the name for a standard aggregates.
@@ -137,7 +137,7 @@ namespace Technosoftware.UaServer.Aggregates
             DateTime endTime,
             double processingInterval,
             bool stepped,
-            AggregateConfiguration configuration) 
+            AggregateConfiguration configuration)
         {
             for (int ii = 0; ii < s_Mappings.Length; ii++)
             {
@@ -145,11 +145,11 @@ namespace Technosoftware.UaServer.Aggregates
                 {
                     return (IUaAggregateCalculator)Activator.CreateInstance(
                         s_Mappings[ii].Calculator,
-                        aggregateId, 
-                        startTime, 
-                        endTime, 
-                        processingInterval, 
-                        stepped, 
+                        aggregateId,
+                        startTime,
+                        endTime,
+                        processingInterval,
+                        stepped,
                         configuration);
                 }
             }

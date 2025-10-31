@@ -16,7 +16,6 @@
 #region Using Directives
 #endregion
 
-
 namespace Technosoftware.UaClient
 {
     /// <summary>

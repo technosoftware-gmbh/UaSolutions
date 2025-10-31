@@ -69,8 +69,10 @@ namespace Technosoftware.UaServer.Sessions
             int maxBrowseContinuationPoints,
             int maxHistoryContinuationPoints)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (server == null) throw new ArgumentNullException(nameof(server));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
 
             // verify that a secure channel was specified.
             if (context.ChannelContext == null)
@@ -100,7 +102,8 @@ namespace Technosoftware.UaServer.Sessions
 
             // initialize diagnostics.
             DateTime now = DateTime.UtcNow;
-            m_diagnostics = new SessionDiagnosticsDataType {
+            m_diagnostics = new SessionDiagnosticsDataType
+            {
                 SessionId = null,
                 SessionName = sessionName,
                 ClientDescription = clientDescription,
@@ -112,7 +115,8 @@ namespace Technosoftware.UaServer.Sessions
             };
 
             // initialize security diagnostics.
-            m_securityDiagnostics = new SessionSecurityDiagnosticsDataType {
+            m_securityDiagnostics = new SessionSecurityDiagnosticsDataType
+            {
                 SessionId = m_sessionId,
                 ClientUserIdOfSession = m_identity.DisplayName,
                 AuthenticationMechanism = m_identity.TokenType.ToString(),
@@ -347,7 +351,8 @@ namespace Technosoftware.UaServer.Sessions
 
                 m_eccUserTokenNonce = Nonce.CreateNonce(m_eccUserTokenSecurityPolicyUri);
 
-                EphemeralKeyType key = new EphemeralKeyType() {
+                EphemeralKeyType key = new EphemeralKeyType()
+                {
                     PublicKey = m_eccUserTokenNonce.Data
                 };
 
@@ -390,8 +395,6 @@ namespace Technosoftware.UaServer.Sessions
             }
         }
 
-
-
         /// <summary>
         /// allow derived classes access
         /// </summary>
@@ -402,7 +405,8 @@ namespace Technosoftware.UaServer.Sessions
         /// </summary>
         public virtual void ValidateRequest(RequestHeader requestHeader, RequestType requestType)
         {
-            if (requestHeader == null) throw new ArgumentNullException(nameof(requestHeader));
+            if (requestHeader == null)
+                throw new ArgumentNullException(nameof(requestHeader));
 
             lock (m_lock)
             {
@@ -464,7 +468,8 @@ namespace Technosoftware.UaServer.Sessions
         /// <returns>true if the new locale ids are different from the old locale ids.</returns>
         public bool UpdateLocaleIds(StringCollection localeIds)
         {
-            if (localeIds == null) throw new ArgumentNullException(nameof(localeIds));
+            if (localeIds == null)
+                throw new ArgumentNullException(nameof(localeIds));
 
             lock (m_lock)
             {
@@ -533,7 +538,7 @@ namespace Technosoftware.UaServer.Sessions
 
                         if (serverCertificateChain.Count > 1)
                         {
-                            List<byte> serverCertificateChainList = new List<byte>();
+                            List<byte> serverCertificateChainList = [];
 
                             for (int i = 0; i < serverCertificateChain.Count; i++)
                             {
@@ -633,7 +638,7 @@ namespace Technosoftware.UaServer.Sessions
                 m_serverNonce = serverNonce;
 
                 // build list of signed certificates for audit event.
-                List<SignedSoftwareCertificate> signedSoftwareCertificates = new List<SignedSoftwareCertificate>();
+                List<SignedSoftwareCertificate> signedSoftwareCertificates = [];
 
                 if (clientSoftwareCertificates != null)
                 {
@@ -676,13 +681,14 @@ namespace Technosoftware.UaServer.Sessions
         /// </remarks>
         public void SaveContinuationPoint(UaContinuationPoint continuationPoint)
         {
-            if (continuationPoint == null) throw new ArgumentNullException(nameof(continuationPoint));
+            if (continuationPoint == null)
+                throw new ArgumentNullException(nameof(continuationPoint));
 
             lock (m_lock)
             {
                 if (m_browseContinuationPoints == null)
                 {
-                    m_browseContinuationPoints = new List<UaContinuationPoint>();
+                    m_browseContinuationPoints = [];
                 }
 
                 // remove the first continuation point if too many points.
@@ -745,13 +751,14 @@ namespace Technosoftware.UaServer.Sessions
         /// </remarks>
         public void SaveHistoryContinuationPoint(Guid id, object continuationPoint)
         {
-            if (continuationPoint == null) throw new ArgumentNullException(nameof(continuationPoint));
+            if (continuationPoint == null)
+                throw new ArgumentNullException(nameof(continuationPoint));
 
             lock (m_lock)
             {
                 if (m_historyContinuationPoints == null)
                 {
-                    m_historyContinuationPoints = new List<HistoryContinuationPoint>();
+                    m_historyContinuationPoints = [];
                 }
 
                 // remove existing continuation point if space needed.
@@ -969,7 +976,7 @@ namespace Technosoftware.UaServer.Sessions
             // determine the security policy uri.
             string securityPolicyUri = policy.SecurityPolicyUri;
 
-            if (String.IsNullOrEmpty(securityPolicyUri))
+            if (string.IsNullOrEmpty(securityPolicyUri))
             {
                 securityPolicyUri = m_endpoint.SecurityPolicyUri;
             }
@@ -1021,7 +1028,7 @@ namespace Technosoftware.UaServer.Sessions
 
                         if (serverCertificateChain.Count > 1)
                         {
-                            List<byte> serverCertificateChainList = new List<byte>();
+                            List<byte> serverCertificateChainList = [];
 
                             for (int i = 0; i < serverCertificateChain.Count; i++)
                             {
@@ -1058,7 +1065,8 @@ namespace Technosoftware.UaServer.Sessions
             IUserIdentity identity,
             IUserIdentity effectiveIdentity)
         {
-            if (identityToken == null) throw new ArgumentNullException(nameof(identityToken));
+            if (identityToken == null)
+                throw new ArgumentNullException(nameof(identityToken));
 
             lock (m_lock)
             {
@@ -1116,34 +1124,62 @@ namespace Technosoftware.UaServer.Sessions
 
                 switch (requestType)
                 {
-                    case RequestType.Read: { counter = m_diagnostics.ReadCount; break; }
-                    case RequestType.HistoryRead: { counter = m_diagnostics.HistoryReadCount; break; }
-                    case RequestType.Write: { counter = m_diagnostics.WriteCount; break; }
-                    case RequestType.HistoryUpdate: { counter = m_diagnostics.HistoryUpdateCount; break; }
-                    case RequestType.Call: { counter = m_diagnostics.CallCount; break; }
-                    case RequestType.CreateMonitoredItems: { counter = m_diagnostics.CreateMonitoredItemsCount; break; }
-                    case RequestType.ModifyMonitoredItems: { counter = m_diagnostics.ModifyMonitoredItemsCount; break; }
-                    case RequestType.SetMonitoringMode: { counter = m_diagnostics.SetMonitoringModeCount; break; }
-                    case RequestType.SetTriggering: { counter = m_diagnostics.SetTriggeringCount; break; }
-                    case RequestType.DeleteMonitoredItems: { counter = m_diagnostics.DeleteMonitoredItemsCount; break; }
-                    case RequestType.CreateSubscription: { counter = m_diagnostics.CreateSubscriptionCount; break; }
-                    case RequestType.ModifySubscription: { counter = m_diagnostics.ModifySubscriptionCount; break; }
-                    case RequestType.SetPublishingMode: { counter = m_diagnostics.SetPublishingModeCount; break; }
-                    case RequestType.Publish: { counter = m_diagnostics.PublishCount; break; }
-                    case RequestType.Republish: { counter = m_diagnostics.RepublishCount; break; }
-                    case RequestType.TransferSubscriptions: { counter = m_diagnostics.TransferSubscriptionsCount; break; }
-                    case RequestType.DeleteSubscriptions: { counter = m_diagnostics.DeleteSubscriptionsCount; break; }
-                    case RequestType.AddNodes: { counter = m_diagnostics.AddNodesCount; break; }
-                    case RequestType.AddReferences: { counter = m_diagnostics.AddReferencesCount; break; }
-                    case RequestType.DeleteNodes: { counter = m_diagnostics.DeleteNodesCount; break; }
-                    case RequestType.DeleteReferences: { counter = m_diagnostics.DeleteReferencesCount; break; }
-                    case RequestType.Browse: { counter = m_diagnostics.BrowseCount; break; }
-                    case RequestType.BrowseNext: { counter = m_diagnostics.BrowseNextCount; break; }
-                    case RequestType.TranslateBrowsePathsToNodeIds: { counter = m_diagnostics.TranslateBrowsePathsToNodeIdsCount; break; }
-                    case RequestType.QueryFirst: { counter = m_diagnostics.QueryFirstCount; break; }
-                    case RequestType.QueryNext: { counter = m_diagnostics.QueryNextCount; break; }
-                    case RequestType.RegisterNodes: { counter = m_diagnostics.RegisterNodesCount; break; }
-                    case RequestType.UnregisterNodes: { counter = m_diagnostics.UnregisterNodesCount; break; }
+                    case RequestType.Read:
+                    { counter = m_diagnostics.ReadCount; break; }
+                    case RequestType.HistoryRead:
+                    { counter = m_diagnostics.HistoryReadCount; break; }
+                    case RequestType.Write:
+                    { counter = m_diagnostics.WriteCount; break; }
+                    case RequestType.HistoryUpdate:
+                    { counter = m_diagnostics.HistoryUpdateCount; break; }
+                    case RequestType.Call:
+                    { counter = m_diagnostics.CallCount; break; }
+                    case RequestType.CreateMonitoredItems:
+                    { counter = m_diagnostics.CreateMonitoredItemsCount; break; }
+                    case RequestType.ModifyMonitoredItems:
+                    { counter = m_diagnostics.ModifyMonitoredItemsCount; break; }
+                    case RequestType.SetMonitoringMode:
+                    { counter = m_diagnostics.SetMonitoringModeCount; break; }
+                    case RequestType.SetTriggering:
+                    { counter = m_diagnostics.SetTriggeringCount; break; }
+                    case RequestType.DeleteMonitoredItems:
+                    { counter = m_diagnostics.DeleteMonitoredItemsCount; break; }
+                    case RequestType.CreateSubscription:
+                    { counter = m_diagnostics.CreateSubscriptionCount; break; }
+                    case RequestType.ModifySubscription:
+                    { counter = m_diagnostics.ModifySubscriptionCount; break; }
+                    case RequestType.SetPublishingMode:
+                    { counter = m_diagnostics.SetPublishingModeCount; break; }
+                    case RequestType.Publish:
+                    { counter = m_diagnostics.PublishCount; break; }
+                    case RequestType.Republish:
+                    { counter = m_diagnostics.RepublishCount; break; }
+                    case RequestType.TransferSubscriptions:
+                    { counter = m_diagnostics.TransferSubscriptionsCount; break; }
+                    case RequestType.DeleteSubscriptions:
+                    { counter = m_diagnostics.DeleteSubscriptionsCount; break; }
+                    case RequestType.AddNodes:
+                    { counter = m_diagnostics.AddNodesCount; break; }
+                    case RequestType.AddReferences:
+                    { counter = m_diagnostics.AddReferencesCount; break; }
+                    case RequestType.DeleteNodes:
+                    { counter = m_diagnostics.DeleteNodesCount; break; }
+                    case RequestType.DeleteReferences:
+                    { counter = m_diagnostics.DeleteReferencesCount; break; }
+                    case RequestType.Browse:
+                    { counter = m_diagnostics.BrowseCount; break; }
+                    case RequestType.BrowseNext:
+                    { counter = m_diagnostics.BrowseNextCount; break; }
+                    case RequestType.TranslateBrowsePathsToNodeIds:
+                    { counter = m_diagnostics.TranslateBrowsePathsToNodeIdsCount; break; }
+                    case RequestType.QueryFirst:
+                    { counter = m_diagnostics.QueryFirstCount; break; }
+                    case RequestType.QueryNext:
+                    { counter = m_diagnostics.QueryNextCount; break; }
+                    case RequestType.RegisterNodes:
+                    { counter = m_diagnostics.RegisterNodesCount; break; }
+                    case RequestType.UnregisterNodes:
+                    { counter = m_diagnostics.UnregisterNodesCount; break; }
                 }
 
                 if (counter != null)

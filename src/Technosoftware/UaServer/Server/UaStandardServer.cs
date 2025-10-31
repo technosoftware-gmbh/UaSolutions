@@ -77,8 +77,8 @@ namespace Technosoftware.UaServer
             connectInterval_ = DefaultReverseConnectInterval;
             connectTimeout_ = DefaultReverseConnectTimeout;
             rejectTimeout_ = DefaultReverseConnectRejectTimeout;
-            connections_ = new Dictionary<Uri, UaReverseConnectProperty>();
-            m_nodeManagerFactories = new List<IUaNodeManagerFactory>();
+            connections_ = [];
+            m_nodeManagerFactories = [];
         }
         #endregion
 
@@ -139,7 +139,7 @@ namespace Technosoftware.UaServer
             StringCollection serverUris,
             out ApplicationDescriptionCollection servers)
         {
-            servers = new ApplicationDescriptionCollection();
+            servers = [];
 
             ValidateRequest(requestHeader);
 
@@ -158,12 +158,12 @@ namespace Technosoftware.UaServer
                 // check if nothing to do.
                 if (baseAddresses.Count == 0)
                 {
-                    servers = new ApplicationDescriptionCollection();
+                    servers = [];
                     return CreateResponse(requestHeader, StatusCodes.Good);
                 }
 
                 // build list of unique servers.
-                Dictionary<string, ApplicationDescription> uniqueServers = new Dictionary<string, ApplicationDescription>();
+                Dictionary<string, ApplicationDescription> uniqueServers = [];
 
                 foreach (EndpointDescription description in GetEndpoints())
                 {
@@ -379,7 +379,7 @@ namespace Technosoftware.UaServer
             try
             {
                 // check the server uri.
-                if (!String.IsNullOrEmpty(serverUri))
+                if (!string.IsNullOrEmpty(serverUri))
                 {
                     if (serverUri != this.Configuration.ApplicationUri)
                     {
@@ -408,7 +408,7 @@ namespace Technosoftware.UaServer
 
                         if (clientCertificateChain.Count > 1)
                         {
-                            clientIssuerCertificates = new X509Certificate2Collection();
+                            clientIssuerCertificates = [];
                             for (int i = 1; i < clientCertificateChain.Count; i++)
                             {
                                 clientIssuerCertificates.Add(clientCertificateChain[i]);
@@ -420,8 +420,8 @@ namespace Technosoftware.UaServer
                             string certificateApplicationUri = X509Utils.GetApplicationUriFromCertificate(parsedClientCertificate);
 
                             // verify if applicationUri from ApplicationDescription matches the applicationUri in the client certificate.
-                            if (!String.IsNullOrEmpty(certificateApplicationUri) &&
-                                !String.IsNullOrEmpty(clientDescription.ApplicationUri) &&
+                            if (!string.IsNullOrEmpty(certificateApplicationUri) &&
+                                !string.IsNullOrEmpty(clientDescription.ApplicationUri) &&
                                 certificateApplicationUri != clientDescription.ApplicationUri)
                             {
                                 // report the AuditCertificateDataMismatch event for invalid uri
@@ -485,7 +485,8 @@ namespace Technosoftware.UaServer
                     try
                     {
                         // check the endpointurl
-                        ConfiguredEndpoint configuredEndpoint = new ConfiguredEndpoint() {
+                        ConfiguredEndpoint configuredEndpoint = new ConfiguredEndpoint()
+                        {
                             EndpointUrl = new Uri(endpointUrl)
                         };
 
@@ -654,7 +655,6 @@ namespace Technosoftware.UaServer
 
 #endif
 
-
         /// <summary>
         /// Invokes the ActivateSession service.
         /// </summary>
@@ -687,7 +687,7 @@ namespace Technosoftware.UaServer
 
             UaServerOperationContext context = ValidateRequest(requestHeader, RequestType.ActivateSession);
             // validate client's software certificates.
-            List<SoftwareCertificate> softwareCertificates = new List<SoftwareCertificate>();
+            List<SoftwareCertificate> softwareCertificates = [];
 
             try
             {
@@ -697,11 +697,11 @@ namespace Technosoftware.UaServer
 
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        diagnosticInfos = new DiagnosticInfoCollection();
+                        diagnosticInfos = [];
                     }
 
-                    results = new StatusCodeCollection();
-                    diagnosticInfos = new DiagnosticInfoCollection();
+                    results = [];
+                    diagnosticInfos = [];
 
                     foreach (SignedSoftwareCertificate signedCertificate in clientSoftwareCertificates)
                     {
@@ -2432,10 +2432,11 @@ namespace Technosoftware.UaServer
                                 // register the server.
                                 if (m_useRegisterServer2)
                                 {
-                                    ExtensionObjectCollection discoveryConfiguration = new ExtensionObjectCollection();
+                                    ExtensionObjectCollection discoveryConfiguration = [];
                                     StatusCodeCollection configurationResults = null;
                                     DiagnosticInfoCollection diagnosticInfos = null;
-                                    MdnsDiscoveryConfiguration mdnsDiscoveryConfig = new MdnsDiscoveryConfiguration {
+                                    MdnsDiscoveryConfiguration mdnsDiscoveryConfig = new MdnsDiscoveryConfiguration
+                                    {
                                         ServerCapabilities = configuration.ServerConfiguration.ServerCapabilities,
                                         MdnsServerName = Utils.GetHostName()
                                     };
@@ -2956,7 +2957,8 @@ namespace Technosoftware.UaServer
             }
 
             // set server description.
-            serverDescription = new ApplicationDescription {
+            serverDescription = new ApplicationDescription
+            {
                 ApplicationUri = configuration.ApplicationUri,
                 ApplicationName = new LocalizedText("en-US", configuration.ApplicationName),
                 ApplicationType = configuration.ApplicationType,
@@ -2964,7 +2966,7 @@ namespace Technosoftware.UaServer
                 DiscoveryUrls = GetDiscoveryUrls()
             };
 
-            endpoints = new EndpointDescriptionCollection();
+            endpoints = [];
             IList<EndpointDescription> endpointsForHost = null;
 
             var baseAddresses = configuration.ServerConfiguration.BaseAddresses;
@@ -3128,7 +3130,7 @@ namespace Technosoftware.UaServer
                         {
                             UriBuilder uri = new UriBuilder(BaseAddresses[ii].DiscoveryUrl);
 
-                            if (String.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+                            if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
                             {
                                 uri.Host = computerName;
                             }
@@ -3179,7 +3181,7 @@ namespace Technosoftware.UaServer
                     OnServerStarted(m_serverInternal);
 
                     // monitor the configuration file.
-                    if (!String.IsNullOrEmpty(configuration.SourceFilePath))
+                    if (!string.IsNullOrEmpty(configuration.SourceFilePath))
                     {
                         Utils.LogInfo(TraceMasks.StartStop, "Server - Configuration watcher started.");
                         m_configurationWatcher = new ConfigurationWatcher(configuration);
@@ -3453,7 +3455,7 @@ namespace Technosoftware.UaServer
         /// <returns>Returns a (durable) monitored item queue factory for a server, the return type is <seealso cref="IUaMonitoredItemQueueFactory"/>.</returns>
         protected virtual IUaMonitoredItemQueueFactory CreateMonitoredItemQueueFactory(IUaServerData server, ApplicationConfiguration configuration)
         {
-           return new MonitoredItemQueueFactory();
+            return new MonitoredItemQueueFactory();
         }
 
         /// <summary>

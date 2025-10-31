@@ -425,7 +425,7 @@ namespace Technosoftware.UaClient
                         }
                         else
                         {
-                        // wait for next scheduled reconnect if connection failed,
+                            // wait for next scheduled reconnect if connection failed,
                             // next attempt is to recreate session
                             m_reconnectFailed = true;
                             return false;
@@ -450,8 +450,8 @@ namespace Technosoftware.UaClient
                     do
                     {
                         var endpointDescription = m_session.Endpoint;
-                        if(endpointDescription == null)
-                             endpointDescription = transportChannel.EndpointDescription;
+                        if (endpointDescription == null)
+                            endpointDescription = transportChannel.EndpointDescription;
                         connection = await m_reverseConnectManager.WaitForConnectionAsync(
                                 new Uri(endpointDescription.EndpointUrl),
                                 endpointDescription.Server.ApplicationUri

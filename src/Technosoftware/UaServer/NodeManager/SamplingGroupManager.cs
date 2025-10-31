@@ -42,13 +42,15 @@ namespace Technosoftware.UaServer.NodeManager
             uint maxDurableQueueSize,
             IEnumerable<SamplingRateGroup> samplingRates)
         {
-            if (server == null) throw new ArgumentNullException(nameof(server));
-            if (nodeManager == null) throw new ArgumentNullException(nameof(nodeManager));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
+            if (nodeManager == null)
+                throw new ArgumentNullException(nameof(nodeManager));
 
             m_server = server;
             m_nodeManager = nodeManager;
-            m_samplingGroups = new List<SamplingGroup>();
-            m_sampledItems = new Dictionary<IUaSampledDataChangeMonitoredItem, SamplingGroup>();
+            m_samplingGroups = [];
+            m_sampledItems = [];
             m_maxQueueSize = maxQueueSize;
             m_maxDurableQueueSize = maxDurableQueueSize;
 
@@ -174,7 +176,7 @@ namespace Technosoftware.UaServer.NodeManager
             {
                 if (revisedQueueSize == 0)
                 {
-                    revisedQueueSize = Int32.MaxValue;
+                    revisedQueueSize = int.MaxValue;
                 }
 
                 samplingInterval = 0;
@@ -331,7 +333,6 @@ namespace Technosoftware.UaServer.NodeManager
             {
                 revisedQueueSize = monitoredItem.QueueSize;
             }
-
 
             // get filter.
             MonitoringFilter filter = null;
@@ -516,8 +517,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// The default sampling rates.
         /// </summary>
-        private static readonly SamplingRateGroup[] s_DefaultSamplingRates = new SamplingRateGroup[]
-        {
+        private static readonly SamplingRateGroup[] s_DefaultSamplingRates =
+        [
             new SamplingRateGroup(100, 100, 4),
             new SamplingRateGroup(500, 250, 2),
             new SamplingRateGroup(1000, 1000, 4),
@@ -527,7 +528,7 @@ namespace Technosoftware.UaServer.NodeManager
             new SamplingRateGroup(300000, 60000, 15),
             new SamplingRateGroup(900000, 300000, 9),
             new SamplingRateGroup(3600000, 900000, 0)
-        };
+        ];
 
         #endregion
     }

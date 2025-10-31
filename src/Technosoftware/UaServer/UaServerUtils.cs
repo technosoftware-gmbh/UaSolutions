@@ -88,7 +88,8 @@ namespace Technosoftware.UaServer
 
             lock (events_)
             {
-                var e = new Event {
+                var e = new Event
+                {
                     EventType = EventType.WriteValue,
                     NodeId = nodeId,
                     ServerHandle = 0,
@@ -119,7 +120,8 @@ namespace Technosoftware.UaServer
 
             lock (events_)
             {
-                var e = new Event {
+                var e = new Event
+                {
                     EventType = EventType.QueueValue,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
@@ -144,7 +146,8 @@ namespace Technosoftware.UaServer
 
             lock (events_)
             {
-                var e = new Event {
+                var e = new Event
+                {
                     EventType = EventType.FilterValue,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
@@ -169,7 +172,8 @@ namespace Technosoftware.UaServer
 
             lock (events_)
             {
-                var e = new Event {
+                var e = new Event
+                {
                     EventType = EventType.DiscardValue,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
@@ -194,7 +198,8 @@ namespace Technosoftware.UaServer
 
             lock (events_)
             {
-                var e = new Event {
+                var e = new Event
+                {
                     EventType = EventType.PublishValue,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
@@ -226,13 +231,15 @@ namespace Technosoftware.UaServer
 
             lock (events_)
             {
-                var e = new Event {
+                var e = new Event
+                {
                     EventType = EventType.CreateItem,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
                     Timestamp = HiResClock.UtcNow,
                     Value = null,
-                    Parameters = new MonitoringParameters {
+                    Parameters = new MonitoringParameters
+                    {
                         SamplingInterval = samplingInterval,
                         QueueSize = queueSize,
                         DiscardOldest = discardOldest,
@@ -263,13 +270,15 @@ namespace Technosoftware.UaServer
 
             lock (events_)
             {
-                var e = new Event {
+                var e = new Event
+                {
                     EventType = EventType.ModifyItem,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
                     Timestamp = HiResClock.UtcNow,
                     Value = null,
-                    Parameters = new MonitoringParameters {
+                    Parameters = new MonitoringParameters
+                    {
                         SamplingInterval = samplingInterval,
                         QueueSize = queueSize,
                         DiscardOldest = discardOldest,

@@ -224,7 +224,7 @@ namespace Technosoftware.UaServer.UserDatabase
 
         private bool Check(string hash, string password)
         {
-            var separator = new Char[] { '.' };
+            var separator = new char[] { '.' };
             var parts = hash.Split(separator, 3);
 
             if (parts.Length != 3)
@@ -287,7 +287,6 @@ namespace Technosoftware.UaServer.UserDatabase
         internal ICollection<User> Users = new HashSet<User>();
         #endregion
     }
-
 
 }
 

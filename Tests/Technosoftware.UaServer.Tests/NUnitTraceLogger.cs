@@ -13,13 +13,11 @@
 using System;
 using System.Globalization;
 using System.IO;
-using NUnit.Framework;
 using Opc.Ua;
 #endregion
 
 namespace Technosoftware.UaServer.Tests
 {
-
 
     /// <summary>
     /// A NUnit trace logger replacement.

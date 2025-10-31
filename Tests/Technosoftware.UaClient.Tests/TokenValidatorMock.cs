@@ -20,7 +20,7 @@ namespace Technosoftware.UaClient.Tests
     public class TokenValidatorMock : ITokenValidator
     {
         public IssuedIdentityToken LastIssuedToken { get; set; }
-            
+
         public IUserIdentity ValidateToken(IssuedIdentityToken issuedToken)
         {
             this.LastIssuedToken = issuedToken;

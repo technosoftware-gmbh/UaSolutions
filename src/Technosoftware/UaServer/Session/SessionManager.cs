@@ -41,8 +41,10 @@ namespace Technosoftware.UaServer.Sessions
             IUaServerData server,
             ApplicationConfiguration configuration)
         {
-            if (server == null) throw new ArgumentNullException(nameof(server));
-            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
 
             m_server = server;
 
@@ -80,7 +82,7 @@ namespace Technosoftware.UaServer.Sessions
             {
                 // create snapshot of all sessions
                 var sessions = m_sessions.ToArray();
-                    m_sessions.Clear();
+                m_sessions.Clear();
 
                 foreach (var sessionKeyValue in sessions)
                 {
@@ -103,7 +105,8 @@ namespace Technosoftware.UaServer.Sessions
                 // start thread to monitor sessions.
                 m_shutdownEvent.Reset();
 
-                Task.Factory.StartNew(() => {
+                Task.Factory.StartNew(() =>
+                {
                     MonitorSessions(m_minSessionTimeout);
                 }, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach);
             }
@@ -176,7 +179,7 @@ namespace Technosoftware.UaServer.Sessions
 
                 // can assign a simple identifier if secured.
                 authenticationToken = null;
-                if (!String.IsNullOrEmpty(context.ChannelContext.SecureChannelId))
+                if (!string.IsNullOrEmpty(context.ChannelContext.SecureChannelId))
                 {
                     if (context.ChannelContext.EndpointDescription.SecurityMode != MessageSecurityMode.None)
                     {
@@ -205,9 +208,8 @@ namespace Technosoftware.UaServer.Sessions
                 // create server nonce.
                 var serverNonceObject = Nonce.CreateNonce(context.ChannelContext.EndpointDescription.SecurityPolicyUri);
 
-
                 // assign client name.
-                if (String.IsNullOrEmpty(sessionName))
+                if (string.IsNullOrEmpty(sessionName))
                 {
                     sessionName = Utils.Format("Session {0}", sessionId);
                 }
@@ -475,7 +477,8 @@ namespace Technosoftware.UaServer.Sessions
         /// </remarks>
         public virtual UaServerOperationContext ValidateRequest(RequestHeader requestHeader, RequestType requestType)
         {
-            if (requestHeader == null) throw new ArgumentNullException(nameof(requestHeader));
+            if (requestHeader == null)
+                throw new ArgumentNullException(nameof(requestHeader));
 
             Session session = null;
 
@@ -587,10 +590,14 @@ namespace Technosoftware.UaServer.Sessions
 
                 switch (reason)
                 {
-                    case SessionEventReason.Created: { handler = m_sessionCreated; break; }
-                    case SessionEventReason.Activated: { handler = m_sessionActivated; break; }
-                    case SessionEventReason.Closing: { handler = m_sessionClosing; break; }
-                    case SessionEventReason.ChannelKeepAlive: { handler = m_sessionChannelKeepAlive; break; }
+                    case SessionEventReason.Created:
+                    { handler = m_sessionCreated; break; }
+                    case SessionEventReason.Activated:
+                    { handler = m_sessionActivated; break; }
+                    case SessionEventReason.Closing:
+                    { handler = m_sessionClosing; break; }
+                    case SessionEventReason.ChannelKeepAlive:
+                    { handler = m_sessionChannelKeepAlive; break; }
                 }
 
                 if (handler != null)
@@ -815,7 +822,6 @@ namespace Technosoftware.UaServer.Sessions
                 return new List<Session>(m_sessions.Values);
             }
         }
-
 
         /// <inheritdoc/>
         public Session GetSession(NodeId authenticationToken)

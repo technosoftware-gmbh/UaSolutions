@@ -38,7 +38,7 @@ namespace Technosoftware.UaClient.Tests
     {
         #region DataPointSources
         [DatapointSource]
-        public static IUaSessionFactory[] SessionFactories = { TraceableSessionFactory.Instance, TestableSessionFactory.Instance, DefaultSessionFactory.Instance };
+        public static IUaSessionFactory[] SessionFactories = [TraceableSessionFactory.Instance, TestableSessionFactory.Instance, DefaultSessionFactory.Instance];
         #endregion
 
         #region Test Setup
@@ -52,7 +52,8 @@ namespace Technosoftware.UaClient.Tests
             PkiRoot = Path.GetTempPath() + Path.GetRandomFileName();
 
             // start ref server with reverse connect
-            ServerFixture = new ServerFixture<ReferenceServer> {
+            ServerFixture = new ServerFixture<ReferenceServer>
+            {
                 AutoAccept = true,
                 SecurityNone = true,
                 ReverseConnectTimeout = MaxTimeout,
@@ -125,10 +126,10 @@ namespace Technosoftware.UaClient.Tests
 
             using (var cancellationTokenSource = new CancellationTokenSource(MaxTimeout))
             {
-            var endpointConfiguration = EndpointConfiguration.Create();
-            endpointConfiguration.OperationTimeout = MaxTimeout;
-            using (DiscoveryClient client = DiscoveryClient.Create(config, connection, endpointConfiguration))
-            {
+                var endpointConfiguration = EndpointConfiguration.Create();
+                endpointConfiguration.OperationTimeout = MaxTimeout;
+                using (DiscoveryClient client = DiscoveryClient.Create(config, connection, endpointConfiguration))
+                {
                     Endpoints = await client.GetEndpointsAsync(null, cancellationTokenSource.Token).ConfigureAwait(false);
                     await client.CloseAsync(cancellationTokenSource.Token).ConfigureAwait(false);
                 }

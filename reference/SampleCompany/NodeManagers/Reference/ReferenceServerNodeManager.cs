@@ -39,7 +39,7 @@ namespace SampleCompany.NodeManagers.Reference
         public ReferenceServerNodeManager(
             IUaServerData server,
             ApplicationConfiguration configuration)
-            : base(server, configuration, Namespaces.SimulationServer)
+            : base(server, configuration, Namespaces.ReferenceServer)
         {
             SystemContext.NodeIdFactory = this;
 

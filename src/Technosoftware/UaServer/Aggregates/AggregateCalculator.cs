@@ -229,7 +229,7 @@ namespace Technosoftware.UaServer.Aggregates
             {
                 value.WrappedValue = Variant.Null;
             }
-            
+
             // delete unneeded data.
             if (TimeFlowsBackward)
             {
@@ -333,11 +333,11 @@ namespace Technosoftware.UaServer.Aggregates
         /// The configuration to use when processing.
         /// </summary>
         protected AggregateConfiguration Configuration { get; private set; }
-        
+
         /// <summary>
         /// Whether to use the server timestamp for all processing.
         /// </summary>
-        protected bool UseServerTimestamp { get; private set; } 
+        protected bool UseServerTimestamp { get; private set; }
 
         /// <summary>
         /// True if data is being processed in reverse order.
@@ -374,7 +374,7 @@ namespace Technosoftware.UaServer.Aggregates
         {
             if (value1 == null)
             {
-                return (value2 == null)?0:-1;
+                return (value2 == null) ? 0 : -1;
             }
 
             if (value2 == null)
@@ -416,7 +416,7 @@ namespace Technosoftware.UaServer.Aggregates
         {
             if (value2 == null)
             {
-                return (value1 == null)?0:+1;
+                return (value1 == null) ? 0 : +1;
             }
 
             return CompareTimestamps(value1, value2.Value);
@@ -432,7 +432,7 @@ namespace Technosoftware.UaServer.Aggregates
         {
             if (value1 == null)
             {
-                return (value2 == null)?0:-1;
+                return (value2 == null) ? 0 : -1;
             }
 
             if (value2 == null)
@@ -495,7 +495,7 @@ namespace Technosoftware.UaServer.Aggregates
 
             return true;
         }
- 
+
         /// <summary>
         /// Stores information about a slice of data to be processed.
         /// </summary>
@@ -631,7 +631,7 @@ namespace Technosoftware.UaServer.Aggregates
 
             if (!TimeFlowsBackward && slice.LastProcessedValue != null)
             {
-                start = slice.LastProcessedValue.Next; 
+                start = slice.LastProcessedValue.Next;
             }
 
             // reset the begin bound each time we go through the values.
@@ -639,7 +639,7 @@ namespace Technosoftware.UaServer.Aggregates
             {
                 slice.Begin = null;
             }
-            
+
             // initialize slice from value list.
             for (LinkedListNode<DataValue> ii = start; ii != null; ii = ii.Next)
             {
@@ -833,7 +833,7 @@ namespace Technosoftware.UaServer.Aggregates
                 if (IsGood(slice.Begin.Value))
                 {
                     return slice.Begin.Value;
-                }                
+                }
             }
 
             DataValue dataValue = null;
@@ -846,7 +846,7 @@ namespace Technosoftware.UaServer.Aggregates
                 if (slice.EarlyBound != null && slice.LateBound != null)
                 {
                     dataValue = SlopedInterpolate(timestamp, slice.EarlyBound.Value, slice.LateBound.Value);
-                    
+
                     if (!Object.ReferenceEquals(slice.EarlyBound.Next, slice.LateBound))
                     {
                         dataValue.StatusCode = dataValue.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
@@ -1055,7 +1055,7 @@ namespace Technosoftware.UaServer.Aggregates
             // look for an end bound.
             bool revertToStepped = false;
             LinkedListNode<DataValue> endBound = startBound.Next;
-            
+
             if (!Stepped)
             {
                 if (endBound != null)
@@ -1101,7 +1101,7 @@ namespace Technosoftware.UaServer.Aggregates
                 return null;
             }
 
-            List<DataValue> values = new List<DataValue>();
+            List<DataValue> values = [];
 
             // add the start point.
             DataValue startBound = GetSimpleBound(slice.StartTime, slice);
@@ -1147,7 +1147,7 @@ namespace Technosoftware.UaServer.Aggregates
                 return null;
             }
 
-            List<DataValue> values = new List<DataValue>();
+            List<DataValue> values = [];
 
             // initialize slice from value list.
             for (LinkedListNode<DataValue> ii = slice.Begin; ii != null; ii = ii.Next)
@@ -1192,7 +1192,7 @@ namespace Technosoftware.UaServer.Aggregates
                 return null;
             }
 
-            List<DataValue> values = new List<DataValue>();
+            List<DataValue> values = [];
 
             // add the start point.
             DataValue startBound = Interpolate(slice.StartTime, slice);
@@ -1226,7 +1226,7 @@ namespace Technosoftware.UaServer.Aggregates
 
             return values;
         }
-        
+
         /// <summary>
         /// A subset of a slice bounded by two raw data points.
         /// </summary>
@@ -1275,7 +1275,7 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             SubRegion currentRegion = null;
-            List<SubRegion> regions = new List<SubRegion>();
+            List<SubRegion> regions = [];
 
             for (int ii = 0; ii < values.Count; ii++)
             {
@@ -1387,7 +1387,7 @@ namespace Technosoftware.UaServer.Aggregates
 
                         currentRegion.Duration = (currentTime - currentRegion.StartTime).TotalMilliseconds;
                     }
-                     
+
                     regions.Add(currentRegion);
                 }
 

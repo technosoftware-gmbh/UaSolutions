@@ -113,7 +113,8 @@ namespace Technosoftware.UaClient.Tests
         /// <inheritdoc/>
         public override Session CloneSession(ITransportChannel channel, bool copyEventHandlers)
         {
-            return new TestableSession(channel, this, copyEventHandlers) {
+            return new TestableSession(channel, this, copyEventHandlers)
+            {
                 TimestampOffset = this.TimestampOffset,
             };
         }
@@ -138,7 +139,7 @@ namespace Technosoftware.UaClient.Tests
         /// Constructs a new instance of the <see cref="TestableSubscription"/> class.
         /// </summary>
         public TestableSubscription(Subscription template)
-            : this (template, false)
+            : this(template, false)
         {
         }
 

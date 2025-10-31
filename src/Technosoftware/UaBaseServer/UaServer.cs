@@ -39,7 +39,7 @@ namespace Technosoftware.UaBaseServer
         /// Frees any unmanaged resources.
         /// </summary>
         public void Dispose()
-        {   
+        {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -48,7 +48,7 @@ namespace Technosoftware.UaBaseServer
         /// An overrideable version of the Dispose.
         /// </summary>
         protected virtual void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 BaseServer.Dispose();
@@ -103,7 +103,7 @@ namespace Technosoftware.UaBaseServer
                     return;
                 }
 
-                var application = new ApplicationInstance { ApplicationType = ApplicationType.Server, CertificatePasswordProvider = passwordProvider};
+                var application = new ApplicationInstance { ApplicationType = ApplicationType.Server, CertificatePasswordProvider = passwordProvider };
 
                 var useReverseConnect = false;
 

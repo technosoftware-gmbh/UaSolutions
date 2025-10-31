@@ -56,9 +56,6 @@ namespace Technosoftware.UaClient.Tests
         }
     }
 
-
-
-
     internal class CPBatchTestMemoryWriter : TextWriter
     {
         private MemoryStream m_stream = new MemoryStream(64000);
@@ -75,14 +72,15 @@ namespace Technosoftware.UaClient.Tests
             m_writer.Write(value);
         }
 
-        public List<String> getEntries()
+        public List<string> getEntries()
         {
             m_stream.Position = 0;
-            List<string> entries = new List<string>();
+            List<string> entries = [];
             using (var sr = new StreamReader(m_stream))
             {
                 string line;
-                while ((line = sr.ReadLine()) != null) { entries.Add(line); }
+                while ((line = sr.ReadLine()) != null)
+                { entries.Add(line); }
             }
             // get entries closes the stream.
             m_stream = new MemoryStream(64000);
@@ -114,36 +112,40 @@ namespace Technosoftware.UaClient.Tests
     public class ContinuationPointInBatchTest : ClientTestFramework
     {
 
-        public static readonly object[] CPFixtureArgs = {
+        public static readonly object[] CPFixtureArgs = [
             new object [] { Utils.UriSchemeOpcTcp}
-        };
+        ];
 
         [DatapointSource]
         public IEnumerable<ManagedBrowseTestDataProvider> ManagedBrowseTestDataValues()
         {
-            yield return new ManagedBrowseTestDataProvider {
+            yield return new ManagedBrowseTestDataProvider
+            {
                 MaxNumberOfContinuationPoints = 2,
                 MaxNumberOfReferencesPerNode = 10,
                 ExpectedNumberOfPasses = 5,
-                ExpectedNumberOfBadNoCPSCs = new List<int> { 15, 9, 5, 3, 1 }
+                ExpectedNumberOfBadNoCPSCs = [15, 9, 5, 3, 1]
             };
-            yield return new ManagedBrowseTestDataProvider {
+            yield return new ManagedBrowseTestDataProvider
+            {
                 MaxNumberOfContinuationPoints = 4,
                 MaxNumberOfReferencesPerNode = 10,
                 ExpectedNumberOfPasses = 2,
-                ExpectedNumberOfBadNoCPSCs = new List<int> { 5, 1 }
+                ExpectedNumberOfBadNoCPSCs = [5, 1]
             };
-            yield return new ManagedBrowseTestDataProvider {
+            yield return new ManagedBrowseTestDataProvider
+            {
                 MaxNumberOfContinuationPoints = 20,
                 MaxNumberOfReferencesPerNode = 50,
                 ExpectedNumberOfPasses = 1,
-                ExpectedNumberOfBadNoCPSCs = new List<int>()
+                ExpectedNumberOfBadNoCPSCs = []
             };
-            yield return new ManagedBrowseTestDataProvider {
+            yield return new ManagedBrowseTestDataProvider
+            {
                 MaxNumberOfContinuationPoints = 5,
                 MaxNumberOfReferencesPerNode = 10,
                 ExpectedNumberOfPasses = 1,
-                ExpectedNumberOfBadNoCPSCs = new List<int>()
+                ExpectedNumberOfBadNoCPSCs = []
             };
         }
 
@@ -160,7 +162,8 @@ namespace Technosoftware.UaClient.Tests
             {
 
                 // start Ref server                                
-                ServerFixtureWithLimits = new ServerFixture<ReferenceServerWithLimits>(enableTracing, disableActivityLogging) {
+                ServerFixtureWithLimits = new ServerFixture<ReferenceServerWithLimits>(enableTracing, disableActivityLogging)
+                {
                     UriScheme = UriScheme,
                     SecurityNone = securityNone,
                     AutoAccept = true,
@@ -280,7 +283,8 @@ namespace Technosoftware.UaClient.Tests
             theSession.ContinuationPointPolicy = ContinuationPointPolicy.Default;
 
             // the ExpectedNumber* parameters are not relevant/correct for this test.
-            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = testData.MaxNumberOfContinuationPoints,
                 InputMaxNumberOfReferencesPerNode = testData.MaxNumberOfReferencesPerNode,
                 ExpectedNumberOfPasses = testData.ExpectedNumberOfPasses,
@@ -345,7 +349,8 @@ namespace Technosoftware.UaClient.Tests
             theSession.ContinuationPointPolicy = policy;
 
             // the ExpectedNumber* parameters are not relevant/correct for this test.
-            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = testData.MaxNumberOfContinuationPoints,
                 InputMaxNumberOfReferencesPerNode = testData.MaxNumberOfReferencesPerNode,
                 ExpectedNumberOfPasses = testData.ExpectedNumberOfPasses,
@@ -432,19 +437,20 @@ namespace Technosoftware.UaClient.Tests
 
             theSession.ContinuationPointPolicy = ContinuationPointPolicy.Default;
 
-
-            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = testData.MaxNumberOfContinuationPoints,
                 InputMaxNumberOfReferencesPerNode = testData.MaxNumberOfReferencesPerNode,
                 ExpectedNumberOfPasses = testData.ExpectedNumberOfPasses,
                 ExpectedNumberOfBadNoCPSCs = testData.ExpectedNumberOfBadNoCPSCs
             };
 
-            ManagedBrowseExpectedResultValues pass2ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass2ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = 0,
                 InputMaxNumberOfReferencesPerNode = 1000,
                 ExpectedNumberOfPasses = 1,
-                ExpectedNumberOfBadNoCPSCs = new List<int>()
+                ExpectedNumberOfBadNoCPSCs = []
             };
 
             ReferenceServerWithLimits.Test_MaxBrowseReferencesPerNode =
@@ -464,22 +470,21 @@ namespace Technosoftware.UaClient.Tests
 
             Assert.AreEqual(nodeIds.Count, referenceDescriptionCollectionsPass1.Count);
 
-            List<String> memoryLogPass1 = memoryWriter.getEntries();
+            List<string> memoryLogPass1 = memoryWriter.getEntries();
             WriteMemoryLogToTextOut(memoryLogPass1, "memoryLogPass1");
 #if DEBUG
             VerifyExpectedResults(memoryLogPass1, pass1ExpectedResults);
 #endif
 
-            memoryWriter.Close(); memoryWriter.Dispose();
+            memoryWriter.Close();
+            memoryWriter.Dispose();
 
             // reset memory log
             memoryWriter = new CPBatchTestMemoryWriter();
             base.ClientFixture.SetTraceOutput(memoryWriter);
 
-
             //set log level to ensure we get all messages
             base.ClientFixture.SetTraceOutputLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
-
 
             // now reset the server qutas to get a browse scenario without continuation points. This allows
             // to verify the result from the first browse service call (with quotas in place).
@@ -491,25 +496,23 @@ namespace Technosoftware.UaClient.Tests
             theSession.ServerMaxContinuationPointsPerBrowse =
                 pass2ExpectedResults.InputMaxNumberOfContinuationPoints;
 
-
             theSession.ManagedBrowse(
                 null, null, nodeIds, 0, BrowseDirection.Forward, ReferenceTypeIds.Organizes, true, 0,
                 out var referenceDescriptionsPass2, out var errorsPass2);
             Assert.AreEqual(nodeIds.Count, referenceDescriptionsPass2.Count);
 
-            List<String> memoryLogPass2 = memoryWriter.getEntries();
+            List<string> memoryLogPass2 = memoryWriter.getEntries();
             WriteMemoryLogToTextOut(memoryLogPass2, "memoryLogPass2");
 #if DEBUG
             // since there is no randomness in this test, we can verify the results directly
             VerifyExpectedResults(memoryLogPass2, pass2ExpectedResults);
 #endif
-            memoryWriter.Close(); memoryWriter.Dispose();
+            memoryWriter.Close();
+            memoryWriter.Dispose();
 
             base.ClientFixture.SetTraceOutput(TestContext.Out);
             // reset the log level
             base.ClientFixture.SetTraceOutputLevel();
-
-
 
             // finally browse again with a simple browse service call.
             theSession.Browse(null, null, nodeIds, 0, BrowseDirection.Forward,
@@ -518,7 +521,6 @@ namespace Technosoftware.UaClient.Tests
                 out var referenceDescriptionCollections2ndBrowse,
                 out var errors2ndBrowse);
 
-
             Random random = new Random();
             int index = 0;
             foreach (var referenceDescriptionCollection in referenceDescriptionCollectionsPass1)
@@ -526,9 +528,9 @@ namespace Technosoftware.UaClient.Tests
                 Assert.That(referenceDescriptionCollection.Count, Is.EqualTo(referenceDescriptionCollections2ndBrowse[index].Count));
 
                 // now verify that the type of the nodes are the same, once for each list of reference descriptions
-                String randomNodeName =
+                string randomNodeName =
                     referenceDescriptionCollection[random.Next(0, referenceDescriptionCollection.Count - 1)].DisplayName.Text;
-                String suffix = getSuffixesForMassFolders()[index];
+                string suffix = getSuffixesForMassFolders()[index];
                 Assert.IsTrue(randomNodeName.StartsWith(suffix));
 
                 int ii = random.Next(0, referenceDescriptionCollection.Count - 1);
@@ -540,8 +542,6 @@ namespace Technosoftware.UaClient.Tests
             }
 
         }
-
-
 
         /// <summary>
         /// For each entry in the datapoint source, the test browses some folders in the reference
@@ -575,18 +575,20 @@ namespace Technosoftware.UaClient.Tests
 
             theSession.ContinuationPointPolicy = ContinuationPointPolicy.Balanced;
 
-            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = testData.MaxNumberOfContinuationPoints,
                 InputMaxNumberOfReferencesPerNode = testData.MaxNumberOfReferencesPerNode,
                 ExpectedNumberOfPasses = testData.ExpectedNumberOfPasses,
                 ExpectedNumberOfBadNoCPSCs = testData.ExpectedNumberOfBadNoCPSCs
             };
 
-            ManagedBrowseExpectedResultValues pass2ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass2ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = 0,
                 InputMaxNumberOfReferencesPerNode = 1000,
                 ExpectedNumberOfPasses = 1,
-                ExpectedNumberOfBadNoCPSCs = new List<int>()
+                ExpectedNumberOfBadNoCPSCs = []
             };
 
             ReferenceServerWithLimits.Test_MaxBrowseReferencesPerNode =
@@ -599,7 +601,6 @@ namespace Technosoftware.UaClient.Tests
 
             List<NodeId> nodeIds = getMassFolderNodesToBrowse();
 
-
             // browse with test settings
             theSession.ManagedBrowse(
                 null, null, nodeIds, 0, BrowseDirection.Forward, ReferenceTypeIds.Organizes, true, 0,
@@ -607,21 +608,20 @@ namespace Technosoftware.UaClient.Tests
 
             Assert.AreEqual(nodeIds.Count, referenceDescriptionCollectionsPass1.Count);
 
-            List<String> memoryLogPass1 = memoryWriter.getEntries();
+            List<string> memoryLogPass1 = memoryWriter.getEntries();
             WriteMemoryLogToTextOut(memoryLogPass1, "memoryLogPass1");
             // this is no typo - we expect no error, hence we use pass2ExpectedResults
             VerifyExpectedResults(memoryLogPass1, pass2ExpectedResults);
 
-            memoryWriter.Close(); memoryWriter.Dispose();
+            memoryWriter.Close();
+            memoryWriter.Dispose();
 
             // reset memory log
             memoryWriter = new CPBatchTestMemoryWriter();
             base.ClientFixture.SetTraceOutput(memoryWriter);
 
-
             //set log level to ensure we get all messages
             base.ClientFixture.SetTraceOutputLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
-
 
             // now reset the server qutas to get a browse scenario without continuation points. This allows
             // to verify the result from the first browse service call (with quotas in place).
@@ -641,19 +641,18 @@ namespace Technosoftware.UaClient.Tests
                 out var referenceDescriptionsPass2, out var errorsPass2);
             Assert.AreEqual(nodeIds.Count, referenceDescriptionsPass2.Count);
 
-            List<String> memoryLogPass2 = memoryWriter.getEntries();
+            List<string> memoryLogPass2 = memoryWriter.getEntries();
             WriteMemoryLogToTextOut(memoryLogPass2, "memoryLogPass2");
 
             // since there is no randomness in this test, we can verify the results directly
             VerifyExpectedResults(memoryLogPass2, pass2ExpectedResults);
 
-            memoryWriter.Close(); memoryWriter.Dispose();
+            memoryWriter.Close();
+            memoryWriter.Dispose();
 
             base.ClientFixture.SetTraceOutput(TestContext.Out);
             // reset the log level
             base.ClientFixture.SetTraceOutputLevel();
-
-
 
             // finally browse again with a simple browse service call.
             theSession.Browse(null, null, nodeIds, 0, BrowseDirection.Forward,
@@ -662,7 +661,6 @@ namespace Technosoftware.UaClient.Tests
                 out var referenceDescriptionCollections2ndBrowse,
                 out var errors2ndBrowse);
 
-
             Random random = new Random();
             int index = 0;
             foreach (var referenceDescriptionCollection in referenceDescriptionCollectionsPass1)
@@ -670,9 +668,9 @@ namespace Technosoftware.UaClient.Tests
                 Assert.That(referenceDescriptionCollection.Count, Is.EqualTo(referenceDescriptionCollections2ndBrowse[index].Count));
 
                 // now verify that the type of the nodes are the same, once for each list of reference descriptions
-                String randomNodeName =
+                string randomNodeName =
                     referenceDescriptionCollection[random.Next(0, referenceDescriptionCollection.Count - 1)].DisplayName.Text;
-                String suffix = getSuffixesForMassFolders()[index];
+                string suffix = getSuffixesForMassFolders()[index];
                 Assert.IsTrue(randomNodeName.StartsWith(suffix));
 
                 int ii = random.Next(0, referenceDescriptionCollection.Count - 1);
@@ -716,19 +714,20 @@ namespace Technosoftware.UaClient.Tests
 
             theSession.ContinuationPointPolicy = policy;
 
-
-            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = testData.MaxNumberOfContinuationPoints,
                 InputMaxNumberOfReferencesPerNode = testData.MaxNumberOfReferencesPerNode,
                 ExpectedNumberOfPasses = testData.ExpectedNumberOfPasses,
                 ExpectedNumberOfBadNoCPSCs = testData.ExpectedNumberOfBadNoCPSCs
             };
 
-            ManagedBrowseExpectedResultValues pass2ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass2ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = 0,
                 InputMaxNumberOfReferencesPerNode = 1000,
                 ExpectedNumberOfPasses = 1,
-                ExpectedNumberOfBadNoCPSCs = new List<int>()
+                ExpectedNumberOfBadNoCPSCs = []
             };
 
             ReferenceServerWithLimits.Test_MaxBrowseReferencesPerNode =
@@ -743,11 +742,11 @@ namespace Technosoftware.UaClient.Tests
             List<NodeId> nodeIds1 = nodeIds.GetRange(0, nodeIds.Count / 2);
             List<NodeId> nodeIds2 = nodeIds.Skip(nodeIds.Count / 2).ToList();
 
-            IList<ReferenceDescriptionCollection> referenceDescriptionCollectionsPass1 = new List<ReferenceDescriptionCollection>();
-            IList<ReferenceDescriptionCollection> referenceDescriptionCollectionsPass2 = new List<ReferenceDescriptionCollection>();
+            IList<ReferenceDescriptionCollection> referenceDescriptionCollectionsPass1 = [];
+            IList<ReferenceDescriptionCollection> referenceDescriptionCollectionsPass2 = [];
 
-            IList<ServiceResult> errorsPass1 = new List<ServiceResult>();
-            IList<ServiceResult> errorsPass2 = new List<ServiceResult>();
+            IList<ServiceResult> errorsPass1 = [];
+            IList<ServiceResult> errorsPass2 = [];
 
             Parallel.Invoke(
                 () => theSession.ManagedBrowse(
@@ -761,10 +760,11 @@ namespace Technosoftware.UaClient.Tests
             Assert.AreEqual(nodeIds1.Count, referenceDescriptionCollectionsPass1.Count);
             Assert.AreEqual(nodeIds2.Count, referenceDescriptionCollectionsPass2.Count);
 
-            List<String> memoryLogPass1 = memoryWriter.getEntries();
+            List<string> memoryLogPass1 = memoryWriter.getEntries();
             WriteMemoryLogToTextOut(memoryLogPass1, "memoryLogPass1");
 
-            memoryWriter.Close(); memoryWriter.Dispose();
+            memoryWriter.Close();
+            memoryWriter.Dispose();
 
             // reset memory log
             memoryWriter = new CPBatchTestMemoryWriter();
@@ -784,13 +784,11 @@ namespace Technosoftware.UaClient.Tests
             theSession.ServerMaxContinuationPointsPerBrowse
                 = pass2ExpectedResults.InputMaxNumberOfContinuationPoints;
 
-
             theSession.Browse(null, null, nodeIds, 0, BrowseDirection.Forward,
                 ReferenceTypeIds.Organizes, true, 0,
                 out var continuationPoints2ndBrowse,
                 out var referenceDescriptionCollections2ndBrowse,
                 out var errors2ndBrowse);
-
 
             Random random = new Random();
             int index = 0;
@@ -799,9 +797,9 @@ namespace Technosoftware.UaClient.Tests
                 Assert.That(referenceDescriptionCollection.Count, Is.EqualTo(referenceDescriptionCollections2ndBrowse[index].Count));
 
                 // now verify that the types of the nodes are the same, once for each list of reference descriptions
-                String randomNodeName =
+                string randomNodeName =
                     referenceDescriptionCollection[random.Next(0, referenceDescriptionCollection.Count - 1)].DisplayName.Text;
-                String suffix = getSuffixesForMassFolders()[index];
+                string suffix = getSuffixesForMassFolders()[index];
                 Assert.IsTrue(randomNodeName.StartsWith(suffix));
 
                 int ii = random.Next(0, referenceDescriptionCollection.Count - 1);
@@ -813,7 +811,7 @@ namespace Technosoftware.UaClient.Tests
             }
 
         }
-#endregion Tests
+        #endregion Tests
 
         #region async tests
 
@@ -835,7 +833,8 @@ namespace Technosoftware.UaClient.Tests
             theSession.ContinuationPointPolicy = ContinuationPointPolicy.Default;
 
             // the ExpectedNumber* parameters are not relevant/correct for this test.
-            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = testData.MaxNumberOfContinuationPoints,
                 InputMaxNumberOfReferencesPerNode = testData.MaxNumberOfReferencesPerNode,
                 ExpectedNumberOfPasses = testData.ExpectedNumberOfPasses,
@@ -890,7 +889,6 @@ namespace Technosoftware.UaClient.Tests
 
         }
 
-
         /// <summary>
         /// This test is taken from the node cache unit test.
         /// Instead of the original test, there are now restrctions
@@ -909,7 +907,8 @@ namespace Technosoftware.UaClient.Tests
             theSession.ContinuationPointPolicy = policy;
 
             // the ExpectedNumber* parameters are not relevant/correct for this test.
-            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = testData.MaxNumberOfContinuationPoints,
                 InputMaxNumberOfReferencesPerNode = testData.MaxNumberOfReferencesPerNode,
                 ExpectedNumberOfPasses = testData.ExpectedNumberOfPasses,
@@ -963,7 +962,6 @@ namespace Technosoftware.UaClient.Tests
             TestContext.Out.WriteLine("Found {0} variables", result.Count);
         }
 
-
         /// <summary>
         /// same as the ManagedBrowseWithManyContinuationPoints, but
         /// with the ContinuationPointPolicy set to 'Default'. Instead of calling
@@ -980,18 +978,20 @@ namespace Technosoftware.UaClient.Tests
 
             theSession.ContinuationPointPolicy = ContinuationPointPolicy.Default;
 
-            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass1ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = testData.MaxNumberOfContinuationPoints,
                 InputMaxNumberOfReferencesPerNode = testData.MaxNumberOfReferencesPerNode,
                 ExpectedNumberOfPasses = testData.ExpectedNumberOfPasses,
                 ExpectedNumberOfBadNoCPSCs = testData.ExpectedNumberOfBadNoCPSCs
             };
 
-            ManagedBrowseExpectedResultValues pass2ExpectedResults = new ManagedBrowseExpectedResultValues {
+            ManagedBrowseExpectedResultValues pass2ExpectedResults = new ManagedBrowseExpectedResultValues
+            {
                 InputMaxNumberOfContinuationPoints = 0,
                 InputMaxNumberOfReferencesPerNode = 1000,
                 ExpectedNumberOfPasses = 1,
-                ExpectedNumberOfBadNoCPSCs = new List<int>()
+                ExpectedNumberOfBadNoCPSCs = []
             };
 
             ReferenceServerWithLimits.Test_MaxBrowseReferencesPerNode =
@@ -1016,17 +1016,18 @@ namespace Technosoftware.UaClient.Tests
             Assert.AreEqual(nodeIds.Count, referenceDescriptionCollectionPass1.Count);
 
 #if DEBUG
-            List<String> memoryLogPass1 = memoryWriter.getEntries();
+            List<string> memoryLogPass1 = memoryWriter.getEntries();
             WriteMemoryLogToTextOut(memoryLogPass1, "memoryLogPass1");
             VerifyExpectedResults(memoryLogPass1, pass1ExpectedResults);
 #endif
 
-            memoryWriter.Close(); memoryWriter.Dispose();
+            memoryWriter.Close();
+            memoryWriter.Dispose();
         }
         #endregion async tests
 
         #region helper methods
-        private void WriteMemoryLogToTextOut(List<String> memoryLog, string contextInfo)
+        private void WriteMemoryLogToTextOut(List<string> memoryLog, string contextInfo)
         {
             Session theSession = ((Session)(((TraceableSession)Session).Session));
 
@@ -1035,7 +1036,7 @@ namespace Technosoftware.UaClient.Tests
             if (memoryLog.Count > 0)
             {
                 TestContext.WriteLine($"<!-- begin: output from memory log from context {contextInfo} -->");
-                foreach (String s in memoryLog)
+                foreach (string s in memoryLog)
                 {
                     TestContext.Out.WriteLine(s);
                 }
@@ -1055,12 +1056,12 @@ namespace Technosoftware.UaClient.Tests
             Assert.IsTrue(messagesWithBadNoCPSC.Count == expectedResults.ExpectedNumberOfBadNoCPSCs.Count);
 
             int pass = 0;
-            foreach (String s in messagesWithBadNoCPSC)
+            foreach (string s in messagesWithBadNoCPSC)
             {
                 // get the part of the error message after the time stamp:
                 string msg = s.Substring(s.IndexOf("ManagedBrowse"));
                 // create error message from expected results
-                String expectedString = String.Format(
+                string expectedString = string.Format(
                     "ManagedBrowse: in pass {0}, {1} {2} occured with a status code {3}.",
                     pass,
                     expectedResults.ExpectedNumberOfBadNoCPSCs[pass],
@@ -1074,17 +1075,17 @@ namespace Technosoftware.UaClient.Tests
         List<NodeId> getMassFolderNodesToBrowse()
         {
 
-            String MassFolderPrefix = "Scalar_Simulation_Mass_";
+            string MassFolderPrefix = "Scalar_Simulation_Mass_";
 
-            List<String> nodesToBrowse = new List<String>();
+            List<string> nodesToBrowse = [];
             foreach (string suffix in getSuffixesForMassFolders())
             {
                 nodesToBrowse.Add(MassFolderPrefix + suffix);
             }
 
             int nsi = Session.NamespaceUris.GetIndex("http://samplecompany.com/SampleServer/NodeManagers/Reference");
-            List<NodeId> result = new List<NodeId>();
-            foreach (String nodeString in nodesToBrowse)
+            List<NodeId> result = [];
+            foreach (string nodeString in nodesToBrowse)
             {
                 result.Add(new NodeId(nodeString, (ushort)nsi));
             }
@@ -1093,18 +1094,19 @@ namespace Technosoftware.UaClient.Tests
 
         List<string> getSuffixesForMassFolders()
         {
-            return new List<string>
-            {
+            return
+            [
                 "Boolean", "Byte", "ByteString", "DateTime", "Double", "Duration", "Float", "Guid",
                 "Int16", "Int32", "Int64", "Integer", "LocaleId", "LocalizedText", "NodeId", "Number",
                 "QualifiedName", "SByte", "String", "UInt16", "UInt32", "UInt64", "UInteger", "UtcTime",
                 "Variant", "XmlElement"
-            };
+            ];
         }
 
         private void BrowseFullAddressSpace()
         {
-            var requestHeader = new RequestHeader {
+            var requestHeader = new RequestHeader
+            {
                 Timestamp = DateTime.UtcNow,
                 TimeoutHint = MaxTimeout
             };

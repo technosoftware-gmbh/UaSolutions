@@ -112,7 +112,8 @@ namespace Technosoftware.UaClient.Tests
             TestContext.Out.WriteLine("MaxNotificationsPerPublish: {0}", subscription.MaxNotificationsPerPublish);
             TestContext.Out.WriteLine("MinLifetimeInterval: {0}", subscription.MinLifetimeInterval);
 
-            subscription.SubscriptionStatusChangedEvent += (object sender, SubscriptionStatusChangedEventArgs e) => {
+            subscription.SubscriptionStatusChangedEvent += (object sender, SubscriptionStatusChangedEventArgs e) =>
+            {
                 TestContext.Out.WriteLine("SubscriptionStateChangedEventArgs: Id: {0} Status: {1}", subscription.Id, e.Status);
             };
 
@@ -134,7 +135,8 @@ namespace Technosoftware.UaClient.Tests
 
             var simulatedNodes = GetTestSetSimulation(Session.NamespaceUris);
             list2.AddRange(CreateMonitoredItemTestSet(subscription, simulatedNodes));
-            list2.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+            list2.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+            {
                 MonitoredItem item = (MonitoredItem)sender;
                 foreach (var value in item.DequeueValues())
                 {
@@ -200,7 +202,8 @@ namespace Technosoftware.UaClient.Tests
                     DisplayName = "ServerStatusCurrentTime", StartNodeId = VariableIds.Server_ServerStatus_CurrentTime
                 }
             };
-            list.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+            list.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+            {
                 MonitoredItem item = (MonitoredItem)sender;
                 foreach (var value in item.DequeueValues())
                 {
@@ -214,7 +217,8 @@ namespace Technosoftware.UaClient.Tests
             TestContext.Out.WriteLine("MaxNotificationsPerPublish: {0}", subscription.MaxNotificationsPerPublish);
             TestContext.Out.WriteLine("MinLifetimeInterval: {0}", subscription.MinLifetimeInterval);
 
-            subscription.SubscriptionStatusChangedEvent += (object sender, SubscriptionStatusChangedEventArgs e) => {
+            subscription.SubscriptionStatusChangedEvent += (object sender, SubscriptionStatusChangedEventArgs e) =>
+            {
                 TestContext.Out.WriteLine("SubscriptionStateChangedEventArgs: Id: {0} Status: {1}", subscription.Id, e.Status);
             };
 
@@ -248,7 +252,8 @@ namespace Technosoftware.UaClient.Tests
 
             var simulatedNodes = GetTestSetSimulation(Session.NamespaceUris);
             list2.AddRange(CreateMonitoredItemTestSet(subscription, simulatedNodes));
-            list2.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+            list2.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+            {
                 MonitoredItem item = (MonitoredItem)sender;
                 foreach (var value in item.DequeueValues())
                 {
@@ -298,7 +303,8 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(200)]
         public async Task LoadSubscriptionAsync()
         {
-            if (!File.Exists(subscriptionTestXml_)) Assert.Ignore($"Save file {subscriptionTestXml_} does not exist yet");
+            if (!File.Exists(subscriptionTestXml_))
+                Assert.Ignore($"Save file {subscriptionTestXml_} does not exist yet");
 
             // load
             var subscriptions = Session.Load(subscriptionTestXml_, false, new[] { typeof(TestableSubscription) });
@@ -310,7 +316,8 @@ namespace Technosoftware.UaClient.Tests
             foreach (var subscription in subscriptions)
             {
                 var list = subscription.MonitoredItems.ToList();
-                list.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+                list.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+                {
                     MonitoredItem item = (MonitoredItem)sender;
                     foreach (var value in item.DequeueValues())
                     {
@@ -361,7 +368,8 @@ namespace Technosoftware.UaClient.Tests
             // multiple Subscriptions to enforce multiple queued publish requests
             for (int i = 0; i < subscriptions; i++)
             {
-                var s = new TestableSubscription(Session.DefaultSubscription) {
+                var s = new TestableSubscription(Session.DefaultSubscription)
+                {
                     SequentialPublishing = enabled,
                     KeepAliveCount = 10,
                     PublishingInterval = 100,
@@ -381,7 +389,8 @@ namespace Technosoftware.UaClient.Tests
             {
                 testSet.AddRange(GetTestSetFullSimulation(Session.NamespaceUris));
             }
-            var monitoredItemsList = testSet.Select(nodeId => new MonitoredItem(subscription.DefaultItem) {
+            var monitoredItemsList = testSet.Select(nodeId => new MonitoredItem(subscription.DefaultItem)
+            {
                 StartNodeId = nodeId,
                 SamplingInterval = 0,
             }).ToList();
@@ -406,14 +415,16 @@ namespace Technosoftware.UaClient.Tests
             }
 
             // track the last reported sequence number
-            subscription.FastDataChangeCallback = (s, notification, __) => {
+            subscription.FastDataChangeCallback = (s, notification, __) =>
+            {
                 Interlocked.Increment(ref numOfNotifications);
                 if (dictionary[s.Id] > notification.SequenceNumber)
                 {
                     TestContext.Out.WriteLine("Out of order encountered Id: {0}, {1} > {2}", s.Id, dictionary[s.Id], notification.SequenceNumber);
                     sequenceBroken.Set();
                     return;
-                };
+                }
+                ;
                 dictionary[s.Id] = notification.SequenceNumber;
             };
 
@@ -520,7 +531,6 @@ namespace Technosoftware.UaClient.Tests
             [Values(true, false)] bool sendInitialValues)
             => ReconnectWithSavedSessionSecretsAsync(securityPolicy, anonymous, sequentialPublishing, sendInitialValues, true);
 
-
         public async Task ReconnectWithSavedSessionSecretsAsync(string securityPolicy, bool anonymous, bool sequentialPublishing, bool sendInitialValues, bool asyncTest)
         {
             const int kTestSubscriptions = 5;
@@ -559,7 +569,8 @@ namespace Technosoftware.UaClient.Tests
             var originSubscriptionFastDataCounters = new int[kTestSubscriptions];
             var targetSubscriptionCounters = new int[kTestSubscriptions];
             var targetSubscriptionFastDataCounters = new int[kTestSubscriptions];
-            var subscriptionTemplate = new TestableSubscription(session1.DefaultSubscription) {
+            var subscriptionTemplate = new TestableSubscription(session1.DefaultSubscription)
+            {
                 PublishingInterval = 1_000,
                 KeepAliveCount = 5,
                 PublishingEnabled = true,
@@ -615,12 +626,14 @@ namespace Technosoftware.UaClient.Tests
             foreach (var subscription in restoredSubscriptions)
             {
                 subscription.Handle = ii;
-                subscription.FastDataChangeCallback = (s, n, _) => {
+                subscription.FastDataChangeCallback = (s, n, _) =>
+                {
                     TestContext.Out.WriteLine($"FastDataChangeHandlerTarget: {s.Id}-{n.SequenceNumber}-{n.MonitoredItems.Count}");
                     targetSubscriptionFastDataCounters[(int)subscription.Handle]++;
                 };
                 subscription.MonitoredItems.ToList().ForEach(i =>
-                    i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+                    i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+                    {
                         MonitoredItem item = (MonitoredItem)sender;
                         targetSubscriptionCounters[(int)subscription.Handle]++;
                         foreach (var value in item.DequeueValues())
@@ -633,7 +646,8 @@ namespace Technosoftware.UaClient.Tests
             }
 
             // hook callback to renew the user identity
-            session2.RenewUserIdentityEvent += (session, identity) => {
+            session2.RenewUserIdentityEvent += (session, identity) =>
+            {
                 return userIdentity;
             };
 
@@ -758,13 +772,15 @@ namespace Technosoftware.UaClient.Tests
 
             for (int i = 0; i < subscriptions; i++)
             {
-                var subscription = new TestableSubscription(Session.DefaultSubscription) {
+                var subscription = new TestableSubscription(Session.DefaultSubscription)
+                {
                     PublishingInterval = 0,
                     DisableMonitoredItemCache = true,
                     PublishingEnabled = true
                 };
 
-                subscription.FastDataChangeCallback = (_, notification, __) => {
+                subscription.FastDataChangeCallback = (_, notification, __) =>
+                {
                     Interlocked.Add(ref numOfNotifications, notification.MonitoredItems.Count);
                 };
 
@@ -775,7 +791,8 @@ namespace Technosoftware.UaClient.Tests
                 for (int ii = 0; ii < monitoredItemsPerSubscription; ii++)
                 {
                     var nextNode = nodeSet[ii % nodeSet.Count];
-                    list.Add(new TestableMonitoredItem(subscription.DefaultItem) {
+                    list.Add(new TestableMonitoredItem(subscription.DefaultItem)
+                    {
                         StartNodeId = nextNode,
                         SamplingInterval = 0
                     });
@@ -875,7 +892,8 @@ namespace Technosoftware.UaClient.Tests
             var targetSubscriptionCounters = new int[kTestSubscriptions];
             var targetSubscriptionFastDataCounters = new int[kTestSubscriptions];
             var originSubscriptionTransferred = new int[kTestSubscriptions];
-            var subscriptionTemplate = new TestableSubscription(originSession.DefaultSubscription) {
+            var subscriptionTemplate = new TestableSubscription(originSession.DefaultSubscription)
+            {
                 PublishingInterval = 1_000,
                 LifetimeCount = 30,
                 KeepAliveCount = 5,
@@ -892,7 +910,8 @@ namespace Technosoftware.UaClient.Tests
             {
                 foreach (var subscription in originSubscriptions)
                 {
-                    subscription.PublishStatusChangedEvent += (o, e) => {
+                    subscription.PublishStatusChangedEvent += (o, e) =>
+                    {
                         Subscription s = (Subscription)o;
                         TestContext.Out.WriteLine($"PublishStatusChanged: {s.Session.SessionId}-{s.Id}-{e.Status}");
                         if ((e.Status & PublishStateChangedMask.Transferred) != 0)
@@ -967,12 +986,14 @@ namespace Technosoftware.UaClient.Tests
                 foreach (var subscription in transferSubscriptions)
                 {
                     subscription.Handle = ii;
-                    subscription.FastDataChangeCallback = (s, n, _) => {
+                    subscription.FastDataChangeCallback = (s, n, _) =>
+                    {
                         TestContext.Out.WriteLine($"FastDataChangeHandlerTarget: {s.Id}-{n.SequenceNumber}-{n.MonitoredItems.Count}");
                         targetSubscriptionFastDataCounters[(int)subscription.Handle]++;
                     };
                     subscription.MonitoredItems.ToList().ForEach(i =>
-                        i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+                        i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+                        {
                             MonitoredItem item = (MonitoredItem)sender;
                             targetSubscriptionCounters[(int)subscription.Handle]++;
                             foreach (var value in item.DequeueValues())
@@ -995,15 +1016,18 @@ namespace Technosoftware.UaClient.Tests
 
                 transferSubscriptions.AddRange((SubscriptionCollection)originSubscriptions.Clone());
                 int ii = 0;
-                transferSubscriptions.ForEach(s => {
+                transferSubscriptions.ForEach(s =>
+                {
                     targetSession.AddSubscription(s);
                     s.Handle = ii++;
-                    s.FastDataChangeCallback = (sub, n, _) => {
+                    s.FastDataChangeCallback = (sub, n, _) =>
+                    {
                         TestContext.Out.WriteLine($"FastDataChangeHandlerTarget: {sub.Id}-{n.SequenceNumber}-{n.MonitoredItems.Count}");
                         targetSubscriptionFastDataCounters[(int)s.Handle]++;
                     };
                     s.MonitoredItems.ToList().ForEach(i =>
-                        i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+                        i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+                        {
                             MonitoredItem item = (MonitoredItem)sender;
                             targetSubscriptionCounters[(int)s.Handle]++;
                             foreach (var value in item.DequeueValues())
@@ -1012,11 +1036,13 @@ namespace Technosoftware.UaClient.Tests
                             }
                         }
                     );
-                    s.SubscriptionStatusChangedEvent += (o, e) => {
+                    s.SubscriptionStatusChangedEvent += (o, e) =>
+                    {
                         Subscription su = (Subscription)o;
                         TestContext.Out.WriteLine($"StateChanged: {su.Session.SessionId}-{su.Id}-{e.Status}");
                     };
-                    s.PublishStatusChangedEvent += (o, e) => {
+                    s.PublishStatusChangedEvent += (o, e) =>
+                    {
                         Subscription su = (Subscription)o;
                         TestContext.Out.WriteLine($"PublishStatusChanged: {su.Session.SessionId}-{su.Id}-{e.Status}");
                     };
@@ -1170,7 +1196,8 @@ namespace Technosoftware.UaClient.Tests
         public void FastKeepAliveCallback()
         {
             // add current time
-            var subscription = new TestableSubscription(Session.DefaultSubscription) {
+            var subscription = new TestableSubscription(Session.DefaultSubscription)
+            {
                 KeepAliveCount = 1,
                 PublishingInterval = 250,
             };
@@ -1188,7 +1215,8 @@ namespace Technosoftware.UaClient.Tests
 
             var staticNodes = GetTestSetStatic(Session.NamespaceUris);
             list.AddRange(CreateMonitoredItemTestSet(subscription, staticNodes));
-            list.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+            list.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+            {
                 MonitoredItem item = (MonitoredItem)sender;
                 foreach (var value in item.DequeueValues())
                 {
@@ -1198,13 +1226,15 @@ namespace Technosoftware.UaClient.Tests
             subscription.AddItems(list);
 
             int numOfKeepAliveNotifications = 0;
-            subscription.FastKeepAliveCallback = (_, notification) => {
+            subscription.FastKeepAliveCallback = (_, notification) =>
+            {
                 var n = Interlocked.Increment(ref numOfKeepAliveNotifications);
                 TestContext.Out.WriteLine("KeepAliveCallback {0} next sequenceNumber {1} PublishTime {2}", n, notification.SequenceNumber, notification.PublishTime);
             };
 
             int numOfDataChangeNotifications = 0;
-            subscription.FastDataChangeCallback = (_, notification, __) => {
+            subscription.FastDataChangeCallback = (_, notification, __) =>
+            {
                 var n = Interlocked.Increment(ref numOfDataChangeNotifications);
                 TestContext.Out.WriteLine("DataChangeCallback {0} sequenceNumber {1} PublishTime {2} Count {3}",
                     n, notification.SequenceNumber, notification.PublishTime, notification.MonitoredItems.Count);
@@ -1271,21 +1301,25 @@ namespace Technosoftware.UaClient.Tests
             for (int ii = 0; ii < subscriptionCount; ii++)
             {
                 // create subscription with static monitored items
-                var subscription = new TestableSubscription(template) {
+                var subscription = new TestableSubscription(template)
+                {
                     PublishingEnabled = true,
                     Handle = ii,
-                    FastDataChangeCallback = (s, n, _) => {
+                    FastDataChangeCallback = (s, n, _) =>
+                    {
                         TestContext.Out.WriteLine($"FastDataChangeHandlerOrigin: {s.Id}-{n.SequenceNumber}-{n.MonitoredItems.Count}");
                         fastDataCounters[(int)s.Handle]++;
                     },
                 };
 
-                subscription.SubscriptionStatusChangedEvent += (o, e) => {
+                subscription.SubscriptionStatusChangedEvent += (o, e) =>
+                {
                     Subscription s = (Subscription)o;
                     TestContext.Out.WriteLine($"StateChanged: {s.Session.SessionId}-{s.Id}-{e.Status}");
                 };
 
-                subscription.PublishStatusChangedEvent += (o, e) => {
+                subscription.PublishStatusChangedEvent += (o, e) =>
+                {
                     Subscription s = (Subscription)o;
                     TestContext.Out.WriteLine($"PublishStatusChanged: {s.Session.SessionId}-{s.Id}-{e.Status}");
                 };
@@ -1312,7 +1346,8 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 var list = CreateMonitoredItemTestSet(subscription, testSet).ToList();
-                list.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+                list.ForEach(i => i.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+                {
                     MonitoredItem item = (MonitoredItem)sender;
                     notificationCounters[(int)subscription.Handle]++;
                     foreach (var value in item.DequeueValues())
@@ -1330,11 +1365,13 @@ namespace Technosoftware.UaClient.Tests
             var list = new List<MonitoredItem>();
             foreach (NodeId nodeId in nodeIds)
             {
-                var item = new TestableMonitoredItem(subscription.DefaultItem) {
+                var item = new TestableMonitoredItem(subscription.DefaultItem)
+                {
                     StartNodeId = nodeId
                 };
                 list.Add(item);
-            };
+            }
+            ;
             return list;
         }
 

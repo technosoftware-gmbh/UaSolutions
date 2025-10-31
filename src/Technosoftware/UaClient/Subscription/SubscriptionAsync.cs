@@ -62,7 +62,6 @@ namespace Technosoftware.UaClient
 
             await CreateItemsAsync(ct).ConfigureAwait(false);
 
-
             // only enable publishing afer CreateSubscription is called to avoid race conditions with subscription cleanup.
             if (m_publishingEnabled)
             {
@@ -230,8 +229,8 @@ namespace Technosoftware.UaClient
             VerifySubscriptionState(true);
 
             // collect list of browse paths.
-            BrowsePathCollection browsePaths = new BrowsePathCollection();
-            List<MonitoredItem> itemsToBrowse = new List<MonitoredItem>();
+            BrowsePathCollection browsePaths = [];
+            List<MonitoredItem> itemsToBrowse = [];
 
             PrepareResolveItemNodeIds(browsePaths, itemsToBrowse);
 
@@ -305,8 +304,8 @@ namespace Technosoftware.UaClient
         {
             VerifySubscriptionState(true);
 
-            MonitoredItemModifyRequestCollection requestItems = new MonitoredItemModifyRequestCollection();
-            List<MonitoredItem> itemsToModify = new List<MonitoredItem>();
+            MonitoredItemModifyRequestCollection requestItems = [];
+            List<MonitoredItem> itemsToModify = [];
 
             PrepareItemsToModify(requestItems, itemsToModify);
 
@@ -349,13 +348,13 @@ namespace Technosoftware.UaClient
 
             if (m_deletedItems.Count == 0)
             {
-                return new List<MonitoredItem>();
+                return [];
             }
 
             List<MonitoredItem> itemsToDelete = m_deletedItems;
-            m_deletedItems = new List<MonitoredItem>();
+            m_deletedItems = [];
 
-            UInt32Collection monitoredItemIds = new UInt32Collection();
+            UInt32Collection monitoredItemIds = [];
 
             foreach (MonitoredItem monitoredItem in itemsToDelete)
             {
@@ -393,7 +392,8 @@ namespace Technosoftware.UaClient
             IList<MonitoredItem> monitoredItems,
             CancellationToken ct = default)
         {
-            if (monitoredItems == null) throw new ArgumentNullException(nameof(monitoredItems));
+            if (monitoredItems == null)
+                throw new ArgumentNullException(nameof(monitoredItems));
 
             VerifySubscriptionState(true);
 
@@ -403,7 +403,7 @@ namespace Technosoftware.UaClient
             }
 
             // get list of items to update.
-            UInt32Collection monitoredItemIds = new UInt32Collection();
+            UInt32Collection monitoredItemIds = [];
             foreach (MonitoredItem monitoredItem in monitoredItems)
             {
                 monitoredItemIds.Add(monitoredItem.Status.Id);
@@ -421,7 +421,7 @@ namespace Technosoftware.UaClient
             ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, monitoredItemIds);
 
             // update results.
-            List<ServiceResult> errors = new List<ServiceResult>();
+            List<ServiceResult> errors = [];
             bool noErrors = UpdateMonitoringMode(
                 monitoredItems, errors, results,
                 response.DiagnosticInfos, response.ResponseHeader,
@@ -447,12 +447,15 @@ namespace Technosoftware.UaClient
         {
             VerifySubscriptionState(true);
 
-            var methodsToCall = new CallMethodRequestCollection();
-            methodsToCall.Add(new CallMethodRequest() {
-                ObjectId = ObjectTypeIds.ConditionType,
-                MethodId = MethodIds.ConditionType_ConditionRefresh,
-                InputArguments = new VariantCollection() { new Variant(m_id) }
-            });
+            var methodsToCall = new CallMethodRequestCollection
+            {
+                new CallMethodRequest()
+                {
+                    ObjectId = ObjectTypeIds.ConditionType,
+                    MethodId = MethodIds.ConditionType_ConditionRefresh,
+                    InputArguments = [new Variant(m_id)]
+                }
+            };
 
             var response = await m_session.CallAsync(
                 null,
@@ -468,14 +471,17 @@ namespace Technosoftware.UaClient
         {
             VerifySubscriptionState(true);
 
-            var methodsToCall = new CallMethodRequestCollection();
-            methodsToCall.Add(new CallMethodRequest() {
-                ObjectId = ObjectTypeIds.ConditionType,
-                MethodId = MethodIds.ConditionType_ConditionRefresh2,
-                InputArguments = new VariantCollection() {
+            var methodsToCall = new CallMethodRequestCollection
+            {
+                new CallMethodRequest()
+                {
+                    ObjectId = ObjectTypeIds.ConditionType,
+                    MethodId = MethodIds.ConditionType_ConditionRefresh2,
+                    InputArguments = [
                     new Variant(m_id),
-                    new Variant( monitoredItemId ) }
-            });
+                    new Variant( monitoredItemId ) ]
+                }
+            };
 
             var response = await m_session.CallAsync(
                 null,

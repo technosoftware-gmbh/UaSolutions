@@ -86,7 +86,6 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <inheritdoc/>
         public virtual bool IsDurable => false;
 
-
         /// <summary>
         /// Adds the value to the queue.
         /// </summary>

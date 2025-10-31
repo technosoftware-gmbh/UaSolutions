@@ -51,7 +51,7 @@ namespace Technosoftware.UaClient
         private void Initialize()
         {
             m_session = null;
-            DataTypes = new Dictionary<NodeId, QualifiedName>();
+            DataTypes = [];
             m_validator = null;
             TypeSystemId = null;
             TypeSystemName = null;
@@ -206,7 +206,7 @@ namespace Technosoftware.UaClient
                 {
                     if (ServiceResult.IsGood(errors[ii]))
                     {
-                        var dictName = (String)values[ii].Value;
+                        var dictName = (string)values[ii].Value;
                         DataTypes[datatypeId] = new QualifiedName(dictName, datatypeId.NamespaceIndex);
                     }
                     ii++;
@@ -228,11 +228,12 @@ namespace Technosoftware.UaClient
                 return result;
             }
 
-            ReadValueIdCollection itemsToRead = new ReadValueIdCollection();
+            ReadValueIdCollection itemsToRead = [];
             foreach (var nodeId in dictionaryIds)
             {
                 // create item to read.
-                ReadValueId itemToRead = new ReadValueId {
+                ReadValueId itemToRead = new ReadValueId
+                {
                     NodeId = nodeId,
                     AttributeId = Attributes.Value,
                     IndexRange = null,
@@ -280,16 +281,17 @@ namespace Technosoftware.UaClient
         public byte[] ReadDictionary(NodeId dictionaryId)
         {
             // create item to read.
-            ReadValueId itemToRead = new ReadValueId {
+            ReadValueId itemToRead = new ReadValueId
+            {
                 NodeId = dictionaryId,
                 AttributeId = Attributes.Value,
                 IndexRange = null,
                 DataEncoding = null
             };
 
-            ReadValueIdCollection itemsToRead = new ReadValueIdCollection {
+            ReadValueIdCollection itemsToRead = [
                 itemToRead
-            };
+            ];
 
             // read value.
             DataValueCollection values;
@@ -339,7 +341,6 @@ namespace Technosoftware.UaClient
 
                 }
             }
-
 
         }
 

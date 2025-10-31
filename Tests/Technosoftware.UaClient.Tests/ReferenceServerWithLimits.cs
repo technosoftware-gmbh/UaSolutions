@@ -83,10 +83,11 @@ namespace Technosoftware.UaClient.Tests
         {
             Utils.LogInfo(Utils.TraceMasks.StartStop, "Creating the Reference Server Node Manager.");
 
-            IList<IUaNodeManager> nodeManagers = new List<IUaNodeManager>();
-
-            // create the custom node manager.
-            nodeManagers.Add(new ReferenceServerNodeManager(server, configuration));
+            IList<IUaNodeManager> nodeManagers =
+            [
+                // create the custom node manager.
+                new ReferenceServerNodeManager(server, configuration),
+            ];
 
             foreach (var nodeManagerFactory in NodeManagerFactories)
             {
@@ -236,8 +237,10 @@ namespace Technosoftware.UaClient.Tests
             out BrowseResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (nodesToBrowse == null) throw new ArgumentNullException(nameof(nodesToBrowse));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (nodesToBrowse == null)
+                throw new ArgumentNullException(nameof(nodesToBrowse));
 
             if (view != null && !NodeId.IsNull(view.ViewId))
             {
@@ -341,7 +344,6 @@ namespace Technosoftware.UaClient.Tests
             // clear the diagnostics array if no diagnostics requested or no errors occurred.
             UpdateDiagnostics(context, diagnosticsExist, ref diagnosticInfos);
         }
-
 
     }
 

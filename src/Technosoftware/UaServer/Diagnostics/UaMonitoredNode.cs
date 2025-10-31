@@ -114,7 +114,7 @@ namespace Technosoftware.UaServer
         {
             if (DataChangeMonitoredItems == null)
             {
-                DataChangeMonitoredItems = new List<UaMonitoredItem>();
+                DataChangeMonitoredItems = [];
                 Node.OnStateChanged = OnMonitoredNodeChanged;
             }
 
@@ -155,7 +155,7 @@ namespace Technosoftware.UaServer
         {
             if (EventMonitoredItems == null)
             {
-                EventMonitoredItems = new List<IUaEventMonitoredItem>();
+                EventMonitoredItems = [];
                 Node.OnReportEvent = OnReportEvent;
             }
 
@@ -192,7 +192,7 @@ namespace Technosoftware.UaServer
         /// <param name="e">The event.</param>
         public void OnReportEvent(ISystemContext context, NodeState node, IFilterTarget e)
         {
-            List<IUaEventMonitoredItem> eventMonitoredItems = new List<IUaEventMonitoredItem>();
+            List<IUaEventMonitoredItem> eventMonitoredItems = [];
 
             lock (NodeManager.Lock)
             {

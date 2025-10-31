@@ -22,8 +22,6 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 
 using Opc.Ua;
-
-using Technosoftware.UaServer;
 #endregion
 
 namespace Technosoftware.UaServer.Tests
@@ -53,13 +51,11 @@ namespace Technosoftware.UaServer.Tests
 
                 var nodeManager = new TestableCustomNodeManger2(server.CurrentInstance, ns);
 
-
                 var baseObject = new BaseObjectState(null);
                 var nodeHandle = new UaNodeHandle(new NodeId((string)CommonTestWorkers.NodeIdTestSetStatic.First().Identifier, 0), baseObject);
 
                 //Act
                 await RunTaskInParallel(() => UseComponentCacheAsync(nodeManager, baseObject, nodeHandle), 100).ConfigureAwait(false);
-
 
                 //Assert, that entry was deleted from cache after parallel operations on the same node
                 NodeState handleFromCache = nodeManager.LookupNodeInComponentCache(nodeManager.SystemContext, nodeHandle);
@@ -94,7 +90,6 @@ namespace Technosoftware.UaServer.Tests
 
                 baseObject.NodeId = nodeId;
 
-
                 //single threaded test
                 nodeManager.AddPredefinedNode(nodeManager.SystemContext, baseObject);
 
@@ -121,7 +116,6 @@ namespace Technosoftware.UaServer.Tests
                 nodeManager.DeleteAddressSpace();
 
                 Assert.That(nodeManager.PredefinedNodes, Is.Empty);
-
 
                 //Act
                 await RunTaskInParallel(() => UsePredefinedNodesAsync(nodeManager, baseObject, nodeId), 100).ConfigureAwait(false);
@@ -191,7 +185,8 @@ namespace Technosoftware.UaServer.Tests
             Exception error = null;
             int tasksCompletedCount = 0;
             var result = Parallel.For(0, iterations, new ParallelOptions(),
-                          async index => {
+                          async index =>
+                          {
                               try
                               {
                                   await task().ConfigureAwait(false);

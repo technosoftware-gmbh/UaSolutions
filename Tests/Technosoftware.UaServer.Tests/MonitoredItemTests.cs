@@ -10,22 +10,14 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
-
-using Microsoft.AspNetCore.Hosting.Server;
 
 using Moq;
 using NUnit.Framework;
 
 using Opc.Ua;
-
-using Technosoftware.UaServer;
-
-using SampleCompany.NodeManagers.Reference;
 using Technosoftware.UaServer.Subscriptions;
 #endregion
 
@@ -81,7 +73,6 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(1));
 
-
             var result = new Queue<EventFieldList>();
             monitoredItem.Publish(new UaServerOperationContext(monitoredItem), result, 1);
 
@@ -104,7 +95,6 @@ namespace Technosoftware.UaServer.Tests
             var dataValue = new DataValue(new Variant(true));
 
             monitoredItem.QueueValue(dataValue, statuscode);
-
 
             var result = new Queue<MonitoredItemNotification>();
             var result2 = new Queue<DiagnosticInfo>();
@@ -129,11 +119,9 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(2));
 
-
             monitoredItem.QueueEvent(new AuditUrlMismatchEventState(null));
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(2));
-
 
             var result = new Queue<EventFieldList>();
             monitoredItem.Publish(new UaServerOperationContext(monitoredItem), result, 3);
@@ -157,11 +145,9 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(2));
 
-
             monitoredItem.QueueEvent(new AuditUrlMismatchEventState(null));
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(2));
-
 
             var result = new Queue<EventFieldList>();
             bool moreItems = monitoredItem.Publish(new UaServerOperationContext(monitoredItem), result, 2);
@@ -172,7 +158,6 @@ namespace Technosoftware.UaServer.Tests
             EventFieldList publishResult = result.LastOrDefault();
             Assert.That(publishResult, Is.Not.Null);
             Assert.That(publishResult.Handle, Is.AssignableTo(typeof(AuditUrlMismatchEventState)));
-
 
             var result2 = new Queue<EventFieldList>();
             bool moreItems2 = monitoredItem.Publish(new UaServerOperationContext(monitoredItem), result2, 2);
@@ -197,11 +182,9 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(2));
 
-
             monitoredItem.QueueEvent(new AuditUrlMismatchEventState(null));
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(2));
-
 
             var result = new Queue<EventFieldList>();
             monitoredItem.Publish(new UaServerOperationContext(monitoredItem), result, 3);
@@ -212,7 +195,6 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(publishResult, Is.Not.Null);
             Assert.That(publishResult.Handle, Is.AssignableTo(typeof(EventQueueOverflowEventState)));
         }
-
 
         [Test]
         public void CreateEventMIPublishPartial()
@@ -227,10 +209,8 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(3));
 
-
             var result = new Queue<EventFieldList>();
             bool moreItems = monitoredItem.Publish(new UaServerOperationContext(monitoredItem), result, 2);
-
 
             Assert.That(moreItems, Is.True);
             Assert.That(result, Is.Not.Empty);

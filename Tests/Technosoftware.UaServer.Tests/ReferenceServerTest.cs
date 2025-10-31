@@ -49,7 +49,6 @@ namespace Technosoftware.UaServer.Tests
         DataGenerator generator_;
         bool sessionClosed_;
 
-
         #region Test Setup
         /// <summary>
         /// Set up a Server fixture.
@@ -58,7 +57,8 @@ namespace Technosoftware.UaServer.Tests
         public async Task OneTimeSetUp()
         {
             // start Ref server
-            fixture_ = new ServerFixture<ReferenceServer>() {
+            fixture_ = new ServerFixture<ReferenceServer>()
+            {
                 AllNodeManagers = true,
                 OperationLimits = true,
                 DurableSubscriptionsEnabled = false,
@@ -183,7 +183,8 @@ namespace Technosoftware.UaServer.Tests
             Assert.NotNull(results);
             Assert.AreEqual(readIdCollection.Count, results.Count);
 
-            operationLimits_ = new OperationLimits() {
+            operationLimits_ = new OperationLimits()
+            {
                 MaxNodesPerRead = (uint)results[0].Value,
                 MaxNodesPerHistoryReadData = (uint)results[1].Value,
                 MaxNodesPerHistoryReadEvents = (uint)results[2].Value,
@@ -370,7 +371,8 @@ namespace Technosoftware.UaServer.Tests
                 if (useSecurity)
                 {
                     // subscription was deleted, expect 'BadNoSubscription'
-                    var sre = Assert.Throws<ServiceResultException>(() => {
+                    var sre = Assert.Throws<ServiceResultException>(() =>
+                    {
                         requestHeader_.Timestamp = DateTime.UtcNow;
                         CommonTestWorkers.VerifySubscriptionTransferred(serverTestServices, requestHeader_, subscriptionIds, true);
                     });
@@ -422,7 +424,6 @@ namespace Technosoftware.UaServer.Tests
                 SecureChannelContext.Current = securityContext;
             }
         }
-
 
         /// <summary>
         /// Create a subscription with a monitored item.
@@ -576,7 +577,7 @@ namespace Technosoftware.UaServer.Tests
                 }
 
                 // Call ResendData method with invalid subscription Id
-                ResendDataCall(StatusCodes.BadSubscriptionIdInvalid, new UInt32Collection() { subscriptionIds.Last() + 20 });
+                ResendDataCall(StatusCodes.BadSubscriptionIdInvalid, [subscriptionIds.Last() + 20]);
 
                 // Nothing to publish since previous ResendData call did not execute
                 requestHeader_.Timestamp = DateTime.UtcNow;
@@ -610,10 +611,11 @@ namespace Technosoftware.UaServer.Tests
             var nodesToCall = new CallMethodRequestCollection();
             foreach (var subscriptionId in subscriptionIds)
             {
-                nodesToCall.Add(new CallMethodRequest() {
+                nodesToCall.Add(new CallMethodRequest()
+                {
                     ObjectId = ObjectIds.Server,
                     MethodId = MethodIds.Server_ResendData,
-                    InputArguments = new VariantCollection() { new Variant(subscriptionId) }
+                    InputArguments = [new Variant(subscriptionId)]
                 });
             }
 

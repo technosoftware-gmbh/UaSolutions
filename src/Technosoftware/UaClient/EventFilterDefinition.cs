@@ -60,7 +60,8 @@ namespace Technosoftware.UaClient
             }
 
             // create the item with the filter.
-            var monitoredItem = new MonitoredItem {
+            var monitoredItem = new MonitoredItem
+            {
                 DisplayName = null,
                 StartNodeId = AreaId,
                 RelativePath = null,
@@ -104,10 +105,11 @@ namespace Technosoftware.UaClient
 
             // must always request the NodeId for the condition instances.
             // this can be done by specifying an operand with an empty browse path.
-            var operand = new SimpleAttributeOperand {
+            var operand = new SimpleAttributeOperand
+            {
                 TypeDefinitionId = ObjectTypeIds.BaseEventType,
                 AttributeId = Attributes.NodeId,
-                BrowsePath = new QualifiedNameCollection()
+                BrowsePath = []
             };
 
             selectClauses.Add(operand);
@@ -136,7 +138,8 @@ namespace Technosoftware.UaClient
         /// <returns>The event filter.</returns>
         public EventFilter ConstructFilter()
         {
-            var filter = new EventFilter {
+            var filter = new EventFilter
+            {
                 // the select clauses specify the values returned with each event notification.
                 SelectClauses = SelectClauses
             };
@@ -154,14 +157,16 @@ namespace Technosoftware.UaClient
             if (Severity > EventSeverity.Min)
             {
                 // select the Severity property of the event.
-                var operand1 = new SimpleAttributeOperand {
+                var operand1 = new SimpleAttributeOperand
+                {
                     TypeDefinitionId = ObjectTypeIds.BaseEventType
                 };
                 operand1.BrowsePath.Add(BrowseNames.Severity);
                 operand1.AttributeId = Attributes.Value;
 
                 // specify the value to compare the Severity property with.
-                var operand2 = new LiteralOperand {
+                var operand2 = new LiteralOperand
+                {
                     Value = new Variant((ushort)Severity)
                 };
 
@@ -178,7 +183,8 @@ namespace Technosoftware.UaClient
                 for (var ii = 0; ii < EventTypes.Count; ii++)
                 {
                     // for this example uses the 'OfType' operator to limit events to thoses with specified event type. 
-                    var operand1 = new LiteralOperand {
+                    var operand1 = new LiteralOperand
+                    {
                         Value = new Variant(EventTypes[ii])
                     };
                     ContentFilterElement element3 = whereClause.Push(FilterOperator.OfType, operand1);
@@ -247,7 +253,8 @@ namespace Technosoftware.UaClient
             Dictionary<NodeId, QualifiedNameCollection> foundNodes)
         {
             // find all of the children of the field.
-            var nodeToBrowse = new BrowseDescription {
+            var nodeToBrowse = new BrowseDescription
+            {
                 NodeId = nodeId,
                 BrowseDirection = BrowseDirection.Forward,
                 ReferenceTypeId = ReferenceTypeIds.Aggregates,
@@ -282,7 +289,8 @@ namespace Technosoftware.UaClient
                 // check if the browse path is already in the list.
                 if (!ContainsPath(eventFields, browsePath))
                 {
-                    var field = new SimpleAttributeOperand {
+                    var field = new SimpleAttributeOperand
+                    {
                         TypeDefinitionId = ObjectTypeIds.BaseEventType,
                         BrowsePath = browsePath,
                         AttributeId = (child.NodeClass == NodeClass.Variable) ? Attributes.Value : Attributes.NodeId

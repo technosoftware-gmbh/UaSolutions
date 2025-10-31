@@ -84,7 +84,8 @@ namespace Technosoftware.UaClient.Tests
         {
             {
                 // start Ref server
-                ServerFixture = new ServerFixture<ReferenceServer>(enableTracing, disableActivityLogging) {
+                ServerFixture = new ServerFixture<ReferenceServer>(enableTracing, disableActivityLogging)
+                {
                     UriScheme = UriScheme,
                     SecurityNone = securityNone,
                     AutoAccept = true,
@@ -144,12 +145,10 @@ namespace Technosoftware.UaClient.Tests
 
         #region Test Methods
 
-        [Test, Order(100)]        
+        [Test, Order(100)]
         public void ReadDictionaryByteString()
         {
-            List<NodeId> dictionaryIds = new List<NodeId>();
-            dictionaryIds.Add(VariableIds.OpcUa_BinarySchema);
-            dictionaryIds.Add(GetTestDataDictionaryNodeId());
+            List<NodeId> dictionaryIds = [VariableIds.OpcUa_BinarySchema, GetTestDataDictionaryNodeId()];
 
             Session theSession = ((Session)(((TraceableSession)Session).Session));
 
@@ -160,18 +159,20 @@ namespace Technosoftware.UaClient.Tests
                 referenceDescription.NodeId = NodeId.ToExpandedNodeId(dataDictionaryId, theSession.NodeCache.NamespaceUris);
 
                 // make sure the dictionary is too large to fit in a single message
-                ReadValueId readValueId = new ReadValueId {
+                ReadValueId readValueId = new ReadValueId
+                {
                     NodeId = dataDictionaryId,
                     AttributeId = Attributes.Value,
                     IndexRange = null,
                     DataEncoding = null
                 };
 
-                ReadValueIdCollection nodesToRead = new ReadValueIdCollection {
+                ReadValueIdCollection nodesToRead = [
                 readValueId
-            };
+            ];
 
-                var x = Assert.Throws<ServiceResultException>(() => {
+                var x = Assert.Throws<ServiceResultException>(() =>
+                {
                     theSession.Read(null, 0, TimestampsToReturn.Neither, nodesToRead, out DataValueCollection results, out DiagnosticInfoCollection diagnosticInfos);
                 });
 
@@ -199,7 +200,6 @@ namespace Technosoftware.UaClient.Tests
             }
         }
 
-
         [Test, Order(200)]
         public void TestBoundaryCaseForReadingChunks()
         {
@@ -214,15 +214,16 @@ namespace Technosoftware.UaClient.Tests
             byte[] chunk = new byte[MaxByteStringLengthForTest];
             random.NextBytes(chunk);
 
-            WriteValue WriteValue = new WriteValue {
+            WriteValue WriteValue = new WriteValue
+            {
                 NodeId = NodeId,
                 AttributeId = Attributes.Value,
                 Value = new DataValue() { WrappedValue = new Variant(chunk) },
                 IndexRange = null
             };
-            WriteValueCollection writeValues = new WriteValueCollection {
+            WriteValueCollection writeValues = [
                     WriteValue
-                };
+                ];
             theSession.Write(null, writeValues, out StatusCodeCollection results, out DiagnosticInfoCollection diagnosticInfos);
 
             if (results[0] != StatusCodes.Good)
@@ -245,15 +246,16 @@ namespace Technosoftware.UaClient.Tests
         /// <returns></returns>
         public NodeId GetTestDataDictionaryNodeId()
         {
-            BrowseDescription browseDescription = new BrowseDescription() {
+            BrowseDescription browseDescription = new BrowseDescription()
+            {
                 NodeId = ObjectIds.OPCBinarySchema_TypeSystem,
                 BrowseDirection = BrowseDirection.Forward,
                 ReferenceTypeId = ReferenceTypeIds.HasComponent,
                 IncludeSubtypes = true,
                 NodeClassMask = (uint)NodeClass.Variable,
-                ResultMask = (uint) BrowseResultMask.All
+                ResultMask = (uint)BrowseResultMask.All
             };
-            BrowseDescriptionCollection browseDescriptions = new BrowseDescriptionCollection() { browseDescription };
+            BrowseDescriptionCollection browseDescriptions = [browseDescription];
 
             Session.Browse(null, null, 0, browseDescriptions, out BrowseResultCollection results, out DiagnosticInfoCollection diagnosticInfos);
 
@@ -262,9 +264,8 @@ namespace Technosoftware.UaClient.Tests
                 throw new Exception("cannot read the id of the test dictionary");
             }
             ReferenceDescription referenceDescription = results[0].References.FirstOrDefault(a => a.BrowseName.Name == "SampleCompany.NodeManagers.TestData");
-            NodeId result = ExpandedNodeId.ToNodeId(referenceDescription.NodeId,Session.NamespaceUris);
+            NodeId result = ExpandedNodeId.ToNodeId(referenceDescription.NodeId, Session.NamespaceUris);
             return result;
-
 
         }
         #endregion // helper methods

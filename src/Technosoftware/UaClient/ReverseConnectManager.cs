@@ -178,8 +178,8 @@ namespace Technosoftware.UaClient
         public ReverseConnectManager()
         {
             m_state = ReverseConnectManagerState.New;
-            m_registrations = new List<Registration>();
-            m_endpointUrls = new Dictionary<Uri, ReverseConnectInfo>();
+            m_registrations = [];
+            m_endpointUrls = [];
             m_cts = new CancellationTokenSource();
         }
         #endregion
@@ -367,10 +367,12 @@ namespace Technosoftware.UaClient
         /// <param name="endpointUrl"></param>
         public void AddEndpoint(Uri endpointUrl)
         {
-            if (endpointUrl == null) throw new ArgumentNullException(nameof(endpointUrl));
+            if (endpointUrl == null)
+                throw new ArgumentNullException(nameof(endpointUrl));
             lock (m_lock)
             {
-                if (m_state == ReverseConnectManagerState.Started) throw new ServiceResultException(StatusCodes.BadInvalidState);
+                if (m_state == ReverseConnectManagerState.Started)
+                    throw new ServiceResultException(StatusCodes.BadInvalidState);
                 AddEndpointInternal(endpointUrl, false);
             }
         }
@@ -381,17 +383,19 @@ namespace Technosoftware.UaClient
         /// <param name="configuration">The configuration.</param>
         public void StartService(ApplicationConfiguration configuration)
         {
-            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
             lock (m_lock)
             {
-                if (m_state == ReverseConnectManagerState.Started) throw new ServiceResultException(StatusCodes.BadInvalidState);
+                if (m_state == ReverseConnectManagerState.Started)
+                    throw new ServiceResultException(StatusCodes.BadInvalidState);
                 try
                 {
                     OnUpdateConfiguration(configuration);
                     StartService();
 
                     // monitor the configuration file.
-                    if (!String.IsNullOrEmpty(configuration.SourceFilePath))
+                    if (!string.IsNullOrEmpty(configuration.SourceFilePath))
                     {
                         m_configurationWatcher = new ConfigurationWatcher(configuration);
                         m_configurationWatcher.Changed += OnConfigurationChanged;
@@ -413,10 +417,12 @@ namespace Technosoftware.UaClient
         /// <param name="configuration">The configuration.</param>
         public void StartService(ReverseConnectClientConfiguration configuration)
         {
-            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
             lock (m_lock)
             {
-                if (m_state == ReverseConnectManagerState.Started) throw new ServiceResultException(StatusCodes.BadInvalidState);
+                if (m_state == ReverseConnectManagerState.Started)
+                    throw new ServiceResultException(StatusCodes.BadInvalidState);
                 try
                 {
                     m_configurationWatcher = null;
@@ -462,7 +468,8 @@ namespace Technosoftware.UaClient
                 (object sender, ConnectionWaitingEventArgs e) => tcs.TrySetResult(e),
                 ReverseConnectStrategy.Once);
 
-            Func<Task> listenForCancelTaskFnc = async () => {
+            Func<Task> listenForCancelTaskFnc = async () =>
+            {
                 if (ct == default)
                 {
                     var waitTimeout = m_configuration.WaitTimeout > 0 ? m_configuration.WaitTimeout : DefaultWaitTimeout;
@@ -475,10 +482,10 @@ namespace Technosoftware.UaClient
                 tcs.TrySetCanceled();
             };
 
-            await Task.WhenAny(new Task[] {
+            await Task.WhenAny([
                 tcs.Task,
                 listenForCancelTaskFnc()
-            }).ConfigureAwait(false);
+            ]).ConfigureAwait(false);
 
             if (!tcs.Task.IsCompleted || tcs.Task.IsCanceled)
             {
@@ -503,8 +510,10 @@ namespace Technosoftware.UaClient
             ReverseConnectStrategy reverseConnectStrategy
             )
         {
-            if (endpointUrl == null) throw new ArgumentNullException(nameof(endpointUrl));
-            var registration = new Registration(serverUri, endpointUrl, onConnectionWaiting) {
+            if (endpointUrl == null)
+                throw new ArgumentNullException(nameof(endpointUrl));
+            var registration = new Registration(serverUri, endpointUrl, onConnectionWaiting)
+            {
                 ReverseConnectStrategy = reverseConnectStrategy
             };
             lock (m_registrationsLock)
@@ -626,7 +635,8 @@ namespace Technosoftware.UaClient
                 int delay = endTime - HiResClock.TickCount;
                 if (delay > 0)
                 {
-                    await Task.Delay(delay, ct).ContinueWith(tsk => {
+                    await Task.Delay(delay, ct).ContinueWith(tsk =>
+                    {
                         if (tsk.IsCanceled)
                         {
                             matched = MatchRegistration(sender, e);

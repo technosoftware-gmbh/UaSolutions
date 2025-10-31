@@ -60,7 +60,7 @@ namespace Technosoftware.UaBaseServer
             connectInterval_ = DefaultReverseConnectInterval;
             connectTimeout_ = DefaultReverseConnectTimeout;
             rejectTimeout_ = DefaultReverseConnectRejectTimeout;
-            connections_ = new Dictionary<Uri, UaReverseConnectProperty>();
+            connections_ = [];
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace Technosoftware.UaBaseServer
             connectInterval_ = DefaultReverseConnectInterval;
             connectTimeout_ = DefaultReverseConnectTimeout;
             rejectTimeout_ = DefaultReverseConnectRejectTimeout;
-            connections_ = new Dictionary<Uri, UaReverseConnectProperty>();
+            connections_ = [];
         }
         #endregion
 
@@ -387,7 +387,7 @@ namespace Technosoftware.UaBaseServer
             }
 
             AddEncodeableTypes(server);
-            
+
             nodeManagers.Add(uaServerNodeManager_);
 
             UaServerPlugin.OnInitialized(this, configuration);
@@ -638,7 +638,6 @@ namespace Technosoftware.UaBaseServer
         {
             return uaServerNodeManager_.DeleteNode(uaServerNodeManager_.SystemContext, nodeId);
         }
-
 
         /// <summary>Creates a new DataVariable NodeClass.</summary>
         /// <param name="parent">The parent NodeState object the new DataVariable NodeClass will be created in.</param>
@@ -917,11 +916,11 @@ namespace Technosoftware.UaBaseServer
             }
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
             return uaServerNodeManager_.CreateFolderState(parent, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions);
         }
@@ -966,11 +965,11 @@ namespace Technosoftware.UaBaseServer
             }
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
             return uaServerNodeManager_.CreateBaseObjectState(parent, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions);
         }
@@ -1035,11 +1034,11 @@ namespace Technosoftware.UaBaseServer
             }
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
             return uaServerNodeManager_.CreatePropertyState(parent, browseName, displayName, description, dataType, valueRank, accessLevel, initialValue, writeMask, userWriteMask, rolePermissions, userRolePermissions);
         }
@@ -1117,11 +1116,11 @@ namespace Technosoftware.UaBaseServer
             }
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
             var variable = uaServerNodeManager_.CreateDataItemState(parent, browseName, displayName,
             description, dataType, valueRank, accessLevel, initialValue, writeMask, userWriteMask, null, valuePrecision, rolePermissions, userRolePermissions);
@@ -1216,11 +1215,11 @@ namespace Technosoftware.UaBaseServer
             }
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
             var variable = uaServerNodeManager_.CreateAnalogItemState(parent, browseName, displayName, description, dataType, valueRank, accessLevel, initialValue, euRange, engineeringUnit, instrumentRange, writeMask, userWriteMask, null, valuePrecision, rolePermissions, userRolePermissions);
             variable.OnWriteValue = OnWriteAnalog;
@@ -1283,11 +1282,11 @@ namespace Technosoftware.UaBaseServer
             }
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
             var variable = uaServerNodeManager_.CreateTwoStateDiscreteState(parent, browseName,
                 displayName, description, accessLevel, initialValue, trueState, falseState);
@@ -1343,11 +1342,11 @@ namespace Technosoftware.UaBaseServer
             }
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
             var variable = uaServerNodeManager_.CreateMultiStateDiscreteState(parent,
                 browseName, displayName, description, accessLevel, initialValue, writeMask, userWriteMask, null, rolePermissions, userRolePermissions, values);

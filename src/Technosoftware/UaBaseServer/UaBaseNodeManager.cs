@@ -79,7 +79,8 @@ namespace Technosoftware.UaBaseServer
         /// <returns>The new NodeId.</returns>
         public override NodeId Create(ISystemContext context, NodeState node)
         {
-            if (node == null) throw new ArgumentNullException(nameof(node));
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
             if (node is BaseInstanceState instance && instance.Parent != null)
             {
                 if (instance.Parent.NodeId.Identifier is string id)
@@ -155,12 +156,12 @@ namespace Technosoftware.UaBaseServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
             var baseDataVariableTypeState = new BaseDataVariableTypeState
@@ -185,7 +186,7 @@ namespace Technosoftware.UaBaseServer
             {
                 if (!externalReferences.TryGetValue(VariableTypeIds.BaseDataVariableType, out var references))
                 {
-                    externalReferences[VariableTypeIds.BaseDataVariableType] = references = new List<IReference>();
+                    externalReferences[VariableTypeIds.BaseDataVariableType] = references = [];
                 }
                 references.Add(new NodeStateReference(ReferenceTypes.HasSubtype, false, baseDataVariableTypeState.NodeId));
             }
@@ -254,12 +255,12 @@ namespace Technosoftware.UaBaseServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
             var baseObjectTypeState = new BaseObjectTypeState
@@ -277,11 +278,11 @@ namespace Technosoftware.UaBaseServer
                 IsAbstract = false
             };
 
-            if (externalReferences != null)   
+            if (externalReferences != null)
             {
                 if (!externalReferences.TryGetValue(ObjectTypeIds.BaseObjectType, out var references))
                 {
-                    externalReferences[ObjectTypeIds.BaseObjectType] = references = new List<IReference>();
+                    externalReferences[ObjectTypeIds.BaseObjectType] = references = [];
                 }
                 references.Add(new NodeStateReference(ReferenceTypes.HasSubtype, false, baseObjectTypeState.NodeId));
             }
@@ -347,12 +348,12 @@ namespace Technosoftware.UaBaseServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
             var type = new DataTypeState
@@ -374,7 +375,7 @@ namespace Technosoftware.UaBaseServer
             {
                 if (!externalReferences.TryGetValue(DataTypeIds.Structure, out var references))
                 {
-                    externalReferences[DataTypeIds.Structure] = references = new List<IReference>();
+                    externalReferences[DataTypeIds.Structure] = references = [];
                 }
                 references.Add(new NodeStateReference(ReferenceTypeIds.HasSubtype, false, type.NodeId));
             }
@@ -423,7 +424,7 @@ namespace Technosoftware.UaBaseServer
 
             if (!externalReferences.TryGetValue(ReferenceTypeIds.NonHierarchicalReferences, out var references))
             {
-                externalReferences[ReferenceTypeIds.NonHierarchicalReferences] = references = new List<IReference>();
+                externalReferences[ReferenceTypeIds.NonHierarchicalReferences] = references = [];
             }
 
             references.Add(new NodeStateReference(ReferenceTypeIds.HasSubtype, false, type.NodeId));

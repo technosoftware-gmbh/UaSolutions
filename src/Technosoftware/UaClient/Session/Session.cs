@@ -198,7 +198,8 @@ namespace Technosoftware.UaClient
             m_preferredLocales = new string[] { CultureInfo.CurrentCulture.Name };
 
             // create a context to use.
-            m_systemContext = new SystemContext {
+            m_systemContext = new SystemContext
+            {
                 SystemHandle = this,
                 EncodeableFactory = m_factory,
                 NamespaceUris = m_namespaceUris,
@@ -223,14 +224,14 @@ namespace Technosoftware.UaClient
             m_configuration = null;
             m_instanceCertificate = null;
             m_endpoint = null;
-            m_subscriptions = new List<Subscription>();
-            m_dictionaries = new Dictionary<NodeId, DataDictionary>();
-            m_acknowledgementsToSend = new SubscriptionAcknowledgementCollection();
+            m_subscriptions = [];
+            m_dictionaries = [];
+            m_acknowledgementsToSend = [];
             m_acknowledgementsToSendLock = new object();
 #if DEBUG_SEQUENTIALPUBLISHING
             m_latestAcknowledgementsSent = new Dictionary<uint, uint>();
 #endif
-            m_identityHistory = new List<IUserIdentity>();
+            m_identityHistory = [];
             m_outstandingRequests = new LinkedList<AsyncRequestState>();
             m_keepAliveInterval = 5000;
             m_tooManyPublishRequests = 0;
@@ -243,7 +244,8 @@ namespace Technosoftware.UaClient
             m_reconnectLock = new SemaphoreSlim(1, 1);
             m_serverMaxContinuationPointsPerBrowse = 0;
 
-            m_defaultSubscription = new Subscription {
+            m_defaultSubscription = new Subscription
+            {
                 DisplayName = "Subscription",
                 PublishingInterval = 1000,
                 KeepAliveCount = 10,
@@ -258,7 +260,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         private void ValidateClientConfiguration(ApplicationConfiguration configuration)
         {
-            String configurationField;
+            string configurationField;
             if (configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
@@ -296,7 +298,7 @@ namespace Technosoftware.UaClient
             MessageSecurityMode channelSecurityMode = MessageSecurityMode.None)
         {
             // skip validation if server nonce is not used for encryption.
-            if (String.IsNullOrEmpty(securityPolicyUri) || securityPolicyUri == SecurityPolicies.None)
+            if (string.IsNullOrEmpty(securityPolicyUri) || securityPolicyUri == SecurityPolicies.None)
             {
                 return;
             }
@@ -865,7 +867,6 @@ namespace Technosoftware.UaClient
             set => m_serverMaxByteStringLength = value;
         }
 
-
         /// <inheritdoc/>
         public ContinuationPointPolicy ContinuationPointPolicy
         {
@@ -1379,7 +1380,8 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public bool ApplySessionConfiguration(SessionConfiguration sessionConfiguration)
         {
-            if (sessionConfiguration == null) throw new ArgumentNullException(nameof(sessionConfiguration));
+            if (sessionConfiguration == null)
+                throw new ArgumentNullException(nameof(sessionConfiguration));
 
             byte[] serverCertificate = m_endpoint.Description?.ServerCertificate;
             m_sessionName = sessionConfiguration.SessionName;
@@ -1399,7 +1401,7 @@ namespace Technosoftware.UaClient
         {
 
             Nonce serverNonce = Nonce.CreateNonce(m_endpoint.Description?.SecurityPolicyUri, m_serverNonce);
-           
+
             var sessionConfiguration = new SessionConfiguration(this, serverNonce, m_userTokenSecurityPolicyUri, m_eccServerEphemeralKey, AuthenticationToken);
 
             if (stream != null)
@@ -1606,11 +1608,12 @@ namespace Technosoftware.UaClient
                     operationLimitsProperties.Select(name => (NodeId)typeof(VariableIds)
                     .GetField("Server_ServerCapabilities_OperationLimits_" + name, BindingFlags.Public | BindingFlags.Static)
                     .GetValue(null))
-                    );
-
-                // add the server capability MaxContinuationPointPerBrowse. Add further capabilities
-                // later (when support for them will be implemented and in a more generic fashion)
-                nodeIds.Add(VariableIds.Server_ServerCapabilities_MaxBrowseContinuationPoints);
+                    )
+                {
+                    // add the server capability MaxContinuationPointPerBrowse. Add further capabilities
+                    // later (when support for them will be implemented and in a more generic fashion)
+                    VariableIds.Server_ServerCapabilities_MaxBrowseContinuationPoints
+                };
                 int maxBrowseContinuationPointIndex = nodeIds.Count - 1;
 
                 // add the server transport quota MaxByteStringLength.
@@ -1640,13 +1643,13 @@ namespace Technosoftware.UaClient
                 }
                 OperationLimits = operationLimits;
 
-                if (values[maxBrowseContinuationPointIndex] is UInt16 serverMaxContinuationPointsPerBrowse &&
+                if (values[maxBrowseContinuationPointIndex] is ushort serverMaxContinuationPointsPerBrowse &&
                     ServiceResult.IsNotBad(errors[maxBrowseContinuationPointIndex]))
                 {
                     ServerMaxContinuationPointsPerBrowse = serverMaxContinuationPointsPerBrowse;
                 }
 
-                if (values[maxByteStringLengthIndex] is UInt32 serverMaxByteStringLength &&
+                if (values[maxByteStringLengthIndex] is uint serverMaxByteStringLength &&
                     ServiceResult.IsNotBad(errors[maxByteStringLengthIndex]))
                 {
                     ServerMaxByteStringLength = serverMaxByteStringLength;
@@ -1720,13 +1723,13 @@ namespace Technosoftware.UaClient
             // no encodings available if there was a problem reading the data type for the node.
             if (NodeId.IsNull(variable.DataType))
             {
-                return new ReferenceDescriptionCollection();
+                return [];
             }
 
             // no encodings for non-structures.
             if (!TypeTree.IsTypeOf(variable.DataType, DataTypes.Structure))
             {
-                return new ReferenceDescriptionCollection();
+                return [];
             }
 
             // look for cached values.
@@ -1734,7 +1737,7 @@ namespace Technosoftware.UaClient
 
             if (encodings.Count > 0)
             {
-                ReferenceDescriptionCollection references = new ReferenceDescriptionCollection();
+                ReferenceDescriptionCollection references = [];
 
                 foreach (INode encoding in encodings)
                 {
@@ -1943,7 +1946,7 @@ namespace Technosoftware.UaClient
             if (nodeIds.Count == 0)
             {
                 nodeCollection = new NodeCollection();
-                errors = new List<ServiceResult>();
+                errors = [];
                 return;
             }
 
@@ -2001,7 +2004,8 @@ namespace Technosoftware.UaClient
             // first read only nodeclasses for nodes from server.
             var itemsToRead = new ReadValueIdCollection(
                 nodeIds.Select(nodeId =>
-                    new ReadValueId {
+                    new ReadValueId
+                    {
                         NodeId = nodeId,
                         AttributeId = Attributes.NodeClass
                     }));
@@ -2026,10 +2030,10 @@ namespace Technosoftware.UaClient
             else
             {
                 // for a single node read all attributes to skip the first service call
-                nodeClassValues = new DataValueCollection() {
+                nodeClassValues = [
                     new DataValue(new Variant((int)NodeClass.Unspecified),
                     statusCode: StatusCodes.Good)
-                    };
+                    ];
             }
 
             // second determine attributes to read per nodeclass
@@ -2080,10 +2084,11 @@ namespace Technosoftware.UaClient
             var attributes = CreateAttributes(nodeClass, optionalAttributes);
 
             // build list of values to read.
-            ReadValueIdCollection itemsToRead = new ReadValueIdCollection();
+            ReadValueIdCollection itemsToRead = [];
             foreach (uint attributeId in attributes.Keys)
             {
-                ReadValueId itemToRead = new ReadValueId {
+                ReadValueId itemToRead = new ReadValueId
+                {
                     NodeId = nodeId,
                     AttributeId = attributeId
                 };
@@ -2111,14 +2116,15 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public DataValue ReadValue(NodeId nodeId)
         {
-            ReadValueId itemToRead = new ReadValueId {
+            ReadValueId itemToRead = new ReadValueId
+            {
                 NodeId = nodeId,
                 AttributeId = Attributes.Value
             };
 
-            ReadValueIdCollection itemsToRead = new ReadValueIdCollection {
+            ReadValueIdCollection itemsToRead = [
                 itemToRead
-            };
+            ];
 
             // read from server.
             DataValueCollection values = null;
@@ -2152,15 +2158,16 @@ namespace Technosoftware.UaClient
         {
             if (nodeIds.Count == 0)
             {
-                values = new DataValueCollection();
-                errors = new List<ServiceResult>();
+                values = [];
+                errors = [];
                 return;
             }
 
             // read all values from server.
             var itemsToRead = new ReadValueIdCollection(
                 nodeIds.Select(nodeId =>
-                    new ReadValueId {
+                    new ReadValueId
+                    {
                         NodeId = nodeId,
                         AttributeId = Attributes.Value
                     }));
@@ -2315,7 +2322,7 @@ namespace Technosoftware.UaClient
             ManagedBrowse(
                 requestHeader: null,
                 view: null,
-                nodesToBrowse: new List<NodeId>() { nodeId },
+                nodesToBrowse: [nodeId],
                 maxResultsToReturn: 0,
                 browseDirection: BrowseDirection.Both,
                 referenceTypeId: null,
@@ -2435,7 +2442,8 @@ namespace Technosoftware.UaClient
             // send the application instance certificate for the client.
             BuildCertificateData(out byte[] clientCertificateData, out byte[] clientCertificateChainData);
 
-            ApplicationDescription clientDescription = new ApplicationDescription {
+            ApplicationDescription clientDescription = new ApplicationDescription
+            {
                 ApplicationUri = m_configuration.ApplicationUri,
                 ApplicationName = m_configuration.ApplicationName,
                 ApplicationType = ApplicationType.Client,
@@ -2544,7 +2552,7 @@ namespace Technosoftware.UaClient
                 // select the security policy for the user token.
                 string tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
 
-                if (String.IsNullOrEmpty(tokenSecurityPolicyUri))
+                if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
                 {
                     tokenSecurityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
                 }
@@ -2715,7 +2723,7 @@ namespace Technosoftware.UaClient
             // select the security policy for the user token.
             string tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
 
-            if (String.IsNullOrEmpty(tokenSecurityPolicyUri))
+            if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
             {
                 tokenSecurityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
             }
@@ -2801,11 +2809,11 @@ namespace Technosoftware.UaClient
             out NodeIdCollection componentIds,
             out IList<ServiceResult> errors)
         {
-            componentIds = new NodeIdCollection();
-            errors = new List<ServiceResult>();
+            componentIds = [];
+            errors = [];
 
             // build list of paths to translate.
-            BrowsePathCollection pathsToTranslate = new BrowsePathCollection();
+            BrowsePathCollection pathsToTranslate = [];
 
             for (int ii = 0; ii < componentPaths.Count; ii++)
             {
@@ -2866,7 +2874,7 @@ namespace Technosoftware.UaClient
                     continue;
                 }
 
-                if (results[ii].Targets[0].RemainingPathIndex != UInt32.MaxValue)
+                if (results[ii].Targets[0].RemainingPathIndex != uint.MaxValue)
                 {
                     errors[ii] = ServiceResult.Create(
                         StatusCodes.BadTargetNodeIdInvalid,
@@ -2908,11 +2916,11 @@ namespace Technosoftware.UaClient
             out IList<object> values,
             out IList<ServiceResult> errors)
         {
-            values = new List<object>();
-            errors = new List<ServiceResult>();
+            values = [];
+            errors = [];
 
             // build list of values to read.
-            ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
+            ReadValueIdCollection valuesToRead = [];
 
             for (int ii = 0; ii < variableIds.Count; ii++)
             {
@@ -3004,7 +3012,8 @@ namespace Technosoftware.UaClient
 
             foreach (NodeId variableId in variableIds)
             {
-                var valueToRead = new ReadValueId {
+                var valueToRead = new ReadValueId
+                {
                     NodeId = variableId,
                     AttributeId = Attributes.Value,
                     IndexRange = null,
@@ -3036,7 +3045,8 @@ namespace Technosoftware.UaClient
         public byte[] ReadByteStringInChunks(NodeId nodeId)
         {
 
-            int count = (int)ServerMaxByteStringLength; ;
+            int count = (int)ServerMaxByteStringLength;
+            ;
 
             int my_MaxByteStringLength = m_configuration.TransportQuotas.MaxByteStringLength;
             if (my_MaxByteStringLength > 0)
@@ -3051,17 +3061,18 @@ namespace Technosoftware.UaClient
             }
 
             int offset = 0;
-            List<byte[]> bytes = new List<byte[]>();
+            List<byte[]> bytes = [];
 
             while (true)
             {
-                ReadValueId valueToRead = new ReadValueId {
+                ReadValueId valueToRead = new ReadValueId
+                {
                     NodeId = nodeId,
                     AttributeId = Attributes.Value,
                     IndexRange = new NumericRange(offset, offset + count - 1).ToString(),
                     DataEncoding = null
                 };
-                ReadValueIdCollection readValueIds = new ReadValueIdCollection { valueToRead };
+                ReadValueIdCollection readValueIds = [valueToRead];
 
                 ResponseHeader responseHeader = Read(
                     null,
@@ -3119,11 +3130,11 @@ namespace Technosoftware.UaClient
             out IList<string> displayNames,
             out IList<ServiceResult> errors)
         {
-            displayNames = new List<string>();
-            errors = new List<ServiceResult>();
+            displayNames = [];
+            errors = [];
 
             // build list of values to read.
-            ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
+            ReadValueIdCollection valuesToRead = [];
 
             for (int ii = 0; ii < nodeIds.Count; ii++)
             {
@@ -3143,7 +3154,7 @@ namespace Technosoftware.UaClient
 
             ResponseHeader responseHeader = Read(
                 null,
-                Int32.MaxValue,
+                int.MaxValue,
                 TimestampsToReturn.Neither,
                 valuesToRead,
                 out results,
@@ -3155,7 +3166,7 @@ namespace Technosoftware.UaClient
 
             for (int ii = 0; ii < nodeIds.Count; ii++)
             {
-                displayNames.Add(String.Empty);
+                displayNames.Add(string.Empty);
                 errors.Add(ServiceResult.Good);
 
                 // process any diagnostics associated with bad or uncertain data.
@@ -3178,13 +3189,17 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(this, obj)) return true;
+            if (ReferenceEquals(this, obj))
+                return true;
 
             if (obj is IUaSession session)
             {
-                if (!m_endpoint.Equals(session.Endpoint)) return false;
-                if (!m_sessionName.Equals(session.SessionName, StringComparison.Ordinal)) return false;
-                if (!SessionId.Equals(session.SessionId)) return false;
+                if (!m_endpoint.Equals(session.Endpoint))
+                    return false;
+                if (!m_sessionName.Equals(session.SessionName, StringComparison.Ordinal))
+                    return false;
+                if (!SessionId.Equals(session.SessionId))
+                    return false;
 
                 return true;
             }
@@ -3263,7 +3278,8 @@ namespace Technosoftware.UaClient
                     try
                     {
                         // close the session and delete all subscriptions if specified.
-                        var requestHeader = new RequestHeader() {
+                        var requestHeader = new RequestHeader()
+                        {
                             TimeoutHint = timeout > 0 ? (uint)timeout : (uint)(this.OperationTimeout > 0 ? this.OperationTimeout : 0),
                         };
                         CloseSession(requestHeader, m_deleteSubscriptionsOnClose);
@@ -3303,7 +3319,8 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public bool AddSubscription(Subscription subscription)
         {
-            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+            if (subscription == null)
+                throw new ArgumentNullException(nameof(subscription));
 
             lock (SyncRoot)
             {
@@ -3324,7 +3341,8 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public bool RemoveSubscription(Subscription subscription)
         {
-            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+            if (subscription == null)
+                throw new ArgumentNullException(nameof(subscription));
 
             if (subscription.Created)
             {
@@ -3349,9 +3367,10 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public bool RemoveSubscriptions(IEnumerable<Subscription> subscriptions)
         {
-            if (subscriptions == null) throw new ArgumentNullException(nameof(subscriptions));
+            if (subscriptions == null)
+                throw new ArgumentNullException(nameof(subscriptions));
 
-            List<Subscription> subscriptionsToDelete = new List<Subscription>();
+            List<Subscription> subscriptionsToDelete = [];
             bool removed = PrepareSubscriptionsToDelete(subscriptions, subscriptionsToDelete);
 
             foreach (Subscription subscription in subscriptionsToDelete)
@@ -3370,7 +3389,8 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public bool RemoveTransferredSubscription(Subscription subscription)
         {
-            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+            if (subscription == null)
+                throw new ArgumentNullException(nameof(subscription));
 
             if (subscription.Session != this)
             {
@@ -3409,7 +3429,7 @@ namespace Technosoftware.UaClient
 
                     for (int ii = 0; ii < subscriptions.Count; ii++)
                     {
-                        if (!subscriptions[ii].Transfer(this, subscriptionIds[ii], new UInt32Collection()))
+                        if (!subscriptions[ii].Transfer(this, subscriptionIds[ii], []))
                         {
                             Utils.LogError("SubscriptionId {0} failed to reactivate.", subscriptionIds[ii]);
                             failedSubscriptions++;
@@ -3554,8 +3574,7 @@ namespace Technosoftware.UaClient
             description.NodeClassMask = nodeClassMask;
             description.ResultMask = (uint)BrowseResultMask.All;
 
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
-            nodesToBrowse.Add(description);
+            BrowseDescriptionCollection nodesToBrowse = [description];
 
             BrowseResultCollection results;
             DiagnosticInfoCollection diagnosticInfos;
@@ -3597,10 +3616,11 @@ namespace Technosoftware.UaClient
             out IList<ServiceResult> errors)
         {
 
-            BrowseDescriptionCollection browseDescriptions = new BrowseDescriptionCollection();
+            BrowseDescriptionCollection browseDescriptions = [];
             foreach (var nodeToBrowse in nodesToBrowse)
             {
-                BrowseDescription description = new BrowseDescription {
+                BrowseDescription description = new BrowseDescription
+                {
                     NodeId = nodeToBrowse,
                     BrowseDirection = browseDirection,
                     ReferenceTypeId = referenceTypeId,
@@ -3624,9 +3644,9 @@ namespace Technosoftware.UaClient
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, browseDescriptions);
 
             int ii = 0;
-            errors = new List<ServiceResult>();
-            continuationPoints = new ByteStringCollection();
-            referencesList = new List<ReferenceDescriptionCollection>();
+            errors = [];
+            continuationPoints = [];
+            referencesList = [];
             foreach (var result in results)
             {
                 if (StatusCode.IsBad(result.StatusCode))
@@ -3667,8 +3687,7 @@ namespace Technosoftware.UaClient
             description.NodeClassMask = nodeClassMask;
             description.ResultMask = (uint)BrowseResultMask.All;
 
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
-            nodesToBrowse.Add(description);
+            BrowseDescriptionCollection nodesToBrowse = [description];
 
             return BeginBrowse(
                 requestHeader,
@@ -3719,8 +3738,7 @@ namespace Technosoftware.UaClient
             out byte[] revisedContinuationPoint,
             out ReferenceDescriptionCollection references)
         {
-            ByteStringCollection continuationPoints = new ByteStringCollection();
-            continuationPoints.Add(continuationPoint);
+            ByteStringCollection continuationPoints = [continuationPoint];
 
             BrowseResultCollection results;
             DiagnosticInfoCollection diagnosticInfos;
@@ -3769,9 +3787,9 @@ namespace Technosoftware.UaClient
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
 
             int ii = 0;
-            errors = new List<ServiceResult>();
-            revisedContinuationPoints = new ByteStringCollection();
-            referencesList = new List<ReferenceDescriptionCollection>();
+            errors = [];
+            revisedContinuationPoints = [];
+            referencesList = [];
             foreach (var result in results)
             {
                 if (StatusCode.IsBad(result.StatusCode))
@@ -3798,8 +3816,7 @@ namespace Technosoftware.UaClient
             AsyncCallback callback,
             object asyncState)
         {
-            ByteStringCollection continuationPoints = new ByteStringCollection();
-            continuationPoints.Add(continuationPoint);
+            ByteStringCollection continuationPoints = [continuationPoint];
 
             return BeginBrowseNext(
                 requestHeader,
@@ -3842,7 +3859,6 @@ namespace Technosoftware.UaClient
 
         #region Combined Browse/BrowseNext
 
-
         /// <inheritdoc/>
         public void ManagedBrowse(
             RequestHeader requestHeader,
@@ -3875,7 +3891,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public IList<object> Call(NodeId objectId, NodeId methodId, params object[] args)
         {
-            VariantCollection inputArguments = new VariantCollection();
+            VariantCollection inputArguments = [];
 
             if (args != null)
             {
@@ -3891,8 +3907,7 @@ namespace Technosoftware.UaClient
             request.MethodId = methodId;
             request.InputArguments = inputArguments;
 
-            CallMethodRequestCollection requests = new CallMethodRequestCollection();
-            requests.Add(request);
+            CallMethodRequestCollection requests = [request];
 
             CallMethodResultCollection results;
             DiagnosticInfoCollection diagnosticInfos;
@@ -3911,7 +3926,7 @@ namespace Technosoftware.UaClient
                 throw ServiceResultException.Create(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable);
             }
 
-            List<object> outputArguments = new List<object>();
+            List<object> outputArguments = [];
 
             foreach (Variant arg in results[0].OutputArguments)
             {
@@ -3928,7 +3943,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         protected virtual SignedSoftwareCertificateCollection GetSoftwareCertificates()
         {
-            return new SignedSoftwareCertificateCollection();
+            return [];
         }
 
         /// <summary>
@@ -4151,7 +4166,8 @@ namespace Technosoftware.UaClient
                     }
                 }
 
-                RequestHeader requestHeader = new RequestHeader {
+                RequestHeader requestHeader = new RequestHeader
+                {
                     RequestHandle = Utils.IncrementIdentifier(ref m_keepAliveCounter),
                     TimeoutHint = (uint)(KeepAliveInterval * 2),
                     ReturnDiagnostics = 0
@@ -4190,8 +4206,8 @@ namespace Technosoftware.UaClient
             try
             {
                 // read the server status.
-                DataValueCollection values = new DataValueCollection();
-                DiagnosticInfoCollection diagnosticInfos = new DiagnosticInfoCollection();
+                DataValueCollection values = [];
+                DiagnosticInfoCollection diagnosticInfos = [];
 
                 ResponseHeader responseHeader = EndRead(
                     result,
@@ -4364,7 +4380,8 @@ namespace Technosoftware.UaClient
                 var attributes = CreateAttributes(node.NodeClass, optionalAttributes);
                 foreach (uint attributeId in attributes.Keys)
                 {
-                    ReadValueId itemToRead = new ReadValueId {
+                    ReadValueId itemToRead = new ReadValueId
+                    {
                         NodeId = node.NodeId,
                         AttributeId = attributeId
                     };
@@ -4384,7 +4401,8 @@ namespace Technosoftware.UaClient
             var nodesToRead = new ReadValueIdCollection();
 
             // request namespace array.
-            ReadValueId valueId = new ReadValueId {
+            ReadValueId valueId = new ReadValueId
+            {
                 NodeId = Variables.Server_NamespaceArray,
                 AttributeId = Attributes.Value
             };
@@ -4392,7 +4410,8 @@ namespace Technosoftware.UaClient
             nodesToRead.Add(valueId);
 
             // request server array.
-            valueId = new ReadValueId {
+            valueId = new ReadValueId
+            {
                 NodeId = Variables.Server_ServerArray,
                 AttributeId = Attributes.Value
             };
@@ -4477,7 +4496,8 @@ namespace Technosoftware.UaClient
                 var attributes = CreateAttributes(node.NodeClass, optionalAttributes);
                 foreach (uint attributeId in attributes.Keys)
                 {
-                    ReadValueId itemToRead = new ReadValueId {
+                    ReadValueId itemToRead = new ReadValueId
+                    {
                         NodeId = node.NodeId,
                         AttributeId = attributeId
                     };
@@ -4966,7 +4986,7 @@ namespace Technosoftware.UaClient
 
                 if (rolePermissions != null)
                 {
-                    node.RolePermissions = new RolePermissionTypeCollection();
+                    node.RolePermissions = [];
 
                     foreach (ExtensionObject rolePermission in rolePermissions)
                     {
@@ -4983,7 +5003,7 @@ namespace Technosoftware.UaClient
 
                 if (userRolePermissions != null)
                 {
-                    node.UserRolePermissions = new RolePermissionTypeCollection();
+                    node.UserRolePermissions = [];
 
                     foreach (ExtensionObject rolePermission in userRolePermissions)
                     {
@@ -5150,7 +5170,7 @@ namespace Technosoftware.UaClient
                 {
                     // send all ack values, clear list
                     acknowledgementsToSend = m_acknowledgementsToSend;
-                    m_acknowledgementsToSend = new SubscriptionAcknowledgementCollection();
+                    m_acknowledgementsToSend = [];
                 }
 #if DEBUG_SEQUENTIALPUBLISHING
                 foreach (var toSend in acknowledgementsToSend)
@@ -5164,14 +5184,16 @@ namespace Technosoftware.UaClient
             timeoutHint = Math.Min((uint)(OperationTimeout / 2), timeoutHint);
 
             // send publish request.
-            var requestHeader = new RequestHeader {
+            var requestHeader = new RequestHeader
+            {
                 // ensure the publish request is discarded before the timeout occurs to ensure the channel is dropped.
                 TimeoutHint = timeoutHint,
                 ReturnDiagnostics = (uint)(int)ReturnDiagnostics,
                 RequestHandle = Utils.IncrementIdentifier(ref m_publishCounter)
             };
 
-            var state = new AsyncRequestState {
+            var state = new AsyncRequestState
+            {
                 RequestTypeId = DataTypes.PublishRequest,
                 RequestId = requestHeader.RequestHandle,
                 TickCount = HiResClock.TickCount
@@ -5380,7 +5402,8 @@ namespace Technosoftware.UaClient
                     case StatusCodes.BadTcpServerTooBusy:
                     case StatusCodes.BadServerTooBusy:
                         // throttle the next publish to reduce server load
-                        _ = Task.Run(async () => {
+                        _ = Task.Run(async () =>
+                        {
                             await Task.Delay(100).ConfigureAwait(false);
                             QueueBeginPublish();
                         });
@@ -5406,7 +5429,8 @@ namespace Technosoftware.UaClient
             error = ServiceResult.Good;
 
             // send republish request.
-            RequestHeader requestHeader = new RequestHeader {
+            RequestHeader requestHeader = new RequestHeader
+            {
                 TimeoutHint = (uint)OperationTimeout,
                 ReturnDiagnostics = (uint)(int)ReturnDiagnostics,
                 RequestHandle = Utils.IncrementIdentifier(ref m_publishCounter)
@@ -5587,7 +5611,7 @@ namespace Technosoftware.UaClient
             if (!requireEncryption)
             {
                 requireEncryption = identityPolicy.SecurityPolicyUri != SecurityPolicies.None &&
-                    !String.IsNullOrEmpty(identityPolicy.SecurityPolicyUri);
+                    !string.IsNullOrEmpty(identityPolicy.SecurityPolicyUri);
             }
         }
         /// <summary>
@@ -5622,7 +5646,7 @@ namespace Technosoftware.UaClient
             if (m_instanceCertificateChain != null && m_instanceCertificateChain.Count > 0 &&
                 m_configuration.SecurityConfiguration.SendCertificateChain)
             {
-                List<byte> clientCertificateChain = new List<byte>();
+                List<byte> clientCertificateChain = [];
 
                 for (int i = 0; i < m_instanceCertificateChain.Count; i++)
                 {
@@ -5719,7 +5743,7 @@ namespace Technosoftware.UaClient
                 {
                     // Select EndpointDescriptions with a transportProfileUri that matches the
                     // profileUris specified in the original GetEndpoints() request.
-                    expectedServerEndpoints = new EndpointDescriptionCollection();
+                    expectedServerEndpoints = [];
 
                     foreach (EndpointDescription serverEndpoint in serverEndpoints)
                     {
@@ -5889,7 +5913,7 @@ namespace Technosoftware.UaClient
             // select the security policy for the user token.
             string tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
 
-            if (String.IsNullOrEmpty(tokenSecurityPolicyUri))
+            if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
             {
                 tokenSecurityPolicyUri = endpoint.SecurityPolicyUri;
             }
@@ -6074,7 +6098,7 @@ namespace Technosoftware.UaClient
             CertificateValidator validator = m_configuration.CertificateValidator;
 
             // validate software certificates.
-            List<SoftwareCertificate> softwareCertificates = new List<SoftwareCertificate>();
+            List<SoftwareCertificate> softwareCertificates = [];
 
             foreach (SignedSoftwareCertificate signedCertificate in serverSoftwareCertificates)
             {
@@ -6259,7 +6283,8 @@ namespace Technosoftware.UaClient
                 {
                     SessionNotificationEventArgs args = new SessionNotificationEventArgs(subscription, notificationMessage, responseHeader.StringTable);
 
-                    Task.Run(() => {
+                    Task.Run(() =>
+                    {
                         OnRaisePublishNotification(publishEventHandler, args);
                     });
                 }
@@ -6271,7 +6296,8 @@ namespace Technosoftware.UaClient
                     // Delete abandoned subscription from server.
                     Utils.LogWarning("Received Publish Response for Unknown SubscriptionId={0}. Deleting abandoned subscription from server.", subscriptionId);
 
-                    Task.Run(() => {
+                    Task.Run(() =>
+                    {
                         DeleteSubscription(subscriptionId);
                     });
                 }
@@ -6450,7 +6476,7 @@ namespace Technosoftware.UaClient
             if (configuration.SecurityConfiguration.SendCertificateChain)
             {
                 clientCertificateChain = new X509Certificate2Collection(clientCertificate);
-                List<CertificateIdentifier> issuers = new List<CertificateIdentifier>();
+                List<CertificateIdentifier> issuers = [];
                 await configuration.CertificateValidator.GetIssuers(clientCertificate, issuers).ConfigureAwait(false);
 
                 for (int i = 0; i < issuers.Count; i++)
@@ -6478,11 +6504,13 @@ namespace Technosoftware.UaClient
 
         private void AddAcknowledgementToSend(SubscriptionAcknowledgementCollection acknowledgementsToSend, uint subscriptionId, uint sequenceNumber)
         {
-            if (acknowledgementsToSend == null) throw new ArgumentNullException(nameof(acknowledgementsToSend));
+            if (acknowledgementsToSend == null)
+                throw new ArgumentNullException(nameof(acknowledgementsToSend));
 
             Debug.Assert(Monitor.IsEntered(m_acknowledgementsToSendLock));
 
-            SubscriptionAcknowledgement acknowledgement = new SubscriptionAcknowledgement {
+            SubscriptionAcknowledgement acknowledgement = new SubscriptionAcknowledgement
+            {
                 SubscriptionId = subscriptionId,
                 SequenceNumber = sequenceNumber
             };
@@ -6575,15 +6603,16 @@ namespace Technosoftware.UaClient
         /// <param name="subscriptions">The subscriptions to call resend data.</param>
         private CallMethodRequestCollection CreateCallRequestsForResendData(IEnumerable<Subscription> subscriptions)
         {
-            CallMethodRequestCollection requests = new CallMethodRequestCollection();
+            CallMethodRequestCollection requests = [];
 
             foreach (Subscription subscription in subscriptions)
             {
-                VariantCollection inputArguments = new VariantCollection {
+                VariantCollection inputArguments = [
                     new Variant(subscription.Id)
-                };
+                ];
 
-                var request = new CallMethodRequest {
+                var request = new CallMethodRequest
+                {
                     ObjectId = ObjectIds.Server,
                     MethodId = MethodIds.Server_ResendData,
                     InputArguments = inputArguments
@@ -6658,7 +6687,7 @@ namespace Technosoftware.UaClient
         {
             var requestHeader = new RequestHeader();
             var userTokenSecurityPolicyUri = identityTokenSecurityPolicyUri;
-            if (String.IsNullOrEmpty(userTokenSecurityPolicyUri))
+            if (string.IsNullOrEmpty(userTokenSecurityPolicyUri))
             {
                 userTokenSecurityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
             }
@@ -6667,7 +6696,8 @@ namespace Technosoftware.UaClient
             if (EccUtils.IsEccPolicy(userTokenSecurityPolicyUri))
             {
                 AdditionalParametersType parameters = new AdditionalParametersType();
-                parameters.Parameters.Add(new Opc.Ua.KeyValuePair() {
+                parameters.Parameters.Add(new Opc.Ua.KeyValuePair()
+                {
                     Key = "ECDHPolicyUri",
                     Value = userTokenSecurityPolicyUri
                 });

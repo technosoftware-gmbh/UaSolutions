@@ -75,7 +75,7 @@ namespace Technosoftware.UaServer.Server
             m_configuration = configuration;
             m_messageContext = messageContext;
 
-            m_endpointAddresses = new List<Uri>();
+            m_endpointAddresses = [];
 
             foreach (string baseAddresses in m_configuration.ServerConfiguration.BaseAddresses)
             {
@@ -224,7 +224,6 @@ namespace Technosoftware.UaServer.Server
             get { return m_endpointAddresses; }
         }
 
-
         /// <summary>
         /// The context to use when serializing/deserializing extension objects.
         /// </summary>
@@ -364,7 +363,6 @@ namespace Technosoftware.UaServer.Server
         {
             get { return m_subscriptionManager; }
         }
-
 
         /// <summary>
         /// The factory for durable monitored item queues
@@ -686,13 +684,15 @@ namespace Technosoftware.UaServer.Server
                 serverObject.ServerDiagnostics.EnabledFlag.MinimumSamplingInterval = 1000;
 
                 // initialize status.
-                ServerStatusDataType serverStatus = new ServerStatusDataType {
+                ServerStatusDataType serverStatus = new ServerStatusDataType
+                {
                     StartTime = DateTime.UtcNow,
                     CurrentTime = DateTime.UtcNow,
                     State = ServerState.Shutdown
                 };
 
-                var buildInfo = new BuildInfo() {
+                var buildInfo = new BuildInfo()
+                {
                     ProductName = m_serverDescription.ProductName,
                     ProductUri = m_serverDescription.ProductUri,
                     ManufacturerName = m_serverDescription.ManufacturerName,
@@ -716,7 +716,8 @@ namespace Technosoftware.UaServer.Server
                 m_serverStatus.OnBeforeRead = OnReadServerStatus;
 
                 // initialize diagnostics.
-                m_serverDiagnostics = new ServerDiagnosticsSummaryDataType {
+                m_serverDiagnostics = new ServerDiagnosticsSummaryDataType
+                {
                     ServerViewCount = 0,
                     CurrentSessionCount = 0,
                     CumulatedSessionCount = 0,
@@ -751,7 +752,7 @@ namespace Technosoftware.UaServer.Server
                 auditing.OnSimpleWriteValue += OnWriteAuditing;
                 auditing.OnSimpleReadValue += OnReadAuditing;
                 auditing.Value = m_auditing;
-                auditing.RolePermissions = new RolePermissionTypeCollection {
+                auditing.RolePermissions = [
                         new RolePermissionType {
                             RoleId = ObjectIds.WellKnownRole_AuthenticatedUser,
                             Permissions = (uint)(PermissionType.Browse|PermissionType.Read)
@@ -759,7 +760,7 @@ namespace Technosoftware.UaServer.Server
                         new RolePermissionType {
                             RoleId = ObjectIds.WellKnownRole_SecurityAdmin,
                             Permissions = (uint)(PermissionType.Browse|PermissionType.Write|PermissionType.ReadRolePermissions|PermissionType.Read)
-                            }};
+                            }];
                 auditing.AccessLevel = AccessLevels.CurrentRead;
                 auditing.UserAccessLevel = AccessLevels.CurrentReadOrWrite;
                 auditing.MinimumSamplingInterval = 1000;

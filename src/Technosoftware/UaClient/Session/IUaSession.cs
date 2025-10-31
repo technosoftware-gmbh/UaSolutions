@@ -1012,7 +1012,6 @@ namespace Technosoftware.UaClient
             );
         #endregion ManagedBrowse methods
 
-
         #region Call Methods
         /// <summary>
         /// Calls the specified method and returns the output arguments.
@@ -1091,7 +1090,6 @@ namespace Technosoftware.UaClient
         /// (if set to a value different from 0)
         /// </summary>
         Balanced
-
 
     }
 }

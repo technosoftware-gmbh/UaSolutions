@@ -90,7 +90,8 @@ namespace Technosoftware.UaServer
             double sourceSamplingInterval,
             bool createDurable = false)
         {
-            if (itemToMonitor == null) throw new ArgumentNullException(nameof(itemToMonitor));
+            if (itemToMonitor == null)
+                throw new ArgumentNullException(nameof(itemToMonitor));
 
             Initialize();
 
@@ -181,7 +182,8 @@ namespace Technosoftware.UaServer
             object managerHandle,
             IUaStoredMonitoredItem storedMonitoredItem)
         {
-            if (storedMonitoredItem == null) throw new ArgumentNullException(nameof(storedMonitoredItem));
+            if (storedMonitoredItem == null)
+                throw new ArgumentNullException(nameof(storedMonitoredItem));
 
             Initialize();
 
@@ -228,7 +230,6 @@ namespace Technosoftware.UaServer
                     aggregateFilter.Stepped,
                     aggregateFilter.AggregateConfiguration);
             }
-
 
             // report change to item state.
             UaServerUtils.ReportCreateMonitoredItem(
@@ -592,7 +593,8 @@ namespace Technosoftware.UaServer
         {
             lock (m_lock)
             {
-                ReadValueId valueId = new ReadValueId {
+                ReadValueId valueId = new ReadValueId
+                {
                     NodeId = m_nodeId,
                     AttributeId = m_attributeId,
                     IndexRange = m_indexRange,
@@ -633,7 +635,8 @@ namespace Technosoftware.UaServer
         {
             lock (m_lock)
             {
-                result = new MonitoredItemCreateResult {
+                result = new MonitoredItemCreateResult
+                {
                     MonitoredItemId = m_id,
                     RevisedSamplingInterval = m_samplingInterval,
                     RevisedQueueSize = m_queueSize,
@@ -656,7 +659,8 @@ namespace Technosoftware.UaServer
         {
             lock (m_lock)
             {
-                result = new MonitoredItemModifyResult {
+                result = new MonitoredItemModifyResult
+                {
                     RevisedSamplingInterval = m_samplingInterval,
                     RevisedQueueSize = m_queueSize,
                     StatusCode = StatusCodes.Good
@@ -712,10 +716,18 @@ namespace Technosoftware.UaServer
 
                     bool match = existingFilter != null;
 
-                    if (match) if (existingFilter.AggregateType != aggregateFilter.AggregateType) match = false;
-                    if (match) if (existingFilter.ProcessingInterval != aggregateFilter.ProcessingInterval) match = false;
-                    if (match) if (existingFilter.StartTime != aggregateFilter.StartTime) match = false;
-                    if (match) if (!existingFilter.AggregateConfiguration.IsEqual(aggregateFilter.AggregateConfiguration)) match = false;
+                    if (match)
+                        if (existingFilter.AggregateType != aggregateFilter.AggregateType)
+                            match = false;
+                    if (match)
+                        if (existingFilter.ProcessingInterval != aggregateFilter.ProcessingInterval)
+                            match = false;
+                    if (match)
+                        if (existingFilter.StartTime != aggregateFilter.StartTime)
+                            match = false;
+                    if (match)
+                        if (!existingFilter.AggregateConfiguration.IsEqual(aggregateFilter.AggregateConfiguration))
+                            match = false;
 
                     if (!match)
                     {
@@ -877,7 +889,8 @@ namespace Technosoftware.UaServer
                 {
                     Utils.LogTrace(Utils.TraceMasks.OperationDetail, "RECEIVED VALUE[{0}] Value={1}", this.m_id, value.WrappedValue);
 
-                    var copy = new DataValue {
+                    var copy = new DataValue
+                    {
                         WrappedValue = value.WrappedValue,
                         StatusCode = value.StatusCode,
                         SourceTimestamp = value.SourceTimestamp,
@@ -1036,7 +1049,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         public virtual void QueueEvent(IFilterTarget instance, bool bypassFilter)
         {
-            if (instance == null) throw new ArgumentNullException(nameof(instance));
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
 
             lock (m_lock)
             {
@@ -1168,12 +1182,11 @@ namespace Technosoftware.UaServer
         {
             if (m_filteredRetainConditionIds == null)
             {
-                m_filteredRetainConditionIds = new HashSet<string>();
+                m_filteredRetainConditionIds = [];
             }
 
             return m_filteredRetainConditionIds;
         }
-
 
         /// <summary>
         /// Whether the item has notifications that are ready to publish.
@@ -1238,8 +1251,10 @@ namespace Technosoftware.UaServer
         /// </summary>
         public virtual bool Publish(UaServerOperationContext context, Queue<EventFieldList> notifications, uint maxNotificationsPerPublish)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (notifications == null) throw new ArgumentNullException(nameof(notifications));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (notifications == null)
+                throw new ArgumentNullException(nameof(notifications));
 
             lock (m_lock)
             {
@@ -1338,9 +1353,12 @@ namespace Technosoftware.UaServer
             Queue<DiagnosticInfo> diagnostics,
             uint maxNotificationsPerPublish)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (notifications == null) throw new ArgumentNullException(nameof(notifications));
-            if (diagnostics == null) throw new ArgumentNullException(nameof(diagnostics));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (notifications == null)
+                throw new ArgumentNullException(nameof(notifications));
+            if (diagnostics == null)
+                throw new ArgumentNullException(nameof(diagnostics));
 
             lock (m_lock)
             {
@@ -1537,7 +1555,7 @@ namespace Technosoftware.UaServer
                 {
                     if (m_monitoringMode == MonitoringMode.Disabled)
                     {
-                        return Int32.MaxValue;
+                        return int.MaxValue;
                     }
 
                     // node manager responsible for ensuring correct sampling.
@@ -1563,7 +1581,8 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public IUaStoredMonitoredItem ToStorableMonitoredItem()
         {
-            return new StoredMonitoredItem {
+            return new StoredMonitoredItem
+            {
                 SamplingInterval = m_samplingInterval,
                 SourceSamplingInterval = m_sourceSamplingInterval,
                 SubscriptionId = m_subscriptionId,
@@ -1597,7 +1616,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected virtual bool ApplyFilter(DataValue value, ServiceResult error)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
 
             bool changed = ValueChanged(
                 value,
@@ -1621,7 +1641,8 @@ namespace Technosoftware.UaServer
             DataChangeFilter filter,
             double range)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
 
             // select default data change filters.
             double deadband = 0.0;
@@ -1924,7 +1945,7 @@ namespace Technosoftware.UaServer
                             m_eventQueueHandler = new EventQueueHandler(IsDurable, m_monitoredItemQueueFactory, Id);
                         }
                         m_eventQueueHandler.SetQueueSize(m_queueSize, m_discardOldest);
-                        }
+                    }
 
                     break;
                 }
@@ -1977,7 +1998,7 @@ namespace Technosoftware.UaServer
                         {
                             Utils.LogError(ex, "Failed to restore queue for monitored item with id {0}", Id);
                         }
-                        
+
 
                         if (restoredQueue != null)
                         {
@@ -2015,7 +2036,7 @@ namespace Technosoftware.UaServer
                             m_eventQueueHandler = new EventQueueHandler(IsDurable, m_monitoredItemQueueFactory, Id);
                             m_eventQueueHandler.SetQueueSize(m_queueSize, m_discardOldest);
                         }
-                        
+
                     }
 
                     break;

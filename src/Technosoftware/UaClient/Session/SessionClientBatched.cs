@@ -58,7 +58,8 @@ namespace Technosoftware.UaClient
                 else
                 {
                     m_operationLimits = value;
-                };
+                }
+                ;
             }
         }
         #endregion
@@ -578,7 +579,7 @@ namespace Technosoftware.UaClient
             out NodeIdCollection registeredNodeIds)
         {
             ResponseHeader responseHeader = null;
-            registeredNodeIds = new NodeIdCollection();
+            registeredNodeIds = [];
 
             foreach (var batchNodesToRegister in
                 nodesToRegister.Batch<NodeId, NodeIdCollection>(OperationLimits.MaxNodesPerRegisterNodes))
@@ -1343,7 +1344,7 @@ namespace Technosoftware.UaClient
                 );
 
             foreach (var batchMonitoredItemIds in
-                monitoredItemIds.Batch<UInt32, UInt32Collection>(operationLimit))
+                monitoredItemIds.Batch<uint, UInt32Collection>(operationLimit))
             {
                 if (requestHeader != null)
                 {
@@ -1385,7 +1386,7 @@ namespace Technosoftware.UaClient
                 );
 
             foreach (var batchMonitoredItemIds in
-                monitoredItemIds.Batch<UInt32, UInt32Collection>(operationLimit))
+                monitoredItemIds.Batch<uint, UInt32Collection>(operationLimit))
             {
                 if (requestHeader != null)
                 {
@@ -1442,13 +1443,13 @@ namespace Technosoftware.UaClient
                 );
 
             foreach (var batchLinksToAdd in
-                linksToAdd.Batch<UInt32, UInt32Collection>(operationLimit))
+                linksToAdd.Batch<uint, UInt32Collection>(operationLimit))
             {
                 UInt32Collection batchLinksToRemove;
                 if (operationLimit == 0)
                 {
                     batchLinksToRemove = linksToRemove;
-                    linksToRemove = new UInt32Collection();
+                    linksToRemove = [];
                 }
                 else if (batchLinksToAdd.Count < operationLimit)
                 {
@@ -1457,7 +1458,7 @@ namespace Technosoftware.UaClient
                 }
                 else
                 {
-                    batchLinksToRemove = new UInt32Collection();
+                    batchLinksToRemove = [];
                 }
 
                 if (requestHeader != null)
@@ -1491,7 +1492,7 @@ namespace Technosoftware.UaClient
             if (linksToRemove.Count > 0)
             {
                 foreach (UInt32Collection batchLinksToRemove in
-                    linksToRemove.Batch<UInt32, UInt32Collection>(operationLimit))
+                    linksToRemove.Batch<uint, UInt32Collection>(operationLimit))
                 {
                     if (requestHeader != null)
                     {
@@ -1550,13 +1551,13 @@ namespace Technosoftware.UaClient
                 );
 
             foreach (var batchLinksToAdd in
-                linksToAdd.Batch<UInt32, UInt32Collection>(operationLimit))
+                linksToAdd.Batch<uint, UInt32Collection>(operationLimit))
             {
                 UInt32Collection batchLinksToRemove;
                 if (operationLimit == 0)
                 {
                     batchLinksToRemove = linksToRemove;
-                    linksToRemove = new UInt32Collection();
+                    linksToRemove = [];
                 }
                 else if (batchLinksToAdd.Count < operationLimit)
                 {
@@ -1565,7 +1566,7 @@ namespace Technosoftware.UaClient
                 }
                 else
                 {
-                    batchLinksToRemove = new UInt32Collection();
+                    batchLinksToRemove = [];
                 }
 
                 if (requestHeader != null)
@@ -1600,7 +1601,7 @@ namespace Technosoftware.UaClient
             if (linksToRemove.Count > 0)
             {
                 foreach (var batchLinksToRemove in
-                    linksToRemove.Batch<UInt32, UInt32Collection>(operationLimit))
+                    linksToRemove.Batch<uint, UInt32Collection>(operationLimit))
                 {
                     if (requestHeader != null)
                     {
@@ -1661,7 +1662,7 @@ namespace Technosoftware.UaClient
                 );
 
             foreach (var batchMonitoredItemIds in
-                monitoredItemIds.Batch<UInt32, UInt32Collection>(operationLimit))
+                monitoredItemIds.Batch<uint, UInt32Collection>(operationLimit))
             {
                 if (requestHeader != null)
                 {
@@ -1701,7 +1702,7 @@ namespace Technosoftware.UaClient
                 );
 
             foreach (var batchMonitoredItemIds in
-                monitoredItemIds.Batch<UInt32, UInt32Collection>(operationLimit))
+                monitoredItemIds.Batch<uint, UInt32Collection>(operationLimit))
             {
                 if (requestHeader != null)
                 {
@@ -1754,11 +1755,12 @@ namespace Technosoftware.UaClient
             }
             else
             {
-                results = new C() {
+                results = new C()
+                {
                     Capacity = count
                 };
                 diagnosticInfos = new DiagnosticInfoCollection(count);
-                stringTable = new StringCollection();
+                stringTable = [];
             }
         }
 
@@ -1879,7 +1881,8 @@ namespace Technosoftware.UaClient
             }
             else
             {
-                C nextbatch = new C {
+                C nextbatch = new C
+                {
                     Capacity = (int)batchSize
                 };
                 foreach (T item in collection)
@@ -1888,7 +1891,8 @@ namespace Technosoftware.UaClient
                     if (nextbatch.Count == batchSize)
                     {
                         yield return nextbatch;
-                        nextbatch = new C {
+                        nextbatch = new C
+                        {
                             Capacity = (int)batchSize
                         };
                     }

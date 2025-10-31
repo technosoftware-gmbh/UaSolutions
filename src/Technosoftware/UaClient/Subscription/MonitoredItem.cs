@@ -181,7 +181,6 @@ namespace Technosoftware.UaClient
             set { m_displayName = value; }
         }
 
-
         /// <summary>
         /// The start node for the browse path that identifies the node to monitor.
         /// </summary>
@@ -238,7 +237,7 @@ namespace Technosoftware.UaClient
                         // set the queue size to the default for events.
                         if (QueueSize <= 1)
                         {
-                            QueueSize = Int32.MaxValue;
+                            QueueSize = int.MaxValue;
                         }
 
                         m_attributeId = Attributes.EventNotifier;
@@ -252,7 +251,7 @@ namespace Technosoftware.UaClient
                         }
 
                         // set the queue size to the default for data changes.
-                        if (QueueSize == Int32.MaxValue)
+                        if (QueueSize == int.MaxValue)
                         {
                             QueueSize = 1;
                         }
@@ -431,7 +430,7 @@ namespace Technosoftware.UaClient
             get
             {
                 // just return the start id if relative path is empty.
-                if (String.IsNullOrEmpty(m_relativePath))
+                if (string.IsNullOrEmpty(m_relativePath))
                 {
                     return m_startNodeId;
                 }
@@ -522,7 +521,7 @@ namespace Technosoftware.UaClient
                     return m_dataCache.Publish();
                 }
 
-                return new List<DataValue>();
+                return [];
             }
         }
 
@@ -538,7 +537,7 @@ namespace Technosoftware.UaClient
                     return m_eventCache.Publish();
                 }
 
-                return new List<EventFieldList>();
+                return [];
             }
         }
 
@@ -839,8 +838,7 @@ namespace Technosoftware.UaClient
             NodeId eventTypeId,
             QualifiedName browseName)
         {
-            QualifiedNameCollection browsePath = new QualifiedNameCollection();
-            browsePath.Add(browseName);
+            QualifiedNameCollection browsePath = [browseName];
             return GetFieldValue(eventFields, eventTypeId, browsePath, Attributes.Value);
         }
 

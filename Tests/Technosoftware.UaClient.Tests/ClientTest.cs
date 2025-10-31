@@ -58,10 +58,10 @@ namespace Technosoftware.UaClient.Tests
         }
 
         #region DataPointSources
-        public static readonly NodeId[] TypeSystems = {
+        public static readonly NodeId[] TypeSystems = [
             ObjectIds.OPCBinarySchema_TypeSystem,
             ObjectIds.XmlSchema_TypeSystem
-        };
+        ];
         #endregion
 
         #region Test Setup
@@ -242,19 +242,23 @@ namespace Technosoftware.UaClient.Tests
                 // cast Innerchannel to IUaSessionChannel
                 ITransportChannel channel = client.TransportChannel;
 
-                var sessionClient = new SessionClient(channel) {
+                var sessionClient = new SessionClient(channel)
+                {
                     ReturnDiagnostics = DiagnosticsMasks.All
                 };
 
-                var request = new ReadRequest {
+                var request = new ReadRequest
+                {
                     RequestHeader = null
                 };
 
-                var readMessage = new ReadMessage() {
+                var readMessage = new ReadMessage()
+                {
                     ReadRequest = request,
                 };
 
-                var readValueId = new ReadValueId() {
+                var readValueId = new ReadValueId()
+                {
                     NodeId = new NodeId(Guid.NewGuid()),
                     AttributeId = Attributes.Value
                 };
@@ -308,22 +312,23 @@ namespace Technosoftware.UaClient.Tests
                 }
                 else
                 {
-                var sre = Assert.Throws<ServiceResultException>(() => client.GetEndpoints(profileUris));
-                // race condition, if socket closed is detected before the error was returned,
-                // client may report channel closed instead of security policy rejected
-                if (StatusCodes.BadSecureChannelClosed == sre.StatusCode)
-                {
-                    Assert.Inconclusive($"Unexpected Status: {sre}");
+                    var sre = Assert.Throws<ServiceResultException>(() => client.GetEndpoints(profileUris));
+                    // race condition, if socket closed is detected before the error was returned,
+                    // client may report channel closed instead of security policy rejected
+                    if (StatusCodes.BadSecureChannelClosed == sre.StatusCode)
+                    {
+                        Assert.Inconclusive($"Unexpected Status: {sre}");
+                    }
+                    Assert.AreEqual((StatusCode)StatusCodes.BadSecurityPolicyRejected, (StatusCode)sre.StatusCode, "Unexpected Status: {0}", sre);
                 }
-                Assert.AreEqual((StatusCode)StatusCodes.BadSecurityPolicyRejected, (StatusCode)sre.StatusCode, "Unexpected Status: {0}", sre);
             }
-        }
         }
 
         [Test, Order(110)]
         public async Task InvalidConfiguration()
         {
-            var applicationInstance = new ApplicationInstance() {
+            var applicationInstance = new ApplicationInstance()
+            {
                 ApplicationName = ClientFixture.Config.ApplicationName
             };
             Assert.NotNull(applicationInstance);
@@ -468,7 +473,8 @@ namespace Technosoftware.UaClient.Tests
             ManualResetEvent quitEvent = new ManualResetEvent(false);
             var reconnectHandler = new SessionReconnectHandler(reconnectAbort, useMaxReconnectPeriod ? MaxTimeout : -1);
             reconnectHandler.BeginReconnect(session, connectTimeout / 5,
-                (object sender, EventArgs e) => {
+                (object sender, EventArgs e) =>
+                {
                     // ignore callbacks from discarded objects.
                     if (!Object.ReferenceEquals(sender, reconnectHandler))
                     {
@@ -524,7 +530,8 @@ namespace Technosoftware.UaClient.Tests
         {
             var identityToken = "fakeTokenString";
 
-            var issuedToken = new IssuedIdentityToken() {
+            var issuedToken = new IssuedIdentityToken()
+            {
                 IssuedTokenType = IssuedTokenType.JWT,
                 PolicyId = Profiles.JwtUserToken,
                 DecryptedTokenData = Encoding.UTF8.GetBytes(identityToken)
@@ -550,7 +557,8 @@ namespace Technosoftware.UaClient.Tests
         {
             UserIdentity CreateUserIdentity(string tokenData)
             {
-                var issuedToken = new IssuedIdentityToken() {
+                var issuedToken = new IssuedIdentityToken()
+                {
                     IssuedTokenType = IssuedTokenType.JWT,
                     PolicyId = Profiles.JwtUserToken,
                     DecryptedTokenData = Encoding.UTF8.GetBytes(tokenData)
@@ -570,7 +578,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.AreEqual(identityToken, receivedToken);
 
             var newIdentityToken = "fakeTokenStringNew";
-            session.RenewUserIdentityEvent += (s, i) => {
+            session.RenewUserIdentityEvent += (s, i) =>
+            {
                 return CreateUserIdentity(newIdentityToken);
             };
 
@@ -610,7 +619,6 @@ namespace Technosoftware.UaClient.Tests
             session2.Close(closeChannel: false);
             session2.DetachChannel();
             session2.Dispose();
-
 
             //Recreate session using same channel
             var session3 = await ClientFixture.SessionFactory.RecreateAsync(session1, channel).ConfigureAwait(false);
@@ -800,7 +808,8 @@ namespace Technosoftware.UaClient.Tests
             bool success = session2.ApplySessionConfiguration(sessionConfiguration);
 
             // hook callback to renew the user identity
-            session2.RenewUserIdentityEvent += (session, identity) => {
+            session2.RenewUserIdentityEvent += (session, identity) =>
+            {
                 return userIdentity;
             };
 
@@ -851,7 +860,7 @@ namespace Technosoftware.UaClient.Tests
         [TestCase(true)]
         public async Task RecreateSessionWithRenewUserIdentity(bool async)
         {
-            IUserIdentity userIdentityAnonymous = new UserIdentity() ;
+            IUserIdentity userIdentityAnonymous = new UserIdentity();
             IUserIdentity userIdentityPW = new UserIdentity("user1", "password");
 
             // the first channel determines the endpoint
@@ -874,7 +883,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.NotNull(value1);
 
             // hook callback to renew the user identity
-            session1.RenewUserIdentityEvent += (session, identity) => {
+            session1.RenewUserIdentityEvent += (session, identity) =>
+            {
                 return userIdentityPW;
             };
 
@@ -911,7 +921,6 @@ namespace Technosoftware.UaClient.Tests
 
             ServerStatusDataType value2 = (ServerStatusDataType)session2.ReadValue(VariableIds.Server_ServerStatus, typeof(ServerStatusDataType));
             Assert.NotNull(value2);
-
 
             session1.DeleteSubscriptionsOnClose = true;
             session1.Close(1000);
@@ -996,7 +1005,7 @@ namespace Technosoftware.UaClient.Tests
         public void ReadValueTyped()
         {
             // Test ReadValue
-            _ = Session.ReadValue(VariableIds.Server_ServerRedundancy_RedundancySupport, typeof(Int32));
+            _ = Session.ReadValue(VariableIds.Server_ServerRedundancy_RedundancySupport, typeof(int));
             _ = Session.ReadValue(VariableIds.Server_ServerStatus, typeof(ServerStatusDataType));
             var sre = Assert.Throws<ServiceResultException>(() => Session.ReadValue(VariableIds.Server_ServerStatus, typeof(ServiceHost)));
             Assert.AreEqual((StatusCode)StatusCodes.BadTypeMismatch, (StatusCode)sre.StatusCode);
@@ -1091,7 +1100,6 @@ namespace Technosoftware.UaClient.Tests
             ValidateDataTypeDefinition(nodes[0]);
         }
 
-
         private void ValidateDataTypeDefinition(INode node)
         {
             Assert.NotNull(node);
@@ -1109,7 +1117,8 @@ namespace Technosoftware.UaClient.Tests
         [Theory, Order(400)]
         public async Task BrowseFullAddressSpace(string securityPolicy, bool operationLimits = false)
         {
-            if (OperationLimits == null) { GetOperationLimits(); }
+            if (OperationLimits == null)
+            { GetOperationLimits(); }
 
             var requestHeader = new RequestHeader();
             requestHeader.Timestamp = DateTime.UtcNow;
@@ -1145,7 +1154,8 @@ namespace Technosoftware.UaClient.Tests
         [NonParallelizable]
         public async Task ReadDisplayNames()
         {
-            if (ReferenceDescriptions == null) { await BrowseFullAddressSpace(null).ConfigureAwait(false); }
+            if (ReferenceDescriptions == null)
+            { await BrowseFullAddressSpace(null).ConfigureAwait(false); }
             var nodeIds = ReferenceDescriptions.Select(n => ExpandedNodeId.ToNodeId(n.NodeId, Session.NamespaceUris)).ToList();
             if (OperationLimits.MaxNodesPerRead > 0 &&
                 nodeIds.Count > OperationLimits.MaxNodesPerRead)
@@ -1191,7 +1201,6 @@ namespace Technosoftware.UaClient.Tests
             var clientTestServices = new ClientTestServices(Session);
             CommonTestWorkers.SubscriptionTest(clientTestServices, requestHeader);
         }
-
 
         [Test, Order(550)]
         public async Task ReadNode()
@@ -1399,7 +1408,8 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(700)]
         public async Task LoadStandardDataTypeSystem()
         {
-            var sre = Assert.ThrowsAsync<ServiceResultException>(async () => {
+            var sre = Assert.ThrowsAsync<ServiceResultException>(async () =>
+            {
                 var t = await Session.LoadDataTypeSystemAsync(ObjectIds.ObjectAttributes_Encoding_DefaultJson).ConfigureAwait(false);
             });
             Assert.AreEqual((StatusCode)StatusCodes.BadNodeIdInvalid, (StatusCode)sre.StatusCode);
@@ -1416,7 +1426,8 @@ namespace Technosoftware.UaClient.Tests
         public void LoadAllServerDataTypeSystems(NodeId dataTypeSystem)
         {
             // find the dictionary for the description.
-            Browser browser = new Browser(Session) {
+            Browser browser = new Browser(Session)
+            {
                 BrowseDirection = BrowseDirection.Forward,
                 ReferenceTypeId = ReferenceTypeIds.HasComponent,
                 IncludeSubtypes = false,
@@ -1434,7 +1445,7 @@ namespace Technosoftware.UaClient.Tests
                 NodeId dictionaryId = ExpandedNodeId.ToNodeId(r.NodeId, Session.NamespaceUris);
                 TestContext.Out.WriteLine("  ReadDictionary {0} {1}", r.BrowseName.Name, dictionaryId);
                 var dictionaryToLoad = new DataDictionary(Session);
-                 dictionaryToLoad.Load(dictionaryId, r.BrowseName.Name);
+                dictionaryToLoad.Load(dictionaryId, r.BrowseName.Name);
 
                 // internal API for testing only
                 var dictionary = dictionaryToLoad.ReadDictionary(dictionaryId);
@@ -1472,7 +1483,8 @@ namespace Technosoftware.UaClient.Tests
             IUaSession transferSession = null;
             try
             {
-                var requestHeader = new RequestHeader {
+                var requestHeader = new RequestHeader
+                {
                     Timestamp = DateTime.UtcNow,
                     TimeoutHint = MaxTimeout
                 };
@@ -1489,7 +1501,8 @@ namespace Technosoftware.UaClient.Tests
                 transferSession = await ClientFixture.ConnectAsync(ServerUrl, SecurityPolicies.Basic256Sha256, Endpoints).ConfigureAwait(false);
                 Assert.AreNotEqual(Session.SessionId, transferSession.SessionId);
 
-                requestHeader = new RequestHeader {
+                requestHeader = new RequestHeader
+                {
                     Timestamp = DateTime.UtcNow,
                     TimeoutHint = MaxTimeout
                 };
@@ -1497,7 +1510,8 @@ namespace Technosoftware.UaClient.Tests
                 CommonTestWorkers.TransferSubscriptionTest(transferTestServices, requestHeader, subscriptionIds, sendInitialData, false);
 
                 // verify the notification of message transfer
-                requestHeader = new RequestHeader {
+                requestHeader = new RequestHeader
+                {
                     Timestamp = DateTime.UtcNow,
                     TimeoutHint = MaxTimeout
                 };
@@ -1572,11 +1586,13 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(900)]
         public async Task ClientTestRequestHeaderUpdate()
         {
-            var rootActivity = new Activity("Test_Activity_Root") {
+            var rootActivity = new Activity("Test_Activity_Root")
+            {
                 ActivityTraceFlags = ActivityTraceFlags.Recorded,
             }.Start();
 
-            var activityListener = new ActivityListener {
+            var activityListener = new ActivityListener
+            {
                 ShouldListenTo = s => true,
                 Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
             };
@@ -1626,8 +1642,8 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(10000)]
         public void ReadBuildInfo()
         {
-            NodeIdCollection nodes = new NodeIdCollection()
-            {
+            NodeIdCollection nodes =
+            [
                 VariableIds.Server_ServerStatus_BuildInfo,
                 VariableIds.Server_ServerStatus_BuildInfo_ProductName,
                 VariableIds.Server_ServerStatus_BuildInfo_ProductUri,
@@ -1635,7 +1651,7 @@ namespace Technosoftware.UaClient.Tests
                 VariableIds.Server_ServerStatus_BuildInfo_SoftwareVersion,
                 VariableIds.Server_ServerStatus_BuildInfo_BuildNumber,
                 VariableIds.Server_ServerStatus_BuildInfo_BuildDate
-            };
+            ];
 
             Session.ReadNodes(nodes, out IList<Node> nodeCollection, out IList<ServiceResult> errors);
             Assert.NotNull(nodeCollection);
@@ -1719,7 +1735,8 @@ namespace Technosoftware.UaClient.Tests
             {
                 var identityToken = "fakeTokenString";
 
-                var issuedToken = new IssuedIdentityToken() {
+                var issuedToken = new IssuedIdentityToken()
+                {
                     IssuedTokenType = IssuedTokenType.JWT,
                     PolicyId = Profiles.JwtUserToken,
                     DecryptedTokenData = Encoding.UTF8.GetBytes(identityToken),
@@ -1818,8 +1835,7 @@ namespace Technosoftware.UaClient.Tests
         {
             uint expectedRevised = 5;
 
-            List<object> outputParameters = new List<object>();
-            outputParameters.Add(expectedRevised);
+            List<object> outputParameters = [expectedRevised];
 
             Moq.Mock<IUaSession> sessionMock = new Mock<IUaSession>();
 
@@ -1871,7 +1887,7 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(11020)]
         public void SetSubscriptionDurable_NoOutputParameters()
         {
-            List<object> outputParameters = new List<object>();
+            List<object> outputParameters = [];
 
             Moq.Mock<IUaSession> sessionMock = new Mock<IUaSession>();
 
@@ -1921,9 +1937,7 @@ namespace Technosoftware.UaClient.Tests
         {
             uint expectedRevised = 5;
 
-            List<object> outputParameters = new List<object>();
-            outputParameters.Add(expectedRevised);
-            outputParameters.Add(expectedRevised);
+            List<object> outputParameters = [expectedRevised, expectedRevised];
 
             Moq.Mock<IUaSession> sessionMock = new Mock<IUaSession>();
 
@@ -1946,9 +1960,7 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(11100)]
         public void GetMonitoredItems_Success()
         {
-            List<object> outputParameters = new List<object>();
-            outputParameters.Add(new uint[] { 1, 2, 3, 4, 5 });
-            outputParameters.Add(new uint[] { 6, 7, 8, 9, 10 });
+            List<object> outputParameters = [new uint[] { 1, 2, 3, 4, 5 }, new uint[] { 6, 7, 8, 9, 10 }];
 
             Moq.Mock<IUaSession> sessionMock = new Mock<IUaSession>();
 
@@ -1997,7 +2009,7 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(11120)]
         public void GetMonitoredItems_NoOutputParameters()
         {
-            List<object> outputParameters = new List<object>();
+            List<object> outputParameters = [];
 
             Moq.Mock<IUaSession> sessionMock = new Mock<IUaSession>();
 
@@ -2047,10 +2059,12 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(11140)]
         public void GetMonitoredItems_TooManyOutputParameters()
         {
-            List<object> outputParameters = new List<object>();
-            outputParameters.Add(new uint[] { 1, 2, 3, 4, 5 });
-            outputParameters.Add(new uint[] { 6, 7, 8, 9, 10 });
-            outputParameters.Add(new uint[] { 11, 12, 13, 14, 15 });
+            List<object> outputParameters =
+            [
+                new uint[] { 1, 2, 3, 4, 5 },
+                new uint[] { 6, 7, 8, 9, 10 },
+                new uint[] { 11, 12, 13, 14, 15 },
+            ];
 
             Moq.Mock<IUaSession> sessionMock = new Mock<IUaSession>();
 
@@ -2067,7 +2081,6 @@ namespace Technosoftware.UaClient.Tests
                 out UInt32Collection serverHandles,
                 out UInt32Collection clientHandles));
         }
-
 
         #endregion
 

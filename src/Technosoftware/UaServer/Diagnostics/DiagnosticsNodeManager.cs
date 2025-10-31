@@ -51,11 +51,11 @@ namespace Technosoftware.UaServer.Diagnostics
 
             m_namespaceIndex = ServerData.NamespaceUris.GetIndexOrAppend(namespaceUris[1]);
             m_lastUsedId = (long)(DateTime.UtcNow.Ticks & 0x7FFFFFFF);
-            m_sessions = new List<SessionDiagnosticsData>();
-            m_subscriptions = new List<SubscriptionDiagnosticsData>();
+            m_sessions = [];
+            m_subscriptions = [];
             m_diagnosticsEnabled = true;
             m_doScanBusy = false;
-            m_sampledItems = new List<UaMonitoredItem>();
+            m_sampledItems = [];
             m_minimumSamplingInterval = 100;
             m_durableSubscriptionsEnabled = configuration.ServerConfiguration?.DurableSubscriptionsEnabled ?? false;
         }
@@ -158,7 +158,7 @@ namespace Technosoftware.UaServer.Diagnostics
                     {
                         foreach (Argument argument in outputArgumentsValue)
                         {
-                            argument.ArrayDimensions = new UInt32Collection { 0 };
+                            argument.ArrayDimensions = [0];
                         }
 
                         getMonitoredItemsOutputArguments.ClearChangeMasks(SystemContext, false);
@@ -364,7 +364,7 @@ namespace Technosoftware.UaServer.Diagnostics
         /// </summary>
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
-            NodeStateCollection predefinedNodes = new NodeStateCollection();
+            NodeStateCollection predefinedNodes = [];
             var assembly = typeof(ArgumentCollection).GetTypeInfo().Assembly;
             predefinedNodes.LoadFromBinaryResource(context, "Opc.Ua.Stack.Generated.Opc.Ua.PredefinedNodes.uanodes", assembly, true);
             return predefinedNodes;
@@ -621,7 +621,7 @@ namespace Technosoftware.UaServer.Diagnostics
         /// </summary>
         public void SetDiagnosticsEnabled(UaServerContext context, bool enabled)
         {
-            List<NodeState> nodesToDelete = new List<NodeState>();
+            List<NodeState> nodesToDelete = [];
 
             lock (Lock)
             {
@@ -1182,7 +1182,6 @@ namespace Technosoftware.UaServer.Diagnostics
             // notify any monitored items.
             m_serverDiagnostics.ChangesComplete(SystemContext);
 
-
             return true;
         }
 
@@ -1357,7 +1356,6 @@ namespace Technosoftware.UaServer.Diagnostics
             return true;
         }
 
-
         /// <summary>
         /// Filter out the members which correspond to users that are not allowed to see their contents
         /// Current user is allowed to read its data, together with users which have permissions
@@ -1404,7 +1402,8 @@ namespace Technosoftware.UaServer.Diagnostics
             if (adminUser)
             {
                 var rolePermissionTypes = from roleId in m_kWellKnownRoles
-                                          select new RolePermissionType() {
+                                          select new RolePermissionType()
+                                          {
                                               RoleId = roleId,
                                               Permissions = (uint)(PermissionType.Browse | PermissionType.Read | PermissionType.ReadRolePermissions | PermissionType.Write)
                                           };
@@ -1414,7 +1413,8 @@ namespace Technosoftware.UaServer.Diagnostics
             else
             {
                 var rolePermissionTypes = from roleId in m_kWellKnownRoles
-                                          select new RolePermissionType() {
+                                          select new RolePermissionType()
+                                          {
                                               RoleId = roleId,
                                               Permissions = (uint)PermissionType.None
                                           };
@@ -1545,7 +1545,6 @@ namespace Technosoftware.UaServer.Diagnostics
             return false;
         }
 
-
         /// <summary>
         /// Reports notifications for any monitored diagnostic nodes.
         /// </summary>
@@ -1645,7 +1644,7 @@ namespace Technosoftware.UaServer.Diagnostics
                         for (int ii = 0; ii < m_sessions.Count; ii++)
                         {
                             SessionDiagnosticsData diagnostics = m_sessions[ii];
-                            List<SubscriptionDiagnosticsDataType> subscriptionDiagnosticsArray = new List<SubscriptionDiagnosticsDataType>();
+                            List<SubscriptionDiagnosticsDataType> subscriptionDiagnosticsArray = [];
 
                             NodeId sessionId = diagnostics.Summary.NodeId;
 
@@ -1990,7 +1989,7 @@ namespace Technosoftware.UaServer.Diagnostics
         #endregion
 
         #region Private Readonly Fields
-        private static readonly NodeId[] m_kWellKnownRoles = {
+        private static readonly NodeId[] m_kWellKnownRoles = [
             ObjectIds.WellKnownRole_Anonymous,
             ObjectIds.WellKnownRole_AuthenticatedUser,
             ObjectIds.WellKnownRole_ConfigureAdmin,
@@ -1998,7 +1997,7 @@ namespace Technosoftware.UaServer.Diagnostics
             ObjectIds.WellKnownRole_Observer,
             ObjectIds.WellKnownRole_Operator,
             ObjectIds.WellKnownRole_SecurityAdmin,
-            ObjectIds.WellKnownRole_Supervisor };
+            ObjectIds.WellKnownRole_Supervisor ];
         #endregion
     }
 }

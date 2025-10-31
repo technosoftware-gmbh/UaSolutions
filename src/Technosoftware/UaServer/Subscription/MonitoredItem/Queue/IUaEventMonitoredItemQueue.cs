@@ -67,7 +67,6 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <returns>true if event already in queue</returns>
         bool IsEventContainedInQueue(IFilterTarget instance);
 
-
         /// <summary>
         /// Adds the value to the queue.
         /// </summary>

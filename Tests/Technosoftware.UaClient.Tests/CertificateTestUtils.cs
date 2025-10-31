@@ -65,7 +65,7 @@ namespace Technosoftware.UaClient.Tests
         public KeyHashPairCollection(int capacity) : base(capacity) { }
         public static KeyHashPairCollection ToJsonValidationDataCollection(KeyHashPair[] values)
         {
-            return values != null ? new KeyHashPairCollection(values) : new KeyHashPairCollection();
+            return values != null ? new KeyHashPairCollection(values) : [];
         }
 
         public void Add(ushort keySize, HashAlgorithmName hashAlgorithmName)
@@ -126,7 +126,7 @@ namespace Technosoftware.UaClient.Tests
         public ECCurveHashPairCollection(int capacity) : base(capacity) { }
         public static ECCurveHashPairCollection ToJsonValidationDataCollection(ECCurveHashPair[] values)
         {
-            return values != null ? new ECCurveHashPairCollection(values) : new ECCurveHashPairCollection();
+            return values != null ? new ECCurveHashPairCollection(values) : [];
         }
 
         public void Add(ECCurve curve, HashAlgorithmName hashAlgorithmName)

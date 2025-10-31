@@ -42,12 +42,12 @@ namespace Technosoftware.UaClient.Tests
 
         public bool UseAsync = true;
 
-        public static readonly object[] AsyncFixtureArgs = {
+        public static readonly object[] AsyncFixtureArgs = [
             new object [] { Utils.UriSchemeOpcTcp, false },
             new object [] { Utils.UriSchemeOpcTcp, true },
             new object [] { Utils.UriSchemeHttps, false },
             new object [] { Utils.UriSchemeOpcHttps, true },
-        };
+        ];
 
         public NodeCacheAsyncTest(string uriScheme = Utils.UriSchemeOpcTcp, bool useAsync = true) :
             base(uriScheme)
@@ -470,7 +470,8 @@ namespace Technosoftware.UaClient.Tests
                 if (!UseAsync)
                 {
                     t = Task.Run(
-                        () => {
+                        () =>
+                        {
                             IList<Node> nodeCollection = Session.NodeCache.FetchNodes(testSet);
                         }
                         );
@@ -513,7 +514,8 @@ namespace Technosoftware.UaClient.Tests
                 Task t;
                 if (!UseAsync)
                 {
-                    t = Task.Run(() => {
+                    t = Task.Run(() =>
+                    {
                         IList<INode> nodeCollection = Session.NodeCache.Find(testSet);
                     });
                 }
@@ -557,7 +559,8 @@ namespace Technosoftware.UaClient.Tests
                 Task t;
                 if (UseAsync)
                 {
-                    t = Task.Run(() => {
+                    t = Task.Run(() =>
+                    {
                         IList<INode> nodeCollection = Session.NodeCache.FindReferences(testSet, refTypeIds, false, true);
                     });
                 }
@@ -604,7 +607,8 @@ namespace Technosoftware.UaClient.Tests
             for (int i = 0; i < testCases; i++)
             {
                 int iteration = i;
-                Task t = Task.Run(async () => {
+                Task t = Task.Run(async () =>
+                {
                     DateTime start = DateTime.UtcNow;
                     do
                     {
@@ -750,7 +754,8 @@ namespace Technosoftware.UaClient.Tests
         #region Private Methods
         private void BrowseFullAddressSpace()
         {
-            var requestHeader = new RequestHeader {
+            var requestHeader = new RequestHeader
+            {
                 Timestamp = DateTime.UtcNow,
                 TimeoutHint = MaxTimeout
             };

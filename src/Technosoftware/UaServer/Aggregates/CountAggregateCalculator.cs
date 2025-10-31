@@ -46,7 +46,7 @@ namespace Technosoftware.UaServer.Aggregates
             double processingInterval,
             bool stepped,
             AggregateConfiguration configuration)
-        : 
+        :
             base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
         {
             SetPartialBit = true;
@@ -126,7 +126,7 @@ namespace Technosoftware.UaServer.Aggregates
             DataValue value = new DataValue();
             value.WrappedValue = new Variant(count, TypeInfo.Scalars.Int32);
             value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);     
+            value.ServerTimestamp = GetTimestamp(slice);
             value.StatusCode = GetValueBasedStatusCode(slice, values, value.StatusCode);
 
             if (!StatusCode.IsBad(value.StatusCode))
@@ -217,7 +217,7 @@ namespace Technosoftware.UaServer.Aggregates
             DataValue value = new DataValue();
             value.WrappedValue = new Variant(duration, TypeInfo.Scalars.Double);
             value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);            
+            value.ServerTimestamp = GetTimestamp(slice);
             value.StatusCode = GetTimeBasedStatusCode(regions, value.StatusCode);
             value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
 
@@ -240,7 +240,7 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // determine whether a transition occurs at the StartTime
-            double lastValue = Double.NaN;
+            double lastValue = double.NaN;
 
             if (slice.EarlyBound != null)
             {
@@ -252,7 +252,7 @@ namespace Technosoftware.UaServer.Aggregates
                     }
                     catch (Exception)
                     {
-                        lastValue = Double.NaN;
+                        lastValue = double.NaN;
                     }
                 }
             }
@@ -278,7 +278,7 @@ namespace Technosoftware.UaServer.Aggregates
                     continue;
                 }
 
-                if (!Double.IsNaN(lastValue))
+                if (!double.IsNaN(lastValue))
                 {
                     if (lastValue != nextValue)
                     {

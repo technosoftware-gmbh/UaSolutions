@@ -18,23 +18,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Claims;
-using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
-using Castle.Components.DictionaryAdapter;
-
-using Microsoft.AspNetCore.Hosting.Server;
 
 using Moq;
 
 using NUnit.Framework;
 
 using Opc.Ua;
-
-using Technosoftware.UaServer;
 using Technosoftware.UaServer.Subscriptions;
 #endregion
 
@@ -233,7 +224,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         [TestCase(false, Description = "Should not pass filter")]
         [TestCase(true, Description = "Should pass filter")]
-        public void SpecB14( bool supportsFilteredRetain )
+        public void SpecB14(bool supportsFilteredRetain)
         {
             // https://reference.opcfoundation.org/Core/Part9/v105/docs/B.1.4
 
@@ -244,7 +235,7 @@ namespace Technosoftware.UaServer.Tests
 
             alarm.SetSuppressedState(systemContext, suppressed: false);
             alarm.OutOfServiceState.Value = InService;
-        
+
 
             FilterContext filterContext = GetFilterContext();
             EventFilter filter = new EventFilter();
@@ -266,7 +257,7 @@ namespace Technosoftware.UaServer.Tests
             // 2 Placed Out of Service
             Debug.WriteLine("// 2 Placed Out of Service");
             alarm.OutOfServiceState.Value = OutOfService;
-            if ( !supportsFilteredRetain )
+            if (!supportsFilteredRetain)
             {
                 expected = false;
             }
@@ -305,7 +296,7 @@ namespace Technosoftware.UaServer.Tests
             Debug.WriteLine("// 8 Alarm goes inactive");
             alarm.SetLimitState(systemContext, LimitAlarmStates.Inactive);
             alarm.Retain.Value = false;
-            if ( !supportsFilteredRetain )
+            if (!supportsFilteredRetain)
             {
                 expected = false;
             }
@@ -372,11 +363,11 @@ namespace Technosoftware.UaServer.Tests
             BindingFlags eFlags = BindingFlags.Instance | BindingFlags.NonPublic;
             MethodInfo methodInfo = typeof(UaMonitoredItem).GetMethod("CanSendFilteredAlarm", eFlags);
             Debug.WriteLine("Expecting " + expected.ToString());
-            object result = methodInfo.Invoke(monitoredItem, new object[] { context, filter, eventSnapshot });
+            object result = methodInfo.Invoke(monitoredItem, [context, filter, eventSnapshot]);
 
             Assert.That(result, Is.Not.Null);
             Assert.That(result.GetType().Name, Is.EqualTo("Boolean"));
-            Assert.That((Boolean)result, Is.EqualTo(expected));
+            Assert.That((bool)result, Is.EqualTo(expected));
         }
 
         private ExclusiveLevelAlarmState GetExclusiveLevelAlarm(
@@ -403,9 +394,9 @@ namespace Technosoftware.UaServer.Tests
 
         private SimpleAttributeOperandCollection GetSelectFields()
         {
-            SimpleAttributeOperandCollection simpleAttributeOperands = new SimpleAttributeOperandCollection();
+            SimpleAttributeOperandCollection simpleAttributeOperands = [];
 
-            Dictionary<int, QualifiedNameCollection> desiredEventFields = new Dictionary<int, QualifiedNameCollection>();
+            Dictionary<int, QualifiedNameCollection> desiredEventFields = [];
             int eventIndexCounter = 0;
             desiredEventFields.Add(eventIndexCounter++, new QualifiedNameCollection(new QualifiedName[] { BrowseNames.EventId }));
             desiredEventFields.Add(eventIndexCounter++, new QualifiedNameCollection(new QualifiedName[] { BrowseNames.EventType }));
@@ -418,7 +409,8 @@ namespace Technosoftware.UaServer.Tests
 
             foreach (QualifiedNameCollection desiredEventField in desiredEventFields.Values)
             {
-                simpleAttributeOperands.Add(new SimpleAttributeOperand() {
+                simpleAttributeOperands.Add(new SimpleAttributeOperand()
+                {
                     AttributeId = Attributes.Value,
                     TypeDefinitionId = ObjectTypeIds.BaseEventType,
                     BrowsePath = desiredEventField
@@ -426,7 +418,8 @@ namespace Technosoftware.UaServer.Tests
             }
 
             // ConditionId
-            simpleAttributeOperands.Add(new SimpleAttributeOperand() {
+            simpleAttributeOperands.Add(new SimpleAttributeOperand()
+            {
                 AttributeId = Attributes.NodeId,
                 TypeDefinitionId = ObjectTypeIds.ConditionType
             });
@@ -438,7 +431,8 @@ namespace Technosoftware.UaServer.Tests
         {
             ContentFilter whereClause = new ContentFilter();
 
-            SimpleAttributeOperand eventLevel = new SimpleAttributeOperand() {
+            SimpleAttributeOperand eventLevel = new SimpleAttributeOperand()
+            {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = ObjectTypeIds.ExclusiveLevelAlarmType,
                 BrowsePath = new QualifiedNameCollection(new QualifiedName[] {
@@ -471,7 +465,8 @@ namespace Technosoftware.UaServer.Tests
         {
             ContentFilter whereClause = new ContentFilter();
 
-            SimpleAttributeOperand eventLevel = new SimpleAttributeOperand() {
+            SimpleAttributeOperand eventLevel = new SimpleAttributeOperand()
+            {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = ObjectTypeIds.ExclusiveLevelAlarmType,
                 BrowsePath = new QualifiedNameCollection(new QualifiedName[] {
@@ -494,7 +489,8 @@ namespace Technosoftware.UaServer.Tests
 
             #region OutofServerState Index 2
 
-            SimpleAttributeOperand notOutOfServiceState = new SimpleAttributeOperand() {
+            SimpleAttributeOperand notOutOfServiceState = new SimpleAttributeOperand()
+            {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = null,
                 BrowsePath = new QualifiedNameCollection(new QualifiedName[] {
@@ -512,7 +508,8 @@ namespace Technosoftware.UaServer.Tests
 
             #region SuppressedState Index 1
 
-            SimpleAttributeOperand notSuppressed = new SimpleAttributeOperand() {
+            SimpleAttributeOperand notSuppressed = new SimpleAttributeOperand()
+            {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = null,
                 BrowsePath = new QualifiedNameCollection(new QualifiedName[] {
@@ -534,7 +531,8 @@ namespace Technosoftware.UaServer.Tests
 
             #region Active Index 0
 
-            SimpleAttributeOperand activeState = new SimpleAttributeOperand() {
+            SimpleAttributeOperand activeState = new SimpleAttributeOperand()
+            {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = null,
                 BrowsePath = new QualifiedNameCollection(new QualifiedName[] {
@@ -564,12 +562,12 @@ namespace Technosoftware.UaServer.Tests
             return whereClause;
         }
 
-
         private ContentFilter GetComplexFilter()
         {
             ContentFilter whereClause = new ContentFilter();
 
-            SimpleAttributeOperand existingEventType = new SimpleAttributeOperand() {
+            SimpleAttributeOperand existingEventType = new SimpleAttributeOperand()
+            {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = ObjectTypeIds.ExclusiveLevelAlarmType,
                 BrowsePath = new QualifiedNameCollection(new QualifiedName[] { "EventType" })
@@ -579,7 +577,8 @@ namespace Technosoftware.UaServer.Tests
 
             whereClause.Push(FilterOperator.Equals, new FilterOperand[] { existingEventType, desiredEventType });
 
-            SimpleAttributeOperand eventLevel = new SimpleAttributeOperand() {
+            SimpleAttributeOperand eventLevel = new SimpleAttributeOperand()
+            {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = null,
                 BrowsePath = new QualifiedNameCollection(new QualifiedName[] {

@@ -91,5 +91,4 @@ namespace Technosoftware.UaServer.Tests
         private TextWriter outputWriter_;
     }
 
-
 }

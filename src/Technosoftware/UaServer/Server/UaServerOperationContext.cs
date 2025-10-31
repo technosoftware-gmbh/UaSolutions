@@ -37,18 +37,19 @@ namespace Technosoftware.UaServer
         /// <param name="identity">The user identity used in the request.</param>
         public UaServerOperationContext(RequestHeader requestHeader, Sessions.RequestType requestType, IUserIdentity identity = null)
         {
-            if (requestHeader == null) throw new ArgumentNullException(nameof(requestHeader));
-            
-            m_channelContext    = SecureChannelContext.Current;
-            m_session           = null;
-            m_identity          = identity;
-            m_preferredLocales  = Array.Empty<string>();
-            m_diagnosticsMask   = (DiagnosticsMasks)requestHeader.ReturnDiagnostics;
-            m_stringTable       = new StringTable();
-            m_auditLogEntryId   = requestHeader.AuditEntryId;
-            m_requestId         = Utils.IncrementIdentifier(ref s_lastRequestId);
-            m_requestType       = requestType;
-            m_clientHandle      = requestHeader.RequestHandle;
+            if (requestHeader == null)
+                throw new ArgumentNullException(nameof(requestHeader));
+
+            m_channelContext = SecureChannelContext.Current;
+            m_session = null;
+            m_identity = identity;
+            m_preferredLocales = Array.Empty<string>();
+            m_diagnosticsMask = (DiagnosticsMasks)requestHeader.ReturnDiagnostics;
+            m_stringTable = new StringTable();
+            m_auditLogEntryId = requestHeader.AuditEntryId;
+            m_requestId = Utils.IncrementIdentifier(ref s_lastRequestId);
+            m_requestType = requestType;
+            m_clientHandle = requestHeader.RequestHandle;
             m_operationDeadline = DateTime.MaxValue;
 
             if (requestHeader.TimeoutHint > 0)
@@ -67,20 +68,22 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException">In case session is null.</exception>
         public UaServerOperationContext(RequestHeader requestHeader, Sessions.RequestType requestType, Sessions.Session session)
         {
-            if (requestHeader == null) throw new ArgumentNullException(nameof(requestHeader));
-            if (session == null) throw new ArgumentNullException(nameof(session));
-            
-            m_channelContext     = SecureChannelContext.Current;
-            m_session            = session;
-            m_identity           = session.EffectiveIdentity;
-            m_preferredLocales   = session.PreferredLocales;
-            m_diagnosticsMask    = (DiagnosticsMasks)requestHeader.ReturnDiagnostics;
-            m_stringTable        = new StringTable();
-            m_auditLogEntryId    = requestHeader.AuditEntryId;
-            m_requestId          = Utils.IncrementIdentifier(ref s_lastRequestId);
-            m_requestType        = requestType;
-            m_clientHandle       = requestHeader.RequestHandle;
-            m_operationDeadline  = DateTime.MaxValue;
+            if (requestHeader == null)
+                throw new ArgumentNullException(nameof(requestHeader));
+            if (session == null)
+                throw new ArgumentNullException(nameof(session));
+
+            m_channelContext = SecureChannelContext.Current;
+            m_session = session;
+            m_identity = session.EffectiveIdentity;
+            m_preferredLocales = session.PreferredLocales;
+            m_diagnosticsMask = (DiagnosticsMasks)requestHeader.ReturnDiagnostics;
+            m_stringTable = new StringTable();
+            m_auditLogEntryId = requestHeader.AuditEntryId;
+            m_requestId = Utils.IncrementIdentifier(ref s_lastRequestId);
+            m_requestType = requestType;
+            m_clientHandle = requestHeader.RequestHandle;
+            m_operationDeadline = DateTime.MaxValue;
 
             if (requestHeader.TimeoutHint > 0)
             {
@@ -96,18 +99,19 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException">In case session is null.</exception>
         public UaServerOperationContext(Sessions.Session session, DiagnosticsMasks diagnosticsMasks)
         {
-            if (session == null) throw new ArgumentNullException(nameof(session));
-            
-            m_channelContext    = null;
-            m_session           = session;
-            m_identity          = session.EffectiveIdentity;
-            m_preferredLocales  = session.PreferredLocales;
-            m_diagnosticsMask   = diagnosticsMasks;
-            m_stringTable       = new StringTable();
-            m_auditLogEntryId   = null;
-            m_requestId         = 0;
-            m_requestType       = Sessions.RequestType.Unknown;
-            m_clientHandle      = 0;
+            if (session == null)
+                throw new ArgumentNullException(nameof(session));
+
+            m_channelContext = null;
+            m_session = session;
+            m_identity = session.EffectiveIdentity;
+            m_preferredLocales = session.PreferredLocales;
+            m_diagnosticsMask = diagnosticsMasks;
+            m_stringTable = new StringTable();
+            m_auditLogEntryId = null;
+            m_requestId = 0;
+            m_requestType = Sessions.RequestType.Unknown;
+            m_clientHandle = 0;
             m_operationDeadline = DateTime.MaxValue;
         }
 
@@ -118,8 +122,9 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException">In case monitoredItem is null.</exception>
         public UaServerOperationContext(IUaMonitoredItem monitoredItem)
         {
-            if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
-            
+            if (monitoredItem == null)
+                throw new ArgumentNullException(nameof(monitoredItem));
+
             m_channelContext = null;
             m_identity = monitoredItem.EffectiveIdentity;
             m_session = monitoredItem.Session;
@@ -127,19 +132,19 @@ namespace Technosoftware.UaServer
             if (m_session != null)
             {
                 m_identity = m_session.Identity;
-                m_preferredLocales  = m_session.PreferredLocales;
-            }                
-                
-            m_diagnosticsMask   = DiagnosticsMasks.SymbolicId;
-            m_stringTable       = new StringTable();
-            m_auditLogEntryId   = null;
-            m_requestId         = 0;
-            m_requestType       = Sessions.RequestType.Unknown;
-            m_clientHandle      = 0;
-            m_operationDeadline = DateTime.MaxValue;
+                m_preferredLocales = m_session.PreferredLocales;
             }
-        #endregion   
-                
+
+            m_diagnosticsMask = DiagnosticsMasks.SymbolicId;
+            m_stringTable = new StringTable();
+            m_auditLogEntryId = null;
+            m_requestId = 0;
+            m_requestType = Sessions.RequestType.Unknown;
+            m_clientHandle = 0;
+            m_operationDeadline = DateTime.MaxValue;
+        }
+        #endregion
+
         #region Public Properties
         /// <summary>
         /// The context for the secure channel used to send the request.
@@ -165,8 +170,8 @@ namespace Technosoftware.UaServer
         /// <value>The security policy URI.</value>
         public string SecurityPolicyUri
         {
-            get 
-            { 
+            get
+            {
                 if (m_channelContext != null && m_channelContext.EndpointDescription != null)
                 {
                     return m_channelContext.EndpointDescription.SecurityPolicyUri;
@@ -175,7 +180,7 @@ namespace Technosoftware.UaServer
                 return null;
             }
         }
-        
+
         /// <summary>
         /// The type of request.
         /// </summary>
@@ -220,8 +225,8 @@ namespace Technosoftware.UaServer
         /// <value>The session id.</value>
         public NodeId SessionId
         {
-            get 
-            { 
+            get
+            {
                 if (m_session != null)
                 {
                     return m_session.Id;
@@ -306,7 +311,7 @@ namespace Technosoftware.UaServer
         private DiagnosticsMasks m_diagnosticsMask;
         private StringTable m_stringTable;
         private string m_auditLogEntryId;
-        private uint m_requestId;        
+        private uint m_requestId;
         private Sessions.RequestType m_requestType;
         private uint m_clientHandle;
         private DateTime m_operationDeadline;

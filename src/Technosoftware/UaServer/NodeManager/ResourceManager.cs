@@ -41,11 +41,13 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public ResourceManager(IUaServerData server, ApplicationConfiguration configuration)
         {
-            if (server == null) throw new ArgumentNullException(nameof(server));
-            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
 
             m_server = server;
-            m_translationTables = new List<TranslationTable>();
+            m_translationTables = [];
         }
         #endregion
 
@@ -74,7 +76,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary cref="ITranslationManager.Translate(IList{string}, string, string, object[])" />
         public virtual LocalizedText Translate(IList<string> preferredLocales, string key, string text, params object[] args)
         {
-            return Translate(preferredLocales, null, new TranslationInfo(key, String.Empty, text, args));
+            return Translate(preferredLocales, null, new TranslationInfo(key, string.Empty, text, args));
         }
 
         /// <virtual cref="ITranslationManager.Translate(IList{string}, LocalizedText)" />
@@ -110,7 +112,7 @@ namespace Technosoftware.UaServer.NodeManager
                     }
                 }
 
-                if (!String.IsNullOrEmpty(result.SymbolicId))
+                if (!string.IsNullOrEmpty(result.SymbolicId))
                 {
                     translatedText = TranslateSymbolicId(preferredLocales, result.SymbolicId, result.NamespaceUri, args);
                 }
@@ -184,9 +186,12 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public void Add(string key, string locale, string text)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-            if (locale == null) throw new ArgumentNullException(nameof(locale));
-            if (text == null) throw new ArgumentNullException(nameof(text));
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (locale == null)
+                throw new ArgumentNullException(nameof(locale));
+            if (text == null)
+                throw new ArgumentNullException(nameof(text));
 
             CultureInfo culture = new CultureInfo(locale);
 
@@ -207,8 +212,10 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public void Add(string locale, IDictionary<string, string> translations)
         {
-            if (locale == null) throw new ArgumentNullException(nameof(locale));
-            if (translations == null) throw new ArgumentNullException(nameof(translations));
+            if (locale == null)
+                throw new ArgumentNullException(nameof(locale));
+            if (translations == null)
+                throw new ArgumentNullException(nameof(translations));
 
             CultureInfo culture = new CultureInfo(locale);
 
@@ -241,10 +248,10 @@ namespace Technosoftware.UaServer.NodeManager
 
                 if (m_statusCodeMapping == null)
                 {
-                    m_statusCodeMapping = new Dictionary<uint, TranslationInfo>();
+                    m_statusCodeMapping = [];
                 }
 
-                if (String.IsNullOrEmpty(locale) || locale == "en-US")
+                if (string.IsNullOrEmpty(locale) || locale == "en-US")
                 {
                     m_statusCodeMapping[statusCode] = new TranslationInfo(key, locale, text);
                 }
@@ -266,10 +273,10 @@ namespace Technosoftware.UaServer.NodeManager
 
                     if (m_symbolicIdMapping == null)
                     {
-                        m_symbolicIdMapping = new Dictionary<XmlQualifiedName, TranslationInfo>();
+                        m_symbolicIdMapping = [];
                     }
 
-                    if (String.IsNullOrEmpty(locale) || locale == "en-US")
+                    if (string.IsNullOrEmpty(locale) || locale == "en-US")
                     {
                         m_symbolicIdMapping[symbolicId] = new TranslationInfo(key, locale, text);
                     }
@@ -336,9 +343,9 @@ namespace Technosoftware.UaServer.NodeManager
             if (isMultilanguageRequested)
             {
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-                var translations = defaultText?.Translations != null ? new Dictionary<string, string>(defaultText.Translations) : new Dictionary<string, string>();
+                var translations = defaultText?.Translations != null ? new Dictionary<string, string>(defaultText.Translations) : [];
 #else
-                var translations = defaultText?.Translations != null ? new Dictionary<string, string>(defaultText.Translations.ToDictionary(s => s.Key, s => s.Value)) : new Dictionary<string, string>();
+                var translations = defaultText?.Translations != null ? new Dictionary<string, string>(defaultText.Translations.ToDictionary(s => s.Key, s => s.Value)) : [];
 #endif
                 // If only mul/qst is requested, return all available translations for the key.
                 if (preferredLocales.Count == 1)
@@ -372,7 +379,7 @@ namespace Technosoftware.UaServer.NodeManager
                     {
                         for (int i = 1; i < preferredLocales.Count; i++)
                         {
-                            string translation = FindBestTranslation(new List<string>() { preferredLocales[i] }, info.Key ?? info.Text, out CultureInfo culture);
+                            string translation = FindBestTranslation([preferredLocales[i]], info.Key ?? info.Text, out CultureInfo culture);
 
                             if (translation != null)
                             {
@@ -458,7 +465,7 @@ namespace Technosoftware.UaServer.NodeManager
         private class TranslationTable
         {
             public CultureInfo Locale;
-            public SortedDictionary<string, string> Translations = new SortedDictionary<string, string>();
+            public SortedDictionary<string, string> Translations = [];
         }
 
         /// <summary>
@@ -496,7 +503,8 @@ namespace Technosoftware.UaServer.NodeManager
             culture = null;
             TranslationTable match = null;
 
-            if (preferredLocales == null || preferredLocales.Count == 0) { return null; }
+            if (preferredLocales == null || preferredLocales.Count == 0)
+            { return null; }
 
             for (int jj = 0; jj < preferredLocales.Count; jj++)
             {

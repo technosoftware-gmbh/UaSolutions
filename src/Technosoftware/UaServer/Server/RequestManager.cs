@@ -37,10 +37,11 @@ namespace Technosoftware.UaServer.Server
         /// <param name="server"></param>
         public RequestManager(IUaServerData server)
         {
-            if (server == null) throw new ArgumentNullException(nameof(server));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
 
             m_server = server;
-            m_requests = new Dictionary<uint, UaServerOperationContext>();
+            m_requests = [];
             m_requestTimer = null;
         }
         #endregion
@@ -111,7 +112,8 @@ namespace Technosoftware.UaServer.Server
         /// <param name="context"></param>
         public void RequestReceived(UaServerOperationContext context)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
 
             lock (m_requestsLock)
             {
@@ -129,7 +131,8 @@ namespace Technosoftware.UaServer.Server
         /// </summary>
         public void RequestCompleted(UaServerOperationContext context)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
 
             lock (m_requestsLock)
             {
@@ -193,7 +196,7 @@ namespace Technosoftware.UaServer.Server
         /// </summary>
         private void OnTimerExpired(object state)
         {
-            List<uint> expiredRequests = new List<uint>();
+            List<uint> expiredRequests = [];
 
             // flag requests as expired.
             lock (m_requestsLock)

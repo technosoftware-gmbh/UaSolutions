@@ -272,7 +272,6 @@ namespace Technosoftware.UaClient
                         selectedEndpoint = endpoint;
                     }
 
-
                     //Select endpoint if it has a higher calculated security level, than the previously selected one
                     if (Opc.Ua.Security.SecuredApplication.CalculateSecurityLevel(endpoint.SecurityMode, endpoint.SecurityPolicyUri)
                         > Opc.Ua.Security.SecuredApplication.CalculateSecurityLevel(selectedEndpoint.SecurityMode, selectedEndpoint.SecurityPolicyUri))

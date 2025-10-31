@@ -43,7 +43,8 @@ namespace Technosoftware.UaServer.UserDatabase
         /// </summary>
         static public JsonUserDatabase Load(string fileName)
         {
-            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
             try
             {
                 if (File.Exists(fileName))

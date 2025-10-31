@@ -46,7 +46,7 @@ namespace Technosoftware.UaServer.Aggregates
             double processingInterval,
             bool stepped,
             AggregateConfiguration configuration)
-        : 
+        :
             base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
         {
             SetPartialBit = true;
@@ -151,7 +151,7 @@ namespace Technosoftware.UaServer.Aggregates
             DataValue value = new DataValue();
             value.WrappedValue = new Variant(duration, TypeInfo.Scalars.Double);
             value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);            
+            value.ServerTimestamp = GetTimestamp(slice);
             value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
 
             // return result.
@@ -165,7 +165,7 @@ namespace Technosoftware.UaServer.Aggregates
         {
             // get the values in the slice.
             List<DataValue> values = null;
-            
+
             if (!includeBounds)
             {
                 values = GetValues(slice);

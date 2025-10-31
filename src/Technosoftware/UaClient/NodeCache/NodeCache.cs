@@ -37,7 +37,8 @@ namespace Technosoftware.UaClient
         /// </summary>
         public NodeCache(IUaSession session)
         {
-            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (session == null)
+                throw new ArgumentNullException(nameof(session));
 
             m_session = session;
             m_typeTree = new TypeTable(m_session.NamespaceUris);
@@ -134,7 +135,7 @@ namespace Technosoftware.UaClient
             // check for null.
             if (nodeIds == null || nodeIds.Count == 0)
             {
-                return new List<INode>();
+                return [];
             }
 
             int count = nodeIds.Count;
@@ -237,7 +238,6 @@ namespace Technosoftware.UaClient
                 m_cacheLock.ExitReadLock();
             }
 
-
             foreach (IReference reference in references)
             {
                 INode target = Find(reference.TargetId);
@@ -264,7 +264,7 @@ namespace Technosoftware.UaClient
             bool isInverse,
             bool includeSubtypes)
         {
-            List<INode> hits = new List<INode>();
+            List<INode> hits = [];
 
             // find the source.
             Node source = Find(sourceId) as Node;
@@ -285,7 +285,6 @@ namespace Technosoftware.UaClient
             {
                 m_cacheLock.ExitReadLock();
             }
-
 
             foreach (IReference reference in references)
             {
@@ -356,8 +355,8 @@ namespace Technosoftware.UaClient
                 return null;
             }
 
-           m_cacheLock.EnterReadLock();
-           try
+            m_cacheLock.EnterReadLock();
+            try
             {
                 return m_typeTree.FindSuperType(typeId);
             }
@@ -394,7 +393,7 @@ namespace Technosoftware.UaClient
         public IList<NodeId> FindSubTypes(ExpandedNodeId typeId)
         {
             ILocalNode type = Find(typeId) as ILocalNode;
-            List<NodeId> subtypes = new List<NodeId>();
+            List<NodeId> subtypes = [];
 
             if (type == null)
             {
@@ -748,7 +747,7 @@ namespace Technosoftware.UaClient
                 return;
             }
 
-            NodeStateCollection predefinedNodes = new NodeStateCollection();
+            NodeStateCollection predefinedNodes = [];
             var assembly = typeof(ArgumentCollection).GetTypeInfo().Assembly;
             predefinedNodes.LoadFromBinaryResource(context, "Opc.Ua.Stack.Generated.Opc.Ua.PredefinedNodes.uanodes", assembly, true);
 
@@ -851,7 +850,7 @@ namespace Technosoftware.UaClient
             int count = nodeIds.Count;
             if (count == 0)
             {
-                return new List<Node>();
+                return [];
             }
 
             NodeIdCollection localIds = new NodeIdCollection(
@@ -945,7 +944,7 @@ namespace Technosoftware.UaClient
             bool isInverse,
             bool includeSubtypes)
         {
-            IList<INode> targets = new List<INode>();
+            IList<INode> targets = [];
 
             Node source = Find(nodeId) as Node;
 
@@ -988,12 +987,12 @@ namespace Technosoftware.UaClient
             bool isInverse,
             bool includeSubtypes)
         {
-            IList<INode> targets = new List<INode>();
+            IList<INode> targets = [];
             if (nodeIds.Count == 0 || referenceTypeIds.Count == 0)
             {
                 return targets;
             }
-            ExpandedNodeIdCollection targetIds = new ExpandedNodeIdCollection();
+            ExpandedNodeIdCollection targetIds = [];
             IList<INode> sources = Find(nodeIds);
             foreach (INode source in sources)
             {
@@ -1039,7 +1038,7 @@ namespace Technosoftware.UaClient
             // check for null.
             if (node == null)
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             // check for remote node.
@@ -1101,7 +1100,7 @@ namespace Technosoftware.UaClient
         {
             if (NodeId.IsNull(nodeId))
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             INode node = Find(nodeId);
@@ -1119,7 +1118,7 @@ namespace Technosoftware.UaClient
         {
             if (reference == null || NodeId.IsNull(reference.NodeId))
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             INode node = Find(reference.NodeId);

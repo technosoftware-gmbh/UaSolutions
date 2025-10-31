@@ -75,7 +75,8 @@ namespace Technosoftware.UaClient.Tests
         /// </summary>
         public async Task LoadClientConfiguration(string pkiRoot = null, string clientName = "TestClient")
         {
-            ApplicationInstance application = new ApplicationInstance {
+            ApplicationInstance application = new ApplicationInstance
+            {
                 ApplicationName = clientName
             };
 
@@ -95,7 +96,8 @@ namespace Technosoftware.UaClient.Tests
                 .SetMaxByteStringLength(4 * 1024 * 1024)
                 .SetMaxArrayLength(1024 * 1024)
                 .AsClient()
-                .SetClientOperationLimits(new OperationLimits {
+                .SetClientOperationLimits(new OperationLimits
+                {
                     MaxNodesPerBrowse = kDefaultOperationLimits,
                     MaxNodesPerRead = kDefaultOperationLimits,
                     MaxMonitoredItemsPerCall = kDefaultOperationLimits,
@@ -161,7 +163,7 @@ namespace Technosoftware.UaClient.Tests
         /// <param name="endpointUrl">The endpoint URL.</param>
         public async Task<IUaSession> Connect(string endpointUrl)
         {
-            if (String.IsNullOrEmpty(endpointUrl))
+            if (string.IsNullOrEmpty(endpointUrl))
             {
                 throw new ArgumentNullException(nameof(endpointUrl));
             }
@@ -371,7 +373,7 @@ namespace Technosoftware.UaClient.Tests
         /// </summary>
         public void SetTraceOutputLevel(LogLevel logLevel = LogLevel.Debug)
         {
-            if(m_traceLogger != null)
+            if (m_traceLogger != null)
             {
                 m_traceLogger.MinimumLogLevel = logLevel;
             }
@@ -385,7 +387,8 @@ namespace Technosoftware.UaClient.Tests
             if (disableActivityLogging)
             {
                 // Create an instance of ActivityListener without logging
-                ActivityListener = new ActivityListener() {
+                ActivityListener = new ActivityListener()
+                {
                     ShouldListenTo = (source) => (source.Name == (TraceableSession.ActivitySourceName)),
 
                     // Sample all data and recorded activities
@@ -398,7 +401,8 @@ namespace Technosoftware.UaClient.Tests
             else
             {
                 // Create an instance of ActivityListener and configure its properties with logging
-                ActivityListener = new ActivityListener() {
+                ActivityListener = new ActivityListener()
+                {
                     ShouldListenTo = (source) => (source.Name == (TraceableSession.ActivitySourceName)),
 
                     // Sample all data and recorded activities

@@ -48,8 +48,10 @@ namespace Technosoftware.UaServer.Subscriptions
             bool publishingEnabled,
             uint maxMessageCount)
         {
-            if (server == null) throw new ArgumentNullException(nameof(server));
-            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
+            if (session == null)
+                throw new ArgumentNullException(nameof(session));
 
             m_server = server;
             m_session = session;
@@ -65,21 +67,22 @@ namespace Technosoftware.UaServer.Subscriptions
             m_lifetimeCounter = 0;
             m_waitingForPublish = false;
             m_maxMessageCount = maxMessageCount;
-            m_sentMessages = new List<NotificationMessage>();
+            m_sentMessages = [];
             m_supportsDurable = m_server.MonitoredItemQueueFactory.SupportsDurableQueues;
             m_isDurable = false;
 
-            m_monitoredItems = new Dictionary<uint, LinkedListNode<IUaMonitoredItem>>();
+            m_monitoredItems = [];
             m_itemsToCheck = new LinkedList<IUaMonitoredItem>();
             m_itemsToPublish = new LinkedList<IUaMonitoredItem>();
-            m_itemsToTrigger = new Dictionary<uint, List<IUaTriggeredMonitoredItem>>();
+            m_itemsToTrigger = [];
 
             // m_itemsReadyToPublish         = new Queue<IMonitoredItem>();
             // m_itemsNotificationsAvailable = new LinkedList<IMonitoredItem>();
             m_sequenceNumber = 1;
 
             // initialize diagnostics.
-            m_diagnostics = new SubscriptionDiagnosticsDataType {
+            m_diagnostics = new SubscriptionDiagnosticsDataType
+            {
                 SessionId = m_session.Id,
                 SubscriptionId = m_id,
                 Priority = priority,
@@ -153,13 +156,14 @@ namespace Technosoftware.UaServer.Subscriptions
             m_sequenceNumber = storedSubscription.SequenceNumber;
             m_lastSentMessage = storedSubscription.LastSentMessage;
 
-            m_monitoredItems = new Dictionary<uint, LinkedListNode<IUaMonitoredItem>>();
+            m_monitoredItems = [];
             m_itemsToCheck = new LinkedList<IUaMonitoredItem>();
             m_itemsToPublish = new LinkedList<IUaMonitoredItem>();
-            m_itemsToTrigger = new Dictionary<uint, List<IUaTriggeredMonitoredItem>>();
+            m_itemsToTrigger = [];
 
             // initialize diagnostics.
-            m_diagnostics = new SubscriptionDiagnosticsDataType {
+            m_diagnostics = new SubscriptionDiagnosticsDataType
+            {
                 SubscriptionId = m_id,
                 Priority = m_priority,
                 PublishingInterval = m_publishingInterval,
@@ -740,7 +744,8 @@ namespace Technosoftware.UaServer.Subscriptions
             out UInt32Collection availableSequenceNumbers,
             out bool moreNotifications)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
 
             NotificationMessage message = null;
 
@@ -797,7 +802,8 @@ namespace Technosoftware.UaServer.Subscriptions
             {
                 m_expired = true;
 
-                message = new NotificationMessage {
+                message = new NotificationMessage
+                {
                     SequenceNumber = (uint)m_sequenceNumber,
                     PublishTime = DateTime.UtcNow
                 };
@@ -809,7 +815,8 @@ namespace Technosoftware.UaServer.Subscriptions
                     m_diagnostics.NextSequenceNumber = (uint)m_sequenceNumber;
                 }
 
-                StatusChangeNotification notification = new StatusChangeNotification {
+                StatusChangeNotification notification = new StatusChangeNotification
+                {
                     Status = StatusCodes.BadTimeout
                 };
                 message.NotificationData.Add(new ExtensionObject(notification));
@@ -827,7 +834,8 @@ namespace Technosoftware.UaServer.Subscriptions
 
             lock (m_lock)
             {
-                message = new NotificationMessage {
+                message = new NotificationMessage
+                {
                     SequenceNumber = (uint)m_sequenceNumber,
                     PublishTime = DateTime.UtcNow
                 };
@@ -839,7 +847,8 @@ namespace Technosoftware.UaServer.Subscriptions
                     m_diagnostics.NextSequenceNumber = (uint)m_sequenceNumber;
                 }
 
-                var notification = new StatusChangeNotification {
+                var notification = new StatusChangeNotification
+                {
                     Status = StatusCodes.GoodSubscriptionTransferred
                 };
                 message.NotificationData.Add(new ExtensionObject(notification));
@@ -864,7 +873,7 @@ namespace Technosoftware.UaServer.Subscriptions
             // check if a keep alive should be sent if there is no data.
             bool keepAliveIfNoData = m_keepAliveCounter >= m_maxKeepAliveCount;
 
-            availableSequenceNumbers = new UInt32Collection();
+            availableSequenceNumbers = [];
 
             moreNotifications = false;
 
@@ -882,7 +891,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 return m_sentMessages[m_lastSentMessage++];
             }
 
-            List<NotificationMessage> messages = new List<NotificationMessage>();
+            List<NotificationMessage> messages = [];
 
             if (m_publishingEnabled)
             {
@@ -907,7 +916,7 @@ namespace Technosoftware.UaServer.Subscriptions
 
                     if ((monitoredItem.MonitoredItemType & UaMonitoredItemTypeMask.DataChange) != 0)
                     {
-                       hasMoreValuesToPublish = ((IUaDataChangeMonitoredItem)monitoredItem).Publish(context, datachanges, datachangeDiagnostics, maxNotificationsPerMonitoredItem);
+                        hasMoreValuesToPublish = ((IUaDataChangeMonitoredItem)monitoredItem).Publish(context, datachanges, datachangeDiagnostics, maxNotificationsPerMonitoredItem);
                     }
                     else
                     {
@@ -1167,7 +1176,8 @@ namespace Technosoftware.UaServer.Subscriptions
             UaServerOperationContext context,
             uint retransmitSequenceNumber)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
 
             lock (DiagnosticsWriteLock)
             {
@@ -1315,21 +1325,24 @@ namespace Technosoftware.UaServer.Subscriptions
             out StatusCodeCollection removeResults,
             out DiagnosticInfoCollection removeDiagnosticInfos)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (linksToAdd == null) throw new ArgumentNullException(nameof(linksToAdd));
-            if (linksToRemove == null) throw new ArgumentNullException(nameof(linksToRemove));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (linksToAdd == null)
+                throw new ArgumentNullException(nameof(linksToAdd));
+            if (linksToRemove == null)
+                throw new ArgumentNullException(nameof(linksToRemove));
 
             // allocate results.
             bool diagnosticsExist = false;
-            addResults = new StatusCodeCollection();
+            addResults = [];
             addDiagnosticInfos = null;
-            removeResults = new StatusCodeCollection();
+            removeResults = [];
             removeDiagnosticInfos = null;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                addDiagnosticInfos = new DiagnosticInfoCollection();
-                removeDiagnosticInfos = new DiagnosticInfoCollection();
+                addDiagnosticInfos = [];
+                removeDiagnosticInfos = [];
             }
 
             // build list of items to modify.
@@ -1354,7 +1367,7 @@ namespace Technosoftware.UaServer.Subscriptions
 
                 if (!m_itemsToTrigger.TryGetValue(triggeringItemId, out triggeredItems))
                 {
-                    m_itemsToTrigger[triggeringItemId] = triggeredItems = new List<IUaTriggeredMonitoredItem>();
+                    m_itemsToTrigger[triggeringItemId] = triggeredItems = [];
                 }
 
                 // remove old links.
@@ -1469,8 +1482,10 @@ namespace Technosoftware.UaServer.Subscriptions
                 // clear diagnostics if not required.
                 if (!diagnosticsExist)
                 {
-                    if (addDiagnosticInfos != null) addDiagnosticInfos.Clear();
-                    if (removeDiagnosticInfos != null) removeDiagnosticInfos.Clear();
+                    if (addDiagnosticInfos != null)
+                        addDiagnosticInfos.Clear();
+                    if (removeDiagnosticInfos != null)
+                        removeDiagnosticInfos.Clear();
                 }
             }
         }
@@ -1485,8 +1500,10 @@ namespace Technosoftware.UaServer.Subscriptions
             out MonitoredItemCreateResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (itemsToCreate == null) throw new ArgumentNullException(nameof(itemsToCreate));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (itemsToCreate == null)
+                throw new ArgumentNullException(nameof(itemsToCreate));
 
             int count = itemsToCreate.Count;
 
@@ -1679,8 +1696,10 @@ namespace Technosoftware.UaServer.Subscriptions
             out MonitoredItemModifyResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (itemsToModify == null) throw new ArgumentNullException(nameof(itemsToModify));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (itemsToModify == null)
+                throw new ArgumentNullException(nameof(itemsToModify));
 
             int count = itemsToModify.Count;
 
@@ -1842,8 +1861,10 @@ namespace Technosoftware.UaServer.Subscriptions
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (monitoredItemIds == null) throw new ArgumentNullException(nameof(monitoredItemIds));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (monitoredItemIds == null)
+                throw new ArgumentNullException(nameof(monitoredItemIds));
 
             int count = monitoredItemIds.Count;
 
@@ -2004,8 +2025,10 @@ namespace Technosoftware.UaServer.Subscriptions
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (monitoredItemIds == null) throw new ArgumentNullException(nameof(monitoredItemIds));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (monitoredItemIds == null)
+                throw new ArgumentNullException(nameof(monitoredItemIds));
 
             int count = monitoredItemIds.Count;
 
@@ -2169,7 +2192,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         public void ConditionRefresh()
         {
-            List<IUaEventMonitoredItem> monitoredItems = new List<IUaEventMonitoredItem>();
+            List<IUaEventMonitoredItem> monitoredItems = [];
 
             lock (m_lock)
             {
@@ -2200,7 +2223,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         public void ConditionRefresh2(uint monitoredItemId)
         {
-            List<IUaEventMonitoredItem> monitoredItems = new List<IUaEventMonitoredItem>();
+            List<IUaEventMonitoredItem> monitoredItems = [];
 
             lock (m_lock)
             {
@@ -2358,7 +2381,6 @@ namespace Technosoftware.UaServer.Subscriptions
 
                 m_maxLifetimeCount = maxLifetimeCount;
 
-
                 // update diagnostics
                 lock (DiagnosticsWriteLock)
                 {
@@ -2406,7 +2428,8 @@ namespace Technosoftware.UaServer.Subscriptions
                 monitoredItemsToStore.Add(kvp.Value.Value.ToStorableMonitoredItem());
             }
 
-            return new StoredSubscription {
+            return new StoredSubscription
+            {
                 SentMessages = m_sentMessages,
                 Id = Id,
                 SequenceNumber = m_sequenceNumber,

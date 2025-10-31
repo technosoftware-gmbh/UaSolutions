@@ -46,7 +46,7 @@ namespace Technosoftware.UaServer.Aggregates
             double processingInterval,
             bool stepped,
             AggregateConfiguration configuration)
-        : 
+        :
             base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
         {
             SetPartialBit = aggregateId != Opc.Ua.ObjectIds.AggregateFunction_Average;
@@ -139,7 +139,7 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // select the result.
-            double result = total/count;
+            double result = total / count;
 
             // set the timestamp and status.
             DataValue value = new DataValue();
@@ -185,7 +185,7 @@ namespace Technosoftware.UaServer.Aggregates
 
             for (int ii = 0; ii < regions.Count; ii++)
             {
-                double duration = regions[ii].Duration/1000.0;
+                double duration = regions[ii].Duration / 1000.0;
 
                 if (StatusCode.IsNotBad(regions[ii].StatusCode))
                 {
@@ -210,8 +210,10 @@ namespace Technosoftware.UaServer.Aggregates
 
             switch (valueType)
             {
-                case 1: { result = total/totalDuration; break; }
-                case 2: { result = total; break; }
+                case 1:
+                { result = total / totalDuration; break; }
+                case 2:
+                { result = total; break; }
             }
 
             // set the timestamp and status.

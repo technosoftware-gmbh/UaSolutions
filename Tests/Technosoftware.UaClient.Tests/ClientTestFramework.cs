@@ -36,11 +36,11 @@ namespace Technosoftware.UaClient.Tests
     /// </summary>
     public class ClientTestFramework
     {
-        public static readonly object[] FixtureArgs = {
+        public static readonly object[] FixtureArgs = [
             new object [] { Utils.UriSchemeOpcTcp},
             new object [] { Utils.UriSchemeHttps},
             new object [] { Utils.UriSchemeOpcHttps},
-        };
+        ];
 
         public const int MaxReferences = 100;
         public const int MaxTimeout = 10000;
@@ -131,7 +131,7 @@ namespace Technosoftware.UaClient.Tests
             if (customUrl == null)
             {
                 await CreateReferenceServerFixture(enableServerSideTracing, disableActivityLogging, securityNone, writer).ConfigureAwait(false);
-                }
+            }
 
             ClientFixture = new ClientFixture(enableClientSideTracing, disableActivityLogging);
 
@@ -155,7 +155,7 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 ServerUrl = new Uri(url);
-                
+
             }
 
             if (SingleSession)
@@ -181,7 +181,8 @@ namespace Technosoftware.UaClient.Tests
         {
             {
                 // start Ref server
-                ServerFixture = new ServerFixture<ReferenceServer>(enableTracing, disableActivityLogging) {
+                ServerFixture = new ServerFixture<ReferenceServer>(enableTracing, disableActivityLogging)
+                {
                     UriScheme = UriScheme,
                     SecurityNone = securityNone,
                     AutoAccept = true,
@@ -204,36 +205,45 @@ namespace Technosoftware.UaClient.Tests
             ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
                 new UserTokenPolicy(UserTokenType.IssuedToken) { IssuedTokenType = Opc.Ua.Profiles.JwtUserToken });
 
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.UserName) {
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.UserName)
+            {
                 SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
             });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.UserName) {
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.UserName)
+            {
                 SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1"
             });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.UserName) {
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.UserName)
+            {
                 SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256"
             });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.UserName) {
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.UserName)
+            {
                 SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384"
             });
 
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.Certificate) {
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.Certificate)
+            {
                 SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
             });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.Certificate) {
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.Certificate)
+            {
                 SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1"
             });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.Certificate) {
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.Certificate)
+            {
                 SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256"
             });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.Certificate) {
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.Certificate)
+            {
                 SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384"
             });
 
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.IssuedToken) {
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.IssuedToken)
+            {
                 IssuedTokenType = Opc.Ua.Profiles.JwtUserToken,
                 PolicyId = Profiles.JwtUserToken,
-                SecurityPolicyUri =  "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
+                SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
             });
             ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.IssuedToken)
             {
@@ -412,7 +422,8 @@ namespace Technosoftware.UaClient.Tests
         #region Public Methods
         public void GetOperationLimits()
         {
-            var operationLimits = new OperationLimits() {
+            var operationLimits = new OperationLimits()
+            {
                 MaxNodesPerRead = GetOperationLimitValue(VariableIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead),
                 MaxNodesPerHistoryReadData = GetOperationLimitValue(VariableIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadData),
                 MaxNodesPerHistoryReadEvents = GetOperationLimitValue(VariableIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadEvents),

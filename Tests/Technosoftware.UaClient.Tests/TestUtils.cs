@@ -44,7 +44,7 @@ namespace Technosoftware.UaClient.Tests
         public AssetCollection(int capacity) : base(capacity) { }
         public static AssetCollection<T> ToAssetCollection(T[] values)
         {
-            return values != null ? new AssetCollection<T>(values) : new AssetCollection<T>();
+            return values != null ? new AssetCollection<T>(values) : [];
         }
 
         public AssetCollection(IEnumerable<string> filelist)

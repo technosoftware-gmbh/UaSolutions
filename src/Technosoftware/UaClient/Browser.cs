@@ -254,8 +254,7 @@ namespace Technosoftware.UaClient
                 nodeToBrowse.NodeClassMask = m_nodeClassMask;
                 nodeToBrowse.ResultMask = m_resultMask;
 
-                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
-                nodesToBrowse.Add(nodeToBrowse);
+                BrowseDescriptionCollection nodesToBrowse = [nodeToBrowse];
 
                 // make the call to the server.
                 BrowseResultCollection results;
@@ -345,8 +344,7 @@ namespace Technosoftware.UaClient
         /// <returns>The next batch of references</returns>
         private ReferenceDescriptionCollection BrowseNext(ref byte[] continuationPoint, bool cancel)
         {
-            ByteStringCollection continuationPoints = new ByteStringCollection();
-            continuationPoints.Add(continuationPoint);
+            ByteStringCollection continuationPoints = [continuationPoint];
 
             // make the call to the server.
             BrowseResultCollection results;

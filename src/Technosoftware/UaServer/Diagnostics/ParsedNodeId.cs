@@ -85,7 +85,7 @@ namespace Technosoftware.UaServer
 
             string identifier = nodeId.Identifier as string;
 
-            if (String.IsNullOrEmpty(identifier))
+            if (string.IsNullOrEmpty(identifier))
             {
                 return null;
             }
@@ -100,7 +100,7 @@ namespace Technosoftware.UaServer
 
             for (int ii = 0; ii < identifier.Length; ii++)
             {
-                if (!Char.IsDigit(identifier[ii]))
+                if (!char.IsDigit(identifier[ii]))
                 {
                     start = ii;
                     break;
@@ -118,7 +118,7 @@ namespace Technosoftware.UaServer
             // extract any component path.
             StringBuilder buffer = new StringBuilder();
 
-            int index = start+1;
+            int index = start + 1;
             int end = identifier.Length;
 
             bool escaped = false;
@@ -155,7 +155,6 @@ namespace Technosoftware.UaServer
 
             return parsedNodeId;
         }
-
 
         /// <summary>
         /// Constructs a node identifier from the component pieces.
@@ -227,16 +226,16 @@ namespace Technosoftware.UaServer
             }
 
             // add the component path.
-            if (!String.IsNullOrEmpty(this.ComponentPath))
+            if (!string.IsNullOrEmpty(this.ComponentPath))
             {
                 buffer.Append('?');
                 buffer.Append(this.ComponentPath);
             }
 
             // add the component name.
-            if (!String.IsNullOrEmpty(componentName))
+            if (!string.IsNullOrEmpty(componentName))
             {
-                if (String.IsNullOrEmpty(this.ComponentPath))
+                if (string.IsNullOrEmpty(this.ComponentPath))
                 {
                     buffer.Append('?');
                 }

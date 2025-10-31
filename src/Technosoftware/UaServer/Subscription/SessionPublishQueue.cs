@@ -37,14 +37,16 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         public SessionPublishQueue(IUaServerData server, Sessions.Session session, int maxPublishRequests)
         {
-            if (server == null) throw new ArgumentNullException(nameof(server));
-            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
+            if (session == null)
+                throw new ArgumentNullException(nameof(session));
 
             m_server = server;
             m_session = session;
             m_publishEvent = new ManualResetEvent(false);
             m_queuedRequests = new LinkedList<QueuedRequest>();
-            m_queuedSubscriptions = new List<QueuedSubscription>();
+            m_queuedSubscriptions = [];
             m_maxPublishRequests = maxPublishRequests;
         }
         #endregion
@@ -136,7 +138,8 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         public void Add(Subscription subscription)
         {
-            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+            if (subscription == null)
+                throw new ArgumentNullException(nameof(subscription));
 
             lock (m_lock)
             {
@@ -157,7 +160,8 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         public void Remove(Subscription subscription, bool removeQueuedRequests)
         {
-            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+            if (subscription == null)
+                throw new ArgumentNullException(nameof(subscription));
 
             lock (m_lock)
             {
@@ -231,8 +235,10 @@ namespace Technosoftware.UaServer.Subscriptions
             out StatusCodeCollection acknowledgeResults,
             out DiagnosticInfoCollection acknowledgeDiagnosticInfos)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (subscriptionAcknowledgements == null) throw new ArgumentNullException(nameof(subscriptionAcknowledgements));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (subscriptionAcknowledgements == null)
+                throw new ArgumentNullException(nameof(subscriptionAcknowledgements));
 
             lock (m_lock)
             {
@@ -595,7 +601,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         public void PublishTimerExpired()
         {
-            List<Subscription> subscriptionsToDelete = new List<Subscription>();
+            List<Subscription> subscriptionsToDelete = [];
 
             lock (m_lock)
             {

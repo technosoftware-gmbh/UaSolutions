@@ -28,7 +28,7 @@ namespace Technosoftware.UaServer.Subscriptions
     /// </summary>
     public class EventMonitoredItemQueue : IUaEventMonitoredItemQueue
     {
-        private const UInt32 kMaxNoOfEntriesCheckedForDuplicateEvents = 1000;
+        private const uint kMaxNoOfEntriesCheckedForDuplicateEvents = 1000;
 
         /// <summary>
         /// Creates an empty queue.
@@ -40,7 +40,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 Utils.LogError("EventMonitoredItemQueue does not support durable queues, please provide full implementation of IDurableMonitoredItemQueue using Server.CreateDurableMonitoredItemQueueFactory to supply own factory");
                 throw new ArgumentException("DataChangeMonitoredItemQueue does not support durable Queues", nameof(createDurable));
             }
-            m_events = new List<EventFieldList>();
+            m_events = [];
             m_monitoredItemId = monitoredItemId;
             QueueSize = 0;
         }

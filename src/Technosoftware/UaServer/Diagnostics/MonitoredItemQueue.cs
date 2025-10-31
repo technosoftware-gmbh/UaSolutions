@@ -149,8 +149,8 @@ namespace Technosoftware.UaServer.Diagnostics
 
             if (start_ >= 0)
             {
-                existingValues = new List<DataValue>();
-                existingErrors = new List<ServiceResult>();
+                existingValues = [];
+                existingErrors = [];
 
                 DataValue value = null;
                 ServiceResult error = null;

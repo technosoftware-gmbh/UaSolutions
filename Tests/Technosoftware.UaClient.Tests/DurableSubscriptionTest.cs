@@ -71,7 +71,8 @@ namespace Technosoftware.UaClient.Tests
         {
             {
                 // start Ref server
-                ServerFixture = new ServerFixture<ReferenceServer>(enableTracing, disableActivityLogging) {
+                ServerFixture = new ServerFixture<ReferenceServer>(enableTracing, disableActivityLogging)
+                {
                     UriScheme = UriScheme,
                     SecurityNone = securityNone,
                     AutoAccept = true,
@@ -101,7 +102,6 @@ namespace Technosoftware.UaClient.Tests
             ReferenceServer.TokenValidator = this.TokenValidator;
             ServerFixturePort = ServerFixture.Port;
         }
-
 
         /// <summary>
         /// Tear down the Server and the Client.
@@ -225,7 +225,8 @@ namespace Technosoftware.UaClient.Tests
             }
             else
             {
-                mi = new MonitoredItem {
+                mi = new MonitoredItem
+                {
                     AttributeId = Attributes.Value,
                     StartNodeId = VariableIds.Server_ServerStatus_CurrentTime,
                     MonitoringMode = MonitoringMode.Reporting,
@@ -236,7 +237,6 @@ namespace Technosoftware.UaClient.Tests
                     QueueSize = queueSize,
                 };
             }
-
 
             subscription.AddItem(mi);
 
@@ -250,7 +250,6 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(ServiceResult.IsGood(resultModify.First().Status.Error), Is.True);
             Assert.That(resultModify.First().Status.QueueSize, Is.EqualTo(expectedModifiedQueueSize));
 
-
             Assert.True(subscription.GetMonitoredItems(out _, out _));
 
             Assert.True(await Session.RemoveSubscriptionAsync(subscription));
@@ -259,7 +258,8 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(160)]
         public void SetSubscriptionDurableFailsWhenMIExists()
         {
-            var subscription = new TestableSubscription(Session.DefaultSubscription) {
+            var subscription = new TestableSubscription(Session.DefaultSubscription)
+            {
                 KeepAliveCount = 100u,
                 LifetimeCount = 100u,
                 PublishingInterval = 900
@@ -270,7 +270,8 @@ namespace Technosoftware.UaClient.Tests
 
             uint id = subscription.Id;
 
-            var mi = new MonitoredItem {
+            var mi = new MonitoredItem
+            {
                 AttributeId = Attributes.Value,
                 StartNodeId = VariableIds.Server_ServerStatus_CurrentTime,
                 MonitoringMode = MonitoringMode.Reporting,
@@ -296,7 +297,8 @@ namespace Technosoftware.UaClient.Tests
         [Test, Order(180)]
         public void SetSubscriptionDurableFailsWhenSubscriptionDoesNotExist()
         {
-            var subscription = new TestableSubscription(Session.DefaultSubscription) {
+            var subscription = new TestableSubscription(Session.DefaultSubscription)
+            {
                 KeepAliveCount = 100u,
                 LifetimeCount = 100u,
                 PublishingInterval = 900
@@ -339,7 +341,8 @@ namespace Technosoftware.UaClient.Tests
             subscription.PublishingInterval = publishingInterval;
             subscription.MinLifetimeInterval = 1500;
 
-            subscription.SubscriptionStatusChangedEvent += (o, e) => {
+            subscription.SubscriptionStatusChangedEvent += (o, e) =>
+            {
                 Subscription s = (Subscription)o;
                 TestContext.Out.WriteLine($"StateChanged: {s.Session.SessionId}-{s.Id}-{e.Status}");
             };
@@ -367,23 +370,23 @@ namespace Technosoftware.UaClient.Tests
                 ValidateDataValue(desiredNodeIds, "MaxLifetimeCount", lifetimeCount);
             }
 
-            List<NodeId> testSet = new List<NodeId>();
-            testSet.AddRange(GetTestSetFullSimulation(Session.NamespaceUris));
-            Dictionary<NodeId, List<DateTime>> valueTimeStamps = new Dictionary<NodeId, List<DateTime>>();
+            List<NodeId> testSet = [.. GetTestSetFullSimulation(Session.NamespaceUris)];
+            Dictionary<NodeId, List<DateTime>> valueTimeStamps = [];
 
-
-            List<MonitoredItem> monitoredItemsList = new List<MonitoredItem>();
+            List<MonitoredItem> monitoredItemsList = [];
             foreach (NodeId nodeId in testSet)
             {
                 if (nodeId.IdType == IdType.String)
                 {
-                    valueTimeStamps.Add(nodeId, new List<DateTime>());
-                    MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem) {
+                    valueTimeStamps.Add(nodeId, []);
+                    MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem)
+                    {
                         StartNodeId = nodeId,
                         SamplingInterval = 1000,
                         QueueSize = 100,
                     };
-                    monitoredItem.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) => {
+                    monitoredItem.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+                    {
                         MonitoredItem item = (MonitoredItem)sender;
                         List<DateTime> list = valueTimeStamps[nodeId];
 
@@ -470,7 +473,6 @@ namespace Technosoftware.UaClient.Tests
 
                         previous = timestamp;
 
-
                         if (index == pair.Value.Count - 1)
                         {
                             TimeSpan finalTimeSpan = completionTime - timestamp;
@@ -487,7 +489,7 @@ namespace Technosoftware.UaClient.Tests
         }
 
         private Dictionary<string, object> ValidateDataValue(Dictionary<string, NodeId> nodeIds,
-            string desiredValue, UInt32 expectedValue)
+            string desiredValue, uint expectedValue)
         {
             Dictionary<string, object> modifiedValues = GetValues(nodeIds);
 
@@ -518,12 +520,13 @@ namespace Technosoftware.UaClient.Tests
             }
         }
 
-#endregion
+        #endregion
 
         #region Helpers
         private async Task<TestableSubscription> CreateDurableSubscriptionAsync()
         {
-            var subscription = new TestableSubscription(Session.DefaultSubscription) {
+            var subscription = new TestableSubscription(Session.DefaultSubscription)
+            {
                 KeepAliveCount = 100u,
                 LifetimeCount = 100u,
                 PublishingInterval = 900
@@ -540,7 +543,7 @@ namespace Technosoftware.UaClient.Tests
 
         private Dictionary<string, NodeId> GetDesiredNodeIds(uint subscriptionId)
         {
-            Dictionary<string, NodeId> desiredNodeIds = new Dictionary<string, NodeId>();
+            Dictionary<string, NodeId> desiredNodeIds = [];
 
             NodeId serverDiags = new NodeId(Variables.Server_ServerDiagnostics_SubscriptionDiagnosticsArray);
             ReferenceDescriptionCollection references;
@@ -589,7 +592,6 @@ namespace Technosoftware.UaClient.Tests
                         subscriptionId,
                         desiredReferences.Count
                     );
-
 
                     foreach (ReferenceDescription referenceDescription in desiredReferences)
                     {
@@ -671,7 +673,7 @@ namespace Technosoftware.UaClient.Tests
 
         private Dictionary<string, object> GetValues(Dictionary<string, NodeId> ids)
         {
-            Dictionary<string, object> values = new Dictionary<string, object>();
+            Dictionary<string, object> values = [];
 
             foreach (KeyValuePair<string, NodeId> id in ids)
             {
@@ -697,14 +699,16 @@ namespace Technosoftware.UaClient.Tests
                 }
             });
 
-            var mi = new MonitoredItem() {
+            var mi = new MonitoredItem()
+            {
                 AttributeId = Attributes.EventNotifier,
                 StartNodeId = ObjectIds.Server,
                 MonitoringMode = MonitoringMode.Reporting,
                 Handle = 1,
                 SamplingInterval = -1,
                 Filter =
-                        new EventFilter {
+                        new EventFilter
+                        {
                             SelectClauses = new SimpleAttributeOperandCollection(
                             new SimpleAttributeOperand[] {
                                 new SimpleAttributeOperand{
@@ -728,7 +732,6 @@ namespace Technosoftware.UaClient.Tests
 
             return readable;
         }
-
 
         #endregion
     }

@@ -12,9 +12,6 @@
 #region Using Directives
 using System;
 using System.IO;
-using System.Reflection;
-using System.Text;
-using System.Xml;
 
 using NUnit.Framework;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
@@ -113,7 +110,7 @@ namespace Technosoftware.UaServer.Tests
     #endregion
 
     #region Asset helpers
-     /// <summary>
+    /// <summary>
     /// A NodeSet2 as test asset.
     /// </summary>
     public class NodeSet2Asset : IAsset, IFormattable

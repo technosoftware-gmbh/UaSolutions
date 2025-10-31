@@ -34,17 +34,17 @@ namespace Technosoftware.UaServer.Aggregates
         public AggregateManager(IUaServerData server)
         {
             m_server = server;
-            m_factories = new NodeIdDictionary<AggregatorFactory>();
+            m_factories = [];
             m_minimumProcessingInterval = 1000;
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
         public void Dispose()
-        {   
+        {
             Dispose(true);
         }
 
@@ -53,11 +53,11 @@ namespace Technosoftware.UaServer.Aggregates
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", MessageId = "m_requestTimer")]
         protected virtual void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 // TBD
-            }            
+            }
         }
         #endregion
 
@@ -83,7 +83,7 @@ namespace Technosoftware.UaServer.Aggregates
         /// <summary>
         /// The minimum processing interval for any aggregate calculation.
         /// </summary>
-        public double MinimumProcessingInterval 
+        public double MinimumProcessingInterval
         {
             get
             {
@@ -173,7 +173,7 @@ namespace Technosoftware.UaServer.Aggregates
             if (configuration.UseServerCapabilitiesDefaults)
             {
                 // ensure the configuration is initialized
-                configuration = GetDefaultConfiguration(null); 
+                configuration = GetDefaultConfiguration(null);
             }
 
             IUaAggregateCalculator calculator = factory(aggregateId, startTime, endTime, processingInterval, stepped, configuration);

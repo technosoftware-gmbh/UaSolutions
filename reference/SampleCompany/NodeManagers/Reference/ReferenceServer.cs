@@ -61,7 +61,7 @@ namespace SampleCompany.NodeManagers.Reference
             IList<IUaNodeManager> nodeManagers =
             [
             // create the custom node manager.
-                new SimulationServerNodeManager(
+                new ReferenceServerNodeManager(
                     server,
                     configuration)
             ];

@@ -46,7 +46,7 @@ namespace Technosoftware.UaServer.Aggregates
             double processingInterval,
             bool stepped,
             AggregateConfiguration configuration)
-        : 
+        :
             base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
         {
             SetPartialBit = true;
@@ -136,10 +136,10 @@ namespace Technosoftware.UaServer.Aggregates
                 return GetNoDataValue(slice);
             }
 
-            double minimumGoodValue = Double.MaxValue;
-            double minimumUncertainValue = Double.MaxValue;
-            double maximumGoodValue = Double.MinValue;
-            double maximumUncertainValue = Double.MinValue;
+            double minimumGoodValue = double.MaxValue;
+            double minimumUncertainValue = double.MaxValue;
+            double maximumGoodValue = double.MinValue;
+            double maximumUncertainValue = double.MinValue;
 
             DateTime minimumGoodTimestamp = DateTime.MinValue;
             DateTime maximumGoodTimestamp = DateTime.MinValue;
@@ -327,8 +327,8 @@ namespace Technosoftware.UaServer.Aggregates
                 return GetNoDataValue(slice);
             }
 
-            double minimumGoodValue = Double.MaxValue;
-            double maximumGoodValue = Double.MinValue;
+            double minimumGoodValue = double.MaxValue;
+            double maximumGoodValue = double.MinValue;
 
             DateTime minimumGoodTimestamp = DateTime.MinValue;
             DateTime maximumGoodTimestamp = DateTime.MinValue;

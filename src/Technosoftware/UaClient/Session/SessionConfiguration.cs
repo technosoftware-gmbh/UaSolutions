@@ -64,7 +64,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         [Obsolete("Use SessionConfiguration(ISession session, Nonce serverNonce, string userIdentityTokenPolicy, Nonce eccServerEphemeralKey,    NodeId authenthicationToken)")]
         public SessionConfiguration(IUaSession session, byte[] serverNonce, NodeId authenthicationToken)
-            :this(session, Nonce.CreateNonce("RSA-only", serverNonce), null, null, authenthicationToken)
+            : this(session, Nonce.CreateNonce("RSA-only", serverNonce), null, null, authenthicationToken)
         {
         }
 

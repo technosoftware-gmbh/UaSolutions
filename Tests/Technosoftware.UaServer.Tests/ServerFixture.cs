@@ -13,14 +13,12 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 using Opc.Ua;
 
 using Technosoftware.UaConfiguration;
-using Technosoftware.UaServer;
 
 using SampleCompany.NodeManagers;
 #endregion
@@ -60,14 +58,15 @@ namespace Technosoftware.UaServer.Tests
             }
         }
 
-            public ServerFixture()
+        public ServerFixture()
         {
 
         }
 
         public async Task LoadConfiguration(string pkiRoot = null)
         {
-            Application = new ApplicationInstance {
+            Application = new ApplicationInstance
+            {
                 ApplicationName = typeof(T).Name,
                 ApplicationType = ApplicationType.Server
             };
@@ -82,9 +81,9 @@ namespace Technosoftware.UaServer.Tests
                 .SetMaxArrayLength(1024 * 1024)
                 .SetChannelLifetime(30000)
                 .AsServer(
-                    new string[] {
+                    [
                     endpointUrl
-                });
+                ]);
 
             if (SecurityNone)
             {
@@ -109,7 +108,8 @@ namespace Technosoftware.UaServer.Tests
 
             if (OperationLimits)
             {
-                serverConfig.SetOperationLimits(new OperationLimits() {
+                serverConfig.SetOperationLimits(new OperationLimits()
+                {
                     MaxNodesPerBrowse = 2500,
                     MaxNodesPerRead = 1000,
                     MaxNodesPerWrite = 1000,
@@ -132,13 +132,14 @@ namespace Technosoftware.UaServer.Tests
 
             if (ReverseConnectTimeout != 0)
             {
-                serverConfig.SetReverseConnect(new ReverseConnectServerConfiguration() {
+                serverConfig.SetReverseConnect(new ReverseConnectServerConfiguration()
+                {
                     ConnectInterval = ReverseConnectTimeout / 4,
                     ConnectTimeout = ReverseConnectTimeout,
                     RejectTimeout = ReverseConnectTimeout / 4
                 });
             }
-            
+
             CertificateIdentifierCollection applicationCerts = ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                 "CN=" + typeof(T).Name + ", C=CH, S=Aargau, O=Technosoftware GmbH, DC=localhost",
                 CertificateStoreType.Directory,
@@ -216,9 +217,9 @@ namespace Technosoftware.UaServer.Tests
         /// </summary>
         private async Task InternalStartServerAsync(TextWriter writer, int port)
         {
-            Config.ServerConfiguration.BaseAddresses = new StringCollection() {
+            Config.ServerConfiguration.BaseAddresses = [
                 $"{UriScheme}://localhost:{port}/{typeof(T).Name}"
-            };
+            ];
 
             if (writer != null)
             {
@@ -271,7 +272,8 @@ namespace Technosoftware.UaServer.Tests
             if (disableActivityLogging)
             {
                 // Create an instance of ActivityListener without logging
-                ActivityListener = new ActivityListener() {
+                ActivityListener = new ActivityListener()
+                {
                     ShouldListenTo = (source) => (source.Name == EndpointBase.ActivitySourceName),
                     Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
                     ActivityStarted = _ => { },
@@ -281,7 +283,8 @@ namespace Technosoftware.UaServer.Tests
             else
             {
                 // Create an instance of ActivityListener and configure its properties with logging
-                ActivityListener = new ActivityListener() {
+                ActivityListener = new ActivityListener()
+                {
                     ShouldListenTo = (source) => (source.Name == EndpointBase.ActivitySourceName),
                     Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
                     ActivityStarted = activity => Utils.LogInfo("Server Started: {0,-15} - TraceId: {1,-32} SpanId: {2,-16} ParentId: {3,-32}",

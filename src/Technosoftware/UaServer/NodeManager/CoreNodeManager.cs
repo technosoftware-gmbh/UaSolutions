@@ -47,14 +47,16 @@ namespace Technosoftware.UaServer.NodeManager
             ApplicationConfiguration configuration,
             ushort dynamicNamespaceIndex)
         {
-            if (server == null) throw new ArgumentNullException(nameof(server));
-            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
 
             m_server = server;
             m_nodes = new NodeTable(server.NamespaceUris, server.ServerUris, server.TypeTree);
-            m_monitoredItems = new Dictionary<uint, UaMonitoredItem>();
+            m_monitoredItems = [];
             m_defaultMinimumSamplingInterval = 1000;
-            m_namespaceUris = new List<string>();
+            m_namespaceUris = [];
             m_dynamicNamespaceIndex = dynamicNamespaceIndex;
 
             // use namespace 1 if out of range.
@@ -229,7 +231,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// </remarks>
         public void DeleteAddressSpace()
         {
-            List<IDisposable> nodesToDispose = new List<IDisposable>();
+            List<IDisposable> nodesToDispose = [];
 
             lock (m_lock)
             {
@@ -283,10 +285,14 @@ namespace Technosoftware.UaServer.NodeManager
             IList<ExpandedNodeId> targetIds,
             IList<NodeId> unresolvedTargetIds)
         {
-            if (sourceHandle == null) throw new ArgumentNullException(nameof(sourceHandle));
-            if (relativePath == null) throw new ArgumentNullException(nameof(relativePath));
-            if (targetIds == null) throw new ArgumentNullException(nameof(targetIds));
-            if (unresolvedTargetIds == null) throw new ArgumentNullException(nameof(unresolvedTargetIds));
+            if (sourceHandle == null)
+                throw new ArgumentNullException(nameof(sourceHandle));
+            if (relativePath == null)
+                throw new ArgumentNullException(nameof(relativePath));
+            if (targetIds == null)
+                throw new ArgumentNullException(nameof(targetIds));
+            if (unresolvedTargetIds == null)
+                throw new ArgumentNullException(nameof(unresolvedTargetIds));
 
             // check for valid handle.
             ILocalNode source = sourceHandle as ILocalNode;
@@ -346,9 +352,12 @@ namespace Technosoftware.UaServer.NodeManager
             ref UaContinuationPoint continuationPoint,
             IList<ReferenceDescription> references)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (continuationPoint == null) throw new ArgumentNullException(nameof(continuationPoint));
-            if (references == null) throw new ArgumentNullException(nameof(references));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (continuationPoint == null)
+                throw new ArgumentNullException(nameof(continuationPoint));
+            if (references == null)
+                throw new ArgumentNullException(nameof(references));
 
             // check for valid handle.
             ILocalNode source = continuationPoint.NodeToBrowse as ILocalNode;
@@ -516,7 +525,8 @@ namespace Technosoftware.UaServer.NodeManager
             object targetHandle,
             BrowseResultMask resultMask)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
 
             // find target.
             ILocalNode target = targetHandle as ILocalNode;
@@ -547,7 +557,7 @@ namespace Technosoftware.UaServer.NodeManager
                     metadata.DisplayName = target.DisplayName;
 
                     // check if the display name can be localized.
-                    if (!String.IsNullOrEmpty(metadata.DisplayName.Key))
+                    if (!string.IsNullOrEmpty(metadata.DisplayName.Key))
                     {
                         metadata.DisplayName = Server.ResourceManager.Translate(context.PreferredLocales, metadata.DisplayName);
                     }
@@ -670,7 +680,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// </remarks>
         public void AddReferences(IDictionary<NodeId, IList<IReference>> references)
         {
-            if (references == null) throw new ArgumentNullException(nameof(references));
+            if (references == null)
+                throw new ArgumentNullException(nameof(references));
 
             lock (m_lock)
             {
@@ -699,10 +710,14 @@ namespace Technosoftware.UaServer.NodeManager
             IList<DataValue> values,
             IList<ServiceResult> errors)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (nodesToRead == null) throw new ArgumentNullException(nameof(nodesToRead));
-            if (values == null) throw new ArgumentNullException(nameof(values));
-            if (errors == null) throw new ArgumentNullException(nameof(errors));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (nodesToRead == null)
+                throw new ArgumentNullException(nameof(nodesToRead));
+            if (values == null)
+                throw new ArgumentNullException(nameof(values));
+            if (errors == null)
+                throw new ArgumentNullException(nameof(errors));
 
             lock (m_lock)
             {
@@ -813,11 +828,16 @@ namespace Technosoftware.UaServer.NodeManager
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (details == null) throw new ArgumentNullException(nameof(details));
-            if (nodesToRead == null) throw new ArgumentNullException(nameof(nodesToRead));
-            if (results == null) throw new ArgumentNullException(nameof(results));
-            if (errors == null) throw new ArgumentNullException(nameof(errors));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (details == null)
+                throw new ArgumentNullException(nameof(details));
+            if (nodesToRead == null)
+                throw new ArgumentNullException(nameof(nodesToRead));
+            if (results == null)
+                throw new ArgumentNullException(nameof(results));
+            if (errors == null)
+                throw new ArgumentNullException(nameof(errors));
 
             ReadRawModifiedDetails readRawModifiedDetails = details as ReadRawModifiedDetails;
             ReadAtTimeDetails readAtTimeDetails = details as ReadAtTimeDetails;
@@ -861,9 +881,12 @@ namespace Technosoftware.UaServer.NodeManager
             IList<WriteValue> nodesToWrite,
             IList<ServiceResult> errors)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (nodesToWrite == null) throw new ArgumentNullException(nameof(nodesToWrite));
-            if (errors == null) throw new ArgumentNullException(nameof(errors));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (nodesToWrite == null)
+                throw new ArgumentNullException(nameof(nodesToWrite));
+            if (errors == null)
+                throw new ArgumentNullException(nameof(errors));
 
             lock (m_lock)
             {
@@ -918,7 +941,7 @@ namespace Technosoftware.UaServer.NodeManager
 
                         case Attributes.Value:
                         {
-                            writeable = ((metadata.AccessLevel & AccessLevels.CurrentWrite)!= 0);
+                            writeable = ((metadata.AccessLevel & AccessLevels.CurrentWrite) != 0);
                             break;
                         }
 
@@ -939,7 +962,7 @@ namespace Technosoftware.UaServer.NodeManager
                     // determine expected datatype and value rank.
                     NodeId expectedDatatypeId = metadata.DataType;
                     int expectedValueRank = metadata.ValueRank;
-                    
+
                     if (nodeToWrite.AttributeId != Attributes.Value)
                     {
                         expectedDatatypeId = Attributes.GetDataTypeId(nodeToWrite.AttributeId);
@@ -1020,10 +1043,14 @@ namespace Technosoftware.UaServer.NodeManager
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (nodesToUpdate == null) throw new ArgumentNullException(nameof(nodesToUpdate));
-            if (results == null) throw new ArgumentNullException(nameof(results));
-            if (errors == null) throw new ArgumentNullException(nameof(errors));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (nodesToUpdate == null)
+                throw new ArgumentNullException(nameof(nodesToUpdate));
+            if (results == null)
+                throw new ArgumentNullException(nameof(results));
+            if (errors == null)
+                throw new ArgumentNullException(nameof(errors));
 
             lock (m_lock)
             {
@@ -1062,10 +1089,14 @@ namespace Technosoftware.UaServer.NodeManager
             IList<CallMethodResult> results,
             IList<ServiceResult> errors)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (methodsToCall == null) throw new ArgumentNullException(nameof(methodsToCall));
-            if (results == null) throw new ArgumentNullException(nameof(results));
-            if (errors == null) throw new ArgumentNullException(nameof(errors));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (methodsToCall == null)
+                throw new ArgumentNullException(nameof(methodsToCall));
+            if (results == null)
+                throw new ArgumentNullException(nameof(results));
+            if (errors == null)
+                throw new ArgumentNullException(nameof(errors));
 
             lock (m_lock)
             {
@@ -1119,9 +1150,12 @@ namespace Technosoftware.UaServer.NodeManager
             IUaEventMonitoredItem monitoredItem,
             bool unsubscribe)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (sourceId == null) throw new ArgumentNullException(nameof(sourceId));
-            if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (sourceId == null)
+                throw new ArgumentNullException(nameof(sourceId));
+            if (monitoredItem == null)
+                throw new ArgumentNullException(nameof(monitoredItem));
 
             lock (m_lock)
             {
@@ -1156,8 +1190,10 @@ namespace Technosoftware.UaServer.NodeManager
             IUaEventMonitoredItem monitoredItem,
             bool unsubscribe)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (monitoredItem == null)
+                throw new ArgumentNullException(nameof(monitoredItem));
 
             return ServiceResult.Good;
         }
@@ -1167,7 +1203,8 @@ namespace Technosoftware.UaServer.NodeManager
             UaServerOperationContext context,
             IList<IUaEventMonitoredItem> monitoredItems)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
 
             return ServiceResult.Good;
         }
@@ -1187,10 +1224,14 @@ namespace Technosoftware.UaServer.NodeManager
             bool createDurable,
             ref long globalIdCounter)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (itemsToCreate == null) throw new ArgumentNullException(nameof(itemsToCreate));
-            if (errors == null) throw new ArgumentNullException(nameof(errors));
-            if (monitoredItems == null) throw new ArgumentNullException(nameof(monitoredItems));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (itemsToCreate == null)
+                throw new ArgumentNullException(nameof(itemsToCreate));
+            if (errors == null)
+                throw new ArgumentNullException(nameof(errors));
+            if (monitoredItems == null)
+                throw new ArgumentNullException(nameof(monitoredItems));
 
             lock (m_lock)
             {
@@ -1349,8 +1390,10 @@ namespace Technosoftware.UaServer.NodeManager
             IList<IUaMonitoredItem> monitoredItems,
             IUserIdentity savedOwnerIdentity)
         {
-            if (itemsToRestore == null) throw new ArgumentNullException(nameof(itemsToRestore));
-            if (monitoredItems == null) throw new ArgumentNullException(nameof(monitoredItems));
+            if (itemsToRestore == null)
+                throw new ArgumentNullException(nameof(itemsToRestore));
+            if (monitoredItems == null)
+                throw new ArgumentNullException(nameof(monitoredItems));
 
             if (m_server.IsRunning)
             {
@@ -1410,7 +1453,8 @@ namespace Technosoftware.UaServer.NodeManager
             ILocalNode node,
             IUaDataChangeMonitoredItem2 monitoredItem)
         {
-            DataValue initialValue = new DataValue {
+            DataValue initialValue = new DataValue
+            {
                 Value = null,
                 ServerTimestamp = DateTime.UtcNow,
                 SourceTimestamp = DateTime.MinValue,
@@ -1441,10 +1485,14 @@ namespace Technosoftware.UaServer.NodeManager
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (monitoredItems == null) throw new ArgumentNullException(nameof(monitoredItems));
-            if (itemsToModify == null) throw new ArgumentNullException(nameof(itemsToModify));
-            if (errors == null) throw new ArgumentNullException(nameof(errors));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (monitoredItems == null)
+                throw new ArgumentNullException(nameof(monitoredItems));
+            if (itemsToModify == null)
+                throw new ArgumentNullException(nameof(itemsToModify));
+            if (errors == null)
+                throw new ArgumentNullException(nameof(errors));
 
             lock (m_lock)
             {
@@ -1555,9 +1603,12 @@ namespace Technosoftware.UaServer.NodeManager
             IList<bool> processedItems,
             IList<ServiceResult> errors)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (monitoredItems == null) throw new ArgumentNullException(nameof(monitoredItems));
-            if (errors == null) throw new ArgumentNullException(nameof(errors));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (monitoredItems == null)
+                throw new ArgumentNullException(nameof(monitoredItems));
+            if (errors == null)
+                throw new ArgumentNullException(nameof(errors));
 
             lock (m_lock)
             {
@@ -1623,9 +1674,12 @@ namespace Technosoftware.UaServer.NodeManager
             IList<bool> processedItems,
             IList<ServiceResult> errors)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (monitoredItems == null) throw new ArgumentNullException(nameof(monitoredItems));
-            if (processedItems == null) throw new ArgumentNullException(nameof(processedItems));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (monitoredItems == null)
+                throw new ArgumentNullException(nameof(monitoredItems));
+            if (processedItems == null)
+                throw new ArgumentNullException(nameof(processedItems));
 
             lock (m_lock)
             {
@@ -1677,9 +1731,12 @@ namespace Technosoftware.UaServer.NodeManager
             IList<ServiceResult> errors)
         {
 
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (monitoredItems == null) throw new ArgumentNullException(nameof(monitoredItems));
-            if (errors == null) throw new ArgumentNullException(nameof(errors));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (monitoredItems == null)
+                throw new ArgumentNullException(nameof(monitoredItems));
+            if (errors == null)
+                throw new ArgumentNullException(nameof(errors));
 
             lock (m_lock)
             {
@@ -1793,7 +1850,7 @@ namespace Technosoftware.UaServer.NodeManager
         {
             int namespaceIndex = 1;
 
-            if (!String.IsNullOrEmpty(namespaceUri))
+            if (!string.IsNullOrEmpty(namespaceUri))
             {
                 namespaceIndex = m_server.NamespaceUris.GetIndex(namespaceUri);
 
@@ -1811,8 +1868,10 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public NodeIdCollection FindLocalNodes(NodeId sourceId, NodeId referenceTypeId, bool isInverse)
         {
-            if (sourceId == null) throw new ArgumentNullException(nameof(sourceId));
-            if (referenceTypeId == null) throw new ArgumentNullException(nameof(referenceTypeId));
+            if (sourceId == null)
+                throw new ArgumentNullException(nameof(sourceId));
+            if (referenceTypeId == null)
+                throw new ArgumentNullException(nameof(referenceTypeId));
 
             lock (m_lock)
             {
@@ -1851,8 +1910,10 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public NodeId FindTargetId(NodeId sourceId, NodeId referenceTypeId, bool isInverse, QualifiedName browseName)
         {
-            if (sourceId == null) throw new ArgumentNullException(nameof(sourceId));
-            if (referenceTypeId == null) throw new ArgumentNullException(nameof(referenceTypeId));
+            if (sourceId == null)
+                throw new ArgumentNullException(nameof(sourceId));
+            if (referenceTypeId == null)
+                throw new ArgumentNullException(nameof(referenceTypeId));
 
             lock (m_lock)
             {
@@ -1983,8 +2044,10 @@ namespace Technosoftware.UaServer.NodeManager
         /// </remarks>
         public void RegisterSource(NodeId nodeId, object source, object handle, bool isEventSource)
         {
-            if (nodeId == null) throw new ArgumentNullException(nameof(nodeId));
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (nodeId == null)
+                throw new ArgumentNullException(nameof(nodeId));
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
         }
 
         /// <summary>
@@ -2013,8 +2076,10 @@ namespace Technosoftware.UaServer.NodeManager
             ILocalNode templateDeclaration,
             ushort namespaceIndex)
         {
-            if (instance == null) throw new ArgumentNullException(nameof(instance));
-            if (typeDefinition == null) throw new ArgumentNullException(nameof(typeDefinition));
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+            if (typeDefinition == null)
+                throw new ArgumentNullException(nameof(typeDefinition));
 
             // check existing type definition.
             UpdateTypeDefinition(instance, typeDefinition.NodeId);
@@ -2029,7 +2094,7 @@ namespace Technosoftware.UaServer.NodeManager
                 var declaration = new DeclarationNode();
 
                 declaration.Node = templateDeclaration;
-                declaration.BrowsePath = String.Empty;
+                declaration.BrowsePath = string.Empty;
 
                 declarations.Add(declaration);
 
@@ -2048,7 +2113,7 @@ namespace Technosoftware.UaServer.NodeManager
                 DeclarationNode declaration = declarations[ii];
 
                 // update type definition list.
-                if (String.IsNullOrEmpty(declaration.BrowsePath))
+                if (string.IsNullOrEmpty(declaration.BrowsePath))
                 {
                     typeDefinitions.Add(declaration.Node);
                     continue;
@@ -2070,7 +2135,7 @@ namespace Technosoftware.UaServer.NodeManager
 
             // build list of instances that already exist.
             var existingInstances = new SortedDictionary<string, ILocalNode>();
-            BuildInstanceList(instance, String.Empty, existingInstances);
+            BuildInstanceList(instance, string.Empty, existingInstances);
 
             // maps the instance declaration onto an instance node.
             var instancesToCreate = new Dictionary<NodeId, ILocalNode>();
@@ -2305,8 +2370,10 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         private void BuildDeclarationList(ILocalNode typeDefinition, List<DeclarationNode> declarations)
         {
-            if (typeDefinition == null) throw new ArgumentNullException(nameof(typeDefinition));
-            if (declarations == null) throw new ArgumentNullException(nameof(declarations));
+            if (typeDefinition == null)
+                throw new ArgumentNullException(nameof(typeDefinition));
+            if (declarations == null)
+                throw new ArgumentNullException(nameof(declarations));
 
             // guard against loops (i.e. common grandparents).
             for (var ii = 0; ii < declarations.Count; ii++)
@@ -2321,7 +2388,7 @@ namespace Technosoftware.UaServer.NodeManager
             var declaration = new DeclarationNode();
 
             declaration.Node = typeDefinition;
-            declaration.BrowsePath = String.Empty;
+            declaration.BrowsePath = string.Empty;
 
             declarations.Add(declaration);
 
@@ -2347,8 +2414,10 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         private void BuildDeclarationList(DeclarationNode parent, List<DeclarationNode> declarations)
         {
-            if (parent == null) throw new ArgumentNullException(nameof(parent));
-            if (declarations == null) throw new ArgumentNullException(nameof(declarations));
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent));
+            if (declarations == null)
+                throw new ArgumentNullException(nameof(declarations));
 
             // get list of children.
             IList<IReference> references = parent.Node.References.Find(ReferenceTypeIds.HierarchicalReferences, false, true, m_nodes.TypeTree);
@@ -2392,8 +2461,10 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         private void BuildInstanceList(ILocalNode parent, string browsePath, IDictionary<string, ILocalNode> instances)
         {
-            if (parent == null) throw new ArgumentNullException(nameof(parent));
-            if (instances == null) throw new ArgumentNullException(nameof(instances));
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent));
+            if (instances == null)
+                throw new ArgumentNullException(nameof(instances));
 
             // guard against loops.
             if (instances.ContainsKey(browsePath))
@@ -2561,7 +2632,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public void DeleteNode(NodeId nodeId, bool deleteChildren, bool silent)
         {
-            if (nodeId == null) throw new ArgumentNullException(nameof(nodeId));
+            if (nodeId == null)
+                throw new ArgumentNullException(nameof(nodeId));
 
             // find the node to delete.
             var node = GetManagerHandle(nodeId) as ILocalNode;
@@ -2578,7 +2650,7 @@ namespace Technosoftware.UaServer.NodeManager
 
             bool instance = (node.NodeClass & (NodeClass.Object | NodeClass.Variable)) != 0;
 
-            Dictionary<NodeId, IList<IReference>> referencesToDelete = new Dictionary<NodeId, IList<IReference>>();
+            Dictionary<NodeId, IList<IReference>> referencesToDelete = [];
 
             if (silent)
             {
@@ -2610,7 +2682,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         private void DeleteNode(ILocalNode node, bool deleteChildren, bool instance, Dictionary<NodeId, IList<IReference>> referencesToDelete)
         {
-            if (node == null) throw new ArgumentNullException(nameof(node));
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
 
             var nodesToDelete = new List<ILocalNode>();
             var referencesForNode = new List<IReference>();
@@ -2968,9 +3041,12 @@ namespace Technosoftware.UaServer.NodeManager
             ExpandedNodeId targetId,
             bool deleteBidirectional)
         {
-            if (sourceHandle == null) throw new ArgumentNullException(nameof(sourceHandle));
-            if (referenceTypeId == null) throw new ArgumentNullException(nameof(referenceTypeId));
-            if (targetId == null) throw new ArgumentNullException(nameof(targetId));
+            if (sourceHandle == null)
+                throw new ArgumentNullException(nameof(sourceHandle));
+            if (referenceTypeId == null)
+                throw new ArgumentNullException(nameof(referenceTypeId));
+            if (targetId == null)
+                throw new ArgumentNullException(nameof(targetId));
 
             lock (m_lock)
             {
@@ -3184,7 +3260,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         private void AttachNode(ILocalNode node, bool isInternal)
         {
-            if (node == null) throw new ArgumentNullException(nameof(node));
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
 
             lock (m_lock)
             {

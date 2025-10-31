@@ -106,9 +106,9 @@ namespace Technosoftware.UaServer
 
             // create the table of monitored nodes.
             // these are created by the node manager whenever a client subscribe to an attribute of the node.
-            m_monitoredNodes = new NodeIdDictionary<UaMonitoredNode>();
+            m_monitoredNodes = [];
 
-            m_predefinedNodes = new NodeIdDictionary<NodeState>();
+            m_predefinedNodes = [];
         }
         #endregion
 
@@ -394,7 +394,7 @@ namespace Technosoftware.UaServer
         {
             UaServerContext contextToUse = m_systemContext.Copy(context);
 
-            List<LocalReference> referencesToRemove = new List<LocalReference>();
+            List<LocalReference> referencesToRemove = [];
 
             NodeState node = null;
             if (m_predefinedNodes.TryGetValue(nodeId, out node) != true)
@@ -455,7 +455,8 @@ namespace Technosoftware.UaServer
 
             protected set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
                 List<string> namespaceUris = new List<string>(value);
                 SetNamespaces(namespaceUris.ToArray());
             }
@@ -489,7 +490,7 @@ namespace Technosoftware.UaServer
             IDictionary<NodeId, IList<IReference>> externalReferences)
         {
             // load the predefined nodes from an XML document.
-            NodeStateCollection predefinedNodes = new NodeStateCollection();
+            NodeStateCollection predefinedNodes = [];
             predefinedNodes.LoadFromResource(context, resourcePath, assembly, true);
 
             // add the predefined nodes to the node manager.
@@ -508,7 +509,7 @@ namespace Technosoftware.UaServer
         /// <param name="context">The UA server implementation of the ISystemContext interface.</param>
         protected virtual NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
-            return new NodeStateCollection();
+            return [];
         }
 
         /// <summary>
@@ -605,7 +606,7 @@ namespace Technosoftware.UaServer
                 }
             }
 
-            List<BaseInstanceState> children = new List<BaseInstanceState>();
+            List<BaseInstanceState> children = [];
             activeNode.GetChildren(context, children);
 
             for (int ii = 0; ii < children.Count; ii++)
@@ -640,7 +641,7 @@ namespace Technosoftware.UaServer
             }
 
             // remove children.
-            List<BaseInstanceState> children = new List<BaseInstanceState>();
+            List<BaseInstanceState> children = [];
             node.GetChildren(context, children);
 
             for (int ii = 0; ii < children.Count; ii++)
@@ -662,7 +663,7 @@ namespace Technosoftware.UaServer
             }
 
             // remove inverse references.
-            List<IReference> references = new List<IReference>();
+            List<IReference> references = [];
             node.GetReferences(context, references);
 
             for (int ii = 0; ii < references.Count; ii++)
@@ -701,7 +702,7 @@ namespace Technosoftware.UaServer
         {
             foreach (NodeState source in m_predefinedNodes.Values)
             {
-                IList<IReference> references = new List<IReference>();
+                IList<IReference> references = [];
                 source.GetReferences(SystemContext, references);
 
                 for (int ii = 0; ii < references.Count; ii++)
@@ -784,7 +785,7 @@ namespace Technosoftware.UaServer
 
             if (!externalReferences.TryGetValue(sourceId, out referencesToAdd))
             {
-                externalReferences[sourceId] = referencesToAdd = new List<IReference>();
+                externalReferences[sourceId] = referencesToAdd = [];
             }
 
             // add reserve reference from external node.
@@ -832,7 +833,6 @@ namespace Technosoftware.UaServer
             {
                 return;
             }
-
 
             if (!(node is BaseTypeState type))
             {
@@ -953,7 +953,6 @@ namespace Technosoftware.UaServer
                     {
                         continue;
                     }
-
 
                     // add reference to external target.
                     foreach (IReference reference in current.Value)
@@ -1199,8 +1198,10 @@ namespace Technosoftware.UaServer
             ref UaContinuationPoint continuationPoint,
             IList<ReferenceDescription> references)
         {
-            if (continuationPoint == null) throw new ArgumentNullException(nameof(continuationPoint));
-            if (references == null) throw new ArgumentNullException(nameof(references));
+            if (continuationPoint == null)
+                throw new ArgumentNullException(nameof(continuationPoint));
+            if (references == null)
+                throw new ArgumentNullException(nameof(references));
 
             UaServerContext systemContext = m_systemContext.Copy(context);
 
@@ -1260,7 +1261,7 @@ namespace Technosoftware.UaServer
             lock (browser)
             {
                 // apply filters to references.
-                Dictionary<NodeId, NodeState> cache = new Dictionary<NodeId, NodeState>();
+                Dictionary<NodeId, NodeState> cache = [];
 
                 for (IReference reference = browser.Next(); reference != null; reference = browser.Next())
                 {
@@ -1608,7 +1609,7 @@ namespace Technosoftware.UaServer
         {
             UaServerContext systemContext = m_systemContext.Copy(context);
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
-            List<UaNodeHandle> nodesToValidate = new List<UaNodeHandle>();
+            List<UaNodeHandle> nodesToValidate = [];
 
             lock (Lock)
             {
@@ -1724,7 +1725,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // lookup root in local cache for request.
-                if (!String.IsNullOrEmpty(handle.ComponentPath))
+                if (!string.IsNullOrEmpty(handle.ComponentPath))
                 {
                     if (cache.TryGetValue(rootId, out target))
                     {
@@ -1848,7 +1849,7 @@ namespace Technosoftware.UaServer
         {
             UaServerContext systemContext = m_systemContext.Copy(context);
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
-            List<UaNodeHandle> nodesToValidate = new List<UaNodeHandle>();
+            List<UaNodeHandle> nodesToValidate = [];
 
             lock (Lock)
             {
@@ -1876,7 +1877,7 @@ namespace Technosoftware.UaServer
                     // index range is not supported.
                     if (nodeToWrite.AttributeId != Attributes.Value)
                     {
-                        if (!String.IsNullOrEmpty(nodeToWrite.IndexRange))
+                        if (!string.IsNullOrEmpty(nodeToWrite.IndexRange))
                         {
                             errors[ii] = StatusCodes.BadWriteNotSupported;
                             continue;
@@ -3032,8 +3033,8 @@ namespace Technosoftware.UaServer
             CallMethodResult result)
         {
             UaServerContext systemContext = context as UaServerContext;
-            List<ServiceResult> argumentErrors = new List<ServiceResult>();
-            VariantCollection outputArguments = new VariantCollection();
+            List<ServiceResult> argumentErrors = [];
+            VariantCollection outputArguments = [];
 
             ServiceResult callResult = method.Call(
                 context,
@@ -3102,7 +3103,6 @@ namespace Technosoftware.UaServer
             // return the actual result of the original call
             return callResult;
         }
-
 
         /// <summary>
         /// Subscribes or unsubscribes to events produced by the specified source.
@@ -3191,7 +3191,7 @@ namespace Technosoftware.UaServer
             {
                 if (m_rootNotifiers == null)
                 {
-                    m_rootNotifiers = new List<NodeState>();
+                    m_rootNotifiers = [];
                 }
 
                 bool mustAdd = true;
@@ -3401,8 +3401,8 @@ namespace Technosoftware.UaServer
                     continue;
                 }
 
-                List<IFilterTarget> events = new List<IFilterTarget>();
-                List<NodeState> nodesToRefresh = new List<NodeState>();
+                List<IFilterTarget> events = [];
+                List<NodeState> nodesToRefresh = [];
 
                 lock (Lock)
                 {
@@ -3460,8 +3460,10 @@ namespace Technosoftware.UaServer
             IList<IUaMonitoredItem> monitoredItems,
             IUserIdentity savedOwnerIdentity)
         {
-            if (itemsToRestore == null) throw new ArgumentNullException(nameof(itemsToRestore));
-            if (monitoredItems == null) throw new ArgumentNullException(nameof(monitoredItems));
+            if (itemsToRestore == null)
+                throw new ArgumentNullException(nameof(itemsToRestore));
+            if (monitoredItems == null)
+                throw new ArgumentNullException(nameof(monitoredItems));
 
             if (m_server.IsRunning)
             {
@@ -3470,7 +3472,7 @@ namespace Technosoftware.UaServer
 
             UaServerContext systemContext = m_systemContext.Copy();
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
-            List<UaNodeHandle> nodesToValidate = new List<UaNodeHandle>();
+            List<UaNodeHandle> nodesToValidate = [];
 
             for (int ii = 0; ii < itemsToRestore.Count; ii++)
             {
@@ -3616,8 +3618,8 @@ namespace Technosoftware.UaServer
         {
             UaServerContext systemContext = m_systemContext.Copy(context);
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
-            List<UaNodeHandle> nodesToValidate = new List<UaNodeHandle>();
-            List<IUaMonitoredItem> createdItems = new List<IUaMonitoredItem>();
+            List<UaNodeHandle> nodesToValidate = [];
+            List<IUaMonitoredItem> createdItems = [];
 
             for (int ii = 0; ii < itemsToCreate.Count; ii++)
             {
@@ -3782,7 +3784,7 @@ namespace Technosoftware.UaServer
             }
 
             // put a large upper limit on sampling.
-            if (samplingInterval == Double.MaxValue)
+            if (samplingInterval == double.MaxValue)
             {
                 samplingInterval = 365 * 24 * 3600 * 1000.0;
             }
@@ -4262,7 +4264,7 @@ namespace Technosoftware.UaServer
             }
 
             // put a large upper limit on sampling.
-            if (samplingInterval == Double.MaxValue)
+            if (samplingInterval == double.MaxValue)
             {
                 samplingInterval = 365 * 24 * 3600 * 1000.0;
             }
@@ -4464,7 +4466,7 @@ namespace Technosoftware.UaServer
             IList<ServiceResult> errors)
         {
             UaServerContext systemContext = m_systemContext.Copy(context);
-            IList<IUaMonitoredItem> transferredItems = new List<IUaMonitoredItem>();
+            IList<IUaMonitoredItem> transferredItems = [];
             lock (Lock)
             {
                 for (int ii = 0; ii < monitoredItems.Count; ii++)
@@ -4529,65 +4531,65 @@ namespace Technosoftware.UaServer
             UaServerContext systemContext = m_systemContext.Copy(context);
             var nodesInNamespace = new List<(int, UaNodeHandle)>(monitoredItems.Count);
 
-                for (var ii = 0; ii < monitoredItems.Count; ii++)
+            for (var ii = 0; ii < monitoredItems.Count; ii++)
+            {
+                // skip items that have already been processed.
+                if (processedItems[ii] || monitoredItems[ii] == null)
                 {
-                    // skip items that have already been processed.
-                    if (processedItems[ii] || monitoredItems[ii] == null)
-                    {
-                        continue;
-                    }
-
-                    // check handle.
-                    UaNodeHandle handle = IsHandleInNamespace(monitoredItems[ii].ManagerHandle);
-
-                    if (handle == null)
-                    {
-                        continue;
-                    }
-
-                    nodesInNamespace.Add((ii, handle));
+                    continue;
                 }
 
-                if (nodesInNamespace.Count == 0)
+                // check handle.
+                UaNodeHandle handle = IsHandleInNamespace(monitoredItems[ii].ManagerHandle);
+
+                if (handle == null)
                 {
-                    return;
+                    continue;
                 }
 
-                var changedItems = new List<IUaMonitoredItem>();
-
-                lock (Lock)
-                {
-                    foreach (var nodeInNamespace in nodesInNamespace)
-                    {
-                        int ii = nodeInNamespace.Item1;
-                        var handle = nodeInNamespace.Item2;
-
-                        // indicate whether it was processed or not.
-                        processedItems[ii] = true;
-
-                        // update monitoring mode.
-                        errors[ii] = SetMonitoringMode(
-                            systemContext,
-                            monitoredItems[ii],
-                            monitoringMode,
-                            handle);
-
-                        // save the modified item.
-                        if (ServiceResult.IsGood(errors[ii]))
-                        {
-                            changedItems.Add(monitoredItems[ii]);
-                        }
-                    }
-                }
-
-                // do any post processing.
-                OnSetMonitoringModeComplete(systemContext, changedItems);
+                nodesInNamespace.Add((ii, handle));
             }
 
+            if (nodesInNamespace.Count == 0)
+            {
+                return;
+            }
+
+            var changedItems = new List<IUaMonitoredItem>();
+
+            lock (Lock)
+            {
+                foreach (var nodeInNamespace in nodesInNamespace)
+                {
+                    int ii = nodeInNamespace.Item1;
+                    var handle = nodeInNamespace.Item2;
+
+                    // indicate whether it was processed or not.
+                    processedItems[ii] = true;
+
+                    // update monitoring mode.
+                    errors[ii] = SetMonitoringMode(
+                        systemContext,
+                        monitoredItems[ii],
+                        monitoringMode,
+                        handle);
+
+                    // save the modified item.
+                    if (ServiceResult.IsGood(errors[ii]))
+                    {
+                        changedItems.Add(monitoredItems[ii]);
+                    }
+                }
+            }
+
+            // do any post processing.
+            OnSetMonitoringModeComplete(systemContext, changedItems);
+        }
+
         #region SetMonitoringMode Support Functions
-            /// <summary>
-            /// Called when a batch of monitored items has their monitoring mode changed.
-            /// </summary>
+        /// <summary>
+        /// Called when a batch of monitored items has their monitoring mode changed.
+        /// </summary>
         protected virtual void OnSetMonitoringModeComplete(UaServerContext context, IList<IUaMonitoredItem> monitoredItems)
         {
             // defined by the sub-class
@@ -4756,7 +4758,6 @@ namespace Technosoftware.UaServer
             }
         }
 
-
         /// <summary>
         /// Set the metadata default permission values for DefaultAccessRestrictions, DefaultRolePermissions and DefaultUserRolePermissions
         /// </summary>
@@ -4809,7 +4810,6 @@ namespace Technosoftware.UaServer
         }
         #endregion
 
-
         #region ComponentCache Functions
         /// <summary>
         /// Stores a reference count for entries in the component cache.
@@ -4834,7 +4834,7 @@ namespace Technosoftware.UaServer
 
                 CacheEntry entry = null;
 
-                if (!String.IsNullOrEmpty(handle.ComponentPath))
+                if (!string.IsNullOrEmpty(handle.ComponentPath))
                 {
                     if (m_componentCache.TryGetValue(handle.RootId, out entry))
                     {
@@ -4869,7 +4869,7 @@ namespace Technosoftware.UaServer
                 {
                     NodeId nodeId = handle.NodeId;
 
-                    if (!String.IsNullOrEmpty(handle.ComponentPath))
+                    if (!string.IsNullOrEmpty(handle.ComponentPath))
                     {
                         nodeId = handle.RootId;
                     }
@@ -4903,11 +4903,11 @@ namespace Technosoftware.UaServer
 
                 if (m_componentCache == null)
                 {
-                    m_componentCache = new NodeIdDictionary<CacheEntry>();
+                    m_componentCache = [];
                 }
 
                 // check if a component is actually specified.
-                if (!String.IsNullOrEmpty(handle.ComponentPath))
+                if (!string.IsNullOrEmpty(handle.ComponentPath))
                 {
                     CacheEntry entry = null;
 
@@ -4915,7 +4915,7 @@ namespace Technosoftware.UaServer
                     {
                         entry.RefCount++;
 
-                        if (!String.IsNullOrEmpty(handle.ComponentPath))
+                        if (!string.IsNullOrEmpty(handle.ComponentPath))
                         {
                             return entry.Entry.FindChildBySymbolicName(context, handle.ComponentPath);
                         }
@@ -5016,15 +5016,16 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
-            var folderState = new FolderState(parent) {
+            var folderState = new FolderState(parent)
+            {
                 SymbolicName = displayName.ToString(),
                 ReferenceTypeId = ReferenceTypes.Organizes,
                 TypeDefinitionId = ObjectTypeIds.FolderType,
@@ -5105,15 +5106,16 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
-            var baseObjectState = new BaseObjectState(parent) {
+            var baseObjectState = new BaseObjectState(parent)
+            {
                 SymbolicName = displayName.ToString(),
                 ReferenceTypeId = ReferenceTypes.Organizes,
                 TypeDefinitionId = ObjectTypeIds.BaseObjectType,
@@ -5204,15 +5206,16 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
-            var propertyState = new PropertyState(parent) {
+            var propertyState = new PropertyState(parent)
+            {
                 SymbolicName = displayName.ToString(),
                 TypeDefinitionId = VariableTypeIds.PropertyType,
                 ReferenceTypeId = ReferenceTypeIds.HasProperty,
@@ -5304,15 +5307,16 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
-            var viewState = new ViewState {
+            var viewState = new ViewState
+            {
                 SymbolicName = displayName.ToString(),
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -5329,7 +5333,7 @@ namespace Technosoftware.UaServer
             {
                 if (!externalReferences.TryGetValue(ObjectIds.ViewsFolder, out IList<IReference> references))
                 {
-                    externalReferences[ObjectIds.ViewsFolder] = references = new List<IReference>();
+                    externalReferences[ObjectIds.ViewsFolder] = references = [];
                 }
                 viewState.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ViewsFolder);
                 references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, viewState.NodeId));
@@ -5406,15 +5410,16 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
-            var baseDataVariableTypeState = new BaseDataVariableState(parent) {
+            var baseDataVariableTypeState = new BaseDataVariableState(parent)
+            {
                 SymbolicName = displayName.ToString(),
                 ReferenceTypeId = ReferenceTypes.Organizes,
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
@@ -5439,11 +5444,11 @@ namespace Technosoftware.UaServer
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>([0]);
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>([0, 0]);
             }
 
             parent?.AddChild(baseDataVariableTypeState);
@@ -5511,15 +5516,16 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
-            var baseDataVariableTypeState = new BaseDataVariableState(parent) {
+            var baseDataVariableTypeState = new BaseDataVariableState(parent)
+            {
                 SymbolicName = displayName.ToString(),
                 ReferenceTypeId = ReferenceTypes.Organizes,
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
@@ -5544,11 +5550,11 @@ namespace Technosoftware.UaServer
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>([0]);
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>([0, 0]);
             }
 
             parent?.AddChild(baseDataVariableTypeState);
@@ -5616,15 +5622,16 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
-            var baseDataVariableTypeState = new BaseDataVariableState(parent) {
+            var baseDataVariableTypeState = new BaseDataVariableState(parent)
+            {
                 SymbolicName = displayName.ToString(),
                 ReferenceTypeId = ReferenceTypes.Organizes,
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
@@ -5649,11 +5656,11 @@ namespace Technosoftware.UaServer
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>([0]);
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>([0, 0]);
             }
 
             parent?.AddChild(baseDataVariableTypeState);
@@ -5741,12 +5748,12 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
             var variable = new DataItemState(parent);
@@ -5793,10 +5800,10 @@ namespace Technosoftware.UaServer
             switch (valueRank)
             {
                 case ValueRanks.OneDimension:
-                    variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                    variable.ArrayDimensions = new ReadOnlyList<uint>([0]);
                     break;
                 case ValueRanks.TwoDimensions:
-                    variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                    variable.ArrayDimensions = new ReadOnlyList<uint>([0, 0]);
                     break;
                 default:
                     break;
@@ -6003,15 +6010,16 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
-            var variable = new AnalogItemState(parent) {
+            var variable = new AnalogItemState(parent)
+            {
                 BrowseName = new QualifiedName(browseName, NamespaceIndex)
             };
 
@@ -6087,11 +6095,11 @@ namespace Technosoftware.UaServer
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                variable.ArrayDimensions = new ReadOnlyList<uint>([0]);
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                variable.ArrayDimensions = new ReadOnlyList<uint>([0, 0]);
             }
 
             variable.EURange.Value = euRange ?? new Range(100, 0);
@@ -6173,12 +6181,12 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
             var variable = new TwoStateDiscreteState(parent);
@@ -6289,12 +6297,12 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
             var variable = new MultiStateDiscreteState(parent);
@@ -6411,12 +6419,12 @@ namespace Technosoftware.UaServer
 
             if (rolePermissions == null)
             {
-                rolePermissions = new RolePermissionTypeCollection();
+                rolePermissions = [];
             }
 
             if (userRolePermissions == null)
             {
-                userRolePermissions = new RolePermissionTypeCollection();
+                userRolePermissions = [];
             }
 
             var variable = new MultiStateValueDiscreteState(parent);
@@ -6475,7 +6483,8 @@ namespace Technosoftware.UaServer
                 var values = new EnumValueType[enumNames.Length];
                 for (var ii = 0; ii < values.Length; ii++)
                 {
-                    values[ii] = new EnumValueType {
+                    values[ii] = new EnumValueType
+                    {
                         Value = ii,
                         Description = strings[ii],
                         DisplayName = strings[ii]
@@ -6515,7 +6524,8 @@ namespace Technosoftware.UaServer
         public MethodState CreateMethodState(NodeState parent, string path, string name,
             GenericMethodCalledEventHandler2 callingMethod = null)
         {
-            var method = new MethodState(parent) {
+            var method = new MethodState(parent)
+            {
                 SymbolicName = name,
                 ReferenceTypeId = ReferenceTypeIds.HasComponent,
                 NodeId = new NodeId(path, NamespaceIndex),
@@ -6570,7 +6580,8 @@ namespace Technosoftware.UaServer
         {
             if (parent != null)
             {
-                parent.InputArguments = new PropertyState<Argument[]>(parent) {
+                parent.InputArguments = new PropertyState<Argument[]>(parent)
+                {
                     NodeId = new NodeId(parent.BrowseName.Name + "InArgs", NamespaceIndex),
                     BrowseName = BrowseNames.InputArguments
                 };
@@ -6595,7 +6606,8 @@ namespace Technosoftware.UaServer
         {
             if (parent != null)
             {
-                parent.OutputArguments = new PropertyState<Argument[]>(parent) {
+                parent.OutputArguments = new PropertyState<Argument[]>(parent)
+                {
                     NodeId = new NodeId(parent.BrowseName.Name + "OutArgs", NamespaceIndex),
                     BrowseName = BrowseNames.OutputArguments
                 };
@@ -6622,7 +6634,8 @@ namespace Technosoftware.UaServer
         protected void ResetRandomGenerator(int seed, int boundaryValueFrequency = 0)
         {
             randomSource_ = new RandomSource(seed);
-            generator_ = new DataGenerator(randomSource_) {
+            generator_ = new DataGenerator(randomSource_)
+            {
                 BoundaryValueFrequency = boundaryValueFrequency
             };
         }

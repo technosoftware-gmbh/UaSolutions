@@ -32,7 +32,7 @@ namespace Technosoftware.UaServer.Tests
 
         #region Public Test Sets
         public static readonly ExpandedNodeId[] NodeIdTestSetStatic =
-        {
+        [
             new ExpandedNodeId("Scalar_Static_SByte", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
             new ExpandedNodeId("Scalar_Static_Int16", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
             new ExpandedNodeId("Scalar_Static_Int32", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
@@ -43,20 +43,20 @@ namespace Technosoftware.UaServer.Tests
             new ExpandedNodeId("Scalar_Static_LocalizedText", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
             new ExpandedNodeId("Scalar_Static_QualifiedName", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
             new ExpandedNodeId("Scalar_Static_Variant", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
-        };
+        ];
 
         // static variables from namespace TestData
         public static readonly ExpandedNodeId[] NodeIdTestDataSetStatic =
-        {
+        [
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Static_Scalar_Int16Value, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Static_Scalar_Int32Value, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Static_Scalar_UInt16Value, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Static_Scalar_UInt32Value, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
-        };
+        ];
 
         // CTT simulation data
         public static readonly ExpandedNodeId[] NodeIdTestSetSimulation =
-        {
+        [
             new ExpandedNodeId("Scalar_Simulation_SByte", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
             new ExpandedNodeId("Scalar_Simulation_Int16", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
             new ExpandedNodeId("Scalar_Simulation_Int32", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
@@ -67,13 +67,13 @@ namespace Technosoftware.UaServer.Tests
             new ExpandedNodeId("Scalar_Simulation_LocalizedText", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
             new ExpandedNodeId("Scalar_Simulation_QualifiedName", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
             new ExpandedNodeId("Scalar_Simulation_Variant", SampleCompany.NodeManagers.Reference.Namespaces.ReferenceServer),
-        };
+        ];
 
         /// <summary>
         /// Ref server test data node manager.
         /// </summary>
         public static readonly ExpandedNodeId[] NodeIdTestSetDataSimulation =
-        {
+        [
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Dynamic_Scalar_Int16Value, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Dynamic_Scalar_Int32Value, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Dynamic_Scalar_UInt16Value, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
@@ -83,19 +83,19 @@ namespace Technosoftware.UaServer.Tests
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Dynamic_Scalar_VectorValue, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Dynamic_Scalar_VectorValue_X, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Dynamic_Structure_ScalarStructure, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
-        };
+        ];
 
         public static readonly ExpandedNodeId[] NodeIdTestDataHistory =
-        {
+        [
             new ExpandedNodeId(SampleCompany.NodeManagers.TestData.Variables.Data_Dynamic_Scalar_Int32Value, SampleCompany.NodeManagers.TestData.Namespaces.TestData),
-        };
+        ];
 
         public static readonly ExpandedNodeId[] NodeIdMemoryBufferSimulation =
-            {
+            [
             // dynamic variables from namespace MemoryBuffer
             new ExpandedNodeId("UInt32[64]", SampleCompany.NodeManagers.MemoryBuffer.Namespaces.MemoryBuffer + "/Instance"),
             new ExpandedNodeId("Double[40]", SampleCompany.NodeManagers.MemoryBuffer.Namespaces.MemoryBuffer + "/Instance"),
-        };
+        ];
         #endregion
 
         #region Public Workers
@@ -116,7 +116,8 @@ namespace Technosoftware.UaServer.Tests
 
             // Browse template
             var startingNode = Objects.RootFolder;
-            var browseTemplate = browseDescription ?? new BrowseDescription {
+            var browseTemplate = browseDescription ?? new BrowseDescription
+            {
                 NodeId = startingNode,
                 BrowseDirection = BrowseDirection.Forward,
                 ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
@@ -145,7 +146,7 @@ namespace Technosoftware.UaServer.Tests
 
             while (browseDescriptionCollection.Any())
             {
-                BrowseResultCollection allResults = new BrowseResultCollection();
+                BrowseResultCollection allResults = [];
                 if (verifyMaxNodesPerBrowse &&
                     browseDescriptionCollection.Count > operationLimits.MaxNodesPerBrowse)
                 {
@@ -168,7 +169,7 @@ namespace Technosoftware.UaServer.Tests
 
                 bool repeatBrowse;
                 var maxNodesPerBrowse = operationLimits.MaxNodesPerBrowse;
-                BrowseResultCollection browseResultCollection = new BrowseResultCollection();
+                BrowseResultCollection browseResultCollection = [];
                 DiagnosticInfoCollection diagnosticsInfoCollection;
                 do
                 {
@@ -270,7 +271,7 @@ namespace Technosoftware.UaServer.Tests
             var browsePaths = new BrowsePathCollection(
                 referenceDescriptions.Select(r => new BrowsePath() { RelativePath = new RelativePath(r.BrowseName), StartingNode = startingNode })
                 );
-            BrowsePathResultCollection allBrowsePaths = new BrowsePathResultCollection();
+            BrowsePathResultCollection allBrowsePaths = [];
             while (browsePaths.Any())
             {
                 if (verifyMaxNodesPerBrowse &&
@@ -339,7 +340,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.AreEqual(maxKeepAliveCount, revisedMaxKeepAliveCount);
             ServerFixtureUtils.ValidateResponse(response);
 
-            MonitoredItemCreateRequestCollection itemsToCreate = new MonitoredItemCreateRequestCollection();
+            MonitoredItemCreateRequestCollection itemsToCreate = [];
             // check badnothingtodo
             var sre = Assert.Throws<ServiceResultException>(() =>
                 services.CreateMonitoredItems(requestHeader, id, TimestampsToReturn.Neither, itemsToCreate,
@@ -348,13 +349,16 @@ namespace Technosoftware.UaServer.Tests
 
             // add item
             uint handleCounter = 1;
-            itemsToCreate.Add(new MonitoredItemCreateRequest() {
-                ItemToMonitor = new ReadValueId() {
+            itemsToCreate.Add(new MonitoredItemCreateRequest()
+            {
+                ItemToMonitor = new ReadValueId()
+                {
                     AttributeId = Attributes.Value,
                     NodeId = VariableIds.Server_ServerStatus_CurrentTime
                 },
                 MonitoringMode = MonitoringMode.Reporting,
-                RequestedParameters = new MonitoringParameters() {
+                RequestedParameters = new MonitoringParameters()
+                {
                     ClientHandle = ++handleCounter,
                     SamplingInterval = -1,
                     Filter = null,
@@ -386,10 +390,12 @@ namespace Technosoftware.UaServer.Tests
             foreach (var itemCreated in itemCreateResults)
             {
                 itemsToModify.Add(
-                    new MonitoredItemModifyRequest() {
+                    new MonitoredItemModifyRequest()
+                    {
                         MonitoredItemId = itemCreated.MonitoredItemId
                     });
-            };
+            }
+            ;
             response = services.ModifyMonitoredItems(requestHeader, id, TimestampsToReturn.Both, itemsToModify,
                         out MonitoredItemModifyResultCollection modifyResults, out diagnosticInfos);
             ServerFixtureUtils.ValidateResponse(response, modifyResults, itemsToModify);
@@ -418,7 +424,7 @@ namespace Technosoftware.UaServer.Tests
             int loopCounter = (int)queueSize;
             Thread.Sleep(loopCounter * 1000);
 
-            acknowledgements = new SubscriptionAcknowledgementCollection();
+            acknowledgements = [];
             do
             {
                 // get publish responses
@@ -437,7 +443,8 @@ namespace Technosoftware.UaServer.Tests
                                 notificationMessage.PublishTime);
 
                 acknowledgements.Clear();
-                acknowledgements.Add(new SubscriptionAcknowledgement() {
+                acknowledgements.Add(new SubscriptionAcknowledgement()
+                {
                     SubscriptionId = id,
                     SequenceNumber = notificationMessage.SequenceNumber
                 });
@@ -481,8 +488,10 @@ namespace Technosoftware.UaServer.Tests
                 CreateMonitoredItem(services, requestHeader, subscriptionId, testNode, clientHandle++, queueSize, samplingInterval);
             }
 
-            var subscriptionIds = new UInt32Collection();
-            subscriptionIds.Add(subscriptionId);
+            var subscriptionIds = new UInt32Collection
+            {
+                subscriptionId
+            };
 
             // enable publishing
             var response = services.SetPublishingMode(requestHeader, true, subscriptionIds,
@@ -689,17 +698,21 @@ namespace Technosoftware.UaServer.Tests
                 }
             });
 
-            var mi = new MonitoredItemCreateRequest() {
-                ItemToMonitor = new ReadValueId() {
+            var mi = new MonitoredItemCreateRequest()
+            {
+                ItemToMonitor = new ReadValueId()
+                {
                     AttributeId = Attributes.EventNotifier,
                     NodeId = ObjectIds.Server
                 },
                 MonitoringMode = MonitoringMode.Reporting,
-                RequestedParameters = new MonitoringParameters() {
+                RequestedParameters = new MonitoringParameters()
+                {
                     ClientHandle = ++handleCounter,
                     SamplingInterval = -1,
                     Filter = new ExtensionObject(
-                        new EventFilter {
+                        new EventFilter
+                        {
                             SelectClauses = new SimpleAttributeOperandCollection(
                             new SimpleAttributeOperand[] {
                                 new SimpleAttributeOperand{

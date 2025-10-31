@@ -42,9 +42,12 @@ namespace Technosoftware.UaServer.NodeManager
             double samplingInterval,
             IUserIdentity savedOwnerIdentity = null)
         {
-            if (server == null) throw new ArgumentNullException(nameof(server));
-            if (nodeManager == null) throw new ArgumentNullException(nameof(nodeManager));
-            if (samplingRates == null) throw new ArgumentNullException(nameof(samplingRates));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
+            if (nodeManager == null)
+                throw new ArgumentNullException(nameof(nodeManager));
+            if (samplingRates == null)
+                throw new ArgumentNullException(nameof(samplingRates));
 
             m_server = server;
             m_nodeManager = nodeManager;
@@ -61,9 +64,9 @@ namespace Technosoftware.UaServer.NodeManager
             m_diagnosticsMask = (DiagnosticsMasks)context.DiagnosticsMask & DiagnosticsMasks.OperationAll;
             m_samplingInterval = AdjustSamplingInterval(samplingInterval);
 
-            m_itemsToAdd = new List<IUaSampledDataChangeMonitoredItem>();
-            m_itemsToRemove = new List<IUaSampledDataChangeMonitoredItem>();
-            m_items = new Dictionary<uint, IUaSampledDataChangeMonitoredItem>();
+            m_itemsToAdd = [];
+            m_itemsToRemove = [];
+            m_items = [];
 
             // create a event to signal shutdown.
             m_shutdownEvent = new ManualResetEvent(true);
@@ -117,7 +120,8 @@ namespace Technosoftware.UaServer.NodeManager
             {
                 m_shutdownEvent.Reset();
 
-                m_samplingTask = Task.Factory.StartNew(() => {
+                m_samplingTask = Task.Factory.StartNew(() =>
+                {
                     SampleMonitoredItems(m_samplingInterval);
                 }, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach);
             }
@@ -241,7 +245,8 @@ namespace Technosoftware.UaServer.NodeManager
                 // collect first sample.
                 if (itemsToSample.Count > 0)
                 {
-                    Task.Run(() => {
+                    Task.Run(() =>
+                    {
                         DoSample(itemsToSample);
                     });
                 }

@@ -37,10 +37,11 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public EventManager(IUaServerData server, uint maxQueueSize, uint maxDurableQueueSize)
         {
-            if (server == null) throw new ArgumentNullException(nameof(server));
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
 
             m_server = server;
-            m_monitoredItems = new Dictionary<uint, IUaEventMonitoredItem>();
+            m_monitoredItems = [];
             m_maxEventQueueSize = maxQueueSize;
             m_maxDurableEventQueueSize = maxDurableQueueSize;
         }
@@ -84,7 +85,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public static void ReportEvent(IFilterTarget e, IList<IUaEventMonitoredItem> monitoredItems)
         {
-            if (e == null) throw new ArgumentNullException(nameof(e));
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
 
             foreach (IUaEventMonitoredItem monitoredItem in monitoredItems)
             {

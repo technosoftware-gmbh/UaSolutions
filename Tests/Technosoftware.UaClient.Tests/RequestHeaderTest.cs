@@ -40,7 +40,7 @@ namespace Technosoftware.UaClient.Tests
         [OneTimeSetUp]
         public Task OneTimeSetUpAsync()
         {
-            return base.OneTimeSetUpAsync(writer: null, securityNone: false, enableClientSideTracing: false ,enableServerSideTracing: false);
+            return base.OneTimeSetUpAsync(writer: null, securityNone: false, enableClientSideTracing: false, enableServerSideTracing: false);
         }
 
         /// <summary>

@@ -51,14 +51,15 @@ namespace Technosoftware.UaServer.Configuration
             {
                 m_rejectedStore = new CertificateStoreIdentifier(rejectedStorePath);
             }
-            m_certificateGroups = new List<ServerCertificateGroup>();
+            m_certificateGroups = [];
             m_configuration = configuration;
             // TODO: configure cert groups in configuration
-            ServerCertificateGroup defaultApplicationGroup = new ServerCertificateGroup {
+            ServerCertificateGroup defaultApplicationGroup = new ServerCertificateGroup
+            {
                 NodeId = Opc.Ua.ObjectIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
                 BrowseName = Opc.Ua.BrowseNames.DefaultApplicationGroup,
-                CertificateTypes = new NodeId[] { },
-                ApplicationCertificates = new CertificateIdentifierCollection(),
+                CertificateTypes = [],
+                ApplicationCertificates = [],
                 IssuerStore = new CertificateStoreIdentifier(configuration.SecurityConfiguration.TrustedIssuerCertificates.StorePath),
                 TrustedStore = new CertificateStoreIdentifier(configuration.SecurityConfiguration.TrustedPeerCertificates.StorePath)
             };
@@ -66,11 +67,12 @@ namespace Technosoftware.UaServer.Configuration
 
             if (configuration.SecurityConfiguration.UserIssuerCertificates != null && configuration.SecurityConfiguration.TrustedUserCertificates != null)
             {
-                ServerCertificateGroup defaultUserGroup = new ServerCertificateGroup {
+                ServerCertificateGroup defaultUserGroup = new ServerCertificateGroup
+                {
                     NodeId = Opc.Ua.ObjectIds.ServerConfiguration_CertificateGroups_DefaultUserTokenGroup,
                     BrowseName = Opc.Ua.BrowseNames.DefaultUserTokenGroup,
-                    CertificateTypes = new NodeId[] { },
-                    ApplicationCertificates = new CertificateIdentifierCollection(),
+                    CertificateTypes = [],
+                    ApplicationCertificates = [],
                     IssuerStore = new CertificateStoreIdentifier(configuration.SecurityConfiguration.UserIssuerCertificates.StorePath),
                     TrustedStore = new CertificateStoreIdentifier(configuration.SecurityConfiguration.TrustedUserCertificates.StorePath)
                 };
@@ -80,11 +82,12 @@ namespace Technosoftware.UaServer.Configuration
             ServerCertificateGroup defaultHttpsGroup = null;
             if (configuration.SecurityConfiguration.HttpsIssuerCertificates != null && configuration.SecurityConfiguration.TrustedHttpsCertificates != null)
             {
-                defaultHttpsGroup = new ServerCertificateGroup {
+                defaultHttpsGroup = new ServerCertificateGroup
+                {
                     NodeId = Opc.Ua.ObjectIds.ServerConfiguration_CertificateGroups_DefaultHttpsGroup,
                     BrowseName = Opc.Ua.BrowseNames.DefaultHttpsGroup,
-                    CertificateTypes = new NodeId[] { },
-                    ApplicationCertificates = new CertificateIdentifierCollection(),
+                    CertificateTypes = [],
+                    ApplicationCertificates = [],
                     IssuerStore = new CertificateStoreIdentifier(configuration.SecurityConfiguration.HttpsIssuerCertificates.StorePath),
                     TrustedStore = new CertificateStoreIdentifier(configuration.SecurityConfiguration.TrustedHttpsCertificates.StorePath)
                 };
@@ -219,10 +222,10 @@ namespace Technosoftware.UaServer.Configuration
             // setup server configuration node
             m_serverConfigurationNode.ServerCapabilities.Value = configuration.ServerConfiguration.ServerCapabilities.ToArray();
             m_serverConfigurationNode.ServerCapabilities.ValueRank = ValueRanks.OneDimension;
-            m_serverConfigurationNode.ServerCapabilities.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+            m_serverConfigurationNode.ServerCapabilities.ArrayDimensions = new ReadOnlyList<uint>([0]);
             m_serverConfigurationNode.SupportedPrivateKeyFormats.Value = configuration.ServerConfiguration.SupportedPrivateKeyFormats.ToArray();
             m_serverConfigurationNode.SupportedPrivateKeyFormats.ValueRank = ValueRanks.OneDimension;
-            m_serverConfigurationNode.SupportedPrivateKeyFormats.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+            m_serverConfigurationNode.SupportedPrivateKeyFormats.ArrayDimensions = new ReadOnlyList<uint>([0]);
             m_serverConfigurationNode.MaxTrustListSize.Value = (uint)configuration.ServerConfiguration.MaxTrustListSize;
             m_serverConfigurationNode.MulticastDnsEnabled.Value = configuration.ServerConfiguration.MultiCastDnsEnabled;
 
@@ -255,8 +258,6 @@ namespace Technosoftware.UaServer.Configuration
                 serverNamespacesNode.StateChanged += ServerNamespacesChanged;
             }
         }
-
-
 
         /// <summary>
         /// Gets and returns the <see cref="NamespaceMetadataState"/> node associated with the specified NamespaceUri
@@ -333,7 +334,6 @@ namespace Technosoftware.UaServer.Configuration
             HasApplicationSecureAdminAccess(context, null);
         }
 
-
         /// <summary>
         /// Determine if the impersonated user has admin access.
         /// </summary>
@@ -377,7 +377,7 @@ namespace Technosoftware.UaServer.Configuration
         {
             HasApplicationSecureAdminAccess(context);
 
-            object[] inputArguments = new object[] { certificateGroupId, certificateTypeId, certificate, issuerCertificates, privateKeyFormat, privateKey };
+            object[] inputArguments = [certificateGroupId, certificateTypeId, certificate, issuerCertificates, privateKeyFormat, privateKey];
             X509Certificate2 newCert = null;
 
             ServerData.ReportCertificateUpdateRequestedAuditEvent(context, objectId, method, inputArguments);
@@ -389,7 +389,7 @@ namespace Technosoftware.UaServer.Configuration
                 }
 
                 privateKeyFormat = privateKeyFormat?.ToUpper();
-                if (!(String.IsNullOrEmpty(privateKeyFormat) || privateKeyFormat == "PEM" || privateKeyFormat == "PFX"))
+                if (!(string.IsNullOrEmpty(privateKeyFormat) || privateKeyFormat == "PEM" || privateKeyFormat == "PFX"))
                 {
                     throw new ServiceResultException(StatusCodes.BadNotSupported, "The private key format is not supported.");
                 }
@@ -432,8 +432,7 @@ namespace Technosoftware.UaServer.Configuration
                     throw new ServiceResultException(StatusCodes.BadInvalidArgument, "No existing certificate found for the specified certificate type and subject name.");
                 }
 
-
-                X509Certificate2Collection newIssuerCollection = new X509Certificate2Collection();
+                X509Certificate2Collection newIssuerCollection = [];
 
                 try
                 {
@@ -467,7 +466,7 @@ namespace Technosoftware.UaServer.Configuration
                         // verify cert with issuer chain
                         CertificateValidator certValidator = new CertificateValidator();
                         CertificateTrustList issuerStore = new CertificateTrustList();
-                        CertificateIdentifierCollection issuerCollection = new CertificateIdentifierCollection();
+                        CertificateIdentifierCollection issuerCollection = [];
                         foreach (var issuerCert in newIssuerCollection)
                         {
                             issuerCollection.Add(new CertificateIdentifier(issuerCert));
@@ -540,7 +539,7 @@ namespace Technosoftware.UaServer.Configuration
                         using (ICertificateStore appStore = existingCertIdentifier.OpenStore())
                         {
                             if (appStore == null)
-                        {
+                            {
                                 throw new ServiceResultException(StatusCodes.BadConfigurationError, "Failed to open application certificate store.");
                             }
 
@@ -639,7 +638,7 @@ namespace Technosoftware.UaServer.Configuration
             }
             else
             {
-            ICertificatePasswordProvider passwordProvider = m_configuration.SecurityConfiguration.CertificatePasswordProvider;
+                ICertificatePasswordProvider passwordProvider = m_configuration.SecurityConfiguration.CertificatePasswordProvider;
                 certWithPrivateKey = existingCertIdentifier.LoadPrivateKeyEx(passwordProvider).Result;
             }
 
@@ -648,7 +647,6 @@ namespace Technosoftware.UaServer.Configuration
 
             return ServiceResult.Good;
         }
-
 
         private X509Certificate2 GenerateTemporaryApplicationCertificate(NodeId certificateTypeId, ServerCertificateGroup certificateGroup, string subjectName)
         {
@@ -722,7 +720,8 @@ namespace Technosoftware.UaServer.Configuration
 
             if (disconnectSessions)
             {
-                Task.Run(async () => {
+                Task.Run(async () =>
+                {
                     Utils.LogInfo((int)Utils.TraceMasks.Security, "Apply Changes for application certificate update.");
                     // give the client some time to receive the response
                     // before the certificate update may disconnect all sessions
@@ -764,7 +763,7 @@ namespace Technosoftware.UaServer.Configuration
                 if (store != null)
                 {
                     X509Certificate2Collection collection = store.Enumerate().Result;
-                    List<byte[]> rawList = new List<byte[]>();
+                    List<byte[]> rawList = [];
                     foreach (var cert in collection)
                     {
                         rawList.Add(cert.RawData);
@@ -801,7 +800,6 @@ namespace Technosoftware.UaServer.Configuration
 
             return ServiceResult.Good;
         }
-
 
         private ServerCertificateGroup VerifyGroupAndTypeId(
             NodeId certificateGroupId,
@@ -852,7 +850,7 @@ namespace Technosoftware.UaServer.Configuration
                     return null;
                 }
 
-                IList<BaseInstanceState> serverNamespacesChildren = new List<BaseInstanceState>();
+                IList<BaseInstanceState> serverNamespacesChildren = [];
                 serverNamespacesNode.GetChildren(SystemContext, serverNamespacesChildren);
 
                 foreach (var namespacesReference in serverNamespacesChildren)
@@ -875,7 +873,7 @@ namespace Technosoftware.UaServer.Configuration
                     }
                 }
 
-                IList<IReference> serverNamespacesReferencs = new List<IReference>();
+                IList<IReference> serverNamespacesReferencs = [];
                 serverNamespacesNode.GetReferences(SystemContext, serverNamespacesReferencs);
 
                 foreach (IReference serverNamespacesReference in serverNamespacesReferencs)
@@ -955,7 +953,7 @@ namespace Technosoftware.UaServer.Configuration
         private ApplicationConfiguration m_configuration;
         private IList<ServerCertificateGroup> m_certificateGroups;
         private CertificateStoreIdentifier m_rejectedStore;
-        private Dictionary<string, NamespaceMetadataState> m_namespaceMetadataStates = new Dictionary<string, NamespaceMetadataState>();
+        private Dictionary<string, NamespaceMetadataState> m_namespaceMetadataStates = [];
         #endregion
     }
 }

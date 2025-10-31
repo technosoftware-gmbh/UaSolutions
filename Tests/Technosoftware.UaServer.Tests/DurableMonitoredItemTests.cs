@@ -12,27 +12,16 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Loggers;
-
-using CommandLine.Text;
-
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.Extensions.Logging;
 
 using Moq;
 using NUnit.Framework;
 
 using Opc.Ua;
-
-using Technosoftware.UaServer;
 using Technosoftware.UaServer.Subscriptions;
-
-using SampleCompany.NodeManagers;
 using SampleCompany.NodeManagers.DurableSubscription;
 #endregion
 
@@ -52,10 +41,10 @@ namespace Technosoftware.UaServer.Tests
         /// <summary>
         /// Queue Factories to run the test with
         /// </summary>
-        public static readonly object[] FixtureArgs = {
+        public static readonly object[] FixtureArgs = [
             new object [] { new MonitoredItemQueueFactory()},
             new object [] { new DurableMonitoredItemQueueFactory() }
-        };
+        ];
         public DurableMonitoredItemTests(IUaMonitoredItemQueueFactory factory)
         {
             m_factory = factory;
@@ -108,7 +97,6 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(resultError, Is.EqualTo(statuscode));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
 
-
             bool status2 = queue.Dequeue(out DataValue result2, out ServiceResult resultError2);
 
             Assert.That(status2, Is.True);
@@ -123,8 +111,6 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(resultError3, Is.Null);
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
         }
-
-
 
         [Test]
         public void DataValueOverflow()
@@ -149,7 +135,6 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(2));
 
-
             bool status = queue.Dequeue(out DataValue result, out ServiceResult resultError);
 
             Assert.That(status, Is.True);
@@ -167,9 +152,7 @@ namespace Technosoftware.UaServer.Tests
 
             var size = queue.ItemsInQueue;
 
-
             Assert.That(queue.ItemsInQueue, Is.EqualTo(2));
-
 
             bool status2 = queue.Dequeue(out DataValue result2, out ServiceResult resultError2);
 
@@ -317,10 +300,11 @@ namespace Technosoftware.UaServer.Tests
 
             for (int j = 0; j < 10_000; j++)
             {
-                var value = new EventFieldList {
-                    EventFields = new VariantCollection(1) {
+                var value = new EventFieldList
+                {
+                    EventFields = [
                         new Variant(true)
-                    }
+                    ]
                 };
                 queue.Enqueue(value);
                 queue.Dequeue(out var value2);
@@ -336,10 +320,11 @@ namespace Technosoftware.UaServer.Tests
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    var value = new EventFieldList {
-                        EventFields = new VariantCollection(1) {
+                    var value = new EventFieldList
+                    {
+                        EventFields = [
                         new Variant(true)
-                    }
+                    ]
                     };
                     queue.Enqueue(value);
                 }
@@ -369,34 +354,33 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.QueueSize, Is.EqualTo(2));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queue.Enqueue(value);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
 
-
-            var value2 = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value2 = new EventFieldList
+            {
+                EventFields = [
                         new Variant(false)
-                    }
+                    ]
             };
 
             queue.Enqueue(value2);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(2));
 
-
             bool status = queue.Dequeue(out EventFieldList result);
 
             Assert.That(status, Is.True);
             Assert.That(result, Is.EqualTo(value));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
-
 
             bool status2 = queue.Dequeue(out EventFieldList result2);
 
@@ -418,27 +402,27 @@ namespace Technosoftware.UaServer.Tests
 
             queue.SetQueueSize(2, false);
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queue.Enqueue(value);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
 
-
-            var value2 = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value2 = new EventFieldList
+            {
+                EventFields = [
                         new Variant(false)
-                    }
+                    ]
             };
 
             queue.Enqueue(value2);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(2));
-
 
             bool status = queue.Dequeue(out EventFieldList result);
 
@@ -453,7 +437,6 @@ namespace Technosoftware.UaServer.Tests
             queue.Enqueue(value2);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(2));
-
 
             bool status2 = queue.Dequeue(out EventFieldList result2);
 
@@ -484,27 +467,27 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.QueueSize, Is.EqualTo(1));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queue.Enqueue(value);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
 
-
-            var value2 = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value2 = new EventFieldList
+            {
+                EventFields = [
                         new Variant(false)
-                    }
+                    ]
             };
 
             queue.Enqueue(value2);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
-
 
             bool status = queue.Dequeue(out EventFieldList result);
 
@@ -529,20 +512,22 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.QueueSize, Is.EqualTo(2));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    },
+                    ],
                 Handle = new AuditSessionEventState(null)
             };
 
             queue.Enqueue(value);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
-            var value2 = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value2 = new EventFieldList
+            {
+                EventFields = [
                         new Variant(false)
-                    },
+                    ],
                 Handle = new AuditUrlMismatchEventState(null)
             };
 
@@ -577,10 +562,11 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.QueueSize, Is.EqualTo(10));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             for (int i = 0; i < 10; i++)
@@ -617,10 +603,11 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.QueueSize, Is.EqualTo(10));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             for (int i = 0; i < 10; i++)
@@ -667,10 +654,11 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.QueueSize, Is.EqualTo(10));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             for (int i = 0; i < 5; i++)
@@ -678,10 +666,11 @@ namespace Technosoftware.UaServer.Tests
                 queue.Enqueue(value);
             }
 
-            var value2 = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value2 = new EventFieldList
+            {
+                EventFields = [
                         new Variant(false)
-                    }
+                    ]
             };
 
             for (int i = 0; i < 5; i++)
@@ -723,10 +712,11 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.QueueSize, Is.EqualTo(10));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             for (int i = 0; i < 5; i++)
@@ -734,10 +724,11 @@ namespace Technosoftware.UaServer.Tests
                 queue.Enqueue(value);
             }
 
-            var value2 = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value2 = new EventFieldList
+            {
+                EventFields = [
                         new Variant(false)
-                    }
+                    ]
             };
 
             for (int i = 0; i < 5; i++)
@@ -777,10 +768,11 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(1, false);
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queueHandler.QueueEvent(value);
@@ -798,18 +790,20 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(1, true);
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queueHandler.QueueEvent(value);
 
-            var value2 = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value2 = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queueHandler.QueueEvent(value2);
@@ -831,18 +825,20 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(2, false);
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queueHandler.QueueEvent(value);
 
-            var value2 = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value2 = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queueHandler.QueueEvent(value2);
@@ -875,18 +871,20 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(2, false);
 
-            var value = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queueHandler.QueueEvent(value);
 
-            var value2 = new EventFieldList {
-                EventFields = new VariantCollection(1) {
+            var value2 = new EventFieldList
+            {
+                EventFields = [
                         new Variant(true)
-                    }
+                    ]
             };
 
             queueHandler.QueueEvent(value2);
@@ -915,7 +913,6 @@ namespace Technosoftware.UaServer.Tests
             var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
 
             queueHandler.SetQueueSize(1, true, DiagnosticsMasks.All);
-
 
             var statuscode = new ServiceResult(StatusCodes.Good);
             var dataValue = new DataValue(new Variant(true));
@@ -947,7 +944,6 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(2, false, DiagnosticsMasks.All);
 
-
             var statuscode = new ServiceResult(StatusCodes.Good);
             var dataValue = new DataValue(new Variant(true));
 
@@ -966,7 +962,6 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(success, Is.True);
             Assert.That(result, Is.EqualTo(dataValue));
             Assert.That(resultError, Is.EqualTo(statuscode));
-
 
             bool success2 = queueHandler.PublishSingleValue(out var result2, out var resultError2);
 
@@ -988,17 +983,13 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetSamplingInterval(5000);
 
-
             var statuscode = new ServiceResult(StatusCodes.Good);
             var dataValue = new DataValue(new Variant(true));
 
-
             queueHandler.QueueValue(dataValue, statuscode);
-
 
             var statuscode2 = new ServiceResult(StatusCodes.Good);
             var dataValue2 = new DataValue(new Variant(false));
-
 
             queueHandler.QueueValue(dataValue2, statuscode2);
 
@@ -1020,18 +1011,14 @@ namespace Technosoftware.UaServer.Tests
 
             var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
 
-
             queueHandler.SetQueueSize(3, true, DiagnosticsMasks.All);
 
             queueHandler.SetSamplingInterval(2);
 
-
             var statuscode = new ServiceResult(StatusCodes.Good);
             var dataValue = new DataValue(new Variant(true));
 
-
             queueHandler.QueueValue(dataValue, statuscode);
-
 
             var statuscode2 = new ServiceResult(StatusCodes.Good);
             var dataValue2 = new DataValue(new Variant(false));
@@ -1059,7 +1046,6 @@ namespace Technosoftware.UaServer.Tests
             var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
 
             queueHandler.SetQueueSize(10, true, DiagnosticsMasks.All);
-
 
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(0));
 
@@ -1132,7 +1118,6 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(5, true, DiagnosticsMasks.All);
 
-
             Assert.That(called, Is.True);
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(5));
 
@@ -1179,9 +1164,7 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.QueueValue(dataValue2, statuscode2);
 
-
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(1));
-
 
             Assert.That(called, Is.False);
 
@@ -1263,7 +1246,6 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(1));
 
-
             var result = new Queue<EventFieldList>();
             monitoredItem.Publish(new UaServerOperationContext(monitoredItem), result, 1);
 
@@ -1290,7 +1272,6 @@ namespace Technosoftware.UaServer.Tests
             var dataValue = new DataValue(new Variant(true));
 
             monitoredItem.QueueValue(dataValue, statuscode);
-
 
             var result = new Queue<MonitoredItemNotification>();
             var result2 = new Queue<DiagnosticInfo>();
@@ -1320,11 +1301,9 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(2));
 
-
             monitoredItem.QueueEvent(new AuditUrlMismatchEventState(null));
 
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(2));
-
 
             var result = new Queue<EventFieldList>();
             monitoredItem.Publish(new UaServerOperationContext(monitoredItem), result, 3);

@@ -46,7 +46,7 @@ namespace Technosoftware.UaServer.Aggregates
             double processingInterval,
             bool stepped,
             AggregateConfiguration configuration)
-        : 
+        :
             base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
         {
             SetPartialBit = true;
@@ -114,8 +114,8 @@ namespace Technosoftware.UaServer.Aggregates
             // get the regions.
             List<SubRegion> regions = GetRegionsInValueSet(values, false, true);
 
-            List<double> xData = new List<double>();
-            List<double> yData = new List<double>();
+            List<double> xData = [];
+            List<double> yData = [];
 
             double duration = 0;
             bool nonGoodDataExists = false;
@@ -133,7 +133,7 @@ namespace Technosoftware.UaServer.Aggregates
                 }
 
                 // normalize to seconds.
-                duration += regions[ii].Duration/1000.0;
+                duration += regions[ii].Duration / 1000.0;
             }
 
             // check if no good data.
@@ -169,8 +169,8 @@ namespace Technosoftware.UaServer.Aggregates
 
                 regSlope = (xyAvg - xAvg * yAvg) / (xxAgv - xAvg * xAvg);
                 regConst = yAvg - regSlope * xAvg;
-                
-                List<double> errors = new List<double>();
+
+                List<double> errors = [];
 
                 double eAvg = 0;
 
@@ -200,11 +200,14 @@ namespace Technosoftware.UaServer.Aggregates
 
             switch (valueType)
             {
-                case 1: { result = regSlope; break; }
-                case 2: { result = regConst; break; }
-                case 3: { result = regStdDev; break; }
+                case 1:
+                { result = regSlope; break; }
+                case 2:
+                { result = regConst; break; }
+                case 3:
+                { result = regStdDev; break; }
             }
-            
+
             // set the timestamp and status.
             DataValue value = new DataValue();
             value.WrappedValue = new Variant(result, TypeInfo.Scalars.Double);
@@ -248,7 +251,7 @@ namespace Technosoftware.UaServer.Aggregates
             // get the regions.
             List<SubRegion> regions = GetRegionsInValueSet(values, false, true);
 
-            List<double> xData = new List<double>();
+            List<double> xData = [];
             double average = 0;
             bool nonGoodDataExists = false;
 
@@ -279,7 +282,7 @@ namespace Technosoftware.UaServer.Aggregates
             for (int ii = 0; ii < xData.Count; ii++)
             {
                 double error = xData[ii] - average;
-                variance += error*error;
+                variance += error * error;
             }
 
             // use the sample variance if bounds are included.
@@ -287,7 +290,7 @@ namespace Technosoftware.UaServer.Aggregates
             {
                 // Spec part 13 v105 section 5.4.3.37 and subsequent
                 if (xData.Count <= 1)
-                {                    
+                {
                     variance = 0;
                 }
                 else
@@ -295,7 +298,7 @@ namespace Technosoftware.UaServer.Aggregates
                     variance /= (xData.Count - 1);
                 }
             }
-            
+
             // use the population variance if bounds are not included.
             else
             {
@@ -307,8 +310,10 @@ namespace Technosoftware.UaServer.Aggregates
 
             switch (valueType)
             {
-                case 1: { result = Math.Sqrt(variance); break; }
-                case 2: { result = variance; break; }
+                case 1:
+                { result = Math.Sqrt(variance); break; }
+                case 2:
+                { result = variance; break; }
             }
 
             // set the timestamp and status.

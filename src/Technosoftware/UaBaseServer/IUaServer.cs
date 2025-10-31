@@ -719,7 +719,7 @@ namespace Technosoftware.UaBaseServer
         /// <param name="parent">The method object.</param>
         /// <param name="inputArguments">The input arguments.</param>
         /// <returns>A <see cref="StatusCode" /> code with the result of the operation.</returns>
-        StatusCode AddInputArguments(MethodState parent,params Argument[] inputArguments);
+        StatusCode AddInputArguments(MethodState parent, params Argument[] inputArguments);
 
         /// <summary>Adds the output arguments to a method.</summary>
         /// <param name="parent">The method object.</param>

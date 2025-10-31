@@ -98,7 +98,7 @@ namespace Technosoftware.UaServer.Tests
             // Activate session
             requestHeader.AuthenticationToken = authenticationToken;
             response = server.ActivateSession(requestHeader, signatureData,
-                new SignedSoftwareCertificateCollection(), new StringCollection(),
+                [], [],
                 (identityToken != null) ? new ExtensionObject(identityToken) : null, null,
                 out serverNonce, out var results, out var diagnosticInfos);
             ValidateResponse(response);
@@ -172,10 +172,10 @@ namespace Technosoftware.UaServer.Tests
             if (response != null && response.Count != 0)
             {
                 if (response.Count != request.Count)
-            {
-                throw new ServiceResultException(StatusCodes.BadUnexpectedError,
-                    "The server forgot to fill in the DiagnosticInfos array correctly when returning an operation level error.");
-            }
+                {
+                    throw new ServiceResultException(StatusCodes.BadUnexpectedError,
+                        "The server forgot to fill in the DiagnosticInfos array correctly when returning an operation level error.");
+                }
 
                 // now validate the string table
                 if (stringTable != null)

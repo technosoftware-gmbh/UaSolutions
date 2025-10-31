@@ -32,7 +32,7 @@ namespace Technosoftware.UaServer.Tests
         const uint TimeoutHint = 10000;
 
         [DatapointSource]
-        public string[] UriSchemes = { Utils.UriSchemeOpcTcp, Utils.UriSchemeHttps, Utils.UriSchemeOpcHttps };
+        public string[] UriSchemes = [Utils.UriSchemeOpcTcp, Utils.UriSchemeHttps, Utils.UriSchemeOpcHttps];
 
         #region Test Methods
         /// <summary>

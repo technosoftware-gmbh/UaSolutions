@@ -46,7 +46,7 @@ namespace Technosoftware.UaServer.Aggregates
             double processingInterval,
             bool stepped,
             AggregateConfiguration configuration)
-        : 
+        :
             base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
         {
             SetPartialBit = true;
@@ -145,7 +145,7 @@ namespace Technosoftware.UaServer.Aggregates
 
             // find start value.
             DataValue start = null;
-            double startValue = Double.NaN;
+            double startValue = double.NaN;
             TypeInfo originalType = null;
             bool badDataSkipped = false;
 
@@ -163,7 +163,7 @@ namespace Technosoftware.UaServer.Aggregates
                     }
                     catch (Exception)
                     {
-                        startValue = Double.NaN;
+                        startValue = double.NaN;
                     }
                 }
 
@@ -173,13 +173,13 @@ namespace Technosoftware.UaServer.Aggregates
 
             // find end value.
             DataValue end = null;
-            double endValue = Double.NaN;
+            double endValue = double.NaN;
 
             for (int ii = values.Count - 1; ii >= 0; ii--)
             {
                 end = values[ii];
 
-                if (IsGood(end))    
+                if (IsGood(end))
                 {
                     try
                     {
@@ -188,7 +188,7 @@ namespace Technosoftware.UaServer.Aggregates
                     }
                     catch (Exception)
                     {
-                        endValue = Double.NaN;
+                        endValue = double.NaN;
                     }
 
                     break;
@@ -199,11 +199,11 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // check if no good data.
-            if (Double.IsNaN(startValue) || Double.IsNaN(endValue))
+            if (double.IsNaN(startValue) || double.IsNaN(endValue))
             {
                 return GetNoDataValue(slice);
             }
-            
+
             DataValue value = new DataValue();
             value.SourceTimestamp = GetTimestamp(slice);
             value.ServerTimestamp = GetTimestamp(slice);
@@ -213,9 +213,9 @@ namespace Technosoftware.UaServer.Aggregates
             {
                 value.StatusCode = StatusCodes.UncertainDataSubNormal;
             }
-            
+
             value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
-            
+
             // calculate delta.
             double delta = endValue - startValue;
 
@@ -295,7 +295,7 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             DataValue start = values[0];
-            DataValue end = values[values.Count-1];
+            DataValue end = values[values.Count - 1];
 
             // check for bad bounds.
             if (!IsGood(start) || !IsGood(end))
@@ -314,7 +314,7 @@ namespace Technosoftware.UaServer.Aggregates
             }
             catch (Exception)
             {
-                startValue = Double.NaN;
+                startValue = double.NaN;
             }
 
             double endValue = 0;
@@ -325,11 +325,11 @@ namespace Technosoftware.UaServer.Aggregates
             }
             catch (Exception)
             {
-                endValue = Double.NaN;
+                endValue = double.NaN;
             }
 
             // check for bad bounds.
-            if (Double.IsNaN(startValue) || Double.IsNaN(endValue))
+            if (double.IsNaN(startValue) || double.IsNaN(endValue))
             {
                 return GetNoDataValue(slice);
             }

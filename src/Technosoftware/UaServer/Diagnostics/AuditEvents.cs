@@ -812,7 +812,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 if (softwareCertificates != null)
                 {
                     // build the list of SignedSoftwareCertificate
-                    List<SignedSoftwareCertificate> signedSoftwareCertificates = new List<SignedSoftwareCertificate>();
+                    List<SignedSoftwareCertificate> signedSoftwareCertificates = [];
                     foreach (SoftwareCertificate softwareCertificate in softwareCertificates)
                     {
                         SignedSoftwareCertificate item = new SignedSoftwareCertificate();
@@ -1062,8 +1062,6 @@ namespace Technosoftware.UaServer.Diagnostics
                        "CertificateUpdateRequestedAuditEvent",
                        "en-US",
                        "CertificateUpdateRequestedAuditEvent.");
-
-
 
                 e.Initialize(
                    systemContext,
@@ -1376,7 +1374,6 @@ namespace Technosoftware.UaServer.Diagnostics
                 Utils.LogError(ex, "Error while reporting AuditOpenSecureChannelEvent event.");
             }
         }
-
 
         /// <summary>
         /// Reports the AuditUpdateMethodEventType
