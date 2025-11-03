@@ -114,7 +114,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     externalReferences[ObjectIds.ObjectsFolder] = References = references = [];
                 }
 
-                FolderState root = CreateFolderState(null, "CTT", "CTT", null);
+                FolderState root = CreateFolderState(null, "Simulation", "Simulation", null);
 
                 var variables = new List<BaseDataVariableState>();
 

@@ -16,9 +16,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Technosoftware.UaUtilities.Licensing;
 using SampleCompany.Common;
 using SampleCompany.NodeManagers;
-using Technosoftware.UaUtilities.Licensing;
 #endregion Using Directives
 
 namespace SampleCompany.SampleServer
@@ -47,7 +47,7 @@ namespace SampleCompany.SampleServer
             }
             #endregion License validation
 
-            // The application name and config file names
+            // The application name and config file name
             const string applicationName = "SampleCompany.SampleServer";
             const string configSectionName = "SampleCompany.SampleServer";
 
@@ -115,8 +115,6 @@ namespace SampleCompany.SampleServer
                 {
                     output = new LogWriter();
                 }
-
-                CertificateStoreType.RegisterCertificateStoreType(CustomDirectoryCertificateStoreType.StoreName, new CustomDirectoryCertificateStoreType());
 
                 // create the UA server
                 var server = new MyUaServer<NodeManagers.Simulation.SimulationServer>(output)
