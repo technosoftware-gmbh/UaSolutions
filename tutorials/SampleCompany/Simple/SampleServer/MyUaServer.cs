@@ -23,7 +23,7 @@ using Technosoftware.UaBaseServer;
 using SampleCompany.Common;
 #endregion Using Directives
 
-namespace SampleCompany.SampleServer
+namespace SampleCompany.SimpleServer
 {
     /// <summary>
     /// Main class for the Sample UA server

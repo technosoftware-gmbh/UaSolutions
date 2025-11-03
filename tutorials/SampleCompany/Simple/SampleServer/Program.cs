@@ -37,7 +37,7 @@ using Opc.Ua;
 using SampleCompany.Common;
 #endregion Using Directives
 
-namespace SampleCompany.SampleServer
+namespace SampleCompany.SimpleServer
 {
     /// <summary>
     /// The program.
@@ -55,7 +55,7 @@ namespace SampleCompany.SampleServer
 
             // The application name and config file names
             const string applicationName = "SampleCompany.SimpleSampleServer";
-            const string configSectionName = "SampleCompany.SampleServer";
+            const string configSectionName = "SampleCompany.SimpleServer";
 
             // command line options
             var showHelp = false;

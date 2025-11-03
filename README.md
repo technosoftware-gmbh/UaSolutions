@@ -17,7 +17,7 @@ The OPC UA Server NET offers a fast and easy access to the OPC Unified Architect
 
 # Getting Started / Online Help
 
-We provide an online help for the current version: [OPC UA Solutions NET Online Help](https://technosoftware.com/help/UaSolutions/41/)
+We provide an online help for the current version: [OPC UA Solutions NET Online Help](https://technosoftware.com/help/UaSolutions/42/)
 
 ## Workshop
 
@@ -98,10 +98,10 @@ When a product’s LTS period ends, it enters End of Life (EOL). From that point
 
 If your application relies on a version that is nearing EOL, we strongly recommend upgrading to the latest mainline release. If upgrading is not possible, you may choose the source code edition of the [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/) product, which allows you to maintain and fix it yourself.
 
-#  General Info
-
-This repository includes tutorials using the NuGet packages of the OPC UA Solutions .NET.
-
 ## Build Status
 
-[![Build Tutorials for .NET 9.0](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/buildandtest.yml/badge.svg)](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/buildandtest.yml)
+[![Build and Test .NET 9.0](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/buildandtest.yml/badge.svg)](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/buildandtest.yml)
+
+## Code Quality
+
+[![codecov](https://codecov.io/gh/technosoftware-gmbh/UaSolutions/graph/badge.svg?token=M927HKMQ3B)](https://codecov.io/gh/technosoftware-gmbh/UaSolutions)

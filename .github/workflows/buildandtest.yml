@@ -1,8 +1,8 @@
-name: Build Tutorials for .NET 9.0
+name: Build and Test .NET 9.0
 permissions:
   contents: read
   packages: read
-  
+
 on:
   push:
   pull_request:
@@ -19,14 +19,14 @@ env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
 
 jobs:
-  build-and-test-net9:
-    name: test-${{matrix.os}}-${{matrix.customtesttarget}}-${{matrix.csproj}}
+  build-and-test:
+    name: test-${{matrix.os}}-${{matrix.csproj}}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false    
       matrix:
-        os: [ubuntu-latest, windows-2025, macOS-latest]    
-        csproj: [Tutorials]
+        os: [ubuntu-latest, windows-latest, macOS-latest]    
+        csproj: [UaServer, UaClient]
         include:
           - framework: 'net9.0'
             dotnet-version: '9.0.x'
@@ -38,8 +38,9 @@ jobs:
       DOTNET_VERSION: ${{ matrix.dotnet-version }}
       CONFIGURATION:  ${{ matrix.configuration }}
       CSPROJ: ${{ matrix.csproj }}
-      CSPROJECT: "./${{ matrix.csproj }}.sln"
-
+      CSPROJECT: "./Tests/Technosoftware.${{ matrix.csproj }}.Tests/Technosoftware.${{ matrix.csproj }}.Tests.csproj"
+      TESTRESULTS: "TestResults-${{matrix.csproj}}-${{matrix.os}}-${{matrix.framework}}-${{matrix.configuration}}"
+      
     steps:
     - uses: actions/checkout@v5
       with:
@@ -55,6 +56,35 @@ jobs:
       run: ./.azurepipelines/set-version.ps1
 
     - name: Build
-      run: |
-           dotnet nuget add source "https://nuget.pkg.github.com/technosoftware-gmbh/index.json" -n github  -u build -p "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
-           dotnet build ${{ env.CSPROJECT }} --force --framework ${{ matrix.framework }} --configuration ${{ matrix.configuration }} /p:CustomTestTarget=${{ matrix.customtesttarget }}
+      run: dotnet build ${{ env.CSPROJECT }} --force --framework ${{ matrix.framework }} --configuration ${{ matrix.configuration }} /p:CustomTestTarget=${{ matrix.customtesttarget }}
+      
+    - name: Test
+      # note: /p:CollectCoverage=true is only used to disable deterministic builds
+      run: dotnet test ${{ env.CSPROJECT }} --no-build --framework ${{ matrix.framework }} --logger trx --configuration ${{ matrix.configuration }} /p:CollectCoverage=true /p:CustomTestTarget=${{ matrix.customtesttarget }} --collect:"XPlat Code Coverage" --settings ./Tests/coverlet.runsettings.xml --results-directory ${{ env.TESTRESULTS }} 
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v5
+      with:
+        name: dotnet-results-${{matrix.csproj}}-${{matrix.os}}-${{matrix.framework}}-${{matrix.configuration}}
+        path: ${{ env.TESTRESULTS }}
+        # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
+
+    - name: Upload to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ${{ env.TESTRESULTS }}
+        env_vars: CSPROJ,OS,DOTNET_VERSION,CONFIGURATION
+        fail_ci_if_error: false
+        #path_to_write_report: "./coverage/codecov_report-${{matrix.os}}-${{matrix.framework}}-${{matrix.configuration}}/"
+        verbose: true      
+      # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
+      
+    - name: Upload test results to Codecov
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
