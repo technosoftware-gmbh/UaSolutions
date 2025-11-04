@@ -104,4 +104,5 @@ If your application relies on a version that is nearing EOL, we strongly recomme
 
 ## Code Quality
 
+[![CodeQL](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/codeql-analysis.yml)
 [![codecov](https://codecov.io/gh/technosoftware-gmbh/UaSolutions/graph/badge.svg?token=M927HKMQ3B)](https://codecov.io/gh/technosoftware-gmbh/UaSolutions)
