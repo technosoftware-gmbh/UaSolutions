@@ -41,7 +41,7 @@ using Technosoftware.UaConfiguration;
 using SampleCompany.Common;
 #endregion Using Directives
 
-namespace SampleCompany.SampleClient
+namespace SampleCompany.SimpleClient
 {
     /// <summary>The main program.</summary>
     public static class Program
@@ -68,7 +68,7 @@ namespace SampleCompany.SampleClient
 
             // The application name and config file names
             const string applicationName = "SampleCompany.SimpleSampleClient";
-            const string configSectionName = "SampleCompany.SampleClient";
+            const string configSectionName = "SampleCompany.SimpleClient";
             var usage = $"Usage: dotnet {applicationName}.dll [OPTIONS] [ENDPOINTURL]";
 
             // command line options

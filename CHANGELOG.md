@@ -1,6 +1,13 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 4.2.0
+
+### Breaking Changes:
+- Merged UaStandardServer into UaServer, simplifying class usages. UaGenericServer and UaGenericNodeManager no longer exists
+- Renamed IUaNodeManager to IUaStandardNodeManager and IUaBaseNodeManager to IUaNodeManager
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 4.1.1
 
 ### Security Fix

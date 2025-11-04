@@ -39,7 +39,7 @@ using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer;
 #endregion Using Directives
 
-namespace SampleCompany.SampleServer
+namespace SampleCompany.SimpleServer
 {
 
     /// <summary>
@@ -174,7 +174,7 @@ namespace SampleCompany.SampleServer
             Utils.Trace(Utils.TraceMasks.Information, "OnGetNamespaceUris(): Request the supported namespace Uris.");
             // set one namespace for the type model.
             var namespaceUrls = new string[1];
-            namespaceUrls[0] = Model.Namespaces.SampleServer;
+            namespaceUrls[0] = Model.Namespaces.SimpleServer;
             return namespaceUrls;
         }
 
@@ -193,7 +193,7 @@ namespace SampleCompany.SampleServer
         /// <returns>The root folder.</returns>
         public NodeState OnCreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
-            // Not called because the method CreateAddressSpace() is overwritten in the SampleServerNodeManager class
+            // Not called because the method CreateAddressSpace() is overwritten in the SimpleServerNodeManager class
             return null;
         }
 
@@ -278,13 +278,13 @@ namespace SampleCompany.SampleServer
         public UaBaseServer OnGetServer()
         {
             Utils.Trace(Utils.TraceMasks.Information, "OnGetServer(): Request the instance of the server.");
-            return new SampleServer();
+            return new SimpleServer();
         }
 
         public UaBaseNodeManager OnGetNodeManager(IUaServer opcServer, IUaServerData uaServer, ApplicationConfiguration configuration, params string[] namespaceUris)
         {
             Utils.Trace(Utils.TraceMasks.Information, "OnGetNodeManager(): Request the instance of the node manager.");
-            return new SampleServerNodeManager(opcServer, this, uaServer, configuration, namespaceUris);
+            return new SimpleServerNodeManager(opcServer, this, uaServer, configuration, namespaceUris);
         }
         #endregion Optional Server Plugin methods
 

@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+    <AssemblyName>SampleCompany.NodeManagers</AssemblyName>
+    <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
+    <PackageId>SampleCompany.NodeManagers</PackageId>
+    <RootNamespace>SampleCompany.NodeManagers</RootNamespace>
+    <Company>SampleCompany</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>SampleCompany NodeManagers Library</Description>
+    <Copyright>Copyright © 2018 - 2025 SampleCompany</Copyright>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <NoWarn>CS1591;CS1573;RCS1139</NoWarn>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="SampleDataTypes\SampleCompany.NodeManagers.SampleDataTypes.PredefinedNodes.uanodes;TestData\SampleCompany.NodeManagers.TestData.PredefinedNodes.uanodes;MemoryBuffer\SampleCompany.NodeManagers.MemoryBuffer.PredefinedNodes.uanodes" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Alarms\Alarms.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="Roslynator.Analyzers" Version="4.14.0" />
+    <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.0" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
+    <DefineConstants>$(DefineConstants);SIGNASSEMBLY</DefineConstants>
+  </PropertyGroup>
+  <Target Name="GetPackagingOutputs" />
+</Project>

@@ -19,7 +19,7 @@ using Opc.Ua;
 using Technosoftware.UaClient;
 #endregion Using Directives
 
-namespace SampleCompany.SampleClient
+namespace SampleCompany.SimpleClient
 {
     /// <summary>
     /// Sample Session calls based on the samples server node model.
