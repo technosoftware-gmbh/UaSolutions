@@ -13,7 +13,7 @@
 using Technosoftware.UaClient;
 #endregion Using Directives
 
-namespace SampleCompany.SampleClient
+namespace SampleCompany.SimpleClient
 {
     /// <summary>
     /// A client interface which holds an active session.

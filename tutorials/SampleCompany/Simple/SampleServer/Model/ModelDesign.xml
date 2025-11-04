@@ -5,8 +5,8 @@
 	xmlns:opc="http://opcfoundation.org/UA/ModelDesign.xsd" xsi:schemaLocation="http://opcfoundation.org/UA/ModelDesign.xsd ../../../../schema/UAModelDesign.xsd"
   xmlns:ua="http://opcfoundation.org/UA/"
   xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-	xmlns="http://samplecompany.com/SampleServer/Model"
-  TargetNamespace="http://samplecompany.com/SampleServer/Model"
+	xmlns="http://samplecompany.com/SimpleServer/Model"
+  TargetNamespace="http://samplecompany.com/SimpleServer/Model"
 >
   <!-- 
   This element defines the mappings between the URIs used to identify namespaces and the symbols used in code.
@@ -15,7 +15,7 @@
   -->
   <opc:Namespaces>
     <opc:Namespace Name="OpcUa" Prefix="Opc.Ua" XmlNamespace="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/</opc:Namespace>
-    <opc:Namespace Name="SampleServer" Prefix="SampleCompany.SampleServer.Model" InternalPrefix="SampleCompany.SampleServer.Model">http://samplecompany.com/SampleServer/Model</opc:Namespace>
+    <opc:Namespace Name="SimpleServer" Prefix="SampleCompany.SimpleServer.Model" InternalPrefix="SampleCompany.SimpleServer.Model">http://samplecompany.com/SimpleServer/Model</opc:Namespace>
   </opc:Namespaces>
 
   <!-- Create Types -->

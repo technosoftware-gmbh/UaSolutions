@@ -1,0 +1,281 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UANodeSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" LastModified="2025-10-26T07:10:40.5722063Z" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
+  <NamespaceUris>
+    <Uri>http://samplecompany.com/SimpleServer/Model</Uri>
+  </NamespaceUris>
+  <Models>
+    <Model ModelUri="http://samplecompany.com/SimpleServer/Model" Version="1.0.0" PublicationDate="2025-10-26T07:10:40.5722063Z" ModelVersion="1.0.0">
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" XmlSchemaUri="http://opcfoundation.org/UA/2008/02/Types.xsd" />
+    </Model>
+  </Models>
+  <Aliases>
+    <Alias Alias="Boolean">i=1</Alias>
+    <Alias Alias="SByte">i=2</Alias>
+    <Alias Alias="Byte">i=3</Alias>
+    <Alias Alias="Int16">i=4</Alias>
+    <Alias Alias="UInt16">i=5</Alias>
+    <Alias Alias="Int32">i=6</Alias>
+    <Alias Alias="UInt32">i=7</Alias>
+    <Alias Alias="Int64">i=8</Alias>
+    <Alias Alias="UInt64">i=9</Alias>
+    <Alias Alias="Float">i=10</Alias>
+    <Alias Alias="Double">i=11</Alias>
+    <Alias Alias="DateTime">i=13</Alias>
+    <Alias Alias="String">i=12</Alias>
+    <Alias Alias="ByteString">i=15</Alias>
+    <Alias Alias="Guid">i=14</Alias>
+    <Alias Alias="XmlElement">i=16</Alias>
+    <Alias Alias="NodeId">i=17</Alias>
+    <Alias Alias="ExpandedNodeId">i=18</Alias>
+    <Alias Alias="QualifiedName">i=20</Alias>
+    <Alias Alias="LocalizedText">i=21</Alias>
+    <Alias Alias="StatusCode">i=19</Alias>
+    <Alias Alias="Structure">i=22</Alias>
+    <Alias Alias="Number">i=26</Alias>
+    <Alias Alias="Integer">i=27</Alias>
+    <Alias Alias="UInteger">i=28</Alias>
+    <Alias Alias="HasComponent">i=47</Alias>
+    <Alias Alias="HasProperty">i=46</Alias>
+    <Alias Alias="Organizes">i=35</Alias>
+    <Alias Alias="HasEventSource">i=36</Alias>
+    <Alias Alias="HasNotifier">i=48</Alias>
+    <Alias Alias="HasSubtype">i=45</Alias>
+    <Alias Alias="HasTypeDefinition">i=40</Alias>
+    <Alias Alias="HasModellingRule">i=37</Alias>
+    <Alias Alias="HasEncoding">i=38</Alias>
+    <Alias Alias="HasDescription">i=39</Alias>
+    <Alias Alias="HasCause">i=53</Alias>
+    <Alias Alias="ToState">i=52</Alias>
+    <Alias Alias="FromState">i=51</Alias>
+    <Alias Alias="HasEffect">i=54</Alias>
+    <Alias Alias="HasTrueSubState">i=9004</Alias>
+    <Alias Alias="HasFalseSubState">i=9005</Alias>
+    <Alias Alias="HasDictionaryEntry">i=17597</Alias>
+    <Alias Alias="HasCondition">i=9006</Alias>
+    <Alias Alias="HasGuard">i=15112</Alias>
+    <Alias Alias="HasAddIn">i=17604</Alias>
+    <Alias Alias="HasInterface">i=17603</Alias>
+    <Alias Alias="GeneratesEvent">i=41</Alias>
+    <Alias Alias="AlwaysGeneratesEvent">i=3065</Alias>
+    <Alias Alias="HasOrderedComponent">i=49</Alias>
+    <Alias Alias="HasAlarmSuppressionGroup">i=16361</Alias>
+    <Alias Alias="AlarmGroupMember">i=16362</Alias>
+    <Alias Alias="AlarmSuppressionGroupMember">i=32059</Alias>
+  </Aliases>
+  <UADataType NodeId="ns=1;i=1" BrowseName="1:CycleStepDataType">
+    <DisplayName>CycleStepDataType</DisplayName>
+    <References>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=22</Reference>
+    </References>
+    <Definition Name="1:CycleStepDataType">
+      <Field Name="Name" DataType="i=12" />
+      <Field Name="Duration" DataType="i=11" />
+    </Definition>
+  </UADataType>
+  <UAObjectType NodeId="ns=1;i=2" BrowseName="1:SystemCycleStatusEventType">
+    <DisplayName>SystemCycleStatusEventType</DisplayName>
+    <Description>An event raised when a system cycle starts.</Description>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=12</Reference>
+      <Reference ReferenceType="HasProperty">ns=1;i=13</Reference>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=2130</Reference>
+    </References>
+  </UAObjectType>
+  <UAVariable NodeId="ns=1;i=12" BrowseName="1:CycleId" ParentNodeId="ns=1;i=2" DataType="String">
+    <DisplayName>CycleId</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=2</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=13" BrowseName="1:CurrentStep" ParentNodeId="ns=1;i=2" DataType="ns=1;i=1">
+    <DisplayName>CurrentStep</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=2</Reference>
+    </References>
+  </UAVariable>
+  <UAObjectType NodeId="ns=1;i=14" BrowseName="1:SystemCycleStartedEventType">
+    <DisplayName>SystemCycleStartedEventType</DisplayName>
+    <Description>An event raised when a system cycle starts.</Description>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=26</Reference>
+      <Reference ReferenceType="HasSubtype" IsForward="false">ns=1;i=2</Reference>
+    </References>
+  </UAObjectType>
+  <UAVariable NodeId="ns=1;i=26" BrowseName="1:Steps" ParentNodeId="ns=1;i=14" DataType="ns=1;i=1" ValueRank="1" ArrayDimensions="0">
+    <DisplayName>Steps</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=14</Reference>
+    </References>
+  </UAVariable>
+  <UAObjectType NodeId="ns=1;i=27" BrowseName="1:SystemCycleAbortedEventType">
+    <DisplayName>SystemCycleAbortedEventType</DisplayName>
+    <Description>An event raised when a system cycle is aborted.</Description>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=39</Reference>
+      <Reference ReferenceType="HasSubtype" IsForward="false">ns=1;i=2</Reference>
+    </References>
+  </UAObjectType>
+  <UAVariable NodeId="ns=1;i=39" BrowseName="1:Error" ParentNodeId="ns=1;i=27" DataType="StatusCode">
+    <DisplayName>Error</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=27</Reference>
+    </References>
+  </UAVariable>
+  <UAObjectType NodeId="ns=1;i=40" BrowseName="1:SystemCycleFinishedEventType">
+    <DisplayName>SystemCycleFinishedEventType</DisplayName>
+    <Description>An event raised when a system cycle completes.</Description>
+    <References>
+      <Reference ReferenceType="HasSubtype" IsForward="false">ns=1;i=2</Reference>
+    </References>
+  </UAObjectType>
+  <UAObject NodeId="ns=1;i=52" BrowseName="Default Binary" SymbolicName="DefaultBinary">
+    <DisplayName>Default Binary</DisplayName>
+    <References>
+      <Reference ReferenceType="HasEncoding" IsForward="false">ns=1;i=1</Reference>
+      <Reference ReferenceType="HasDescription">ns=1;i=57</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=76</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=53" BrowseName="1:SampleCompany.SimpleServer.Model" SymbolicName="SimpleServer_BinarySchema" ReleaseStatus="Deprecated" DataType="ByteString">
+    <DisplayName>SampleCompany.SimpleServer.Model</DisplayName>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=55</Reference>
+      <Reference ReferenceType="HasProperty">ns=1;i=56</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=57</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">i=93</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=72</Reference>
+    </References>
+    <Value>
+      <ByteString xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">PG9wYzpUeXBlRGljdGlvbmFyeQ0KICB4bWxuczpvcGM9Imh0dHA6Ly9vcGNmb3VuZGF0aW9uLm9y
+Zy9CaW5hcnlTY2hlbWEvIg0KICB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1M
+U2NoZW1hLWluc3RhbmNlIg0KICB4bWxuczp1YT0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3JnL1VB
+LyINCiAgeG1sbnM6dG5zPSJodHRwOi8vc2FtcGxlY29tcGFueS5jb20vU2ltcGxlU2VydmVyL01v
+ZGVsIg0KICBEZWZhdWx0Qnl0ZU9yZGVyPSJMaXR0bGVFbmRpYW4iDQogIFRhcmdldE5hbWVzcGFj
+ZT0iaHR0cDovL3NhbXBsZWNvbXBhbnkuY29tL1NpbXBsZVNlcnZlci9Nb2RlbCINCj4NCiAgPG9w
+YzpJbXBvcnQgTmFtZXNwYWNlPSJodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvIiBMb2NhdGlv
+bj0iT3BjLlVhLkJpbmFyeVNjaGVtYS5ic2QiLz4NCg0KICA8b3BjOlN0cnVjdHVyZWRUeXBlIE5h
+bWU9IkN5Y2xlU3RlcERhdGFUeXBlIiBCYXNlVHlwZT0idWE6RXh0ZW5zaW9uT2JqZWN0Ij4NCiAg
+ICA8b3BjOkZpZWxkIE5hbWU9Ik5hbWUiIFR5cGVOYW1lPSJvcGM6U3RyaW5nIiAvPg0KICAgIDxv
+cGM6RmllbGQgTmFtZT0iRHVyYXRpb24iIFR5cGVOYW1lPSJvcGM6RG91YmxlIiAvPg0KICA8L29w
+YzpTdHJ1Y3R1cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=55" BrowseName="NamespaceUri" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=53" DataType="String">
+    <DisplayName>NamespaceUri</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=53</Reference>
+    </References>
+    <Value>
+      <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://samplecompany.com/SimpleServer/Model</String>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=56" BrowseName="Deprecated" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=53" DataType="Boolean">
+    <DisplayName>Deprecated</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=53</Reference>
+    </References>
+    <Value>
+      <Boolean xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">true</Boolean>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=57" BrowseName="1:CycleStepDataType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=53" DataType="String">
+    <DisplayName>CycleStepDataType</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=69</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=53</Reference>
+    </References>
+    <Value>
+      <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">CycleStepDataType</String>
+    </Value>
+  </UAVariable>
+  <UAObject NodeId="ns=1;i=60" BrowseName="Default XML" SymbolicName="DefaultXml">
+    <DisplayName>Default XML</DisplayName>
+    <References>
+      <Reference ReferenceType="HasEncoding" IsForward="false">ns=1;i=1</Reference>
+      <Reference ReferenceType="HasDescription">ns=1;i=65</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=76</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=61" BrowseName="1:SampleCompany.SimpleServer.Model" SymbolicName="SimpleServer_XmlSchema" ReleaseStatus="Deprecated" DataType="ByteString">
+    <DisplayName>SampleCompany.SimpleServer.Model</DisplayName>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=63</Reference>
+      <Reference ReferenceType="HasProperty">ns=1;i=64</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=65</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">i=92</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=72</Reference>
+    </References>
+    <Value>
+      <ByteString xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">PHhzOnNjaGVtYQ0KICB4bWxuczp4cz0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEi
+DQogIHhtbG5zOnVhPSJodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvMjAwOC8wMi9UeXBlcy54
+c2QiDQogIHhtbG5zOnRucz0iaHR0cDovL3NhbXBsZWNvbXBhbnkuY29tL1NpbXBsZVNlcnZlci9N
+b2RlbCINCiAgdGFyZ2V0TmFtZXNwYWNlPSJodHRwOi8vc2FtcGxlY29tcGFueS5jb20vU2ltcGxl
+U2VydmVyL01vZGVsIg0KICBlbGVtZW50Rm9ybURlZmF1bHQ9InF1YWxpZmllZCINCj4NCiAgPHhz
+OmFubm90YXRpb24+DQogICAgPHhzOmFwcGluZm8+DQogICAgICA8dWE6TW9kZWwgTW9kZWxVcmk9
+Imh0dHA6Ly9zYW1wbGVjb21wYW55LmNvbS9TaW1wbGVTZXJ2ZXIvTW9kZWwiIFZlcnNpb249IjEu
+MC4wIiBQdWJsaWNhdGlvbkRhdGU9IjIwMjUtMTAtMjZUMDc6MTA6NDAuNTcyMjA2M1oiIC8+DQog
+ICAgPC94czphcHBpbmZvPg0KICA8L3hzOmFubm90YXRpb24+DQogIA0KICA8eHM6aW1wb3J0IG5h
+bWVzcGFjZT0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3JnL1VBLzIwMDgvMDIvVHlwZXMueHNkIiAv
+Pg0KDQogIDx4czpjb21wbGV4VHlwZSBuYW1lPSJDeWNsZVN0ZXBEYXRhVHlwZSI+DQogICAgPHhz
+OnNlcXVlbmNlPg0KICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iTmFtZSIgdHlwZT0ieHM6c3RyaW5n
+IiBtaW5PY2N1cnM9IjAiIG5pbGxhYmxlPSJ0cnVlIiAvPg0KICAgICAgPHhzOmVsZW1lbnQgbmFt
+ZT0iRHVyYXRpb24iIHR5cGU9InhzOmRvdWJsZSIgbWluT2NjdXJzPSIwIiAvPg0KICAgIDwveHM6
+c2VxdWVuY2U+DQogIDwveHM6Y29tcGxleFR5cGU+DQogIDx4czplbGVtZW50IG5hbWU9IkN5Y2xl
+U3RlcERhdGFUeXBlIiB0eXBlPSJ0bnM6Q3ljbGVTdGVwRGF0YVR5cGUiIC8+DQoNCiAgPHhzOmNv
+bXBsZXhUeXBlIG5hbWU9Ikxpc3RPZkN5Y2xlU3RlcERhdGFUeXBlIj4NCiAgICA8eHM6c2VxdWVu
+Y2U+DQogICAgICA8eHM6ZWxlbWVudCBuYW1lPSJDeWNsZVN0ZXBEYXRhVHlwZSIgdHlwZT0idG5z
+OkN5Y2xlU3RlcERhdGFUeXBlIiBtaW5PY2N1cnM9IjAiIG1heE9jY3Vycz0idW5ib3VuZGVkIiBu
+aWxsYWJsZT0idHJ1ZSIgLz4NCiAgICA8L3hzOnNlcXVlbmNlPg0KICA8L3hzOmNvbXBsZXhUeXBl
+Pg0KICA8eHM6ZWxlbWVudCBuYW1lPSJMaXN0T2ZDeWNsZVN0ZXBEYXRhVHlwZSIgdHlwZT0idG5z
+Okxpc3RPZkN5Y2xlU3RlcERhdGFUeXBlIiBuaWxsYWJsZT0idHJ1ZSI+PC94czplbGVtZW50Pg0K
+DQo8L3hzOnNjaGVtYT4=</ByteString>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=63" BrowseName="NamespaceUri" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=61" DataType="String">
+    <DisplayName>NamespaceUri</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=61</Reference>
+    </References>
+    <Value>
+      <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://samplecompany.com/SimpleServer/Model</String>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=64" BrowseName="Deprecated" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=61" DataType="Boolean">
+    <DisplayName>Deprecated</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=61</Reference>
+    </References>
+    <Value>
+      <Boolean xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">true</Boolean>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=65" BrowseName="1:CycleStepDataType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=61" DataType="String">
+    <DisplayName>CycleStepDataType</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=69</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=61</Reference>
+    </References>
+    <Value>
+      <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">//xs:element[@name='CycleStepDataType']</String>
+    </Value>
+  </UAVariable>
+  <UAObject NodeId="ns=1;i=68" BrowseName="Default JSON" SymbolicName="DefaultJson">
+    <DisplayName>Default JSON</DisplayName>
+    <References>
+      <Reference ReferenceType="HasEncoding" IsForward="false">ns=1;i=1</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=76</Reference>
+    </References>
+  </UAObject>
+</UANodeSet>
