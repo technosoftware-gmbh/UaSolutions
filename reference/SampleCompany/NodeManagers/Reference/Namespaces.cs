@@ -17,11 +17,12 @@ namespace SampleCompany.NodeManagers.Reference
     /// <summary>
     /// Defines constants for namespaces used by the servers.
     /// </summary>
-    public static partial class Namespaces
+    public static class Namespaces
     {
         /// <summary>
         /// The namespace for the nodes provided by the reference server.
         /// </summary>
-        public const string ReferenceServer = "http://samplecompany.com/SampleServer/NodeManagers/Reference";
+        public const string ReferenceServer
+            = "http://samplecompany.com/SampleServer/NodeManagers/Reference";
     }
 }

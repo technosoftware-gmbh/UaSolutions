@@ -14,18 +14,15 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
 using System;
 using System.Collections.Generic;
-
 using Opc.Ua;
+#endregion Using Directives
 
-#endregion
-
-namespace Technosoftware.UaServer.Aggregates
+namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Calculates the value of an aggregate. 
+    /// Calculates the value of an aggregate.
     /// </summary>
     public class StdDevAggregateCalculator : AggregateCalculator
     {
@@ -46,12 +43,11 @@ namespace Technosoftware.UaServer.Aggregates
             double processingInterval,
             bool stepped,
             AggregateConfiguration configuration)
-        :
-            base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
+            : base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
         {
             SetPartialBit = true;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Overridden Methods
         /// <summary>
@@ -71,30 +67,19 @@ namespace Technosoftware.UaServer.Aggregates
                     // (this is a strange way to distinguish between sample and population)
 
                     case Objects.AggregateFunction_StandardDeviationPopulation:
-                    {
                         return ComputeStdDev(slice, false, 1);
-                    }
-
                     case Objects.AggregateFunction_StandardDeviationSample:
-                    {
                         return ComputeStdDev(slice, true, 1);
-                    }
-
                     case Objects.AggregateFunction_VariancePopulation:
-                    {
                         return ComputeStdDev(slice, false, 2);
-                    }
-
                     case Objects.AggregateFunction_VarianceSample:
-                    {
                         return ComputeStdDev(slice, true, 2);
-                    }
                 }
             }
 
             return base.ComputeValue(slice);
         }
-        #endregion
+        #endregion Overridden Methods
 
         #region Protected Methods
         /// <summary>
@@ -114,8 +99,8 @@ namespace Technosoftware.UaServer.Aggregates
             // get the regions.
             List<SubRegion> regions = GetRegionsInValueSet(values, false, true);
 
-            List<double> xData = [];
-            List<double> yData = [];
+            var xData = new List<double>();
+            var yData = new List<double>();
 
             double duration = 0;
             bool nonGoodDataExists = false;
@@ -167,16 +152,16 @@ namespace Technosoftware.UaServer.Aggregates
                 xxAgv /= xData.Count;
                 xyAvg /= xData.Count;
 
-                regSlope = (xyAvg - xAvg * yAvg) / (xxAgv - xAvg * xAvg);
-                regConst = yAvg - regSlope * xAvg;
+                regSlope = (xyAvg - (xAvg * yAvg)) / (xxAgv - (xAvg * xAvg));
+                regConst = yAvg - (regSlope * xAvg);
 
-                List<double> errors = [];
+                var errors = new List<double>();
 
                 double eAvg = 0;
 
                 for (int ii = 0; ii < xData.Count; ii++)
                 {
-                    double error = yData[ii] - regConst - regSlope * xData[ii];
+                    double error = yData[ii] - regConst - (regSlope * xData[ii]);
                     errors.Add(error);
                     eAvg += error;
                 }
@@ -201,18 +186,23 @@ namespace Technosoftware.UaServer.Aggregates
             switch (valueType)
             {
                 case 1:
-                { result = regSlope; break; }
+                    result = regSlope;
+                    break;
                 case 2:
-                { result = regConst; break; }
+                    result = regConst;
+                    break;
                 case 3:
-                { result = regStdDev; break; }
+                    result = regStdDev;
+                    break;
             }
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(result, TypeInfo.Scalars.Double);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(result, TypeInfo.Scalars.Double),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
 
             if (nonGoodDataExists)
             {
@@ -231,8 +221,7 @@ namespace Technosoftware.UaServer.Aggregates
         protected DataValue ComputeStdDev(TimeSlice slice, bool includeBounds, int valueType)
         {
             // get the values in the slice.
-            List<DataValue> values = null;
-
+            List<DataValue> values;
             if (includeBounds)
             {
                 values = GetValuesWithSimpleBounds(slice);
@@ -251,7 +240,7 @@ namespace Technosoftware.UaServer.Aggregates
             // get the regions.
             List<SubRegion> regions = GetRegionsInValueSet(values, false, true);
 
-            List<double> xData = [];
+            var xData = new List<double>();
             double average = 0;
             bool nonGoodDataExists = false;
 
@@ -295,10 +284,9 @@ namespace Technosoftware.UaServer.Aggregates
                 }
                 else
                 {
-                    variance /= (xData.Count - 1);
+                    variance /= xData.Count - 1;
                 }
             }
-
             // use the population variance if bounds are not included.
             else
             {
@@ -311,16 +299,20 @@ namespace Technosoftware.UaServer.Aggregates
             switch (valueType)
             {
                 case 1:
-                { result = Math.Sqrt(variance); break; }
+                    result = Math.Sqrt(variance);
+                    break;
                 case 2:
-                { result = variance; break; }
+                    result = variance;
+                    break;
             }
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(result, TypeInfo.Scalars.Double);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(result, TypeInfo.Scalars.Double),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
 
             if (nonGoodDataExists)
             {
@@ -332,6 +324,6 @@ namespace Technosoftware.UaServer.Aggregates
             // return result.
             return value;
         }
-        #endregion
+        #endregion Protected Methods
     }
 }

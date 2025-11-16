@@ -19,7 +19,7 @@ using System.IO;
 using Newtonsoft.Json;
 #endregion
 
-namespace Technosoftware.UaServer.UserDatabase
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// A user database with JSON storage.
@@ -35,16 +35,20 @@ namespace Technosoftware.UaServer.UserDatabase
         /// </summary>
         public JsonUserDatabase(string fileName)
         {
-            m_fileName = fileName;
+            FileName = fileName;
         }
 
         /// <summary>
         /// Load the JSON application database.
         /// </summary>
-        static public JsonUserDatabase Load(string fileName)
+        /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <c>null</c>.</exception>
+        public static JsonUserDatabase Load(string fileName)
         {
             if (fileName == null)
+            {
                 throw new ArgumentNullException(nameof(fileName));
+            }
+
             try
             {
                 if (File.Exists(fileName))
@@ -57,7 +61,6 @@ namespace Technosoftware.UaServer.UserDatabase
             }
             catch
             {
-
             }
             return new JsonUserDatabase(fileName);
         }
@@ -70,19 +73,14 @@ namespace Technosoftware.UaServer.UserDatabase
         public override void Save()
         {
             string json = JsonConvert.SerializeObject(this, Formatting.Indented);
-            File.WriteAllText(m_fileName, json);
+            File.WriteAllText(FileName, json);
         }
 
         /// <summary>
         /// Get or set the filename.
         /// </summary>
         [JsonIgnore]
-        public string FileName { get { return m_fileName; } private set { m_fileName = value; } }
-        #endregion
-
-        #region Private Fields
-        [JsonIgnore]
-        string m_fileName;
+        public string FileName { get; private set; }
         #endregion
     }
 }

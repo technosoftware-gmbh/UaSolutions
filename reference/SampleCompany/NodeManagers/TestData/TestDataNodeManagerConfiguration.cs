@@ -11,7 +11,7 @@
 
 #region Using Directives
 using System.Runtime.Serialization;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
@@ -33,7 +33,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// <summary>
         /// Initializes the object during deserialization.
         /// </summary>
-        [OnDeserializing()]
+        [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
@@ -44,47 +44,29 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         private void Initialize()
         {
-            m_saveFilePath = null;
-            m_maxQueueSize = 100;
+            SaveFilePath = null;
+            MaxQueueSize = 100;
         }
-        #endregion
+        #endregion Constructors
 
         #region Public Properties
         /// <summary>
         /// The path to the file that stores state of the node manager.
         /// </summary>
         [DataMember(Order = 1)]
-        public string SaveFilePath
-        {
-            get => m_saveFilePath;
-            set => m_saveFilePath = value;
-        }
+        public string SaveFilePath { get; set; }
 
         /// <summary>
         /// The maximum length for a monitored item sampling queue.
         /// </summary>
         [DataMember(Order = 2)]
-        public uint MaxQueueSize
-        {
-            get => m_maxQueueSize;
-            set => m_maxQueueSize = value;
-        }
+        public uint MaxQueueSize { get; set; }
 
         /// <summary>
         /// The next unused value that can be assigned to new nodes.
         /// </summary>
         [DataMember(Order = 3)]
-        public uint NextUnusedId
-        {
-            get => m_nextUnusedId;
-            set => m_nextUnusedId = value;
-        }
-        #endregion
-
-        #region Private Members
-        private string m_saveFilePath;
-        private uint m_maxQueueSize;
-        private uint m_nextUnusedId;
-        #endregion
+        public uint NextUnusedId { get; set; }
+        #endregion Private Members
     }
 }

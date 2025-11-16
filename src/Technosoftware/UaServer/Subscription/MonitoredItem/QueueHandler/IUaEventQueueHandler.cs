@@ -18,12 +18,12 @@ using System;
 using System.Collections.Generic;
 
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Mangages an event queue for usage by a MonitoredItem
+    /// Mangages an event queue for usage by a UaMonitoredItem
     /// </summary>
     public interface IUaEventQueueHandler : IDisposable
     {

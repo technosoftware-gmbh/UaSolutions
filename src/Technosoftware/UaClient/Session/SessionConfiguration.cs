@@ -1,13 +1,13 @@
 #region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
+// Web: https://technosoftware.com
 //
-// The Software is subject to the Technosoftware GmbH Software License 
+// The Software is subject to the Technosoftware GmbH Software License
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Foundation MIT License. 
+// The Software is based on the OPC Foundation MIT License.
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
@@ -17,11 +17,9 @@
 using System;
 using System.IO;
 using System.Runtime.Serialization;
-using System.Security.Cryptography;
 using System.Xml;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -60,27 +58,15 @@ namespace Technosoftware.UaClient
         }
 
         /// <summary>
-        /// Creates a session configuration
-        /// </summary>
-        [Obsolete("Use SessionConfiguration(ISession session, Nonce serverNonce, string userIdentityTokenPolicy, Nonce eccServerEphemeralKey,    NodeId authenthicationToken)")]
-        public SessionConfiguration(IUaSession session, byte[] serverNonce, NodeId authenthicationToken)
-            : this(session, Nonce.CreateNonce("RSA-only", serverNonce), null, null, authenthicationToken)
-        {
-        }
-
-        /// <summary>
         /// Creates the session configuration from a stream.
         /// </summary>
         public static SessionConfiguration Create(Stream stream)
         {
             // secure settings
             XmlReaderSettings settings = Utils.DefaultXmlReaderSettings();
-            using (XmlReader reader = XmlReader.Create(stream, settings))
-            {
-                DataContractSerializer serializer = new DataContractSerializer(typeof(SessionConfiguration));
-                SessionConfiguration sessionConfiguration = (SessionConfiguration)serializer.ReadObject(reader);
-                return sessionConfiguration;
-            }
+            using var reader = XmlReader.Create(stream, settings);
+            var serializer = new DataContractSerializer(typeof(SessionConfiguration));
+            return (SessionConfiguration)serializer.ReadObject(reader);
         }
 
         /// <summary>
@@ -142,6 +128,5 @@ namespace Technosoftware.UaClient
         /// </summary>
         [DataMember(IsRequired = false, Order = 100)]
         public Nonce ServerEccEphemeralKey { get; set; }
-
     }
 }

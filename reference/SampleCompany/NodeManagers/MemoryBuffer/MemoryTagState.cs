@@ -10,17 +10,8 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System;
-using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-
 using Opc.Ua;
-
-using Technosoftware.UaServer;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.MemoryBuffer
 {
@@ -32,18 +23,25 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         /// </summary>
         /// <param name="parent">The buffer that owns the tag.</param>
         /// <param name="offet">The offset of the tag address in the memory buffer.</param>
-        public MemoryTagState(MemoryBufferState parent, uint offet) : base(parent)
+        public MemoryTagState(MemoryBufferState parent, uint offet)
+            : base(parent)
         {
-            // these objects are created an discarded during each operation. 
+            // these objects are created an discarded during each operation.
             // the metadata is derived from the parameters passed to constructors.
-            NodeId = new NodeId(Utils.Format("{0}[{1}]", parent.SymbolicName, offet), parent.NodeId.NamespaceIndex);
-            BrowseName = new QualifiedName(Utils.Format("{1:X8}", parent.SymbolicName, offet), parent.TypeDefinitionId.NamespaceIndex);
+            NodeId = new NodeId(
+                Utils.Format("{0}[{1}]", parent.SymbolicName, offet),
+                parent.NodeId.NamespaceIndex);
+            BrowseName = new QualifiedName(
+                Utils.Format("{1:X8}", parent.SymbolicName, offet),
+                parent.TypeDefinitionId.NamespaceIndex);
             DisplayName = BrowseName.Name;
             Description = null;
             WriteMask = AttributeWriteMask.None;
             UserWriteMask = AttributeWriteMask.None;
             ReferenceTypeId = ReferenceTypeIds.HasComponent;
-            TypeDefinitionId = new NodeId(VariableTypes.MemoryTagType, parent.TypeDefinitionId.NamespaceIndex);
+            TypeDefinitionId = new NodeId(
+                VariableTypes.MemoryTagType,
+                parent.TypeDefinitionId.NamespaceIndex);
             ModellingRuleId = null;
             NumericId = offet;
             DataType = new NodeId((uint)parent.ElementType);
@@ -58,22 +56,15 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             OnReadValue = parent.ReadTagValue;
             OnWriteValue = parent.WriteTagValue;
 
-            offset_ = offet;
+            Offset = offet;
         }
-        #endregion
+        #endregion Constructors
 
         #region Public Properties
         /// <summary>
         /// The offset of the tag address in the memory buffer.
         /// </summary>
-        public uint Offset
-        {
-            get { return offset_; }
-        }
-        #endregion
-
-        #region Private Fields
-        private uint offset_;
-        #endregion
+        public uint Offset { get; }
+        #endregion Public Properties
     }
 }

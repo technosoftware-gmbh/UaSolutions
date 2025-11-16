@@ -1,69 +1,58 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-
-#region Using Directives
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-
 using BenchmarkDotNet.Attributes;
-
 using Moq;
 using NUnit.Framework;
-
 using Opc.Ua;
-using Technosoftware.UaServer.Subscriptions;
+using SampleCompany.NodeManagers;
 using SampleCompany.NodeManagers.DurableSubscription;
-#endregion
+using Technosoftware.UaServer;
 
 namespace Technosoftware.UaServer.Tests
 {
     /// <summary>
-    /// Test UaMonitoredItem
+    /// Test MonitoredItem
     /// </summary>
-    [TestFixture, Category("UaMonitoredItem")]
+    [TestFixture]
+    [Category("MonitoredItem")]
     [TestFixtureSource(nameof(FixtureArgs))]
-    [SetCulture("en-us"), SetUICulture("en-us")]
+    [SetCulture("en-us")]
+    [SetUICulture("en-us")]
     [Parallelizable]
     [MemoryDiagnoser]
     public class DurableMonitoredItemTests
     {
-        #region Setup
         /// <summary>
         /// Queue Factories to run the test with
         /// </summary>
-        public static readonly object[] FixtureArgs = [
-            new object [] { new MonitoredItemQueueFactory()},
-            new object [] { new DurableMonitoredItemQueueFactory() }
+        public static readonly object[] FixtureArgs =
+        [
+            new object[] { new MonitoredItemQueueFactory() },
+            new object[] { new DurableMonitoredItemQueueFactory() }
         ];
+
         public DurableMonitoredItemTests(IUaMonitoredItemQueueFactory factory)
         {
             m_factory = factory;
         }
 
         private readonly IUaMonitoredItemQueueFactory m_factory;
-        #endregion
-        #region dataChangeQueue
+
         [Test]
         public void EnqueueDequeueDataValue()
         {
-            var queue = m_factory.CreateDataChangeQueue(false, 1);
+            IUaDataChangeMonitoredItemQueue queue = m_factory.CreateDataChangeQueue(false, 1);
 
             Assert.That(queue.QueueSize, Is.EqualTo(0));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
             Assert.That(queue.IsDurable, Is.EqualTo(false));
             Assert.That(queue.Dequeue(out _, out _), Is.EqualTo(false));
             Assert.That(queue.PeekLastValue(), Is.EqualTo(null));
-            Assert.Throws<InvalidOperationException>(() => queue.OverwriteLastValue(new DataValue(), null));
+            Assert.Throws<InvalidOperationException>(
+                () => queue.OverwriteLastValue(new DataValue(), null));
             Assert.Throws<InvalidOperationException>(() => queue.Enqueue(new DataValue(), null));
 
             queue.ResetQueue(2, true);
@@ -115,7 +104,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void DataValueOverflow()
         {
-            var queue = m_factory.CreateDataChangeQueue(false, 1);
+            IUaDataChangeMonitoredItemQueue queue = m_factory.CreateDataChangeQueue(false, 1);
 
             queue.ResetQueue(2, true);
 
@@ -149,8 +138,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.ItemsInQueue, Is.EqualTo(2));
 
             queue.Enqueue(dataValue3, null);
-
-            var size = queue.ItemsInQueue;
+            _ = queue.ItemsInQueue;
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(2));
 
@@ -179,7 +167,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void DataValueQueueSize1()
         {
-            var queue = m_factory.CreateDataChangeQueue(false, 1);
+            IUaDataChangeMonitoredItemQueue queue = m_factory.CreateDataChangeQueue(false, 1);
 
             queue.ResetQueue(1, false);
 
@@ -223,7 +211,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void DataValueQueueSize10()
         {
-            var queue = m_factory.CreateDataChangeQueue(false, 1);
+            IUaDataChangeMonitoredItemQueue queue = m_factory.CreateDataChangeQueue(false, 1);
 
             queue.ResetQueue(10, true);
 
@@ -258,25 +246,24 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(resultError2, Is.Null);
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
         }
-        #endregion
-        #region benchmarks
+
         [Benchmark]
         public void QueueDequeueValues()
         {
-            var queue = m_factory.CreateDataChangeQueue(false, 1);
+            IUaDataChangeMonitoredItemQueue queue = m_factory.CreateDataChangeQueue(false, 1);
             queue.ResetQueue(1000, false);
 
             for (int j = 0; j < 10_000; j++)
             {
                 queue.Enqueue(new DataValue(new Variant(false)), null);
-
-                queue.Dequeue(out var dataValue, out var _);
+                queue.Dequeue(out _, out _);
             }
         }
+
         [Benchmark]
         public void QueueDequeueValuesWithOverflow()
         {
-            var queue = m_factory.CreateDataChangeQueue(false, 1);
+            IUaDataChangeMonitoredItemQueue queue = m_factory.CreateDataChangeQueue(false, 1);
             queue.ResetQueue(100, false);
 
             for (int j = 0; j < 100; j++)
@@ -287,7 +274,7 @@ namespace Technosoftware.UaServer.Tests
                 }
                 for (int v = 0; v < 90; v++)
                 {
-                    queue.Dequeue(out var dataValue, out var _);
+                    queue.Dequeue(out _, out _);
                 }
             }
         }
@@ -295,52 +282,41 @@ namespace Technosoftware.UaServer.Tests
         [Benchmark]
         public void QueueDequeueEvents()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
             queue.SetQueueSize(1000, false);
 
             for (int j = 0; j < 10_000; j++)
             {
-                var value = new EventFieldList
-                {
-                    EventFields = [
-                        new Variant(true)
-                    ]
-                };
+                var value = new EventFieldList { EventFields = [new Variant(true)] };
                 queue.Enqueue(value);
-                queue.Dequeue(out var value2);
+                queue.Dequeue(out _);
             }
         }
+
         [Benchmark]
         public void QueueDequeueEventssWithOverflow()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
             queue.SetQueueSize(100, false);
 
             for (int j = 0; j < 100; j++)
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    var value = new EventFieldList
-                    {
-                        EventFields = [
-                        new Variant(true)
-                    ]
-                    };
+                    var value = new EventFieldList { EventFields = [new Variant(true)] };
                     queue.Enqueue(value);
                 }
                 for (int v = 0; v < 90; v++)
                 {
-                    queue.Dequeue(out var value);
+                    queue.Dequeue(out _);
                 }
             }
         }
-        #endregion
-        #region eventQueue
 
         [Test]
         public void EnqueueDequeueEvent()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
 
             Assert.That(queue.QueueSize, Is.EqualTo(0));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
@@ -354,23 +330,13 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.QueueSize, Is.EqualTo(2));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             queue.Enqueue(value);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
 
-            var value2 = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(false)
-                    ]
-            };
+            var value2 = new EventFieldList { EventFields = [new Variant(false)] };
 
             queue.Enqueue(value2);
 
@@ -398,27 +364,17 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void EventOverflow()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
 
             queue.SetQueueSize(2, false);
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             queue.Enqueue(value);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
 
-            var value2 = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(false)
-                    ]
-            };
+            var value2 = new EventFieldList { EventFields = [new Variant(false)] };
 
             queue.Enqueue(value2);
 
@@ -460,30 +416,20 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void EventQueueSize1()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
 
             queue.SetQueueSize(1, false);
 
             Assert.That(queue.QueueSize, Is.EqualTo(1));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             queue.Enqueue(value);
 
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
 
-            var value2 = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(false)
-                    ]
-            };
+            var value2 = new EventFieldList { EventFields = [new Variant(false)] };
 
             queue.Enqueue(value2);
 
@@ -505,7 +451,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void EventQueueIsEventContainedInQueue()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
 
             queue.SetQueueSize(2, false);
 
@@ -514,9 +460,7 @@ namespace Technosoftware.UaServer.Tests
 
             var value = new EventFieldList
             {
-                EventFields = [
-                        new Variant(true)
-                    ],
+                EventFields = [new Variant(true)],
                 Handle = new AuditSessionEventState(null)
             };
 
@@ -525,9 +469,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.ItemsInQueue, Is.EqualTo(1));
             var value2 = new EventFieldList
             {
-                EventFields = [
-                        new Variant(false)
-                    ],
+                EventFields = [new Variant(false)],
                 Handle = new AuditUrlMismatchEventState(null)
             };
 
@@ -555,19 +497,14 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void EventQueueSize10()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
 
             queue.SetQueueSize(10, false);
 
             Assert.That(queue.QueueSize, Is.EqualTo(10));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             for (int i = 0; i < 10; i++)
             {
@@ -596,19 +533,14 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void EventQueueSizeChangeRequeuesValues()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
 
             queue.SetQueueSize(10, false);
 
             Assert.That(queue.QueueSize, Is.EqualTo(10));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             for (int i = 0; i < 10; i++)
             {
@@ -647,31 +579,21 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void EventDecreaseQueueSizeDiscardsOldest()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
 
             queue.SetQueueSize(10, false);
 
             Assert.That(queue.QueueSize, Is.EqualTo(10));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             for (int i = 0; i < 5; i++)
             {
                 queue.Enqueue(value);
             }
 
-            var value2 = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(false)
-                    ]
-            };
+            var value2 = new EventFieldList { EventFields = [new Variant(false)] };
 
             for (int i = 0; i < 5; i++)
             {
@@ -705,31 +627,21 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void EventDecreaseQueueSizeDiscardsNewest()
         {
-            var queue = m_factory.CreateEventQueue(false, 1);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(false, 1);
 
             queue.SetQueueSize(10, false);
 
             Assert.That(queue.QueueSize, Is.EqualTo(10));
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             for (int i = 0; i < 5; i++)
             {
                 queue.Enqueue(value);
             }
 
-            var value2 = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(false)
-                    ]
-            };
+            var value2 = new EventFieldList { EventFields = [new Variant(false)] };
 
             for (int i = 0; i < 5; i++)
             {
@@ -759,8 +671,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(result2, Is.Null);
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
         }
-        #endregion
-        #region EventQueueHandler
+
         [Test]
         public void EventQueueHandlerOverflow()
         {
@@ -768,12 +679,7 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(1, false);
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             queueHandler.QueueEvent(value);
 
@@ -790,21 +696,11 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(1, true);
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             queueHandler.QueueEvent(value);
 
-            var value2 = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value2 = new EventFieldList { EventFields = [new Variant(true)] };
 
             queueHandler.QueueEvent(value2);
 
@@ -825,21 +721,11 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(2, false);
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             queueHandler.QueueEvent(value);
 
-            var value2 = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value2 = new EventFieldList { EventFields = [new Variant(true)] };
 
             queueHandler.QueueEvent(value2);
 
@@ -871,21 +757,11 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.SetQueueSize(2, false);
 
-            var value = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value = new EventFieldList { EventFields = [new Variant(true)] };
 
             queueHandler.QueueEvent(value);
 
-            var value2 = new EventFieldList
-            {
-                EventFields = [
-                        new Variant(true)
-                    ]
-            };
+            var value2 = new EventFieldList { EventFields = [new Variant(true)] };
 
             queueHandler.QueueEvent(value2);
 
@@ -902,15 +778,18 @@ namespace Technosoftware.UaServer.Tests
             queueHandler.Publish(null, events, 1);
             Assert.That(events, Is.Empty);
         }
-        #endregion
-        #region DataChangeQueueHandler
 
         [Test]
         public void DataValueQueueDiscardedValueHandlerInvoked()
         {
             bool called = false;
-            Action discardedValueHandler = () => { called = true; };
-            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
+            void DiscardedValueHandler() => called = true;
+
+            var queueHandler = new DataChangeQueueHandler(
+                1,
+                false,
+                m_factory,
+                DiscardedValueHandler);
 
             queueHandler.SetQueueSize(1, true, DiagnosticsMasks.All);
 
@@ -926,7 +805,9 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(called, Is.True);
 
-            bool success = queueHandler.PublishSingleValue(out var result, out var resultError);
+            bool success = queueHandler.PublishSingleValue(
+                out DataValue result,
+                out ServiceResult resultError);
 
             Assert.That(success, Is.True);
             Assert.That(result, Is.EqualTo(dataValue2));
@@ -939,8 +820,9 @@ namespace Technosoftware.UaServer.Tests
         public void DataValueQueueDiscardedValueHandlerInvokedNoDiscardOldest()
         {
             bool called = false;
-            Action discardedValueHandler = () => { called = true; };
-            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
+            void DiscardValueHandler() => called = true;
+
+            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, DiscardValueHandler);
 
             queueHandler.SetQueueSize(2, false, DiagnosticsMasks.All);
 
@@ -957,13 +839,17 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(called, Is.True);
 
-            bool success = queueHandler.PublishSingleValue(out var result, out var resultError);
+            bool success = queueHandler.PublishSingleValue(
+                out DataValue result,
+                out ServiceResult resultError);
 
             Assert.That(success, Is.True);
             Assert.That(result, Is.EqualTo(dataValue));
             Assert.That(resultError, Is.EqualTo(statuscode));
 
-            bool success2 = queueHandler.PublishSingleValue(out var result2, out var resultError2);
+            bool success2 = queueHandler.PublishSingleValue(
+                out DataValue result2,
+                out ServiceResult resultError2);
 
             Assert.That(success2, Is.True);
             Assert.That(result2, Is.EqualTo(dataValue2));
@@ -975,9 +861,9 @@ namespace Technosoftware.UaServer.Tests
         public void DataValueQueueSamplingIntervalOverwrites()
         {
             bool called = false;
-            Action discardedValueHandler = () => { called = true; };
+            void DiscardValueHandler() => called = true;
 
-            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
+            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, DiscardValueHandler);
 
             queueHandler.SetQueueSize(3, true, DiagnosticsMasks.All);
 
@@ -996,7 +882,9 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(1));
             Assert.That(called, Is.True);
 
-            bool success = queueHandler.PublishSingleValue(out var result, out var resultError);
+            bool success = queueHandler.PublishSingleValue(
+                out DataValue result,
+                out ServiceResult resultError);
 
             Assert.That(success, Is.True);
             Assert.That(result, Is.EqualTo(dataValue2));
@@ -1004,12 +892,12 @@ namespace Technosoftware.UaServer.Tests
         }
 
         [Test]
-        public async Task DataValueQueueSamplingIntervalChangeApplied()
+        public async Task DataValueQueueSamplingIntervalChangeAppliedAsync()
         {
             bool called = false;
-            Action discardedValueHandler = () => { called = true; };
+            void DiscardValueHandler() => called = true;
 
-            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
+            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, DiscardValueHandler);
 
             queueHandler.SetQueueSize(3, true, DiagnosticsMasks.All);
 
@@ -1023,14 +911,16 @@ namespace Technosoftware.UaServer.Tests
             var statuscode2 = new ServiceResult(StatusCodes.Good);
             var dataValue2 = new DataValue(new Variant(false));
 
-            await Task.Delay(5);
+            await Task.Delay(5).ConfigureAwait(false);
 
             queueHandler.QueueValue(dataValue2, statuscode2);
 
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(2));
             Assert.That(called, Is.False);
 
-            bool success = queueHandler.PublishSingleValue(out var result, out var resultError);
+            bool success = queueHandler.PublishSingleValue(
+                out DataValue result,
+                out ServiceResult resultError);
 
             Assert.That(success, Is.True);
             Assert.That(result, Is.EqualTo(dataValue));
@@ -1041,9 +931,9 @@ namespace Technosoftware.UaServer.Tests
         public void DataValueQueueSizeChangeRequeuesValues()
         {
             bool called = false;
-            Action discardedValueHandler = () => { called = true; };
+            void DiscardValueHandler() => called = true;
 
-            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
+            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, DiscardValueHandler);
 
             queueHandler.SetQueueSize(10, true, DiagnosticsMasks.All);
 
@@ -1070,7 +960,9 @@ namespace Technosoftware.UaServer.Tests
 
             for (int i = 0; i < 5; i++)
             {
-                bool status = queueHandler.PublishSingleValue(out DataValue result, out ServiceResult resultError);
+                bool status = queueHandler.PublishSingleValue(
+                    out DataValue result,
+                    out ServiceResult resultError);
 
                 Assert.That(status, Is.True);
                 Assert.That(result, Is.EqualTo(dataValue));
@@ -1078,7 +970,9 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(0));
 
-            bool status2 = queueHandler.PublishSingleValue(out DataValue result2, out ServiceResult resultError2);
+            bool status2 = queueHandler.PublishSingleValue(
+                out DataValue result2,
+                out ServiceResult resultError2);
 
             Assert.That(status2, Is.False);
             Assert.That(result2, Is.Null);
@@ -1090,9 +984,9 @@ namespace Technosoftware.UaServer.Tests
         public void DataValueDecreaseQueueSizeDiscardsOldest()
         {
             bool called = false;
-            Action discardedValueHandler = () => { called = true; };
+            void DiscardValueHandler() => called = true;
 
-            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
+            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, DiscardValueHandler);
 
             queueHandler.SetQueueSize(10, true, DiagnosticsMasks.All);
 
@@ -1123,7 +1017,9 @@ namespace Technosoftware.UaServer.Tests
 
             for (int i = 0; i < 5; i++)
             {
-                bool status = queueHandler.PublishSingleValue(out DataValue result, out ServiceResult resultError);
+                bool status = queueHandler.PublishSingleValue(
+                    out DataValue result,
+                    out ServiceResult resultError);
 
                 Assert.That(status, Is.True);
                 Assert.That(result, Is.EqualTo(dataValue2));
@@ -1132,7 +1028,9 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(0));
 
-            bool status2 = queueHandler.PublishSingleValue(out DataValue result2, out ServiceResult resultError2);
+            bool status2 = queueHandler.PublishSingleValue(
+                out DataValue result2,
+                out ServiceResult resultError2);
 
             Assert.That(status2, Is.False);
             Assert.That(result2, Is.Null);
@@ -1144,15 +1042,18 @@ namespace Technosoftware.UaServer.Tests
         public void DataValueInitialDataOverWritesLastValue()
         {
             bool called = false;
-            Action discardedValueHandler = () => { called = true; };
+            void DiscardValueHandler() => called = true;
 
-            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, discardedValueHandler);
+            var queueHandler = new DataChangeQueueHandler(1, false, m_factory, DiscardValueHandler);
 
             queueHandler.SetQueueSize(10, true, DiagnosticsMasks.All);
 
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(0));
 
-            var dataValue = new DataValue(new Variant(true)) { StatusCode = StatusCodes.BadWaitingForInitialData };
+            var dataValue = new DataValue(new Variant(true))
+            {
+                StatusCode = StatusCodes.BadWaitingForInitialData
+            };
 
             for (int i = 0; i < 5; i++)
             {
@@ -1168,23 +1069,26 @@ namespace Technosoftware.UaServer.Tests
 
             Assert.That(called, Is.False);
 
-            bool status = queueHandler.PublishSingleValue(out DataValue result, out ServiceResult resultError);
+            bool status = queueHandler.PublishSingleValue(
+                out DataValue result,
+                out ServiceResult resultError);
 
             Assert.That(status, Is.True);
             Assert.That(result, Is.EqualTo(dataValue2));
         }
-        #endregion
 
         [Test]
         public void FactorySupportsDurable()
         {
             if (m_factory.SupportsDurableQueues)
             {
-                var dataChangeQueue = m_factory.CreateDataChangeQueue(true, 1);
+                IUaDataChangeMonitoredItemQueue dataChangeQueue = m_factory.CreateDataChangeQueue(
+                    true,
+                    1);
 
                 Assert.That(dataChangeQueue.IsDurable, Is.True);
 
-                var eventQueue = m_factory.CreateEventQueue(true, 1);
+                IUaEventMonitoredItemQueue eventQueue = m_factory.CreateEventQueue(true, 1);
 
                 Assert.That(eventQueue.IsDurable, Is.True);
             }
@@ -1195,7 +1099,6 @@ namespace Technosoftware.UaServer.Tests
             }
         }
 
-        #region MonitoredItemDurable
         [Test]
         public void CreateDurableMI()
         {
@@ -1222,7 +1125,9 @@ namespace Technosoftware.UaServer.Tests
                 MonitoredItemNotification publishResult = result.FirstOrDefault();
                 Assert.That(publishResult?.Value, Is.EqualTo(dataValue));
                 DiagnosticInfo publishErrorResult = result2.FirstOrDefault();
-                Assert.That(publishErrorResult.InnerStatusCode, Is.EqualTo((StatusCode)StatusCodes.Good));
+                Assert.That(
+                    publishErrorResult.InnerStatusCode,
+                    Is.EqualTo((StatusCode)StatusCodes.Good));
             }
             else
             {
@@ -1253,7 +1158,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(monitoredItem.ItemsInQueue, Is.EqualTo(0));
             EventFieldList publishResult = result.FirstOrDefault();
             Assert.That(publishResult, Is.Not.Null);
-            Assert.That(publishResult.Handle, Is.AssignableTo(typeof(AuditUrlMismatchEventState)));
+            Assert.That(publishResult.Handle, Is.AssignableTo<AuditUrlMismatchEventState>());
         }
 
         [Test]
@@ -1281,7 +1186,9 @@ namespace Technosoftware.UaServer.Tests
             MonitoredItemNotification publishResult = result.FirstOrDefault();
             Assert.That(publishResult?.Value, Is.EqualTo(dataValue));
             DiagnosticInfo publishErrorResult = result2.FirstOrDefault();
-            Assert.That(publishErrorResult.InnerStatusCode, Is.EqualTo((StatusCode)StatusCodes.Good));
+            Assert.That(
+                publishErrorResult.InnerStatusCode,
+                Is.EqualTo((StatusCode)StatusCodes.Good));
         }
 
         [Test]
@@ -1311,51 +1218,56 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(result, Is.Not.Empty);
             EventFieldList publishResult = result.LastOrDefault();
             Assert.That(publishResult, Is.Not.Null);
-            Assert.That(publishResult.Handle, Is.AssignableTo(typeof(EventQueueOverflowEventState)));
+            Assert.That(publishResult.Handle, Is.AssignableTo<EventQueueOverflowEventState>());
         }
 
         [Test]
-        public void DurableEventQueueVerifyReferenceBatching()
+        public async Task DurableEventQueueVerifyReferenceBatchingAsync()
         {
             if (!m_factory.SupportsDurableQueues)
             {
                 Assert.Ignore("Test only works with durable queues");
             }
 
-            var queue = m_factory.CreateEventQueue(true, 0);
+            IUaEventMonitoredItemQueue queue = m_factory.CreateEventQueue(true, 0);
 
             queue.SetQueueSize(3000, false);
 
             for (uint i = 0; i < 3000; i++)
             {
-                queue.Enqueue(new EventFieldList() { ClientHandle = i });
+                queue.Enqueue(new EventFieldList { ClientHandle = i });
             }
 
             // wait for persisting to take place
-            Task.Delay(1000).Wait();
+            await Task.Delay(1000).ConfigureAwait(false);
 
             for (uint i = 0; i < 3000; i++)
             {
-                Assert.That(queue.Dequeue(out var value), string.Format("Dequeue operation failed for the {0}st item", i));
+                Assert.That(
+                    queue.Dequeue(out EventFieldList value),
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Dequeue operation failed for the {0}st item",
+                        i));
                 Assert.That(i, Is.EqualTo(value.ClientHandle));
 
                 //simulate publishing operation
                 if (i % 501 == 0)
                 {
-                    Task.Delay(600).Wait();
+                    await Task.Delay(1200).ConfigureAwait(false);
                 }
             }
         }
 
         [Test]
-        public void DurableDataValueQueueVerifyReferenceBatching()
+        public async Task DurableDataValueQueueVerifyReferenceBatchingAsync()
         {
             if (!m_factory.SupportsDurableQueues)
             {
                 Assert.Ignore("Test only works with durable queues");
             }
 
-            var queue = m_factory.CreateDataChangeQueue(true, 0);
+            IUaDataChangeMonitoredItemQueue queue = m_factory.CreateDataChangeQueue(true, 0);
 
             queue.ResetQueue(3000, false);
 
@@ -1365,23 +1277,26 @@ namespace Technosoftware.UaServer.Tests
             }
 
             // wait for persisting to take place
-            Task.Delay(1000).Wait();
+            await Task.Delay(1000).ConfigureAwait(false);
 
             for (uint i = 0; i < 3000; i++)
             {
-                Assert.That(queue.Dequeue(out var value, out var _), string.Format("Dequeue operation failed for the {0}st item", i));
+                Assert.That(
+                    queue.Dequeue(out DataValue value, out ServiceResult _),
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Dequeue operation failed for the {0}st item",
+                        i));
                 Assert.That(i, Is.EqualTo((uint)value.Value));
 
                 //simulate publishing operation
                 if (i % 501 == 0)
                 {
-                    Task.Delay(600).Wait();
+                    await Task.Delay(1200).ConfigureAwait(false);
                 }
             }
         }
-        #endregion
 
-        #region private methods
         private UaMonitoredItem CreateDurableMonitoredItem(bool events = false, uint queueSize = 10)
         {
             MonitoringFilter filter = events ? new EventFilter() : new MonitoringFilter();
@@ -1391,7 +1306,7 @@ namespace Technosoftware.UaServer.Tests
             serverMock.Setup(s => s.NamespaceUris).Returns(new NamespaceTable());
             serverMock.Setup(s => s.TypeTree).Returns(new TypeTable(new NamespaceTable()));
 
-            var nodeMangerMock = new Mock<IUaStandardNodeManager>();
+            var nodeMangerMock = new Mock<IUaNodeManager>();
 
             return new UaMonitoredItem(
                 serverMock.Object,
@@ -1411,9 +1326,7 @@ namespace Technosoftware.UaServer.Tests
                 queueSize,
                 false,
                 1000,
-                true
-                );
+                true);
         }
-        #endregion
     }
 }

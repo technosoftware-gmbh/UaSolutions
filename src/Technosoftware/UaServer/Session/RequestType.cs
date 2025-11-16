@@ -14,12 +14,10 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
-#endregion
-
 using Opc.Ua;
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Sessions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// The set of all service request types (used for collecting diagnostics and checking permissions).
@@ -29,108 +27,176 @@ namespace Technosoftware.UaServer.Sessions
         /// <summary>
         /// The request type is not known.
         /// </summary>
-		Unknown,
+        Unknown,
 
+        /// <summary>
         /// <see cref="IDiscoveryServer.FindServers" />
-		FindServers,
+        /// </summary>
+        FindServers,
 
+        /// <summary>
         /// <see cref="IDiscoveryServer.GetEndpoints" />
-		GetEndpoints,
+        /// </summary>
+        GetEndpoints,
 
+        /// <summary>
         /// <see cref="ISessionServer.CreateSession" />
-		CreateSession,
+        /// </summary>
+        CreateSession,
 
+        /// <summary>
         /// <see cref="ISessionServer.ActivateSession" />
-		ActivateSession,
+        /// </summary>
+        ActivateSession,
 
+        /// <summary>
         /// <see cref="ISessionServer.CloseSession" />
-		CloseSession,
+        /// </summary>
+        CloseSession,
 
+        /// <summary>
         /// <see cref="ISessionServer.Cancel" />
-		Cancel,
+        /// </summary>
+        Cancel,
 
+        /// <summary>
         /// <see cref="ISessionServer.Read" />
-		Read,
+        /// </summary>
+        Read,
 
+        /// <summary>
         /// <see cref="ISessionServer.HistoryRead" />
-		HistoryRead,
+        /// </summary>
+        HistoryRead,
 
+        /// <summary>
         /// <see cref="ISessionServer.Write" />
-		Write,
+        /// </summary>
+        Write,
 
+        /// <summary>
         /// <see cref="ISessionServer.HistoryUpdate" />
-		HistoryUpdate,
+        /// </summary>
+        HistoryUpdate,
 
+        /// <summary>
         /// <see cref="ISessionServer.Call" />
-		Call,
+        /// </summary>
+        Call,
 
+        /// <summary>
         /// <see cref="ISessionServer.CreateMonitoredItems" />
-		CreateMonitoredItems,
+        /// </summary>
+        CreateMonitoredItems,
 
+        /// <summary>
         /// <see cref="ISessionServer.ModifyMonitoredItems" />
-		ModifyMonitoredItems,
+        /// </summary>
+        ModifyMonitoredItems,
 
+        /// <summary>
         /// <see cref="ISessionServer.SetMonitoringMode" />
-		SetMonitoringMode,
+        /// </summary>
+        SetMonitoringMode,
 
+        /// <summary>
         /// <see cref="ISessionServer.SetTriggering" />
-		SetTriggering,
+        /// </summary>
+        SetTriggering,
 
+        /// <summary>
         /// <see cref="ISessionServer.DeleteMonitoredItems" />
-		DeleteMonitoredItems,
+        /// </summary>
+        DeleteMonitoredItems,
 
+        /// <summary>
         /// <see cref="ISessionServer.CreateSubscription" />
-		CreateSubscription,
+        /// </summary>
+        CreateSubscription,
 
+        /// <summary>
         /// <see cref="ISessionServer.ModifySubscription" />
-		ModifySubscription,
+        /// </summary>
+        ModifySubscription,
 
+        /// <summary>
         /// <see cref="ISessionServer.SetPublishingMode" />
-		SetPublishingMode,
+        /// </summary>
+        SetPublishingMode,
 
+        /// <summary>
         /// <see cref="ISessionServer.Publish" />
-		Publish,
+        /// </summary>
+        Publish,
 
+        /// <summary>
         /// <see cref="ISessionServer.Republish" />
-		Republish,
+        /// </summary>
+        Republish,
 
+        /// <summary>
         /// <see cref="ISessionServer.TransferSubscriptions" />
-		TransferSubscriptions,
+        /// </summary>
+        TransferSubscriptions,
 
+        /// <summary>
         /// <see cref="ISessionServer.DeleteSubscriptions" />
-		DeleteSubscriptions,
+        /// </summary>
+        DeleteSubscriptions,
 
+        /// <summary>
         /// <see cref="ISessionServer.AddNodes" />
-		AddNodes,
+        /// </summary>
+        AddNodes,
 
+        /// <summary>
         /// <see cref="ISessionServer.AddReferences" />
-		AddReferences,
+        /// </summary>
+        AddReferences,
 
+        /// <summary>
         /// <see cref="ISessionServer.DeleteNodes" />
-		DeleteNodes,
+        /// </summary>
+        DeleteNodes,
 
+        /// <summary>
         /// <see cref="ISessionServer.DeleteReferences" />
-		DeleteReferences,
+        /// </summary>
+        DeleteReferences,
 
+        /// <summary>
         /// <see cref="ISessionServer.Browse" />
-		Browse,
+        /// </summary>
+        Browse,
 
+        /// <summary>
         /// <see cref="ISessionServer.BrowseNext" />
-		BrowseNext,
+        /// </summary>
+        BrowseNext,
 
+        /// <summary>
         /// <see cref="ISessionServer.TranslateBrowsePathsToNodeIds" />
-		TranslateBrowsePathsToNodeIds,
+        /// </summary>
+        TranslateBrowsePathsToNodeIds,
 
+        /// <summary>
         /// <see cref="ISessionServer.QueryFirst" />
-		QueryFirst,
+        /// </summary>
+        QueryFirst,
 
+        /// <summary>
         /// <see cref="ISessionServer.QueryNext" />
-		QueryNext,
+        /// </summary>
+        QueryNext,
 
+        /// <summary>
         /// <see cref="ISessionServer.RegisterNodes" />
-		RegisterNodes,
+        /// </summary>
+        RegisterNodes,
 
+        /// <summary>
         /// <see cref="ISessionServer.UnregisterNodes" />
-		UnregisterNodes
+        /// </summary>
+        UnregisterNodes
     }
 }

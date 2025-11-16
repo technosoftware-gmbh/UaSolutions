@@ -15,11 +15,10 @@
 
 #region Using Directives
 using System;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Used to create <see cref="IUaDataChangeMonitoredItemQueue"/> / <see cref="IUaEventMonitoredItemQueue"/> and dispose unmanaged resources on server shutdown

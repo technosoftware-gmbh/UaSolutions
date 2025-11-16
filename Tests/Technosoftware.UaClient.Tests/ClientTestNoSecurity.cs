@@ -1,21 +1,35 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using System.Threading.Tasks;
-
 using NUnit.Framework;
-
 using Opc.Ua;
-#endregion
 
 namespace Technosoftware.UaClient.Tests
 {
@@ -23,16 +37,18 @@ namespace Technosoftware.UaClient.Tests
     /// Client tests which require security None and are otherwise skipped,
     /// starts the server with additional security None profile.
     /// </summary>
-    [TestFixture, Category("Client")]
-    [SetCulture("en-us"), SetUICulture("en-us")]
+    [TestFixture]
+    [Category("Client")]
+    [SetCulture("en-us")]
+    [SetUICulture("en-us")]
     [TestFixtureSource(nameof(FixtureArgs))]
-
     public class ClientTestNoSecurity
     {
-        private ClientTest _clientTest { get; set; }
+        private readonly ClientTest m_clientTest;
 
-        public static readonly object[] FixtureArgs = [
-            new object [] { Utils.UriSchemeOpcTcp},
+        public static readonly object[] FixtureArgs =
+        [
+            new object[] { Utils.UriSchemeOpcTcp }
             // https protocol security None is not supported
             // new object [] { Utils.UriSchemeHttps},
             // new object [] { Utils.UriSchemeOpcHttps},
@@ -40,23 +56,22 @@ namespace Technosoftware.UaClient.Tests
 
         public ClientTestNoSecurity()
         {
-            _clientTest = new ClientTest(Utils.UriSchemeOpcTcp);
+            m_clientTest = new ClientTest(Utils.UriSchemeOpcTcp);
         }
 
         public ClientTestNoSecurity(string uriScheme)
         {
-            _clientTest = new ClientTest(uriScheme);
+            m_clientTest = new ClientTest(uriScheme);
         }
 
-        #region Test Setup
         /// <summary>
         /// Set up a Server and a Client instance.
         /// </summary>
         [OneTimeSetUp]
-        public Task OneTimeSetUp()
+        public Task OneTimeSetUpAsync()
         {
-            _clientTest.SupportsExternalServerUrl = true;
-            return _clientTest.OneTimeSetUpAsync(null, true);
+            m_clientTest.SupportsExternalServerUrl = true;
+            return m_clientTest.OneTimeSetUpAsync(null, true);
         }
 
         /// <summary>
@@ -65,73 +80,80 @@ namespace Technosoftware.UaClient.Tests
         [OneTimeTearDown]
         public Task OneTimeTearDownAsync()
         {
-            return _clientTest.OneTimeTearDownAsync();
+            return m_clientTest.OneTimeTearDownAsync();
         }
 
         /// <summary>
         /// Test setup.
         /// </summary>
         [SetUp]
-        public Task SetUp()
+        public Task SetUpAsync()
         {
-            return _clientTest.SetUp();
+            return m_clientTest.SetUpAsync();
         }
 
         /// <summary>
         /// Test teardown.
         /// </summary>
         [TearDown]
-        public Task TearDown()
+        public Task TearDownAsync()
         {
-            return _clientTest.TearDown();
+            return m_clientTest.TearDownAsync();
         }
-        #endregion
 
         /// <summary>
         /// GetEndpoints on the discovery channel,
         /// the oversized message can pass because security None is enabled.
         /// </summary>
-        [Test, Order(105)]
-        public void GetEndpointsOnDiscoveryChannel()
+        [Test]
+        [Order(105)]
+        public Task GetEndpointsOnDiscoveryChannelAsync()
         {
-            _clientTest.GetEndpointsOnDiscoveryChannel(true);
+            return m_clientTest.GetEndpointsOnDiscoveryChannelAsync(true);
         }
 
-        [Test, Order(230)]
-        public Task ReconnectJWTSecurityNone()
+        [Test]
+        [Order(230)]
+        public Task ReconnectJWTSecurityNoneAsync()
         {
-            return _clientTest.ReconnectJWT(SecurityPolicies.None);
+            return m_clientTest.ReconnectJWTAsync(SecurityPolicies.None);
         }
 
-        [Test, Order(220)]
-        public Task ConnectJWT()
+        [Test]
+        [Order(220)]
+        public Task ConnectJWTAsync()
         {
-            return _clientTest.ConnectJWT(SecurityPolicies.None);
+            return m_clientTest.ConnectJWTAsync(SecurityPolicies.None);
         }
 
         /// <summary>
         /// Open a session on a channel, then reconnect (activate)
         /// the same session on a new channel with saved session secrets
         /// </summary>
-        [Test, Order(260)]
-        [TestCase(true, false)]
-        [TestCase(false, false)]
-        [TestCase(false, true)]
-        public Task ReconnectSessionOnAlternateChannelWithSavedSessionSecretsSecurityNone(bool anonymous, bool asyncReconnect)
+        [Test]
+        [Order(260)]
+        [TestCase(true)]
+        [TestCase(false)]
+        public Task ReconnectSessionOnAlternateChannelWithSavedSessionSecretsSecurityNoneAsync(
+            bool anonymous)
         {
-            return _clientTest.ReconnectSessionOnAlternateChannelWithSavedSessionSecrets(SecurityPolicies.None, anonymous, asyncReconnect);
+            return m_clientTest.ReconnectSessionOnAlternateChannelWithSavedSessionSecretsAsync(
+                SecurityPolicies.None,
+                anonymous);
         }
 
-        [Theory, Order(400)]
-        public Task BrowseFullAddressSpaceSecurityNone(bool operationLimits)
+        [Theory]
+        [Order(400)]
+        public Task BrowseFullAddressSpaceSecurityNoneAsync(bool operationLimits)
         {
-            return _clientTest.BrowseFullAddressSpace(SecurityPolicies.None, operationLimits);
+            return m_clientTest.BrowseFullAddressSpaceAsync(SecurityPolicies.None, operationLimits);
         }
 
-        [Test, Order(201)]
-        public Task ConnectAndCloseAsyncNoSecurity()
+        [Test]
+        [Order(201)]
+        public Task ConnectAndCloseAsyncNoSecurityAsync()
         {
-            return _clientTest.ConnectAndCloseAsync(SecurityPolicies.None);
+            return m_clientTest.ConnectAndCloseAsync(SecurityPolicies.None);
         }
     }
 }

@@ -15,11 +15,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-
 using Opc.Ua;
-
+using SampleCompany.NodeManagers.Reference;
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Sessions;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers
@@ -27,39 +25,43 @@ namespace SampleCompany.NodeManagers
     /// <summary>
     /// Helpers to find node managers implemented in this library.
     /// </summary>
-
     public static class NodeManagerUtils
     {
         /// <summary>
-        /// Applies custom settings to quickstart servers for CTT run.
+        /// Applies custom settings to reference servers for CTT run.
         /// </summary>
-        /// <param name="server"></param>
         public static void ApplyCTTMode(TextWriter output, UaStandardServer server)
         {
             var methodsToCall = new CallMethodRequestCollection();
-            var index = server.CurrentInstance.NamespaceUris.GetIndex(Alarms.Namespaces.Alarms);
+            int index = server.CurrentInstance.NamespaceUris.GetIndex(Alarms.Namespaces.Alarms);
             if (index > 0)
             {
                 try
                 {
                     methodsToCall.Add(
                         // Start the Alarms with infinite runtime
-                        new CallMethodRequest {
+                        new CallMethodRequest
+                        {
                             MethodId = new NodeId("Alarms.Start", (ushort)index),
                             ObjectId = new NodeId("Alarms", (ushort)index),
-                            InputArguments = new VariantCollection() { new Variant(uint.MaxValue) }
+                            InputArguments = [new Variant(uint.MaxValue)]
                         });
-                    var requestHeader = new RequestHeader() {
+                    var requestHeader = new RequestHeader
+                    {
                         Timestamp = DateTime.UtcNow,
                         TimeoutHint = 10000
                     };
                     var context = new UaServerOperationContext(requestHeader, RequestType.Call);
-                    server.CurrentInstance.NodeManager.Call(context, methodsToCall, out CallMethodResultCollection results, out DiagnosticInfoCollection diagnosticInfos);
+                    server.CurrentInstance.NodeManager.Call(
+                        context,
+                        methodsToCall,
+                        out CallMethodResultCollection results,
+                        out DiagnosticInfoCollection diagnosticInfos);
                     foreach (CallMethodResult result in results)
                     {
                         if (ServiceResult.IsBad(result.StatusCode))
                         {
-                            Utils.LogError("Error calling method {0}.", result.StatusCode);
+                            Opc.Ua.Utils.LogError("Error calling method {0}.", result.StatusCode);
                         }
                     }
                     output.WriteLine("The Alarms for CTT mode are active.");
@@ -67,10 +69,11 @@ namespace SampleCompany.NodeManagers
                 }
                 catch (Exception ex)
                 {
-                    Utils.LogError(ex, "Failed to start alarms for CTT.");
+                    Opc.Ua.Utils.LogError(ex, "Failed to start alarms for CTT.");
                 }
             }
-            output.WriteLine("The alarms could not be enabled for CTT, the namespace does not exist.");
+            output.WriteLine(
+                "The alarms could not be enabled for CTT, the namespace does not exist.");
         }
 
         /// <summary>
@@ -85,17 +88,23 @@ namespace SampleCompany.NodeManagers
         }
 
         /// <summary>
+        /// Add all available node manager factories to the server.
+        /// </summary>
+        public static void UseSamplingGroupsInReferenceNodeManager(
+            ReferenceServer server)
+        {
+            server.UseSamplingGroupsInReferenceNodeManager = true;
+        }
+
+        /// <summary>
         /// The property with available node manager factories.
         /// </summary>
         public static ReadOnlyList<IUaNodeManagerFactory> NodeManagerFactories
         {
             get
             {
-                if (m_nodeManagerFactories == null)
-                {
-                    m_nodeManagerFactories = GetNodeManagerFactories();
-                }
-                return new ReadOnlyList<IUaNodeManagerFactory>(m_nodeManagerFactories);
+                s_nodeManagerFactories ??= GetNodeManagerFactories();
+                return new ReadOnlyList<IUaNodeManagerFactory>(s_nodeManagerFactories);
             }
         }
 
@@ -116,16 +125,18 @@ namespace SampleCompany.NodeManagers
         /// <summary>
         /// Enumerates all node manager factories.
         /// </summary>
-        /// <returns></returns>
-        private static IList<IUaNodeManagerFactory> GetNodeManagerFactories()
+        private static List<IUaNodeManagerFactory> GetNodeManagerFactories()
         {
             Assembly assembly = typeof(NodeManagerUtils).Assembly;
-            IEnumerable<IUaNodeManagerFactory> nodeManagerFactories = assembly.GetExportedTypes().Select(type => IsINodeManagerFactoryType(type)).Where(type => type != null);
-            return nodeManagerFactories.ToList();
+            IEnumerable<IUaNodeManagerFactory> nodeManagerFactories = assembly
+                .GetExportedTypes()
+                .Select(IsINodeManagerFactoryType)
+                .Where(type => type != null);
+            return [.. nodeManagerFactories];
         }
 
         #region Private Fields
-        private static IList<IUaNodeManagerFactory> m_nodeManagerFactories;
+        private static IList<IUaNodeManagerFactory> s_nodeManagerFactories;
         #endregion Private Fields
     }
 }

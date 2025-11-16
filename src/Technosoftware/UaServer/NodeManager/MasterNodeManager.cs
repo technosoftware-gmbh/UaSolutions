@@ -19,23 +19,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-
+using System.Threading.Tasks;
 using Opc.Ua;
+#endregion Using Directives
 
-using Technosoftware.UaServer.Configuration;
-using Technosoftware.UaServer.Diagnostics;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
-
-namespace Technosoftware.UaServer.NodeManager
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// The master node manager for the server.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public class MasterNodeManager : IDisposable
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initializes the object with default values.
         /// </summary>
@@ -45,17 +39,18 @@ namespace Technosoftware.UaServer.NodeManager
             string dynamicNamespaceUri,
             params IUaNodeManager[] additionalManagers)
         {
-            if (server == null)
-                throw new ArgumentNullException(nameof(server));
             if (configuration == null)
+            {
                 throw new ArgumentNullException(nameof(configuration));
+            }
 
-            m_server = server;
+            Server = server ?? throw new ArgumentNullException(nameof(server));
             m_nodeManagers = [];
-            m_maxContinuationPointsPerBrowse = (uint)configuration.ServerConfiguration.MaxBrowseContinuationPoints;
+            m_maxContinuationPointsPerBrowse = (uint)configuration.ServerConfiguration
+                .MaxBrowseContinuationPoints;
 
             // ensure the dynamic namespace uris.
-            var dynamicNamespaceIndex = 1;
+            int dynamicNamespaceIndex = 1;
 
             if (!string.IsNullOrEmpty(dynamicNamespaceUri))
             {
@@ -68,20 +63,26 @@ namespace Technosoftware.UaServer.NodeManager
             }
 
             // need to build a table of NamespaceIndexes and their NodeManagers.
-            List<IUaNodeManager> registeredManagers = null;
-            Dictionary<int, List<IUaNodeManager>> namespaceManagers = new Dictionary<int, List<IUaNodeManager>>
+            List<IUaNodeManager> registeredManagers;
+            var namespaceManagers = new Dictionary<int, List<IUaNodeManager>>
             {
-                [0] = registeredManagers = [],
+                [0] = [],
                 [1] = registeredManagers = []
             };
 
             // always add the diagnostics and configuration node manager to the start of the list.
-            ConfigurationNodeManager configurationAndDiagnosticsManager = new ConfigurationNodeManager(server, configuration);
-            RegisterNodeManager(configurationAndDiagnosticsManager, registeredManagers, namespaceManagers);
+            var configurationAndDiagnosticsManager = new ConfigurationNodeManager(
+                server,
+                configuration);
+            RegisterNodeManager(
+                configurationAndDiagnosticsManager,
+                registeredManagers,
+                namespaceManagers);
 
             // add the core node manager second because the diagnostics node manager takes priority.
             // always add the core node manager to the second of the list.
-            m_nodeManagers.Add(new CoreNodeManager(m_server, configuration, (ushort)dynamicNamespaceIndex));
+            m_nodeManagers.Add(
+                new CoreNodeManager(Server, configuration, (ushort)dynamicNamespaceIndex));
 
             // register core node manager for default UA namespace.
             namespaceManagers[0].Add(m_nodeManagers[1]);
@@ -98,13 +99,13 @@ namespace Technosoftware.UaServer.NodeManager
                 }
 
                 // build table from dictionary.
-                m_namespaceManagers = new IUaNodeManager[m_server.NamespaceUris.Count][];
+                NamespaceManagers = new IUaNodeManager[Server.NamespaceUris.Count][];
 
-                for (int ii = 0; ii < m_namespaceManagers.Length; ii++)
+                for (int ii = 0; ii < NamespaceManagers.Length; ii++)
                 {
                     if (namespaceManagers.TryGetValue(ii, out registeredManagers))
                     {
-                        m_namespaceManagers[ii] = registeredManagers.ToArray();
+                        NamespaceManagers[ii] = [.. registeredManagers];
                     }
                 }
             }
@@ -120,17 +121,17 @@ namespace Technosoftware.UaServer.NodeManager
         {
             m_nodeManagers.Add(nodeManager);
 
-            // ensure the NamespaceUris supported by the NodeManager are in the Server's NamespaceTable.
+            // ensure the NamespaceUris supported by the NodeManager are in the ServerData's NamespaceTable.
             if (nodeManager.NamespaceUris != null)
             {
                 foreach (string namespaceUri in nodeManager.NamespaceUris)
                 {
                     // look up the namespace uri.
-                    int index = m_server.NamespaceUris.GetIndex(namespaceUri);
+                    int index = Server.NamespaceUris.GetIndex(namespaceUri);
 
                     if (index == -1)
                     {
-                        index = m_server.NamespaceUris.Append(namespaceUri);
+                        index = Server.NamespaceUris.Append(namespaceUri);
                     }
 
                     // add manager to list for the namespace.
@@ -143,15 +144,14 @@ namespace Technosoftware.UaServer.NodeManager
                 }
             }
         }
-        #endregion
 
-        #region IDisposable Members
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Technosoftware.UaServer.NodeManager
 
                 lock (m_lock)
                 {
-                    nodeManagers = new List<IUaNodeManager>(m_nodeManagers);
+                    nodeManagers = [.. m_nodeManagers];
                     m_nodeManagers.Clear();
                 }
 
@@ -175,9 +175,7 @@ namespace Technosoftware.UaServer.NodeManager
                 }
             }
         }
-        #endregion
 
-        #region Static Methods
         /// <summary>
         /// Adds a reference to the table of external references.
         /// </summary>
@@ -191,15 +189,14 @@ namespace Technosoftware.UaServer.NodeManager
             bool isInverse,
             NodeId targetId)
         {
-            ReferenceNode reference = new ReferenceNode();
+            var reference = new ReferenceNode
+            {
+                ReferenceTypeId = referenceTypeId,
+                IsInverse = isInverse,
+                TargetId = targetId
+            };
 
-            reference.ReferenceTypeId = referenceTypeId;
-            reference.IsInverse = isInverse;
-            reference.TargetId = targetId;
-
-            IList<IReference> references = null;
-
-            if (!externalReferences.TryGetValue(sourceId, out references))
+            if (!externalReferences.TryGetValue(sourceId, out IList<IReference> references))
             {
                 externalReferences[sourceId] = references = [];
             }
@@ -212,23 +209,24 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         /// <param name="historyUpdateDetails">The HistoryUpdateDetails passed in</param>
         /// <returns>The corresponding history access permission</returns>
-        protected static PermissionType DetermineHistoryAccessPermission(HistoryUpdateDetails historyUpdateDetails)
+        protected static PermissionType DetermineHistoryAccessPermission(
+            HistoryUpdateDetails historyUpdateDetails)
         {
             Type detailsType = historyUpdateDetails.GetType();
 
             if (detailsType == typeof(UpdateDataDetails))
             {
-                UpdateDataDetails updateDataDetails = (UpdateDataDetails)historyUpdateDetails;
+                var updateDataDetails = (UpdateDataDetails)historyUpdateDetails;
                 return GetHistoryPermissionType(updateDataDetails.PerformInsertReplace);
             }
             else if (detailsType == typeof(UpdateStructureDataDetails))
             {
-                UpdateStructureDataDetails updateStructureDataDetails = (UpdateStructureDataDetails)historyUpdateDetails;
+                var updateStructureDataDetails = (UpdateStructureDataDetails)historyUpdateDetails;
                 return GetHistoryPermissionType(updateStructureDataDetails.PerformInsertReplace);
             }
             else if (detailsType == typeof(UpdateEventDetails))
             {
-                UpdateEventDetails updateEventDetails = (UpdateEventDetails)historyUpdateDetails;
+                var updateEventDetails = (UpdateEventDetails)historyUpdateDetails;
                 return GetHistoryPermissionType(updateEventDetails.PerformInsertReplace);
             }
             else if (detailsType == typeof(DeleteRawModifiedDetails) ||
@@ -242,9 +240,8 @@ namespace Technosoftware.UaServer.NodeManager
         }
 
         /// <summary>
-        ///  Determine the History PermissionType depending on PerformUpdateType 
+        ///  Determine the History PermissionType depending on PerformUpdateType
         /// </summary>
-        /// <param name="updateType"></param>
         /// <returns>The corresponding PermissionType</returns>
         protected static PermissionType GetHistoryPermissionType(PerformUpdateType updateType)
         {
@@ -258,41 +255,23 @@ namespace Technosoftware.UaServer.NodeManager
                     return PermissionType.ModifyHistory;
             }
         }
-        #endregion
 
-        #region Public Interface
         /// <summary>
         /// Returns the core node manager.
         /// </summary>
-        public CoreNodeManager CoreNodeManager
-        {
-            get
-            {
-                return m_nodeManagers[1] as CoreNodeManager;
-            }
-        }
+        public CoreNodeManager CoreNodeManager => m_nodeManagers[1] as CoreNodeManager;
 
         /// <summary>
         /// Returns the diagnostics node manager.
         /// </summary>
         public DiagnosticsNodeManager DiagnosticsNodeManager
-        {
-            get
-            {
-                return m_nodeManagers[0] as DiagnosticsNodeManager;
-            }
-        }
+            => m_nodeManagers[0] as DiagnosticsNodeManager;
 
         /// <summary>
         /// Returns the configuration node manager.
         /// </summary>
         public ConfigurationNodeManager ConfigurationNodeManager
-        {
-            get
-            {
-                return m_nodeManagers[0] as ConfigurationNodeManager;
-            }
-        }
+            => m_nodeManagers[0] as ConfigurationNodeManager;
 
         /// <summary>
         /// Creates the node managers and start them
@@ -307,7 +286,7 @@ namespace Technosoftware.UaServer.NodeManager
                     m_nodeManagers.Count);
 
                 // create the address spaces.
-                Dictionary<NodeId, IList<IReference>> externalReferences = [];
+                var externalReferences = new Dictionary<NodeId, IList<IReference>>();
 
                 for (int ii = 0; ii < m_nodeManagers.Count; ii++)
                 {
@@ -319,7 +298,10 @@ namespace Technosoftware.UaServer.NodeManager
                     }
                     catch (Exception e)
                     {
-                        Utils.LogError(e, "Unexpected error creating address space for NodeManager #{0}.", ii);
+                        Utils.LogError(
+                            e,
+                            "Unexpected error creating address space for NodeManager #{0}.",
+                            ii);
                         throw;
                     }
                 }
@@ -335,7 +317,10 @@ namespace Technosoftware.UaServer.NodeManager
                     }
                     catch (Exception e)
                     {
-                        Utils.LogError(e, "Unexpected error adding references for NodeManager #{0}.", ii);
+                        Utils.LogError(
+                            e,
+                            "Unexpected error adding references for NodeManager #{0}.",
+                            ii);
                         throw;
                     }
                 }
@@ -345,15 +330,16 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Signals that a session is closing.
         /// </summary>
-        public virtual void SessionClosing(UaServerOperationContext context, NodeId sessionId, bool deleteSubscriptions)
+        public virtual void SessionClosing(
+            UaServerOperationContext context,
+            NodeId sessionId,
+            bool deleteSubscriptions)
         {
             lock (m_lock)
             {
                 for (int ii = 0; ii < m_nodeManagers.Count; ii++)
                 {
-                    var nodeManager = m_nodeManagers[ii] as IUaStandardNodeManager;
-
-                    if (nodeManager != null)
+                    if (m_nodeManagers[ii] is IUaStandardNodeManager nodeManager)
                     {
                         try
                         {
@@ -361,7 +347,10 @@ namespace Technosoftware.UaServer.NodeManager
                         }
                         catch (Exception e)
                         {
-                            Utils.LogError(e, "Unexpected error closing session for NodeManager #{0}.", ii);
+                            Utils.LogError(
+                                e,
+                                "Unexpected error closing session for NodeManager #{0}.",
+                                ii);
                         }
                     }
                 }
@@ -393,29 +382,36 @@ namespace Technosoftware.UaServer.NodeManager
         /// <param name="namespaceUri">The URI of the namespace.</param>
         /// <param name="nodeManager">The NodeManager which owns node in the namespace.</param>
         /// <remarks>
-        /// Multiple NodeManagers may register interest in a Namespace. 
+        /// <para>
+        /// Multiple NodeManagers may register interest in a Namespace.
         /// The order in which this method is called determines the precedence if multiple NodeManagers exist.
-        /// This method adds the namespaceUri to the Server's Namespace table if it does not already exist.
-        /// 
-        /// This method is thread safe and can be called at anytime.
-        /// 
-        /// This method does not have to be called for any namespaces that were in the NodeManager's 
+        /// This method adds the namespaceUri to the ServerData's Namespace table if it does not already exist.
+        /// </para>
+        /// <para>This method is thread safe and can be called at anytime.</para>
+        /// <para>
+        /// This method does not have to be called for any namespaces that were in the NodeManager's
         /// NamespaceUri property when the MasterNodeManager was created.
+        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentNullException">Throw if the namespaceUri or the nodeManager are null.</exception>
         public void RegisterNamespaceManager(string namespaceUri, IUaNodeManager nodeManager)
         {
             if (string.IsNullOrEmpty(namespaceUri))
+            {
                 throw new ArgumentNullException(nameof(namespaceUri));
+            }
+
             if (nodeManager == null)
+            {
                 throw new ArgumentNullException(nameof(nodeManager));
+            }
 
             // look up the namespace uri.
-            int index = m_server.NamespaceUris.GetIndex(namespaceUri);
+            int index = Server.NamespaceUris.GetIndex(namespaceUri);
 
             if (index < 0)
             {
-                index = m_server.NamespaceUris.Append(namespaceUri);
+                index = Server.NamespaceUris.Append(namespaceUri);
             }
 
             // allocate a new table (using arrays instead of collections because lookup efficiency is critical).
@@ -425,11 +421,11 @@ namespace Technosoftware.UaServer.NodeManager
             try
             {
                 // copy existing values.
-                for (int ii = 0; ii < m_namespaceManagers.Length; ii++)
+                for (int ii = 0; ii < NamespaceManagers.Length; ii++)
                 {
-                    if (m_namespaceManagers.Length >= ii)
+                    if (NamespaceManagers.Length >= ii)
                     {
-                        namespaceManagers[ii] = m_namespaceManagers[ii];
+                        namespaceManagers[ii] = NamespaceManagers[ii];
                     }
                 }
 
@@ -443,16 +439,18 @@ namespace Technosoftware.UaServer.NodeManager
                 else
                 {
                     registeredManagers = new IUaNodeManager[registeredManagers.Length + 1];
-                    Array.Copy(namespaceManagers[index], registeredManagers, namespaceManagers[index].Length);
+                    Array.Copy(
+                        namespaceManagers[index],
+                        registeredManagers,
+                        namespaceManagers[index].Length);
                 }
 
                 // add new node manager to the end of the list.
-                registeredManagers[registeredManagers.Length - 1] = nodeManager;
+                registeredManagers[^1] = nodeManager;
                 namespaceManagers[index] = registeredManagers;
 
                 // replace the table.
-                m_namespaceManagers = namespaceManagers;
-
+                NamespaceManagers = namespaceManagers;
             }
             finally
             {
@@ -470,43 +468,49 @@ namespace Technosoftware.UaServer.NodeManager
         public bool UnregisterNamespaceManager(string namespaceUri, IUaNodeManager nodeManager)
         {
             if (string.IsNullOrEmpty(namespaceUri))
+            {
                 throw new ArgumentNullException(nameof(namespaceUri));
+            }
+
             if (nodeManager == null)
+            {
                 throw new ArgumentNullException(nameof(nodeManager));
+            }
 
             // look up the namespace uri.
-            int namespaceIndex = m_server.NamespaceUris.GetIndex(namespaceUri);
+            int namespaceIndex = Server.NamespaceUris.GetIndex(namespaceUri);
             if (namespaceIndex < 0)
             {
                 return false;
             }
 
             // look up the node manager in the registered node managers for the namespace.
-            int nodeManagerIndex = Array.IndexOf(m_namespaceManagers[namespaceIndex], nodeManager);
+            int nodeManagerIndex = Array.IndexOf(NamespaceManagers[namespaceIndex], nodeManager);
             if (nodeManagerIndex < 0)
             {
                 return false;
             }
 
             // allocate a new table (using arrays instead of collections because lookup efficiency is critical).
-            IUaNodeManager[][] namespaceManagers = new IUaNodeManager[Server.NamespaceUris.Count][];
+            var namespaceManagers = new IUaNodeManager[Server.NamespaceUris.Count][];
 
             m_readWriterLockSlim.EnterWriteLock();
             try
             {
                 // copy existing values.
-                for (int ii = 0; ii < m_namespaceManagers.Length; ii++)
+                for (int ii = 0; ii < NamespaceManagers.Length; ii++)
                 {
-                    if (m_namespaceManagers.Length >= ii)
+                    if (NamespaceManagers.Length >= ii)
                     {
-                        namespaceManagers[ii] = m_namespaceManagers[ii];
+                        namespaceManagers[ii] = NamespaceManagers[ii];
                     }
                 }
 
                 // allocate a new smaller array to support element removal for the index being updated.
-                IUaNodeManager[] registeredManagers = new IUaNodeManager[namespaceManagers[namespaceIndex].Length - 1];
+                var registeredManagers = new IUaNodeManager[namespaceManagers[namespaceIndex].Length -
+                    1];
 
-                // begin by populating the new array with existing elements up to the target index. 
+                // begin by populating the new array with existing elements up to the target index.
                 if (nodeManagerIndex > 0)
                 {
                     Array.Copy(
@@ -532,7 +536,7 @@ namespace Technosoftware.UaServer.NodeManager
                 namespaceManagers[namespaceIndex] = registeredManagers;
 
                 // replace the table.
-                m_namespaceManagers = namespaceManagers;
+                NamespaceManagers = namespaceManagers;
 
                 return true;
             }
@@ -563,7 +567,7 @@ namespace Technosoftware.UaServer.NodeManager
             try
             {
                 // check if node managers are registered - use the core node manager if unknown.
-                if (index >= m_namespaceManagers.Length || m_namespaceManagers[index] == null)
+                if (index >= NamespaceManagers.Length || NamespaceManagers[index] == null)
                 {
                     handle = m_nodeManagers[1].GetManagerHandle(nodeId);
 
@@ -604,25 +608,15 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public virtual void AddReferences(NodeId sourceId, IList<IReference> references)
         {
-            foreach (IReference reference in references)
+            // find source node.
+            object sourceHandle = GetManagerHandle(sourceId, out IUaNodeManager nodeManager);
+            if (sourceHandle == null)
             {
-                // find source node.
-                IUaNodeManager nodeManager = null;
-                object sourceHandle = GetManagerHandle(sourceId, out nodeManager);
-
-                if (sourceHandle == null)
-                {
-                    continue;
-                }
-
-                // delete the reference.
-
-                Dictionary<NodeId, IList<IReference>> map = new Dictionary<NodeId, IList<IReference>>
-                {
-                    { sourceId, references }
-                };
-                nodeManager.AddReferences(map);
+                return;
             }
+
+            var map = new Dictionary<NodeId, IList<IReference>> { { sourceId, references } };
+            nodeManager.AddReferences(map);
         }
 
         /// <summary>
@@ -630,13 +624,12 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         public virtual void DeleteReferences(NodeId targetId, IList<IReference> references)
         {
-            foreach (ReferenceNode reference in references)
+            foreach (ReferenceNode reference in references.OfType<ReferenceNode>())
             {
-                NodeId sourceId = ExpandedNodeId.ToNodeId(reference.TargetId, m_server.NamespaceUris);
+                var sourceId = ExpandedNodeId.ToNodeId(reference.TargetId, Server.NamespaceUris);
 
                 // find source node.
-                IUaNodeManager nodeManager = null;
-                object sourceHandle = GetManagerHandle(sourceId, out nodeManager);
+                object sourceHandle = GetManagerHandle(sourceId, out IUaNodeManager nodeManager);
 
                 if (sourceHandle == null)
                 {
@@ -644,7 +637,12 @@ namespace Technosoftware.UaServer.NodeManager
                 }
 
                 // delete the reference.
-                nodeManager.DeleteReference(sourceHandle, reference.ReferenceTypeId, !reference.IsInverse, targetId, false);
+                nodeManager.DeleteReference(
+                    sourceHandle,
+                    reference.ReferenceTypeId,
+                    !reference.IsInverse,
+                    targetId,
+                    false);
             }
         }
 
@@ -658,7 +656,9 @@ namespace Technosoftware.UaServer.NodeManager
                 LocalReference reference = referencesToRemove[ii];
 
                 // find source node.
-                object sourceHandle = GetManagerHandle(reference.SourceId, out IUaNodeManager nodeManager);
+                object sourceHandle = GetManagerHandle(
+                    reference.SourceId,
+                    out IUaNodeManager nodeManager);
 
                 if (sourceHandle == null)
                 {
@@ -666,21 +666,28 @@ namespace Technosoftware.UaServer.NodeManager
                 }
 
                 // delete the reference.
-                nodeManager.DeleteReference(sourceHandle, reference.ReferenceTypeId, reference.IsInverse, reference.TargetId, false);
+                nodeManager.DeleteReference(
+                    sourceHandle,
+                    reference.ReferenceTypeId,
+                    reference.IsInverse,
+                    reference.TargetId,
+                    false);
             }
         }
 
-        #region Register/Unregister Nodes
         /// <summary>
         /// Registers a set of node ids.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="nodesToRegister"/> is <c>null</c>.</exception>
         public virtual void RegisterNodes(
             UaServerOperationContext context,
             NodeIdCollection nodesToRegister,
             out NodeIdCollection registeredNodeIds)
         {
             if (nodesToRegister == null)
+            {
                 throw new ArgumentNullException(nameof(nodesToRegister));
+            }
 
             // return the node id provided.
             registeredNodeIds = new NodeIdCollection(nodesToRegister.Count);
@@ -691,7 +698,7 @@ namespace Technosoftware.UaServer.NodeManager
             }
 
             Utils.LogTrace(
-                (int)Utils.TraceMasks.ServiceDetail,
+                Utils.TraceMasks.ServiceDetail,
                 "MasterNodeManager.RegisterNodes - Count={0}",
                 nodesToRegister.Count);
 
@@ -713,15 +720,18 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Unregisters a set of node ids.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="nodesToUnregister"/> is <c>null</c>.</exception>
         public virtual void UnregisterNodes(
             UaServerOperationContext context,
             NodeIdCollection nodesToUnregister)
         {
             if (nodesToUnregister == null)
+            {
                 throw new ArgumentNullException(nameof(nodesToUnregister));
+            }
 
             Utils.LogTrace(
-                (int)Utils.TraceMasks.ServiceDetail,
+                Utils.TraceMasks.ServiceDetail,
                 "MasterNodeManager.UnregisterNodes - Count={0}",
                 nodesToUnregister.Count);
 
@@ -738,12 +748,12 @@ namespace Technosoftware.UaServer.NodeManager
             }
             */
         }
-        #endregion
 
-        #region TranslateBrowsePathsToNodeIds
         /// <summary>
         /// Translates a start node id plus a relative paths into a node id.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="browsePaths"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
         public virtual void TranslateBrowsePathsToNodeIds(
             UaServerOperationContext context,
             BrowsePathCollection browsePaths,
@@ -751,7 +761,9 @@ namespace Technosoftware.UaServer.NodeManager
             out DiagnosticInfoCollection diagnosticInfos)
         {
             if (browsePaths == null)
+            {
                 throw new ArgumentNullException(nameof(browsePaths));
+            }
 
             bool diagnosticsExist = false;
             results = new BrowsePathResultCollection(browsePaths.Count);
@@ -767,11 +779,10 @@ namespace Technosoftware.UaServer.NodeManager
 
                 BrowsePath browsePath = browsePaths[ii];
 
-                BrowsePathResult result = new BrowsePathResult();
-                result.StatusCode = StatusCodes.Good;
+                var result = new BrowsePathResult { StatusCode = StatusCodes.Good };
                 results.Add(result);
 
-                ServiceResult error = null;
+                ServiceResult error;
 
                 // need to trap unexpected exceptions to handle bugs in the node managers.
                 try
@@ -780,7 +791,10 @@ namespace Technosoftware.UaServer.NodeManager
                 }
                 catch (Exception e)
                 {
-                    error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error translating browse path.");
+                    error = ServiceResult.Create(
+                        e,
+                        StatusCodes.BadUnexpectedError,
+                        "Unexpected error translating browse path.");
                 }
 
                 if (ServiceResult.IsGood(error))
@@ -790,7 +804,6 @@ namespace Technosoftware.UaServer.NodeManager
                     {
                         error = StatusCodes.BadNoMatch;
                     }
-
                     // put a placeholder for diagnostics.
                     else if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
@@ -805,7 +818,10 @@ namespace Technosoftware.UaServer.NodeManager
 
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, error);
+                        DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(
+                            Server,
+                            context,
+                            error);
                         diagnosticInfos.Add(diagnosticInfo);
                         diagnosticsExist = true;
                     }
@@ -869,9 +885,9 @@ namespace Technosoftware.UaServer.NodeManager
             Debug.Assert(result != null);
 
             // check for valid start node.
-            IUaNodeManager nodeManager = null;
-
-            object sourceHandle = GetManagerHandle(browsePath.StartingNode, out nodeManager);
+            object sourceHandle = GetManagerHandle(
+                browsePath.StartingNode,
+                out IUaNodeManager nodeManager);
 
             if (sourceHandle == null)
             {
@@ -902,7 +918,13 @@ namespace Technosoftware.UaServer.NodeManager
                 }
             }
             // validate access rights and role permissions
-            ServiceResult serviceResult = ValidatePermissions(context, nodeManager, sourceHandle, PermissionType.Browse, null, true);
+            ServiceResult serviceResult = ValidatePermissions(
+                context,
+                nodeManager,
+                sourceHandle,
+                PermissionType.Browse,
+                null,
+                true);
             if (ServiceResult.IsGood(serviceResult))
             {
                 // translate path only if validation is passing
@@ -921,6 +943,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Recursively processes the elements in the RelativePath starting at the specified index.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         private void TranslateBrowsePath(
             UaServerOperationContext context,
             IUaNodeManager nodeManager,
@@ -955,8 +978,8 @@ namespace Technosoftware.UaServer.NodeManager
                 throw new ServiceResultException(StatusCodes.BadBrowseNameInvalid);
             }
 
-            List<ExpandedNodeId> targetIds = [];
-            List<NodeId> externalTargetIds = [];
+            var targetIds = new List<ExpandedNodeId>();
+            var externalTargetIds = new List<NodeId>();
 
             try
             {
@@ -977,7 +1000,7 @@ namespace Technosoftware.UaServer.NodeManager
             for (int ii = 0; ii < externalTargetIds.Count; ii++)
             {
                 // get the browse name from another node manager.
-                ReferenceDescription description = new ReferenceDescription();
+                var description = new ReferenceDescription();
 
                 UpdateReferenceDescription(
                     context,
@@ -1013,13 +1036,20 @@ namespace Technosoftware.UaServer.NodeManager
                 for (int ii = 0; ii < targetIds.Count; ii++)
                 {
                     // Check the role permissions for target nodes
-                    IUaNodeManager targetNodeManager = null;
-                    object targetHandle = GetManagerHandle(ExpandedNodeId.ToNodeId(targetIds[ii], Server.NamespaceUris), out targetNodeManager);
+                    object targetHandle = GetManagerHandle(
+                        ExpandedNodeId.ToNodeId(targetIds[ii], Server.NamespaceUris),
+                        out IUaNodeManager targetNodeManager);
 
                     if (targetHandle != null && targetNodeManager != null)
                     {
-                        UaNodeMetadata nodeMetadata = targetNodeManager.GetNodeMetadata(context, targetHandle, BrowseResultMask.All);
-                        ServiceResult serviceResult = ValidateRolePermissions(context, nodeMetadata, PermissionType.Browse);
+                        UaNodeMetadata nodeMetadata = targetNodeManager.GetNodeMetadata(
+                            context,
+                            targetHandle,
+                            BrowseResultMask.All);
+                        ServiceResult serviceResult = ValidateRolePermissions(
+                            context,
+                            nodeMetadata,
+                            PermissionType.Browse);
 
                         if (ServiceResult.IsBad(serviceResult))
                         {
@@ -1028,9 +1058,11 @@ namespace Technosoftware.UaServer.NodeManager
                         }
                     }
 
-                    BrowsePathTarget target = new BrowsePathTarget();
-                    target.TargetId = targetIds[ii];
-                    target.RemainingPathIndex = uint.MaxValue;
+                    var target = new BrowsePathTarget
+                    {
+                        TargetId = targetIds[ii],
+                        RemainingPathIndex = uint.MaxValue
+                    };
 
                     targets.Add(target);
                 }
@@ -1046,16 +1078,17 @@ namespace Technosoftware.UaServer.NodeManager
                 // check for external reference.
                 if (targetId.IsAbsolute)
                 {
-                    BrowsePathTarget target = new BrowsePathTarget();
-
-                    target.TargetId = targetId;
-                    target.RemainingPathIndex = (uint)(index + 1);
+                    var target = new BrowsePathTarget
+                    {
+                        TargetId = targetId,
+                        RemainingPathIndex = (uint)(index + 1)
+                    };
 
                     targets.Add(target);
                     continue;
                 }
 
-                // check for valid start node.   
+                // check for valid start node.
                 sourceHandle = GetManagerHandle((NodeId)targetId, out nodeManager);
 
                 if (sourceHandle == null)
@@ -1073,12 +1106,12 @@ namespace Technosoftware.UaServer.NodeManager
                     index + 1);
             }
         }
-        #endregion
 
-        #region Browse
         /// <summary>
         /// Returns the set of references that meet the filter criteria.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
         public virtual void Browse(
             UaServerOperationContext context,
             ViewDescription view,
@@ -1088,21 +1121,25 @@ namespace Technosoftware.UaServer.NodeManager
             out DiagnosticInfoCollection diagnosticInfos)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
+
             if (nodesToBrowse == null)
+            {
                 throw new ArgumentNullException(nameof(nodesToBrowse));
+            }
 
             if (view != null && !NodeId.IsNull(view.ViewId))
             {
-                IUaNodeManager viewManager = null;
-                object viewHandle = GetManagerHandle(view.ViewId, out viewManager);
+                object viewHandle =
+                    GetManagerHandle(view.ViewId, out IUaNodeManager viewManager)
+                    ?? throw new ServiceResultException(StatusCodes.BadViewIdUnknown);
 
-                if (viewHandle == null)
-                {
-                    throw new ServiceResultException(StatusCodes.BadViewIdUnknown);
-                }
-
-                UaNodeMetadata metadata = viewManager.GetNodeMetadata(context, viewHandle, BrowseResultMask.NodeClass);
+                UaNodeMetadata metadata = viewManager.GetNodeMetadata(
+                    context,
+                    viewHandle,
+                    BrowseResultMask.NodeClass);
 
                 if (metadata == null || metadata.NodeClass != NodeClass.View)
                 {
@@ -1110,7 +1147,13 @@ namespace Technosoftware.UaServer.NodeManager
                 }
 
                 // validate access rights and role permissions
-                ServiceResult validationResult = ValidatePermissions(context, viewManager, viewHandle, PermissionType.Browse, null, true);
+                ServiceResult validationResult = ValidatePermissions(
+                    context,
+                    viewManager,
+                    viewHandle,
+                    PermissionType.Browse,
+                    null,
+                    true);
                 if (ServiceResult.IsBad(validationResult))
                 {
                     throw new ServiceResultException(validationResult);
@@ -1132,9 +1175,12 @@ namespace Technosoftware.UaServer.NodeManager
                     // release all allocated continuation points.
                     foreach (BrowseResult current in results)
                     {
-                        if (current != null && current.ContinuationPoint != null && current.ContinuationPoint.Length > 0)
+                        if (current != null &&
+                            current.ContinuationPoint != null &&
+                            current.ContinuationPoint.Length > 0)
                         {
-                            UaContinuationPoint cp = context.Session.RestoreContinuationPoint(current.ContinuationPoint);
+                            UaContinuationPoint cp = context.Session
+                                .RestoreContinuationPoint(current.ContinuationPoint);
                             cp.Dispose();
                         }
                     }
@@ -1145,11 +1191,10 @@ namespace Technosoftware.UaServer.NodeManager
                 BrowseDescription nodeToBrowse = nodesToBrowse[ii];
 
                 // initialize result.
-                BrowseResult result = new BrowseResult();
-                result.StatusCode = StatusCodes.Good;
+                var result = new BrowseResult { StatusCode = StatusCodes.Good };
                 results.Add(result);
 
-                ServiceResult error = null;
+                ServiceResult error;
 
                 // need to trap unexpected exceptions to handle bugs in the node managers.
                 try
@@ -1164,7 +1209,10 @@ namespace Technosoftware.UaServer.NodeManager
                 }
                 catch (Exception e)
                 {
-                    error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error browsing node.");
+                    error = ServiceResult.Create(
+                        e,
+                        StatusCodes.BadUnexpectedError,
+                        "Unexpected error browsing node.");
                 }
 
                 // check for continuation point.
@@ -1173,7 +1221,7 @@ namespace Technosoftware.UaServer.NodeManager
                     continuationPointsAssigned++;
                 }
 
-                // check for error.   
+                // check for error.
                 result.StatusCode = error.StatusCode;
 
                 if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
@@ -1182,7 +1230,7 @@ namespace Technosoftware.UaServer.NodeManager
 
                     if (error != null && error.Code != StatusCodes.Good)
                     {
-                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, error);
+                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(Server, context, error);
                         diagnosticsExist = true;
                     }
 
@@ -1203,10 +1251,12 @@ namespace Technosoftware.UaServer.NodeManager
         ///     ReadValueId used in the Read service</typeparam>
         /// <param name="nodesCollection">The collection of nodes on which the service operates uppon</param>
         /// <param name="uniqueNodesServiceAttributes">The resulting cache that holds the values of the AccessRestrictions and RolePermissions attributes needed for Read service</param>
-        private void PrepareValidationCache<T>(List<T> nodesCollection,
+        /// <exception cref="ArgumentException"></exception>
+        private static void PrepareValidationCache<T>(
+            List<T> nodesCollection,
             out Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes)
         {
-            HashSet<NodeId> uniqueNodes = [];
+            var uniqueNodes = new HashSet<NodeId>();
             for (int i = 0; i < nodesCollection.Count; i++)
             {
                 Type listType = typeof(T);
@@ -1219,17 +1269,16 @@ namespace Technosoftware.UaServer.NodeManager
 
                 if (nodeId == null)
                 {
-                    throw new ArgumentException("Provided List<T> nodesCollection is of wrong type, T should be type BrowseDescription, ReadValueId or CallMethodRequest", nameof(nodesCollection));
+                    throw new ArgumentException(
+                        "Provided List<T> nodesCollection is of wrong type, T should be type BrowseDescription, ReadValueId or CallMethodRequest",
+                        nameof(nodesCollection));
                 }
 
-                if (!uniqueNodes.Contains(nodeId))
-                {
-                    uniqueNodes.Add(nodeId);
-                }
+                uniqueNodes.Add(nodeId);
             }
             // uniqueNodesReadAttributes is the place where the attributes for each unique nodeId are kept on the services
             uniqueNodesServiceAttributes = [];
-            foreach (var uniqueNode in uniqueNodes)
+            foreach (NodeId uniqueNode in uniqueNodes)
             {
                 uniqueNodesServiceAttributes.Add(uniqueNode, []);
             }
@@ -1238,6 +1287,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Continues a browse operation that was previously halted.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
         public virtual void BrowseNext(
             UaServerOperationContext context,
             bool releaseContinuationPoints,
@@ -1246,9 +1297,14 @@ namespace Technosoftware.UaServer.NodeManager
             out DiagnosticInfoCollection diagnosticInfos)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
+
             if (continuationPoints == null)
+            {
                 throw new ArgumentNullException(nameof(continuationPoints));
+            }
 
             bool diagnosticsExist = false;
             results = new BrowseResultCollection(continuationPoints.Count);
@@ -1266,9 +1322,12 @@ namespace Technosoftware.UaServer.NodeManager
                     // release all allocated continuation points.
                     foreach (BrowseResult current in results)
                     {
-                        if (current != null && current.ContinuationPoint != null && current.ContinuationPoint.Length > 0)
+                        if (current != null &&
+                            current.ContinuationPoint != null &&
+                            current.ContinuationPoint.Length > 0)
                         {
-                            cp = context.Session.RestoreContinuationPoint(current.ContinuationPoint);
+                            cp = context.Session
+                                .RestoreContinuationPoint(current.ContinuationPoint);
                             cp.Dispose();
                         }
                     }
@@ -1282,11 +1341,16 @@ namespace Technosoftware.UaServer.NodeManager
                 // validate access rights and role permissions
                 if (cp != null)
                 {
-                    ServiceResult validationResult = ValidatePermissions(context, cp.Manager, cp.NodeToBrowse, PermissionType.Browse, null, true);
+                    ServiceResult validationResult = ValidatePermissions(
+                        context,
+                        cp.Manager,
+                        cp.NodeToBrowse,
+                        PermissionType.Browse,
+                        null,
+                        true);
                     if (ServiceResult.IsBad(validationResult))
                     {
-                        BrowseResult badResult = new BrowseResult();
-                        badResult.StatusCode = validationResult.Code;
+                        var badResult = new BrowseResult { StatusCode = validationResult.Code };
                         results.Add(badResult);
 
                         // put placeholder for diagnostics
@@ -1295,19 +1359,14 @@ namespace Technosoftware.UaServer.NodeManager
                     }
                 }
 
-                // initialize result.    
-                BrowseResult result = new BrowseResult();
-                result.StatusCode = StatusCodes.Good;
+                // initialize result.
+                var result = new BrowseResult { StatusCode = StatusCodes.Good };
                 results.Add(result);
 
                 // check if simply releasing the continuation point.
                 if (releaseContinuationPoints)
                 {
-                    if (cp != null)
-                    {
-                        cp.Dispose();
-                        cp = null;
-                    }
+                    cp?.Dispose();
 
                     continue;
                 }
@@ -1337,7 +1396,10 @@ namespace Technosoftware.UaServer.NodeManager
                     }
                     catch (Exception e)
                     {
-                        error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error browsing node.");
+                        error = ServiceResult.Create(
+                            e,
+                            StatusCodes.BadUnexpectedError,
+                            "Unexpected error browsing node.");
                     }
 
                     // check for continuation point.
@@ -1356,7 +1418,7 @@ namespace Technosoftware.UaServer.NodeManager
 
                     if (error != null && error.Code != StatusCodes.Good)
                     {
-                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, error);
+                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(Server, context, error);
                         diagnosticsExist = true;
                     }
 
@@ -1368,7 +1430,6 @@ namespace Technosoftware.UaServer.NodeManager
                 {
                     result.StatusCode = StatusCodes.Good;
                     result.ContinuationPoint = cp.Id.ToByteArray();
-                    continue;
                 }
             }
 
@@ -1392,45 +1453,52 @@ namespace Technosoftware.UaServer.NodeManager
             Debug.Assert(result != null);
 
             // find node manager that owns the node.
-            IUaNodeManager nodeManager = null;
-            object handle = GetManagerHandle(nodeToBrowse.NodeId, out nodeManager);
+            object handle = GetManagerHandle(nodeToBrowse.NodeId, out IUaNodeManager nodeManager);
 
             if (handle == null)
             {
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            if (!NodeId.IsNull(nodeToBrowse.ReferenceTypeId) && !m_server.TypeTree.IsKnown(nodeToBrowse.ReferenceTypeId))
+            if (!NodeId.IsNull(nodeToBrowse.ReferenceTypeId) &&
+                !Server.TypeTree.IsKnown(nodeToBrowse.ReferenceTypeId))
             {
                 return StatusCodes.BadReferenceTypeIdInvalid;
             }
 
-            if (nodeToBrowse.BrowseDirection < BrowseDirection.Forward || nodeToBrowse.BrowseDirection > BrowseDirection.Both)
+            if (nodeToBrowse.BrowseDirection is < BrowseDirection.Forward or > BrowseDirection.Both)
             {
                 return StatusCodes.BadBrowseDirectionInvalid;
             }
 
             // validate access rights and role permissions
-            ServiceResult validationResult = ValidatePermissions(context, nodeManager, handle, PermissionType.Browse, null, true);
+            ServiceResult validationResult = ValidatePermissions(
+                context,
+                nodeManager,
+                handle,
+                PermissionType.Browse,
+                null,
+                true);
             if (ServiceResult.IsBad(validationResult))
             {
                 return validationResult;
             }
 
             // create a continuation point.
-            UaContinuationPoint cp = new UaContinuationPoint();
-
-            cp.Manager = nodeManager;
-            cp.View = view;
-            cp.NodeToBrowse = handle;
-            cp.MaxResultsToReturn = maxReferencesPerNode;
-            cp.BrowseDirection = nodeToBrowse.BrowseDirection;
-            cp.ReferenceTypeId = nodeToBrowse.ReferenceTypeId;
-            cp.IncludeSubtypes = nodeToBrowse.IncludeSubtypes;
-            cp.NodeClassMask = nodeToBrowse.NodeClassMask;
-            cp.ResultMask = (BrowseResultMask)nodeToBrowse.ResultMask;
-            cp.Index = 0;
-            cp.Data = null;
+            var cp = new UaContinuationPoint
+            {
+                Manager = nodeManager,
+                View = view,
+                NodeToBrowse = handle,
+                MaxResultsToReturn = maxReferencesPerNode,
+                BrowseDirection = nodeToBrowse.BrowseDirection,
+                ReferenceTypeId = nodeToBrowse.ReferenceTypeId,
+                IncludeSubtypes = nodeToBrowse.IncludeSubtypes,
+                NodeClassMask = nodeToBrowse.NodeClassMask,
+                ResultMask = (BrowseResultMask)nodeToBrowse.ResultMask,
+                Index = 0,
+                Data = null
+            };
 
             // check if reference type left unspecified.
             if (NodeId.IsNull(cp.ReferenceTypeId))
@@ -1441,7 +1509,11 @@ namespace Technosoftware.UaServer.NodeManager
 
             // loop until browse is complete or max results.
             ReferenceDescriptionCollection references = result.References;
-            ServiceResult error = FetchReferences(context, assignContinuationPoint, ref cp, ref references);
+            ServiceResult error = FetchReferences(
+                context,
+                assignContinuationPoint,
+                ref cp,
+                ref references);
             result.References = references;
 
             // save continuation point.
@@ -1469,7 +1541,7 @@ namespace Technosoftware.UaServer.NodeManager
             Debug.Assert(references != null);
 
             IUaNodeManager nodeManager = cp.Manager;
-            NodeClass nodeClassMask = (NodeClass)cp.NodeClassMask;
+            var nodeClassMask = (NodeClass)cp.NodeClassMask;
             BrowseResultMask resultMask = cp.ResultMask;
 
             // loop until browse is complete or max results.
@@ -1478,7 +1550,7 @@ namespace Technosoftware.UaServer.NodeManager
                 // fetch next batch.
                 nodeManager.Browse(context, ref cp, references);
 
-                ReferenceDescriptionCollection referencesToKeep = new ReferenceDescriptionCollection(references.Count);
+                var referencesToKeep = new ReferenceDescriptionCollection(references.Count);
 
                 // check for incomplete reference descriptions.
                 for (int ii = 0; ii < references.Count; ii++)
@@ -1532,11 +1604,11 @@ namespace Technosoftware.UaServer.NodeManager
             // all is good.
             return ServiceResult.Good;
         }
-        #endregion
 
         /// <summary>
         /// Updates the reference description with the node attributes.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="targetId"/> is <c>null</c>.</exception>
         private bool UpdateReferenceDescription(
             UaServerOperationContext context,
             NodeId targetId,
@@ -1545,13 +1617,17 @@ namespace Technosoftware.UaServer.NodeManager
             ReferenceDescription description)
         {
             if (targetId == null)
+            {
                 throw new ArgumentNullException(nameof(targetId));
+            }
+
             if (description == null)
+            {
                 throw new ArgumentNullException(nameof(description));
+            }
 
             // find node manager that owns the node.
-            IUaNodeManager nodeManager = null;
-            object handle = GetManagerHandle(targetId, out nodeManager);
+            object handle = GetManagerHandle(targetId, out IUaNodeManager nodeManager);
 
             // dangling reference - nothing more to do.
             if (handle == null)
@@ -1568,7 +1644,8 @@ namespace Technosoftware.UaServer.NodeManager
             }
 
             // check nodeclass filter.
-            if (nodeClassMask != NodeClass.Unspecified && (metadata.NodeClass & nodeClassMask) == 0)
+            if (nodeClassMask != NodeClass.Unspecified &&
+                ((int)metadata.NodeClass & (int)nodeClassMask) == 0)
             {
                 return false;
             }
@@ -1591,6 +1668,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Reads a set of nodes.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="nodesToRead"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
         public virtual void Read(
             UaServerOperationContext context,
             double maxAge,
@@ -1600,14 +1679,16 @@ namespace Technosoftware.UaServer.NodeManager
             out DiagnosticInfoCollection diagnosticInfos)
         {
             if (nodesToRead == null)
+            {
                 throw new ArgumentNullException(nameof(nodesToRead));
+            }
 
             if (maxAge < 0)
             {
                 throw new ServiceResultException(StatusCodes.BadMaxAgeInvalid);
             }
 
-            if (timestampsToReturn < TimestampsToReturn.Source || timestampsToReturn > TimestampsToReturn.Neither)
+            if (timestampsToReturn is < TimestampsToReturn.Source or > TimestampsToReturn.Neither)
             {
                 throw new ServiceResultException(StatusCodes.BadTimestampsToReturnInvalid);
             }
@@ -1617,7 +1698,7 @@ namespace Technosoftware.UaServer.NodeManager
             diagnosticInfos = new DiagnosticInfoCollection(nodesToRead.Count);
 
             // create empty list of errors.
-            List<ServiceResult> errors = new List<ServiceResult>(values.Count);
+            var errors = new List<ServiceResult>(values.Count);
             for (int ii = 0; ii < nodesToRead.Count; ii++)
             {
                 errors.Add(null);
@@ -1627,12 +1708,13 @@ namespace Technosoftware.UaServer.NodeManager
             bool validItems = false;
 
             Utils.LogTrace(
-                (int)Utils.TraceMasks.ServiceDetail,
+                Utils.TraceMasks.ServiceDetail,
                 "MasterNodeManager.Read - Count={0}",
                 nodesToRead.Count);
 
-            Dictionary<NodeId, List<object>> uniqueNodesReadAttributes;
-            PrepareValidationCache(nodesToRead, out uniqueNodesReadAttributes);
+            PrepareValidationCache(
+                nodesToRead,
+                out Dictionary<NodeId, List<object>> uniqueNodesReadAttributes);
 
             for (int ii = 0; ii < nodesToRead.Count; ii++)
             {
@@ -1642,7 +1724,10 @@ namespace Technosoftware.UaServer.NodeManager
                 diagnosticInfos.Add(null);
 
                 // pre-validate and pre-parse parameter.
-                errors[ii] = ValidateReadRequest(context, nodesToRead[ii], uniqueNodesReadAttributes);
+                errors[ii] = ValidateReadRequest(
+                    context,
+                    nodesToRead[ii],
+                    uniqueNodesReadAttributes);
 
                 // return error status.
                 if (ServiceResult.IsBad(errors[ii]))
@@ -1669,12 +1754,7 @@ namespace Technosoftware.UaServer.NodeManager
                         ii,
                         m_nodeManagers.Count);
 #endif
-                    m_nodeManagers[ii].Read(
-                        context,
-                        maxAge,
-                        nodesToRead,
-                        values,
-                        errors);
+                    m_nodeManagers[ii].Read(context, maxAge, nodesToRead, values, errors);
                 }
             }
 
@@ -1686,34 +1766,36 @@ namespace Technosoftware.UaServer.NodeManager
                 // set an error code for nodes that were not handled by any node manager.
                 if (!nodesToRead[ii].Processed)
                 {
-                    value = values[ii] = new DataValue(StatusCodes.BadNodeIdUnknown, DateTime.UtcNow);
+                    value = values[ii] = new DataValue(
+                        StatusCodes.BadNodeIdUnknown,
+                        DateTime.UtcNow);
                     errors[ii] = new ServiceResult(values[ii].StatusCode);
                 }
 
                 // update the diagnostic info and ensure the status code in the data value is the same as the error code.
                 if (errors[ii] != null && errors[ii].Code != StatusCodes.Good)
                 {
-                    if (value == null)
-                    {
-                        value = values[ii] = new DataValue(errors[ii].Code, DateTime.UtcNow);
-                    }
+                    value ??= values[ii] = new DataValue(errors[ii].Code, DateTime.UtcNow);
 
                     value.StatusCode = errors[ii].Code;
 
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(m_server, context, errors[ii]);
+                        diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(
+                            Server,
+                            context,
+                            errors[ii]);
                         diagnosticsExist = true;
                     }
                 }
 
                 // apply the timestamp filters.
-                if (timestampsToReturn != TimestampsToReturn.Server && timestampsToReturn != TimestampsToReturn.Both)
+                if (timestampsToReturn is not TimestampsToReturn.Server and not TimestampsToReturn.Both)
                 {
                     value.ServerTimestamp = DateTime.MinValue;
                 }
 
-                if (timestampsToReturn != TimestampsToReturn.Source && timestampsToReturn != TimestampsToReturn.Both)
+                if (timestampsToReturn is not TimestampsToReturn.Source and not TimestampsToReturn.Both)
                 {
                     value.SourceTimestamp = DateTime.MinValue;
                 }
@@ -1726,6 +1808,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Reads the history of a set of items.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public virtual void HistoryRead(
             UaServerOperationContext context,
             ExtensionObject historyReadDetails,
@@ -1741,9 +1824,7 @@ namespace Technosoftware.UaServer.NodeManager
                 throw new ServiceResultException(StatusCodes.BadHistoryOperationInvalid);
             }
 
-            HistoryReadDetails details = historyReadDetails.Body as HistoryReadDetails;
-
-            if (details == null)
+            if (historyReadDetails.Body is not HistoryReadDetails details)
             {
                 throw new ServiceResultException(StatusCodes.BadHistoryOperationInvalid);
             }
@@ -1756,7 +1837,7 @@ namespace Technosoftware.UaServer.NodeManager
             // pre-validate items.
             bool validItems = false;
             // create empty list of errors.
-            List<ServiceResult> errors = new List<ServiceResult>(results.Count);
+            var errors = new List<ServiceResult>(results.Count);
             for (int ii = 0; ii < nodesToRead.Count; ii++)
             {
                 errors.Add(null);
@@ -1764,7 +1845,7 @@ namespace Technosoftware.UaServer.NodeManager
 
             for (int ii = 0; ii < nodesToRead.Count; ii++)
             {
-                // Limit permission restrictions to Client initiated service call                
+                // Limit permission restrictions to Client initiated service call
                 HistoryReadResult result = null;
                 DiagnosticInfo diagnosticInfo = null;
 
@@ -1775,13 +1856,15 @@ namespace Technosoftware.UaServer.NodeManager
                 if (ServiceResult.IsBad(errors[ii]))
                 {
                     nodesToRead[ii].Processed = true;
-                    result = new HistoryReadResult();
-                    result.StatusCode = errors[ii].Code;
+                    result = new HistoryReadResult { StatusCode = errors[ii].Code };
 
                     // add diagnostics if requested.
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, errors[ii]);
+                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(
+                            Server,
+                            context,
+                            errors[ii]);
                         diagnosticsExist = true;
                     }
                 }
@@ -1827,17 +1910,17 @@ namespace Technosoftware.UaServer.NodeManager
                     // update the diagnostic info and ensure the status code in the result is the same as the error code.
                     if (errors[ii] != null && errors[ii].Code != StatusCodes.Good)
                     {
-                        if (result == null)
-                        {
-                            result = results[ii] = new HistoryReadResult();
-                        }
+                        result ??= results[ii] = new HistoryReadResult();
 
                         result.StatusCode = errors[ii].Code;
 
                         // add diagnostics if requested.
                         if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                         {
-                            diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(m_server, context, errors[ii]);
+                            diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(
+                                Server,
+                                context,
+                                errors[ii]);
                             diagnosticsExist = true;
                         }
                     }
@@ -1851,6 +1934,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Writes a set of values.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public virtual void Write(
             UaServerOperationContext context,
             WriteValueCollection nodesToWrite,
@@ -1858,9 +1942,14 @@ namespace Technosoftware.UaServer.NodeManager
             out DiagnosticInfoCollection diagnosticInfos)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
+
             if (nodesToWrite == null)
+            {
                 throw new ArgumentNullException(nameof(nodesToWrite));
+            }
 
             int count = nodesToWrite.Count;
 
@@ -1888,11 +1977,10 @@ namespace Technosoftware.UaServer.NodeManager
                     // add diagnostics if requested.
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, error);
+                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(Server, context, error);
                         diagnosticsExist = true;
                     }
                 }
-
                 // found at least one valid item.
                 else
                 {
@@ -1907,15 +1995,12 @@ namespace Technosoftware.UaServer.NodeManager
             // call each node manager.
             if (validItems)
             {
-                List<ServiceResult> errors = new List<ServiceResult>(count);
+                var errors = new List<ServiceResult>(count);
                 errors.AddRange(new ServiceResult[count]);
 
                 foreach (IUaNodeManager nodeManager in m_nodeManagers)
                 {
-                    nodeManager.Write(
-                        context,
-                        nodesToWrite,
-                        errors);
+                    nodeManager.Write(context, nodesToWrite, errors);
                 }
 
                 for (int ii = 0; ii < nodesToWrite.Count; ii++)
@@ -1932,12 +2017,18 @@ namespace Technosoftware.UaServer.NodeManager
                         // add diagnostics if requested.
                         if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                         {
-                            diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(m_server, context, errors[ii]);
+                            diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(
+                                Server,
+                                context,
+                                errors[ii]);
                             diagnosticsExist = true;
                         }
                     }
 
-                    UaServerUtils.ReportWriteValue(nodesToWrite[ii].NodeId, nodesToWrite[ii].Value, results[ii]);
+                    UaServerUtils.ReportWriteValue(
+                        nodesToWrite[ii].NodeId,
+                        nodesToWrite[ii].Value,
+                        results[ii]);
                 }
             }
 
@@ -1955,7 +2046,7 @@ namespace Technosoftware.UaServer.NodeManager
             out DiagnosticInfoCollection diagnosticInfos)
         {
             Type detailsType = null;
-            List<HistoryUpdateDetails> nodesToUpdate = [];
+            var nodesToUpdate = new List<HistoryUpdateDetails>();
 
             // verify that all extension objects in the list have the same type.
             foreach (ExtensionObject details in historyUpdateDetails)
@@ -1980,7 +2071,7 @@ namespace Technosoftware.UaServer.NodeManager
             bool validItems = false;
 
             // create empty list of errors.
-            List<ServiceResult> errors = new List<ServiceResult>(results.Count);
+            var errors = new List<ServiceResult>(results.Count);
             for (int ii = 0; ii < nodesToUpdate.Count; ii++)
             {
                 errors.Add(null);
@@ -1992,8 +2083,7 @@ namespace Technosoftware.UaServer.NodeManager
                 DiagnosticInfo diagnosticInfo = null;
 
                 // check the type of details parameter.
-                ServiceResult error = null;
-
+                ServiceResult error;
                 if (nodesToUpdate[ii].GetType() != detailsType)
                 {
                     error = StatusCodes.BadHistoryOperationInvalid;
@@ -2008,13 +2098,12 @@ namespace Technosoftware.UaServer.NodeManager
                 if (ServiceResult.IsBad(error))
                 {
                     nodesToUpdate[ii].Processed = true;
-                    result = new HistoryUpdateResult();
-                    result.StatusCode = error.Code;
+                    result = new HistoryUpdateResult { StatusCode = error.Code };
 
                     // add diagnostics if requested.
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, error);
+                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(Server, context, error);
                         diagnosticsExist = true;
                     }
                 }
@@ -2034,12 +2123,7 @@ namespace Technosoftware.UaServer.NodeManager
             {
                 foreach (IUaNodeManager nodeManager in m_nodeManagers)
                 {
-                    nodeManager.HistoryUpdate(
-                        context,
-                        detailsType,
-                        nodesToUpdate,
-                        results,
-                        errors);
+                    nodeManager.HistoryUpdate(context, detailsType, nodesToUpdate, results, errors);
                 }
 
                 for (int ii = 0; ii < nodesToUpdate.Count; ii++)
@@ -2058,17 +2142,17 @@ namespace Technosoftware.UaServer.NodeManager
                     // update the diagnostic info and ensure the status code in the result is the same as the error code.
                     if (errors[ii] != null && errors[ii].Code != StatusCodes.Good)
                     {
-                        if (result == null)
-                        {
-                            result = results[ii] = new HistoryUpdateResult();
-                        }
+                        result ??= results[ii] = new HistoryUpdateResult();
 
                         result.StatusCode = errors[ii].Code;
 
                         // add diagnostics if requested.
                         if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                         {
-                            diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(m_server, context, errors[ii]);
+                            diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(
+                                Server,
+                                context,
+                                errors[ii]);
                             diagnosticsExist = true;
                         }
                     }
@@ -2080,7 +2164,22 @@ namespace Technosoftware.UaServer.NodeManager
         }
 
         /// <summary>
-        /// Calls a method defined on a object.
+        /// Calls a method defined on an object.
+        /// </summary>
+        public virtual ValueTask<(CallMethodResultCollection results, DiagnosticInfoCollection diagnosticInfos)> CallAsync(
+            UaServerOperationContext context,
+            CallMethodRequestCollection methodsToCall,
+            CancellationToken cancellationToken = default)
+        {
+            return CallInternalAsync(
+                context,
+                methodsToCall,
+                sync: false,
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Calls a method defined on an object.
         /// </summary>
         public virtual void Call(
             UaServerOperationContext context,
@@ -2088,15 +2187,42 @@ namespace Technosoftware.UaServer.NodeManager
             out CallMethodResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
+#pragma warning disable CA2012 // Use ValueTasks correctly
+            (results, diagnosticInfos) = CallInternalAsync(
+                context,
+                methodsToCall,
+                sync: true).Result;
+#pragma warning restore CA2012 // Use ValueTasks correctly
+        }
+
+        /// <summary>
+        /// Calls a method defined on an object.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="context"/> is <c>null</c>.</exception>
+        public virtual async ValueTask<(
+            CallMethodResultCollection results,
+            DiagnosticInfoCollection diagnosticInfos
+            )> CallInternalAsync(
+                UaServerOperationContext context,
+                CallMethodRequestCollection methodsToCall,
+                bool sync,
+                CancellationToken cancellationToken = default)
+        {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
+
             if (methodsToCall == null)
+            {
                 throw new ArgumentNullException(nameof(methodsToCall));
+            }
 
             bool diagnosticsExist = false;
-            results = new CallMethodResultCollection(methodsToCall.Count);
-            diagnosticInfos = new DiagnosticInfoCollection(methodsToCall.Count);
-            List<ServiceResult> errors = new List<ServiceResult>(methodsToCall.Count);
+            var results = new CallMethodResultCollection(methodsToCall.Count);
+            var diagnosticInfos = new DiagnosticInfoCollection(methodsToCall.Count);
+            var errors = new List<ServiceResult>(methodsToCall.Count);
 
             // add placeholder for each result.
             bool validItems = false;
@@ -2121,7 +2247,10 @@ namespace Technosoftware.UaServer.NodeManager
                     // add diagnostics if requested.
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(m_server, context, errors[ii]);
+                        diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(
+                            Server,
+                            context,
+                            errors[ii]);
                         diagnosticsExist = true;
                     }
 
@@ -2138,11 +2267,35 @@ namespace Technosoftware.UaServer.NodeManager
             {
                 foreach (IUaNodeManager nodeManager in m_nodeManagers)
                 {
-                    nodeManager.Call(
-                        context,
-                        methodsToCall,
-                        results,
-                        errors);
+                    if (nodeManager is IUaStandardAsyncNodeManager asyncNodeManager)
+                    {
+                        // call async node manager
+                        if (sync)
+                        {
+                            Utils.LogWarning(
+                                "Async Method called sychronously. Prefer using CallAsync for best performance. NodeManager={0}",
+                                nodeManager);
+                            asyncNodeManager.CallAsync(
+                                context,
+                                methodsToCall,
+                                results,
+                                errors,
+                                cancellationToken).AsTask().GetAwaiter().GetResult();
+                        }
+                        else
+                        {
+                            await asyncNodeManager.CallAsync(
+                                context,
+                                methodsToCall,
+                                results,
+                                errors,
+                                cancellationToken).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        nodeManager.Call(context, methodsToCall, results, errors);
+                    }
                 }
             }
 
@@ -2168,7 +2321,10 @@ namespace Technosoftware.UaServer.NodeManager
                     // add diagnostics if requested.
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(m_server, context, errors[ii]);
+                        diagnosticInfos[ii] = UaServerUtils.CreateDiagnosticInfo(
+                            Server,
+                            context,
+                            errors[ii]);
                         diagnosticsExist = true;
                     }
                 }
@@ -2176,12 +2332,16 @@ namespace Technosoftware.UaServer.NodeManager
 
             // clear the diagnostics array if no diagnostics requested or no errors occurred.
             UpdateDiagnostics(context, diagnosticsExist, ref diagnosticInfos);
+
+            return (results, diagnosticInfos);
         }
 
         /// <summary>
         /// Handles condition refresh request.
         /// </summary>
-        public virtual void ConditionRefresh(UaServerOperationContext context, IList<IUaEventMonitoredItem> monitoredItems)
+        public virtual void ConditionRefresh(
+            UaServerOperationContext context,
+            IList<IUaEventMonitoredItem> monitoredItems)
         {
             foreach (IUaNodeManager nodeManager in m_nodeManagers)
             {
@@ -2199,6 +2359,9 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Creates a set of monitored items.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ServiceResultException"></exception>
         public virtual void CreateMonitoredItems(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -2211,19 +2374,36 @@ namespace Technosoftware.UaServer.NodeManager
             bool createDurable)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
-            if (itemsToCreate == null)
-                throw new ArgumentNullException(nameof(itemsToCreate));
-            if (errors == null)
-                throw new ArgumentNullException(nameof(errors));
-            if (filterResults == null)
-                throw new ArgumentNullException(nameof(filterResults));
-            if (monitoredItems == null)
-                throw new ArgumentNullException(nameof(monitoredItems));
-            if (publishingInterval < 0)
-                throw new ArgumentOutOfRangeException(nameof(publishingInterval));
+            }
 
-            if (timestampsToReturn < TimestampsToReturn.Source || timestampsToReturn > TimestampsToReturn.Neither)
+            if (itemsToCreate == null)
+            {
+                throw new ArgumentNullException(nameof(itemsToCreate));
+            }
+
+            if (errors == null)
+            {
+                throw new ArgumentNullException(nameof(errors));
+            }
+
+            if (filterResults == null)
+            {
+                throw new ArgumentNullException(nameof(filterResults));
+            }
+
+            if (monitoredItems == null)
+            {
+                throw new ArgumentNullException(nameof(monitoredItems));
+            }
+
+            if (publishingInterval < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(publishingInterval));
+            }
+
+            if (timestampsToReturn is < TimestampsToReturn.Source or > TimestampsToReturn.Neither)
             {
                 throw new ServiceResultException(StatusCodes.BadTimestampsToReturnInvalid);
             }
@@ -2318,9 +2498,7 @@ namespace Technosoftware.UaServer.NodeManager
                     }
 
                     // all event subscriptions required an event filter.
-                    EventFilter filter = itemToCreate.RequestedParameters.Filter.Body as EventFilter;
-
-                    if (filter == null)
+                    if (itemToCreate.RequestedParameters.Filter.Body is not EventFilter filter)
                     {
                         continue;
                     }
@@ -2349,29 +2527,37 @@ namespace Technosoftware.UaServer.NodeManager
                     }
 
                     // validate the event filter.
-                    EventFilter.Result result = filter.Validate(new FilterContext(m_server.NamespaceUris, m_server.TypeTree, context));
-                    ;
+                    EventFilter.Result result = filter.Validate(
+                        new FilterContext(Server.NamespaceUris, Server.TypeTree, context));
 
                     if (ServiceResult.IsBad(result.Status))
                     {
                         errors[ii] = result.Status;
-                        filterResults[ii] = result.ToEventFilterResult(context.DiagnosticsMask, context.StringTable);
+                        filterResults[ii] = result.ToEventFilterResult(
+                            context.DiagnosticsMask,
+                            context.StringTable);
                         continue;
                     }
 
                     // check if a valid node.
-                    IUaNodeManager nodeManager = null;
-
-                    object handle = GetManagerHandle(itemToCreate.ItemToMonitor.NodeId, out nodeManager);
+                    object handle = GetManagerHandle(
+                        itemToCreate.ItemToMonitor.NodeId,
+                        out IUaNodeManager nodeManager);
 
                     if (handle == null)
                     {
                         errors[ii] = StatusCodes.BadNodeIdUnknown;
                         continue;
                     }
-                    UaNodeMetadata nodeMetadata = nodeManager.GetNodeMetadata(context, handle, BrowseResultMask.All);
+                    UaNodeMetadata nodeMetadata = nodeManager.GetNodeMetadata(
+                        context,
+                        handle,
+                        BrowseResultMask.All);
 
-                    errors[ii] = ValidateRolePermissions(context, nodeMetadata, PermissionType.ReceiveEvents);
+                    errors[ii] = ValidateRolePermissions(
+                        context,
+                        nodeMetadata,
+                        PermissionType.ReceiveEvents);
 
                     if (ServiceResult.IsBad(errors[ii]))
                     {
@@ -2381,7 +2567,7 @@ namespace Technosoftware.UaServer.NodeManager
                     // create a globally unique identifier.
                     uint monitoredItemId = Utils.IncrementIdentifier(ref globalIdCounter);
 
-                    UaMonitoredItem monitoredItem = m_server.EventManager.CreateMonitoredItem(
+                    IUaEventMonitoredItem monitoredItem = Server.EventManager.CreateMonitoredItem(
                         context,
                         nodeManager,
                         handle,
@@ -2400,23 +2586,34 @@ namespace Technosoftware.UaServer.NodeManager
                         {
                             try
                             {
-                                manager.SubscribeToAllEvents(context, subscriptionId, monitoredItem, false);
+                                manager.SubscribeToAllEvents(
+                                    context,
+                                    subscriptionId,
+                                    monitoredItem,
+                                    false);
                             }
                             catch (Exception e)
                             {
-                                Utils.LogError(e, "NodeManager threw an exception subscribing to all events. NodeManager={0}", manager);
+                                Utils.LogError(
+                                    e,
+                                    "NodeManager threw an exception subscribing to all events. NodeManager={0}",
+                                    manager);
                             }
                         }
                     }
-
                     // only subscribe to the node manager that owns the node.
                     else
                     {
-                        ServiceResult error = nodeManager.SubscribeToEvents(context, handle, subscriptionId, monitoredItem, false);
+                        ServiceResult error = nodeManager.SubscribeToEvents(
+                            context,
+                            handle,
+                            subscriptionId,
+                            monitoredItem,
+                            false);
 
                         if (ServiceResult.IsBad(error))
                         {
-                            m_server.EventManager.DeleteMonitoredItem(monitoredItem.Id);
+                            Server.EventManager.DeleteMonitoredItem(monitoredItem.Id);
                             errors[ii] = error;
                             continue;
                         }
@@ -2431,25 +2628,31 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Restore a set of monitored items after a ServerData Restart.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="itemsToRestore"/> is <c>null</c>.</exception>
+        /// <exception cref="InvalidOperationException"></exception>
         public virtual void RestoreMonitoredItems(
             IList<IUaStoredMonitoredItem> itemsToRestore,
             IList<IUaMonitoredItem> monitoredItems,
             IUserIdentity savedOwnerIdentity)
         {
             if (itemsToRestore == null)
-                throw new ArgumentNullException(nameof(itemsToRestore));
-            if (monitoredItems == null)
-                throw new ArgumentNullException(nameof(monitoredItems));
-
-            if (m_server.IsRunning)
             {
-                throw new InvalidOperationException("Subscription restore can only occur on startup");
+                throw new ArgumentNullException(nameof(itemsToRestore));
+            }
+
+            if (monitoredItems == null)
+            {
+                throw new ArgumentNullException(nameof(monitoredItems));
+            }
+
+            if (Server.IsRunning)
+            {
+                throw new InvalidOperationException(
+                    "Subscription restore can only occur on startup");
             }
 
             // create items for event filters.
-            RestoreMonitoredItemsForEvents(
-               itemsToRestore,
-               monitoredItems);
+            RestoreMonitoredItemsForEvents(itemsToRestore, monitoredItems);
 
             // create items for data access.
             foreach (IUaNodeManager nodeManager in m_nodeManagers)
@@ -2477,9 +2680,7 @@ namespace Technosoftware.UaServer.NodeManager
                 if (!item.IsRestored)
                 {
                     // all event subscriptions required an event filter.
-                    EventFilter filter = item.OriginalFilter as EventFilter;
-
-                    if (filter == null)
+                    if (item.OriginalFilter is not EventFilter)
                     {
                         continue;
                     }
@@ -2487,16 +2688,14 @@ namespace Technosoftware.UaServer.NodeManager
                     item.IsRestored = true;
 
                     // check if a valid node.
-                    IUaNodeManager nodeManager = null;
-
-                    object handle = GetManagerHandle(item.NodeId, out nodeManager);
+                    object handle = GetManagerHandle(item.NodeId, out IUaNodeManager nodeManager);
 
                     if (handle == null)
                     {
                         continue;
                     }
 
-                    UaMonitoredItem monitoredItem = m_server.EventManager.RestoreMonitoredItem(
+                    IUaEventMonitoredItem monitoredItem = Server.EventManager.RestoreMonitoredItem(
                         nodeManager,
                         handle,
                         item);
@@ -2508,23 +2707,34 @@ namespace Technosoftware.UaServer.NodeManager
                         {
                             try
                             {
-                                manager.SubscribeToAllEvents(new UaServerOperationContext(monitoredItem), monitoredItem.SubscriptionId, monitoredItem, false);
+                                manager.SubscribeToAllEvents(
+                                    new UaServerOperationContext(monitoredItem),
+                                    monitoredItem.SubscriptionId,
+                                    monitoredItem,
+                                    false);
                             }
                             catch (Exception e)
                             {
-                                Utils.LogError(e, "NodeManager threw an exception subscribing to all events. NodeManager={0}", manager);
+                                Utils.LogError(
+                                    e,
+                                    "NodeManager threw an exception subscribing to all events. NodeManager={0}",
+                                    manager);
                             }
                         }
                     }
-
                     // only subscribe to the node manager that owns the node.
                     else
                     {
-                        ServiceResult error = nodeManager.SubscribeToEvents(new UaServerOperationContext(monitoredItem), handle, monitoredItem.SubscriptionId, monitoredItem, false);
+                        ServiceResult error = nodeManager.SubscribeToEvents(
+                            new UaServerOperationContext(monitoredItem),
+                            handle,
+                            monitoredItem.SubscriptionId,
+                            monitoredItem,
+                            false);
 
                         if (ServiceResult.IsBad(error))
                         {
-                            m_server.EventManager.DeleteMonitoredItem(monitoredItem.Id);
+                            Server.EventManager.DeleteMonitoredItem(monitoredItem.Id);
                             continue;
                         }
                     }
@@ -2537,6 +2747,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Modifies a set of monitored items.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
         public virtual void ModifyMonitoredItems(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
@@ -2546,17 +2758,31 @@ namespace Technosoftware.UaServer.NodeManager
             IList<MonitoringFilterResult> filterResults)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
-            if (itemsToModify == null)
-                throw new ArgumentNullException(nameof(itemsToModify));
-            if (monitoredItems == null)
-                throw new ArgumentNullException(nameof(monitoredItems));
-            if (errors == null)
-                throw new ArgumentNullException(nameof(errors));
-            if (filterResults == null)
-                throw new ArgumentNullException(nameof(filterResults));
+            }
 
-            if (timestampsToReturn < TimestampsToReturn.Source || timestampsToReturn > TimestampsToReturn.Neither)
+            if (itemsToModify == null)
+            {
+                throw new ArgumentNullException(nameof(itemsToModify));
+            }
+
+            if (monitoredItems == null)
+            {
+                throw new ArgumentNullException(nameof(monitoredItems));
+            }
+
+            if (errors == null)
+            {
+                throw new ArgumentNullException(nameof(errors));
+            }
+
+            if (filterResults == null)
+            {
+                throw new ArgumentNullException(nameof(filterResults));
+            }
+
+            if (timestampsToReturn is < TimestampsToReturn.Source or > TimestampsToReturn.Neither)
             {
                 throw new ServiceResultException(StatusCodes.BadTimestampsToReturnInvalid);
             }
@@ -2634,10 +2860,9 @@ namespace Technosoftware.UaServer.NodeManager
         {
             for (int ii = 0; ii < itemsToModify.Count; ii++)
             {
-                IUaEventMonitoredItem monitoredItem = monitoredItems[ii] as IUaEventMonitoredItem;
-
                 // all event subscriptions are handled by the event manager.
-                if (monitoredItem == null || (monitoredItem.MonitoredItemType & UaMonitoredItemTypeMask.Events) == 0)
+                if (monitoredItems[ii] is not IUaEventMonitoredItem monitoredItem ||
+                    (monitoredItem.MonitoredItemType & MonitoredItemTypeMask.Events) == 0)
                 {
                     continue;
                 }
@@ -2653,26 +2878,28 @@ namespace Technosoftware.UaServer.NodeManager
                 }
 
                 // all event subscriptions required an event filter.
-                EventFilter filter = itemToModify.RequestedParameters.Filter.Body as EventFilter;
 
-                if (filter == null)
+                if (itemToModify.RequestedParameters.Filter.Body is not EventFilter filter)
                 {
                     errors[ii] = StatusCodes.BadEventFilterInvalid;
                     continue;
                 }
 
                 // validate the event filter.
-                EventFilter.Result result = filter.Validate(new FilterContext(m_server.NamespaceUris, m_server.TypeTree, context));
+                EventFilter.Result result = filter.Validate(
+                    new FilterContext(Server.NamespaceUris, Server.TypeTree, context));
 
                 if (ServiceResult.IsBad(result.Status))
                 {
                     errors[ii] = result.Status;
-                    filterResults[ii] = result.ToEventFilterResult(context.DiagnosticsMask, context.StringTable);
+                    filterResults[ii] = result.ToEventFilterResult(
+                        context.DiagnosticsMask,
+                        context.StringTable);
                     continue;
                 }
 
                 // modify the item.
-                m_server.EventManager.ModifyMonitoredItem(
+                Server.EventManager.ModifyMonitoredItem(
                     context,
                     monitoredItem,
                     timestampsToReturn,
@@ -2680,7 +2907,7 @@ namespace Technosoftware.UaServer.NodeManager
                     filter);
 
                 // subscribe to all node managers.
-                if ((monitoredItem.MonitoredItemType & UaMonitoredItemTypeMask.AllEvents) != 0)
+                if ((monitoredItem.MonitoredItemType & MonitoredItemTypeMask.AllEvents) != 0)
                 {
                     foreach (IUaNodeManager manager in m_nodeManagers)
                     {
@@ -2691,7 +2918,6 @@ namespace Technosoftware.UaServer.NodeManager
                             false);
                     }
                 }
-
                 // only subscribe to the node manager that owns the node.
                 else
                 {
@@ -2710,6 +2936,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Transfers a set of monitored items.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public virtual void TransferMonitoredItems(
             UaServerOperationContext context,
             bool sendInitialValues,
@@ -2717,11 +2944,19 @@ namespace Technosoftware.UaServer.NodeManager
             IList<ServiceResult> errors)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
+
             if (monitoredItems == null)
+            {
                 throw new ArgumentNullException(nameof(monitoredItems));
+            }
+
             if (errors == null)
+            {
                 throw new ArgumentNullException(nameof(errors));
+            }
 
             var processedItems = new List<bool>(monitoredItems.Count);
 
@@ -2747,6 +2982,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Deletes a set of monitored items.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public virtual void DeleteMonitoredItems(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -2754,13 +2990,21 @@ namespace Technosoftware.UaServer.NodeManager
             IList<ServiceResult> errors)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
-            if (itemsToDelete == null)
-                throw new ArgumentNullException(nameof(itemsToDelete));
-            if (errors == null)
-                throw new ArgumentNullException(nameof(errors));
+            }
 
-            List<bool> processedItems = new List<bool>(itemsToDelete.Count);
+            if (itemsToDelete == null)
+            {
+                throw new ArgumentNullException(nameof(itemsToDelete));
+            }
+
+            if (errors == null)
+            {
+                throw new ArgumentNullException(nameof(errors));
+            }
+
+            var processedItems = new List<bool>(itemsToDelete.Count);
 
             for (int ii = 0; ii < itemsToDelete.Count; ii++)
             {
@@ -2778,11 +3022,7 @@ namespace Technosoftware.UaServer.NodeManager
             // call each node manager.
             foreach (IUaNodeManager nodeManager in m_nodeManagers)
             {
-                nodeManager.DeleteMonitoredItems(
-                    context,
-                    itemsToDelete,
-                    processedItems,
-                    errors);
+                nodeManager.DeleteMonitoredItems(context, itemsToDelete, processedItems, errors);
             }
 
             // fill results for unknown nodes.
@@ -2802,15 +3042,14 @@ namespace Technosoftware.UaServer.NodeManager
             UaServerOperationContext context,
             uint subscriptionId,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<bool> processedItems,
+            List<bool> processedItems,
             IList<ServiceResult> errors)
         {
             for (int ii = 0; ii < monitoredItems.Count; ii++)
             {
-                IUaEventMonitoredItem monitoredItem = monitoredItems[ii] as IUaEventMonitoredItem;
-
                 // all event subscriptions are handled by the event manager.
-                if (monitoredItem == null || (monitoredItem.MonitoredItemType & UaMonitoredItemTypeMask.Events) == 0)
+                if (monitoredItems[ii] is not IUaEventMonitoredItem monitoredItem ||
+                    (monitoredItem.MonitoredItemType & MonitoredItemTypeMask.Events) == 0)
                 {
                     continue;
                 }
@@ -2818,22 +3057,26 @@ namespace Technosoftware.UaServer.NodeManager
                 processedItems[ii] = true;
 
                 // unsubscribe to all node managers.
-                if ((monitoredItem.MonitoredItemType & UaMonitoredItemTypeMask.AllEvents) != 0)
+                if ((monitoredItem.MonitoredItemType & MonitoredItemTypeMask.AllEvents) != 0)
                 {
                     foreach (IUaNodeManager manager in m_nodeManagers)
                     {
                         manager.SubscribeToAllEvents(context, subscriptionId, monitoredItem, true);
                     }
                 }
-
                 // only unsubscribe to the node manager that owns the node.
                 else
                 {
-                    monitoredItem.NodeManager.SubscribeToEvents(context, monitoredItem.ManagerHandle, subscriptionId, monitoredItem, true);
+                    monitoredItem.NodeManager.SubscribeToEvents(
+                        context,
+                        monitoredItem.ManagerHandle,
+                        subscriptionId,
+                        monitoredItem,
+                        true);
                 }
 
                 // delete the item.
-                m_server.EventManager.DeleteMonitoredItem(monitoredItem.Id);
+                Server.EventManager.DeleteMonitoredItem(monitoredItem.Id);
 
                 // success.
                 errors[ii] = StatusCodes.Good;
@@ -2843,6 +3086,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Changes the monitoring mode for a set of items.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public virtual void SetMonitoringMode(
             UaServerOperationContext context,
             MonitoringMode monitoringMode,
@@ -2850,14 +3094,22 @@ namespace Technosoftware.UaServer.NodeManager
             IList<ServiceResult> errors)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
+
             if (itemsToModify == null)
+            {
                 throw new ArgumentNullException(nameof(itemsToModify));
+            }
+
             if (errors == null)
+            {
                 throw new ArgumentNullException(nameof(errors));
+            }
 
             // call each node manager.
-            List<bool> processedItems = new List<bool>(itemsToModify.Count);
+            var processedItems = new List<bool>(itemsToModify.Count);
 
             for (int ii = 0; ii < itemsToModify.Count; ii++)
             {
@@ -2899,15 +3151,14 @@ namespace Technosoftware.UaServer.NodeManager
             UaServerOperationContext context,
             MonitoringMode monitoringMode,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<bool> processedItems,
+            List<bool> processedItems,
             IList<ServiceResult> errors)
         {
-            for (var ii = 0; ii < monitoredItems.Count; ii++)
+            for (int ii = 0; ii < monitoredItems.Count; ii++)
             {
-                var monitoredItem = monitoredItems[ii] as IUaEventMonitoredItem;
-
                 // all event subscriptions are handled by the event manager.
-                if (monitoredItem == null || (monitoredItem.MonitoredItemType & UaMonitoredItemTypeMask.Events) == 0)
+                if (monitoredItems[ii] is not IUaEventMonitoredItem monitoredItem ||
+                    (monitoredItem.MonitoredItemType & MonitoredItemTypeMask.Events) == 0)
                 {
                     continue;
                 }
@@ -2921,29 +3172,21 @@ namespace Technosoftware.UaServer.NodeManager
                 errors[ii] = StatusCodes.Good;
             }
         }
-        #endregion
 
-        #region Protected Members
         /// <summary>
         /// The server that the node manager belongs to.
         /// </summary>
-        protected IUaServerData Server
-        {
-            get { return m_server; }
-        }
+        protected IUaServerData Server { get; }
 
         /// <summary>
         /// The node managers being managed.
         /// </summary>
-        public IList<IUaNodeManager> NodeManagers
-        {
-            get { return m_nodeManagers; }
-        }
+        public IList<IUaNodeManager> NodeManagers => m_nodeManagers;
 
         /// <summary>
         /// The namespace managers being managed
         /// </summary>
-        internal IUaNodeManager[][] NamespaceManagers => m_namespaceManagers;
+        internal IUaNodeManager[][] NamespaceManagers { get; private set; }
 
         /// <summary>
         /// Validates a monitoring attributes parameter.
@@ -2957,14 +3200,10 @@ namespace Technosoftware.UaServer.NodeManager
             }
 
             // check for known filter.
-            if (!ExtensionObject.IsNull(attributes.Filter))
+            if (!ExtensionObject.IsNull(attributes.Filter) &&
+                attributes.Filter.Body is not MonitoringFilter)
             {
-                MonitoringFilter filter = attributes.Filter.Body as MonitoringFilter;
-
-                if (filter == null)
-                {
-                    return new ServiceResult(StatusCodes.BadMonitoredItemFilterInvalid);
-                }
+                return new ServiceResult(StatusCodes.BadMonitoredItemFilterInvalid);
             }
 
             // passed basic validation.
@@ -2976,17 +3215,13 @@ namespace Technosoftware.UaServer.NodeManager
         /// </summary>
         protected static ServiceResult ValidateMonitoringFilter(ExtensionObject filter)
         {
-            ServiceResult error = null;
-
             // check that no filter is specified for non-value attributes.
             if (!ExtensionObject.IsNull(filter))
             {
-                DataChangeFilter datachangeFilter = filter.Body as DataChangeFilter;
-
                 // validate data change filter.
-                if (datachangeFilter != null)
+                if (filter.Body is DataChangeFilter datachangeFilter)
                 {
-                    error = datachangeFilter.Validate();
+                    ServiceResult error = datachangeFilter.Validate();
 
                     if (ServiceResult.IsBad(error))
                     {
@@ -3002,7 +3237,9 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Validates a monitored item create request parameter.
         /// </summary>
-        protected ServiceResult ValidateMonitoredItemCreateRequest(UaServerOperationContext operationContext, MonitoredItemCreateRequest item)
+        protected ServiceResult ValidateMonitoredItemCreateRequest(
+            UaServerOperationContext operationContext,
+            MonitoredItemCreateRequest item)
         {
             // check for null structure.
             if (item == null)
@@ -3011,7 +3248,11 @@ namespace Technosoftware.UaServer.NodeManager
             }
 
             // validate read value id component. Validate also access rights and permissions
-            ServiceResult error = ValidateReadRequest(operationContext, item.ItemToMonitor, null, true);
+            ServiceResult error = ValidateReadRequest(
+                operationContext,
+                item.ItemToMonitor,
+                null,
+                true);
 
             if (ServiceResult.IsBad(error))
             {
@@ -3019,7 +3260,7 @@ namespace Technosoftware.UaServer.NodeManager
             }
 
             // check for valid monitoring mode.
-            if ((int)item.MonitoringMode < 0 || (int)item.MonitoringMode > (int)MonitoringMode.Reporting)
+            if ((int)item.MonitoringMode is < 0 or > ((int)MonitoringMode.Reporting))
             {
                 return new ServiceResult(StatusCodes.BadMonitoringModeInvalid);
             }
@@ -3035,7 +3276,8 @@ namespace Technosoftware.UaServer.NodeManager
             }
 
             // check that no filter is specified for non-value attributes.
-            if (item.ItemToMonitor.AttributeId != Attributes.Value && item.ItemToMonitor.AttributeId != Attributes.EventNotifier)
+            if (item.ItemToMonitor.AttributeId is not Attributes.Value and not Attributes
+                .EventNotifier)
             {
                 if (!ExtensionObject.IsNull(attributes.Filter))
                 {
@@ -3059,7 +3301,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Validates a monitored item modify request parameter.
         /// </summary>
-        protected static ServiceResult ValidateMonitoredItemModifyRequest(MonitoredItemModifyRequest item)
+        protected static ServiceResult ValidateMonitoredItemModifyRequest(
+            MonitoredItemModifyRequest item)
         {
             // check for null structure.
             if (item == null)
@@ -3077,7 +3320,7 @@ namespace Technosoftware.UaServer.NodeManager
                 return error;
             }
 
-            // validate monitoring filter.         
+            // validate monitoring filter.
             error = ValidateMonitoringFilter(attributes.Filter);
 
             if (ServiceResult.IsBad(error))
@@ -3092,10 +3335,8 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Validates a call request item parameter. It validates also access rights and role permissions
         /// </summary>
-        /// <param name="operationContext"></param>
-        /// <param name="callMethodRequest"></param>
-        /// <returns></returns>
-        protected ServiceResult ValidateCallRequestItem(UaServerOperationContext operationContext,
+        protected ServiceResult ValidateCallRequestItem(
+            UaServerOperationContext operationContext,
             CallMethodRequest callMethodRequest)
         {
             // check for null structure.
@@ -3128,16 +3369,11 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Validates a Read or MonitoredItemCreate request. It validates also access rights and role permissions
         /// </summary>
-        /// <param name="operationContext"></param>
-        /// <param name="readValueId"></param>
-        /// <param name="uniqueNodesReadAttributes"></param>
-        /// <param name="permissionsOnly"></param>
-        /// <returns></returns>
-        protected ServiceResult ValidateReadRequest(UaServerOperationContext operationContext,
+        protected ServiceResult ValidateReadRequest(
+            UaServerOperationContext operationContext,
             ReadValueId readValueId,
             Dictionary<NodeId, List<object>> uniqueNodesReadAttributes = null,
-            bool permissionsOnly = false
-            )
+            bool permissionsOnly = false)
         {
             ServiceResult serviceResult = ReadValueId.Validate(readValueId);
 
@@ -3155,7 +3391,8 @@ namespace Technosoftware.UaServer.NodeManager
                 }
 
                 // check access rights and role permissions
-                serviceResult = ValidatePermissions(operationContext,
+                serviceResult = ValidatePermissions(
+                    operationContext,
                     readValueId.NodeId,
                     requestedPermission,
                     uniqueNodesReadAttributes,
@@ -3167,16 +3404,15 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Validates a Write request. It validates also access rights and role permissions
         /// </summary>
-        /// <param name="operationContext"></param>
-        /// <param name="writeValue"></param>
-        /// <returns></returns>
-        protected ServiceResult ValidateWriteRequest(UaServerOperationContext operationContext, WriteValue writeValue)
+        protected ServiceResult ValidateWriteRequest(
+            UaServerOperationContext operationContext,
+            WriteValue writeValue)
         {
             ServiceResult serviceResult = WriteValue.Validate(writeValue);
 
             if (ServiceResult.IsGood(serviceResult))
             {
-                PermissionType requestedPermission = PermissionType.WriteAttribute;  //any attribute other than Value, RolePermissions or Historizing
+                PermissionType requestedPermission = PermissionType.WriteAttribute; //any attribute other than Value, RolePermissions or Historizing
                 if (writeValue.AttributeId == Attributes.RolePermissions)
                 {
                     requestedPermission = PermissionType.WriteRolePermissions;
@@ -3191,7 +3427,12 @@ namespace Technosoftware.UaServer.NodeManager
                 }
 
                 // check access rights and permissions
-                serviceResult = ValidatePermissions(operationContext, writeValue.NodeId, requestedPermission, null, true);
+                serviceResult = ValidatePermissions(
+                    operationContext,
+                    writeValue.NodeId,
+                    requestedPermission,
+                    null,
+                    true);
             }
             return serviceResult;
         }
@@ -3199,17 +3440,21 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Validates a HistoryRead request. It validates also access rights and role permissions
         /// </summary>
-        /// <param name="operationContext"></param>
-        /// <param name="historyReadValueId"></param>
-        /// <returns></returns>
-        protected ServiceResult ValidateHistoryReadRequest(UaServerOperationContext operationContext, HistoryReadValueId historyReadValueId)
+        protected ServiceResult ValidateHistoryReadRequest(
+            UaServerOperationContext operationContext,
+            HistoryReadValueId historyReadValueId)
         {
             ServiceResult serviceResult = HistoryReadValueId.Validate(historyReadValueId);
 
             if (ServiceResult.IsGood(serviceResult))
             {
                 // check access rights and permissions
-                serviceResult = ValidatePermissions(operationContext, historyReadValueId.NodeId, PermissionType.ReadHistory, null, true);
+                serviceResult = ValidatePermissions(
+                    operationContext,
+                    historyReadValueId.NodeId,
+                    PermissionType.ReadHistory,
+                    null,
+                    true);
             }
             return serviceResult;
         }
@@ -3217,26 +3462,30 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         ///  Validates a HistoryUpdate request. It validates also access rights and role permissions
         /// </summary>
-        /// <param name="operationContext"></param>
-        /// <param name="historyUpdateDetails"></param>
-        /// <returns></returns>
-        protected ServiceResult ValidateHistoryUpdateRequest(UaServerOperationContext operationContext, HistoryUpdateDetails historyUpdateDetails)
+        protected ServiceResult ValidateHistoryUpdateRequest(
+            UaServerOperationContext operationContext,
+            HistoryUpdateDetails historyUpdateDetails)
         {
             ServiceResult serviceResult = HistoryUpdateDetails.Validate(historyUpdateDetails);
 
             if (ServiceResult.IsGood(serviceResult))
             {
                 // check access rights and permissions
-                PermissionType requiredPermission = DetermineHistoryAccessPermission(historyUpdateDetails);
-                serviceResult = ValidatePermissions(operationContext, historyUpdateDetails.NodeId, requiredPermission, null, true);
+                PermissionType requiredPermission = DetermineHistoryAccessPermission(
+                    historyUpdateDetails);
+                serviceResult = ValidatePermissions(
+                    operationContext,
+                    historyUpdateDetails.NodeId,
+                    requiredPermission,
+                    null,
+                    true);
             }
 
             return serviceResult;
         }
-        #region Validate Permissions Methods
 
         /// <summary>
-        /// Check if the Base NodeClass attributes and NameSpace meta-data attributes 
+        /// Check if the Base NodeClass attributes and NameSpace meta-data attributes
         /// are valid for the given operation context of the specified node.
         /// </summary>
         /// <param name="context">The Operation Context</param>
@@ -3244,28 +3493,32 @@ namespace Technosoftware.UaServer.NodeManager
         /// <param name="requestedPermision">The requested permission</param>
         /// <param name="uniqueNodesServiceAttributes">The cache holding the values of the attributes neeeded to be used in subsequent calls</param>
         /// <param name="permissionsOnly">Only the AccessRestrictions and RolePermission attributes are read. Should be false if uniqueNodesServiceAttributes is not null</param>
-        /// <returns>StatusCode Good if permission is granted, BadUserAccessDenied if not granted 
+        /// <returns>StatusCode Good if permission is granted, BadUserAccessDenied if not granted
         /// or a bad status code describing the validation process failure </returns>
         protected ServiceResult ValidatePermissions(
             UaServerOperationContext context,
             NodeId nodeId,
             PermissionType requestedPermision,
             Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes = null,
-            bool permissionsOnly = false
-           )
+            bool permissionsOnly = false)
         {
             if (context.Session != null)
             {
-                IUaNodeManager nodeManager = null;
-                object nodeHandle = GetManagerHandle(nodeId, out nodeManager);
+                object nodeHandle = GetManagerHandle(nodeId, out IUaNodeManager nodeManager);
 
-                return ValidatePermissions(context, nodeManager, nodeHandle, requestedPermision, uniqueNodesServiceAttributes, permissionsOnly);
+                return ValidatePermissions(
+                    context,
+                    nodeManager,
+                    nodeHandle,
+                    requestedPermision,
+                    uniqueNodesServiceAttributes,
+                    permissionsOnly);
             }
             return StatusCodes.Good;
         }
 
         /// <summary>
-        /// Check if the Base NodeClass attributes and NameSpace meta-data attributes 
+        /// Check if the Base NodeClass attributes and NameSpace meta-data attributes
         /// are valid for the given operation context of the specified node.
         /// </summary>
         /// <param name="context">The Operation Context</param>
@@ -3274,7 +3527,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// <param name="requestedPermision">The requested permission</param>
         /// <param name="uniqueNodesServiceAttributes">The cache holding the values of the attributes neeeded to be used in subsequent calls</param>
         /// <param name="permissionsOnly">Only the AccessRestrictions and RolePermission attributes are read. Should be false if uniqueNodesServiceAttributes is not null</param>
-        /// <returns>StatusCode Good if permission is granted, BadUserAccessDenied if not granted 
+        /// <returns>StatusCode Good if permission is granted, BadUserAccessDenied if not granted
         /// or a bad status code describing the validation process failure </returns>
         protected ServiceResult ValidatePermissions(
             UaServerOperationContext context,
@@ -3282,34 +3535,39 @@ namespace Technosoftware.UaServer.NodeManager
             object nodeHandle,
             PermissionType requestedPermision,
             Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes = null,
-            bool permissionsOnly = false
-            )
+            bool permissionsOnly = false)
         {
             ServiceResult serviceResult = StatusCodes.Good;
 
             // check if validation is necessary
             if (context.Session != null && nodeManager != null && nodeHandle != null)
             {
-                IUaStandardNodeManager nodeManager2 = nodeManager as IUaStandardNodeManager;
-
                 UaNodeMetadata nodeMetadata = null;
                 // First attempt to retrieve just the Permission metadata with or without cache optimization
-                // If it happens that nodemanager does not fully implement IUaNodeManager.GetPermissionMetadata or not IUaStandardNodeManager,
-                // fallback to INodeManager.GetNodeMetadata
-                if (nodeManager2 != null)
+                // If it happens that nodemanager does not fully implement IUaStandardNodeManager.GetPermissionMetadata or not IUaStandardNodeManager,
+                // fallback to IUaNodeManager.GetNodeMetadata
+                if (nodeManager is IUaStandardNodeManager nodeManager2)
                 {
-                    nodeMetadata = nodeManager2.GetPermissionMetadata(context, nodeHandle, BrowseResultMask.NodeClass, uniqueNodesServiceAttributes, permissionsOnly);
+                    nodeMetadata = nodeManager2.GetPermissionMetadata(
+                        context,
+                        nodeHandle,
+                        BrowseResultMask.NodeClass,
+                        uniqueNodesServiceAttributes,
+                        permissionsOnly);
                 }
                 // If not IUaStandardNodeManager or GetPermissionMetadata() returns null.
-                if (nodeMetadata == null)
-                {
-                    nodeMetadata = nodeManager.GetNodeMetadata(context, nodeHandle, BrowseResultMask.NodeClass);
-                }
+                nodeMetadata ??= nodeManager.GetNodeMetadata(
+                    context,
+                    nodeHandle,
+                    BrowseResultMask.NodeClass);
 
                 if (nodeMetadata != null)
                 {
-                    // check RolePermissions 
-                    serviceResult = ValidateRolePermissions(context, nodeMetadata, requestedPermision);
+                    // check RolePermissions
+                    serviceResult = ValidateRolePermissions(
+                        context,
+                        nodeMetadata,
+                        requestedPermision);
 
                     if (ServiceResult.IsGood(serviceResult))
                     {
@@ -3326,9 +3584,11 @@ namespace Technosoftware.UaServer.NodeManager
         /// Validate the AccessRestrictions attribute
         /// </summary>
         /// <param name="context">The Operation Context</param>
-        /// <param name="nodeMetadata"></param>
+        /// <param name="nodeMetadata">Metadata</param>
         /// <returns>Good if the AccessRestrictions passes the validation</returns>
-        protected static ServiceResult ValidateAccessRestrictions(UaServerOperationContext context, UaNodeMetadata nodeMetadata)
+        protected static ServiceResult ValidateAccessRestrictions(
+            UaServerOperationContext context,
+            UaNodeMetadata nodeMetadata)
         {
             ServiceResult serviceResult = StatusCodes.Good;
             AccessRestrictionType restrictions = AccessRestrictionType.None;
@@ -3343,28 +3603,49 @@ namespace Technosoftware.UaServer.NodeManager
             }
             if (restrictions != AccessRestrictionType.None)
             {
-                bool encryptionRequired = (restrictions & AccessRestrictionType.EncryptionRequired) == AccessRestrictionType.EncryptionRequired;
-                bool signingRequired = (restrictions & AccessRestrictionType.SigningRequired) == AccessRestrictionType.SigningRequired;
-                bool sessionRequired = (restrictions & AccessRestrictionType.SessionRequired) == AccessRestrictionType.SessionRequired;
-                bool applyRestrictionsToBrowse = (restrictions & AccessRestrictionType.ApplyRestrictionsToBrowse) == AccessRestrictionType.ApplyRestrictionsToBrowse;
+                bool encryptionRequired =
+                    (restrictions & AccessRestrictionType.EncryptionRequired) ==
+                    AccessRestrictionType.EncryptionRequired;
+                bool signingRequired =
+                    (restrictions & AccessRestrictionType.SigningRequired) ==
+                    AccessRestrictionType.SigningRequired;
+                bool sessionRequired =
+                    (restrictions & AccessRestrictionType.SessionRequired) ==
+                    AccessRestrictionType.SessionRequired;
+                bool applyRestrictionsToBrowse =
+                    (restrictions & AccessRestrictionType.ApplyRestrictionsToBrowse) ==
+                    AccessRestrictionType.ApplyRestrictionsToBrowse;
 
-                bool browseOperation = context.RequestType == Sessions.RequestType.Browse ||
-                                       context.RequestType == Sessions.RequestType.BrowseNext ||
-                                       context.RequestType == Sessions.RequestType.TranslateBrowsePathsToNodeIds;
+                bool browseOperation =
+                    context.RequestType
+                        is RequestType.Browse
+                            or RequestType.BrowseNext
+                            or RequestType.TranslateBrowsePathsToNodeIds;
 
-                if ((encryptionRequired &&
-                     context.ChannelContext.EndpointDescription.SecurityMode != MessageSecurityMode.SignAndEncrypt &&
-                     context.ChannelContext.EndpointDescription.TransportProfileUri != Profiles.HttpsBinaryTransport &&
-                     ((applyRestrictionsToBrowse && browseOperation) || !browseOperation)) ||
-                    (signingRequired &&
-                     context.ChannelContext.EndpointDescription.SecurityMode != MessageSecurityMode.Sign &&
-                     context.ChannelContext.EndpointDescription.SecurityMode != MessageSecurityMode.SignAndEncrypt &&
-                     context.ChannelContext.EndpointDescription.TransportProfileUri != Profiles.HttpsBinaryTransport &&
-                     ((applyRestrictionsToBrowse && browseOperation) || !browseOperation)) ||
-                   (sessionRequired && context.Session == null))
+                if ((
+                        encryptionRequired &&
+                        context.ChannelContext.EndpointDescription
+                            .SecurityMode != MessageSecurityMode.SignAndEncrypt &&
+                        context.ChannelContext.EndpointDescription.TransportProfileUri !=
+                            Profiles.HttpsBinaryTransport &&
+                        ((applyRestrictionsToBrowse && browseOperation) || !browseOperation)
+                    ) ||
+                    (
+                        signingRequired &&
+                        context.ChannelContext.EndpointDescription
+                            .SecurityMode != MessageSecurityMode.Sign &&
+                        context.ChannelContext.EndpointDescription
+                            .SecurityMode != MessageSecurityMode.SignAndEncrypt &&
+                        context.ChannelContext.EndpointDescription.TransportProfileUri !=
+                            Profiles.HttpsBinaryTransport &&
+                        ((applyRestrictionsToBrowse && browseOperation) || !browseOperation)
+                    ) ||
+                    (sessionRequired && context.Session == null))
                 {
-                    serviceResult = ServiceResult.Create(StatusCodes.BadSecurityModeInsufficient,
-                        "Access restricted to nodeId {0} due to insufficient security mode.", nodeMetadata.NodeId);
+                    serviceResult = ServiceResult.Create(
+                        StatusCodes.BadSecurityModeInsufficient,
+                        "Access restricted to nodeId {0} due to insufficient security mode.",
+                        nodeMetadata.NodeId);
                 }
             }
 
@@ -3372,13 +3653,12 @@ namespace Technosoftware.UaServer.NodeManager
         }
 
         /// <summary>
-        /// Validates the role permissions 
+        /// Validates the role permissions
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="nodeMetadata"></param>
-        /// <param name="requestedPermission"></param>
-        /// <returns></returns>
-        public static ServiceResult ValidateRolePermissions(UaServerOperationContext context, UaNodeMetadata nodeMetadata, PermissionType requestedPermission)
+        protected internal static ServiceResult ValidateRolePermissions(
+            UaServerOperationContext context,
+            UaNodeMetadata nodeMetadata,
+            PermissionType requestedPermission)
         {
             if (nodeMetadata == null || requestedPermission == PermissionType.None)
             {
@@ -3387,16 +3667,19 @@ namespace Technosoftware.UaServer.NodeManager
             }
 
             // get the intersection of user role permissions and role permissions
-            RolePermissionTypeCollection userRolePermissions = null, rolePermissions = null;
-            if (nodeMetadata.UserRolePermissions != null && nodeMetadata.UserRolePermissions.Count > 0)
+            RolePermissionTypeCollection userRolePermissions = null;
+            if (nodeMetadata.UserRolePermissions != null &&
+                nodeMetadata.UserRolePermissions.Count > 0)
             {
                 userRolePermissions = nodeMetadata.UserRolePermissions;
             }
-            else if (nodeMetadata.DefaultUserRolePermissions != null && nodeMetadata.DefaultUserRolePermissions.Count > 0)
+            else if (nodeMetadata.DefaultUserRolePermissions != null &&
+                nodeMetadata.DefaultUserRolePermissions.Count > 0)
             {
                 userRolePermissions = nodeMetadata.DefaultUserRolePermissions;
             }
 
+            RolePermissionTypeCollection rolePermissions;
             if (nodeMetadata.RolePermissions != null && nodeMetadata.RolePermissions.Count > 0)
             {
                 rolePermissions = nodeMetadata.RolePermissions;
@@ -3406,47 +3689,52 @@ namespace Technosoftware.UaServer.NodeManager
                 rolePermissions = nodeMetadata.DefaultRolePermissions;
             }
 
-            if ((userRolePermissions == null || userRolePermissions.Count == 0) && (rolePermissions == null || rolePermissions.Count == 0))
+            if ((userRolePermissions == null || userRolePermissions.Count == 0) &&
+                (rolePermissions == null || rolePermissions.Count == 0))
             {
                 // there is no restriction from role permissions
                 return StatusCodes.Good;
             }
 
-            // group all permissions defined in rolePermissions by RoleId 
-            Dictionary<NodeId, PermissionType> roleIdPermissions = [];
+            // group all permissions defined in rolePermissions by RoleId
+            var roleIdPermissions = new Dictionary<NodeId, PermissionType>();
             if (rolePermissions != null && rolePermissions.Count > 0)
             {
                 foreach (RolePermissionType rolePermission in rolePermissions)
                 {
                     if (roleIdPermissions.ContainsKey(rolePermission.RoleId))
                     {
-                        roleIdPermissions[rolePermission.RoleId] |= ((PermissionType)rolePermission.Permissions);
+                        roleIdPermissions[rolePermission.RoleId] |= (PermissionType)rolePermission
+                            .Permissions;
                     }
                     else
                     {
-                        roleIdPermissions[rolePermission.RoleId] = ((PermissionType)rolePermission.Permissions) & requestedPermission;
+                        roleIdPermissions[rolePermission.RoleId] =
+                            ((PermissionType)rolePermission.Permissions) & requestedPermission;
                     }
                 }
             }
 
-            // group all permissions defined in userRolePermissions by RoleId 
-            Dictionary<NodeId, PermissionType> roleIdPermissionsDefinedForUser = [];
+            // group all permissions defined in userRolePermissions by RoleId
+            var roleIdPermissionsDefinedForUser = new Dictionary<NodeId, PermissionType>();
             if (userRolePermissions != null && userRolePermissions.Count > 0)
             {
                 foreach (RolePermissionType rolePermission in userRolePermissions)
                 {
                     if (roleIdPermissionsDefinedForUser.ContainsKey(rolePermission.RoleId))
                     {
-                        roleIdPermissionsDefinedForUser[rolePermission.RoleId] |= ((PermissionType)rolePermission.Permissions);
+                        roleIdPermissionsDefinedForUser[rolePermission.RoleId] |= (PermissionType)
+                            rolePermission.Permissions;
                     }
                     else
                     {
-                        roleIdPermissionsDefinedForUser[rolePermission.RoleId] = ((PermissionType)rolePermission.Permissions) & requestedPermission;
+                        roleIdPermissionsDefinedForUser[rolePermission.RoleId] =
+                            ((PermissionType)rolePermission.Permissions) & requestedPermission;
                     }
                 }
             }
 
-            Dictionary<NodeId, PermissionType> commonRoleIdPermissions = null;
+            Dictionary<NodeId, PermissionType> commonRoleIdPermissions;
             if (rolePermissions == null || rolePermissions.Count == 0)
             {
                 // there were no role permissions defined for this node only user role permissions
@@ -3463,42 +3751,84 @@ namespace Technosoftware.UaServer.NodeManager
                 // intersect role permissions from node and user
                 foreach (NodeId roleId in roleIdPermissions.Keys)
                 {
-                    if (roleIdPermissionsDefinedForUser.ContainsKey(roleId))
+                    if (roleIdPermissionsDefinedForUser.TryGetValue(
+                        roleId,
+                        out PermissionType value))
                     {
-                        commonRoleIdPermissions[roleId] = roleIdPermissions[roleId] & roleIdPermissionsDefinedForUser[roleId];
+                        commonRoleIdPermissions[roleId] = roleIdPermissions[roleId] & value;
                     }
                 }
             }
 
-            var currentRoleIds = context?.UserIdentity?.GrantedRoleIds;
+            NodeIdCollection currentRoleIds = context?.UserIdentity?.GrantedRoleIds;
             if (currentRoleIds == null || currentRoleIds.Count == 0)
             {
-                return ServiceResult.Create(StatusCodes.BadUserAccessDenied, "Current user has no granted role.");
+                return ServiceResult.Create(
+                    StatusCodes.BadUserAccessDenied,
+                    "Current user has no granted role.");
             }
 
             foreach (NodeId currentRoleId in currentRoleIds)
             {
-                if (commonRoleIdPermissions.ContainsKey(currentRoleId) && commonRoleIdPermissions[currentRoleId] != PermissionType.None)
+                if (commonRoleIdPermissions.TryGetValue(currentRoleId, out PermissionType value) &&
+                    value != PermissionType.None)
                 {
                     // there is one role that current session has na is listed in requested role
                     return StatusCodes.Good;
                 }
             }
-            return ServiceResult.Create(StatusCodes.BadUserAccessDenied,
-                "The requested permission {0} is not granted for node id {1}.", requestedPermission, nodeMetadata.NodeId);
+            return ServiceResult.Create(
+                StatusCodes.BadUserAccessDenied,
+                "The requested permission {0} is not granted for node id {1}.",
+                requestedPermission,
+                nodeMetadata.NodeId);
         }
 
-        #endregion
-        #endregion
-
-        #region Private Fields
-        private readonly object m_lock = new object();
-        private IUaServerData m_server;
-        private List<IUaNodeManager> m_nodeManagers;
+        private readonly Lock m_lock = new();
+        private readonly List<IUaNodeManager> m_nodeManagers;
         private long m_lastMonitoredItemId;
-        private IUaNodeManager[][] m_namespaceManagers;
-        private uint m_maxContinuationPointsPerBrowse;
-        private ReaderWriterLockSlim m_readWriterLockSlim = new ReaderWriterLockSlim();
-        #endregion
+        private readonly uint m_maxContinuationPointsPerBrowse;
+        private readonly ReaderWriterLockSlim m_readWriterLockSlim = new();
+    }
+
+    /// <summary>
+    /// Stores a reference between NodeManagers that is needs to be created or deleted.
+    /// </summary>
+    public class LocalReference
+    {
+        /// <summary>
+        /// Initializes the reference.
+        /// </summary>
+        public LocalReference(
+            NodeId sourceId,
+            NodeId referenceTypeId,
+            bool isInverse,
+            NodeId targetId)
+        {
+            SourceId = sourceId;
+            ReferenceTypeId = referenceTypeId;
+            IsInverse = isInverse;
+            TargetId = targetId;
+        }
+
+        /// <summary>
+        /// The source of the reference.
+        /// </summary>
+        public NodeId SourceId { get; }
+
+        /// <summary>
+        /// The type of reference.
+        /// </summary>
+        public NodeId ReferenceTypeId { get; }
+
+        /// <summary>
+        /// True if the reference is an inverse reference.
+        /// </summary>
+        public bool IsInverse { get; }
+
+        /// <summary>
+        /// The target of the reference.
+        /// </summary>
+        public NodeId TargetId { get; }
     }
 }

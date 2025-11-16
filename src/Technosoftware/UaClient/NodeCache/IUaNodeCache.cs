@@ -1,13 +1,13 @@
 #region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
+// Web: https://technosoftware.com
 //
-// The Software is subject to the Technosoftware GmbH Software License 
+// The Software is subject to the Technosoftware GmbH Software License
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Foundation MIT License. 
+// The Software is based on the OPC Foundation MIT License.
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
@@ -17,16 +17,15 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
     /// <summary>
     /// A client side cache of the server's type model.
     /// </summary>
-    public interface IUaNodeCache : INodeTable, ITypeTable
+    public interface IUaNodeCache : IAsyncNodeTable, IAsyncTypeTable
     {
         /// <summary>
         /// Loads the UA defined types into the cache.
@@ -40,97 +39,90 @@ namespace Technosoftware.UaClient
         void Clear();
 
         /// <summary>
-        /// Fetches a node from the server and updates the cache.
-        /// </summary>
-        Node FetchNode(ExpandedNodeId nodeId);
-
-        /// <summary>
         /// Finds a set of nodes in the nodeset,
         /// fetches missing nodes from server.
         /// </summary>
         /// <param name="nodeIds">The node identifier collection.</param>
-        IList<INode> Find(IList<ExpandedNodeId> nodeIds);
-
-        /// <summary>
-        /// Fetches a node collection from the server and updates the cache.
-        /// </summary>
-        IList<Node> FetchNodes(IList<ExpandedNodeId> nodeIds);
-
-        /// <summary>
-        /// Finds a set of nodes in the nodeset,
-        /// fetches missing nodes from server.
-        /// </summary>
-        /// <param name="nodeId">The node identifier.</param>
-        /// <param name="ct"></param>
-        Task<INode> FindAsync(ExpandedNodeId nodeId, CancellationToken ct = default);
-
-        /// <summary>
-        /// Finds a set of nodes in the nodeset,
-        /// fetches missing nodes from server.
-        /// </summary>
-        /// <param name="nodeIds">The node identifier collection.</param>
-        /// <param name="ct"></param>
-        Task<IList<INode>> FindAsync(IList<ExpandedNodeId> nodeIds, CancellationToken ct = default);
+        /// <param name="ct">Cancelation token to cancel operation with</param>
+        Task<IList<INode>> FindAsync(
+            IList<ExpandedNodeId> nodeIds,
+            CancellationToken ct = default);
 
         /// <summary>
         /// Fetches a node from the server and updates the cache.
         /// </summary>
         /// <param name="nodeId">Node id to fetch.</param>
-        /// <param name="ct"></param>
-        Task<Node> FetchNodeAsync(ExpandedNodeId nodeId, CancellationToken ct = default);
+        /// <param name="ct">Cancelation token to cancel operation with</param>
+        Task<Node> FetchNodeAsync(
+            ExpandedNodeId nodeId,
+            CancellationToken ct = default);
 
         /// <summary>
         /// Fetches a node collection from the server and updates the cache.
         /// </summary>
         /// <param name="nodeIds">The node identifier collection.</param>
-        /// <param name="ct"></param>
-        Task<IList<Node>> FetchNodesAsync(IList<ExpandedNodeId> nodeIds, CancellationToken ct = default);
+        /// <param name="ct">Cancelation token to cancel operation with</param>
+        Task<IList<Node>> FetchNodesAsync(
+            IList<ExpandedNodeId> nodeIds,
+            CancellationToken ct = default);
 
         /// <summary>
         /// Adds the supertypes of the node to the cache.
         /// </summary>
         /// <param name="nodeId">Node id to fetch.</param>
-        /// <param name="ct"></param>
-        Task FetchSuperTypesAsync(ExpandedNodeId nodeId, CancellationToken ct = default);
+        /// <param name="ct">Cancelation token to cancel operation with</param>
+        Task FetchSuperTypesAsync(
+            ExpandedNodeId nodeId,
+            CancellationToken ct = default);
 
         /// <summary>
-        /// Adds the supertypes of the node to the cache.
+        /// Returns the references of the specified node that
+        /// meet the criteria specified.
         /// </summary>
-        void FetchSuperTypes(ExpandedNodeId nodeId);
+        Task<IList<INode>> FindReferencesAsync(
+            ExpandedNodeId nodeId,
+            NodeId referenceTypeId,
+            bool isInverse,
+            bool includeSubtypes,
+            CancellationToken ct = default);
 
         /// <summary>
-        /// Returns the references of the specified node that meet the criteria specified.
+        /// Returns the references of the specified nodes that
+        /// meet the criteria specified.
         /// </summary>
-        IList<INode> FindReferences(ExpandedNodeId nodeId, NodeId referenceTypeId, bool isInverse, bool includeSubtypes);
-
-        /// <summary>
-        /// Returns the references of the specified nodes that meet the criteria specified.
-        /// </summary>
-        IList<INode> FindReferences(IList<ExpandedNodeId> nodeIds, IList<NodeId> referenceTypeIds, bool isInverse, bool includeSubtypes);
-
-        /// <summary>
-        /// Returns the references of the specified node that meet the criteria specified.
-        /// </summary>
-        Task<IList<INode>> FindReferencesAsync(ExpandedNodeId nodeId, NodeId referenceTypeId, bool isInverse, bool includeSubtypes, CancellationToken ct = default);
-
-        /// <summary>
-        /// Returns the references of the specified nodes that meet the criteria specified.
-        /// </summary>
-        Task<IList<INode>> FindReferencesAsync(IList<ExpandedNodeId> nodeIds, IList<NodeId> referenceTypeIds, bool isInverse, bool includeSubtypes, CancellationToken ct = default);
-
-        /// <summary>
-        /// Returns a display name for a node.
-        /// </summary>
-        string GetDisplayText(INode node);
+        Task<IList<INode>> FindReferencesAsync(
+            IList<ExpandedNodeId> nodeIds,
+            IList<NodeId> referenceTypeIds,
+            bool isInverse,
+            bool includeSubtypes,
+            CancellationToken ct = default);
 
         /// <summary>
         /// Returns a display name for a node.
         /// </summary>
-        string GetDisplayText(ExpandedNodeId nodeId);
+        ValueTask<string> GetDisplayTextAsync(
+            INode node,
+            CancellationToken ct = default);
+
+        /// <summary>
+        /// Returns a display name for a node.
+        /// </summary>
+        ValueTask<string> GetDisplayTextAsync(
+            ExpandedNodeId nodeId,
+            CancellationToken ct = default);
 
         /// <summary>
         /// Returns a display name for the target of a reference.
         /// </summary>
-        string GetDisplayText(ReferenceDescription reference);
+        ValueTask<string> GetDisplayTextAsync(
+            ReferenceDescription reference,
+            CancellationToken ct = default);
+
+        /// <summary>
+        /// Builds the relative path from a type to a node.
+        /// </summary>
+        NodeId BuildBrowsePath(
+            ILocalNode node,
+            IList<QualifiedName> browsePath);
     }
 }

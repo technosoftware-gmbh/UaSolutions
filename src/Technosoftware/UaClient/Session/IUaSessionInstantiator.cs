@@ -1,13 +1,13 @@
 #region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
+// Web: https://technosoftware.com
 //
-// The Software is subject to the Technosoftware GmbH Software License 
+// The Software is subject to the Technosoftware GmbH Software License
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Foundation MIT License. 
+// The Software is based on the OPC Foundation MIT License.
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
@@ -15,9 +15,8 @@
 
 #region Using Directives
 using System.Security.Cryptography.X509Certificates;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -28,7 +27,6 @@ namespace Technosoftware.UaClient
     /// </summary>
     public interface IUaSessionInstantiator
     {
-        #region Constructors
         /// <summary>
         /// Constructs a new instance of the <see cref="Session"/> class.
         /// </summary>
@@ -47,6 +45,5 @@ namespace Technosoftware.UaClient
             X509Certificate2 clientCertificate,
             EndpointDescriptionCollection availableEndpoints = null,
             StringCollection discoveryProfileUris = null);
-        #endregion
     }
 }

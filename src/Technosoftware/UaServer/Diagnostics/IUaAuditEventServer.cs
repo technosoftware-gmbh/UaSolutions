@@ -1,4 +1,4 @@
-﻿#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
@@ -15,7 +15,7 @@
 
 #region Using Directives
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {

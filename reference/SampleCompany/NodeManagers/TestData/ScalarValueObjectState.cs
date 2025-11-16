@@ -10,13 +10,8 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System;
-using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-using System.Reflection;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
@@ -42,27 +37,66 @@ namespace SampleCompany.NodeManagers.TestData
             InitializeVariable(context, FloatValue, Variables.ScalarValueObjectType_FloatValue);
             InitializeVariable(context, DoubleValue, Variables.ScalarValueObjectType_DoubleValue);
             InitializeVariable(context, StringValue, Variables.ScalarValueObjectType_StringValue);
-            InitializeVariable(context, DateTimeValue, Variables.ScalarValueObjectType_DateTimeValue);
+            InitializeVariable(
+                context,
+                DateTimeValue,
+                Variables.ScalarValueObjectType_DateTimeValue);
             InitializeVariable(context, GuidValue, Variables.ScalarValueObjectType_GuidValue);
-            InitializeVariable(context, ByteStringValue, Variables.ScalarValueObjectType_ByteStringValue);
-            InitializeVariable(context, XmlElementValue, Variables.ScalarValueObjectType_XmlElementValue);
+            InitializeVariable(
+                context,
+                ByteStringValue,
+                Variables.ScalarValueObjectType_ByteStringValue);
+            InitializeVariable(
+                context,
+                XmlElementValue,
+                Variables.ScalarValueObjectType_XmlElementValue);
             InitializeVariable(context, NodeIdValue, Variables.ScalarValueObjectType_NodeIdValue);
-            InitializeVariable(context, ExpandedNodeIdValue, Variables.ScalarValueObjectType_ExpandedNodeIdValue);
-            InitializeVariable(context, QualifiedNameValue, Variables.ScalarValueObjectType_QualifiedNameValue);
-            InitializeVariable(context, LocalizedTextValue, Variables.ScalarValueObjectType_LocalizedTextValue);
-            InitializeVariable(context, StatusCodeValue, Variables.ScalarValueObjectType_StatusCodeValue);
+            InitializeVariable(
+                context,
+                ExpandedNodeIdValue,
+                Variables.ScalarValueObjectType_ExpandedNodeIdValue);
+            InitializeVariable(
+                context,
+                QualifiedNameValue,
+                Variables.ScalarValueObjectType_QualifiedNameValue);
+            InitializeVariable(
+                context,
+                LocalizedTextValue,
+                Variables.ScalarValueObjectType_LocalizedTextValue);
+            InitializeVariable(
+                context,
+                StatusCodeValue,
+                Variables.ScalarValueObjectType_StatusCodeValue);
             InitializeVariable(context, VariantValue, Variables.ScalarValueObjectType_VariantValue);
-            InitializeVariable(context, EnumerationValue, Variables.ScalarValueObjectType_EnumerationValue);
-            InitializeVariable(context, StructureValue, Variables.ScalarValueObjectType_StructureValue);
+            InitializeVariable(
+                context,
+                EnumerationValue,
+                Variables.ScalarValueObjectType_EnumerationValue);
+            InitializeVariable(
+                context,
+                StructureValue,
+                Variables.ScalarValueObjectType_StructureValue);
             InitializeVariable(context, NumberValue, Variables.ScalarValueObjectType_NumberValue);
             InitializeVariable(context, IntegerValue, Variables.ScalarValueObjectType_IntegerValue);
-            InitializeVariable(context, UIntegerValue, Variables.ScalarValueObjectType_UIntegerValue);
+            InitializeVariable(
+                context,
+                UIntegerValue,
+                Variables.ScalarValueObjectType_UIntegerValue);
             InitializeVariable(context, VectorValue, Variables.ScalarValueObjectType_VectorValue);
-            InitializeVariable(context, VectorUnionValue, Variables.ScalarValueObjectType_VectorUnionValue);
-            InitializeVariable(context, VectorWithOptionalFieldsValue, Variables.ScalarValueObjectType_VectorWithOptionalFieldsValue);
-            InitializeVariable(context, MultipleVectorsValue, Variables.ScalarValueObjectType_MultipleVectorsValue);
+            InitializeVariable(
+                context,
+                VectorUnionValue,
+                Variables.ScalarValueObjectType_VectorUnionValue);
+            InitializeVariable(
+                context,
+                VectorWithOptionalFieldsValue,
+                Variables.ScalarValueObjectType_VectorWithOptionalFieldsValue);
+            InitializeVariable(
+                context,
+                MultipleVectorsValue,
+                Variables.ScalarValueObjectType_MultipleVectorsValue);
         }
-        #endregion
+        #endregion Initialization
 
         #region Protected Methods
         /// <summary>
@@ -74,9 +108,7 @@ namespace SampleCompany.NodeManagers.TestData
             NodeId objectId,
             uint count)
         {
-            var system = context.SystemHandle as TestDataSystem;
-
-            if (system == null)
+            if (context.SystemHandle is not TestDataSystem system)
             {
                 return StatusCodes.BadOutOfService;
             }
@@ -116,6 +148,6 @@ namespace SampleCompany.NodeManagers.TestData
 
             return base.OnGenerateValues(context, method, objectId, count);
         }
-        #endregion
+        #endregion Protected Methods
     }
 }

@@ -12,19 +12,11 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
-using System.Threading;
 using System.Reflection;
 using System.Globalization;
-
 using Opc.Ua;
-
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.MemoryBuffer
 {
@@ -81,7 +73,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
 
             buffers_ = new Dictionary<string, MemoryBufferState>();
         }
-        #endregion
+        #endregion Constructors
 
         #region INodeManager Members
         /// <summary>
@@ -99,14 +91,14 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 base.CreateAddressSpace(externalReferences);
 
                 // create the nodes from configuration.
-                var namespaceIndex = ServerData.NamespaceUris.GetIndexOrAppend(Namespaces.MemoryBuffer);
+                var namespaceIndex = Server.NamespaceUris.GetIndexOrAppend(Namespaces.MemoryBuffer);
 
                 var root = (BaseInstanceState)FindPredefinedNode(
                     new NodeId(Objects.MemoryBuffers, namespaceIndex),
                     typeof(BaseInstanceState));
 
                 // create the nodes from configuration.
-                namespaceIndex = ServerData.NamespaceUris.GetIndexOrAppend(Namespaces.MemoryBuffer + "/Instance");
+                namespaceIndex = Server.NamespaceUris.GetIndexOrAppend(Namespaces.MemoryBuffer + "/Instance");
 
                 if (configuration_ != null && configuration_.Buffers != null)
                 {
@@ -126,7 +118,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                             true);
 
                         bufferNode.CreateBuffer(instance.DataType, instance.TagCount);
-                        bufferNode.InitializeMonitoring(ServerData, this);
+                        bufferNode.InitializeMonitoring(Server, this);
 
                         // save the buffers for easy look up later.
                         buffers_[bufferNode.SymbolicName] = bufferNode;
@@ -158,7 +150,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 }
             }
 
-            if (resourcePath == String.Empty)
+            if (resourcePath?.Length == 0)
             {
                 // No assembly found containing the nodes of the model. Behaviour here can differ but in this case we just return null.
                 return null;
@@ -590,11 +582,11 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
 
             return ServiceResult.Good;
         }
-        #endregion
+        #endregion INodeManager Members
 
         #region Private Fields
         private MemoryBufferConfiguration configuration_;
         private Dictionary<string, MemoryBufferState> buffers_;
-        #endregion
+        #endregion Private Fields
     }
 }

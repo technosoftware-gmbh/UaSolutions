@@ -16,7 +16,6 @@ using System.Linq;
 using System.Threading;
 using Opc.Ua;
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription
@@ -167,10 +166,10 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     //only persist second batch in list, as the first could be needed, for duplicate event check
                     if (m_eventBatches.Count > 1)
                     {
-                        m_batchPersistor.RequestBatchPersist(m_eventBatches[m_eventBatches.Count - 2]);
+                        m_batchPersistor.RequestBatchPersist(m_eventBatches[^2]);
                     }
 
-                    m_enqueueBatch = new EventBatch(new List<EventFieldList>(), kBatchSize, MonitoredItemId);
+                    m_enqueueBatch = new EventBatch([], kBatchSize, MonitoredItemId);
                 }
             }
         }
@@ -183,7 +182,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             // request a restore if the dequeue batch is half empty
             if (m_dequeueBatch.Events.Count <= kBatchSize / 2 && m_eventBatches.Count > 0)
             {
-                m_batchPersistor.RequestBatchRestore(m_eventBatches.First());
+                m_batchPersistor.RequestBatchRestore(m_eventBatches[0]);
             }
 
             // if the dequeue batch is empty and there are stored batches, set the dequeue batch to the first stored batch
@@ -191,13 +190,13 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             {
                 if (m_eventBatches.Count > 0 && m_dequeueBatch != m_enqueueBatch)
                 {
-                    m_dequeueBatch = m_eventBatches.First();
+                    m_dequeueBatch = m_eventBatches[0];
                     m_eventBatches.RemoveAt(0);
 
                     // Request a restore for the next batch if there is one
                     if (m_eventBatches.Count > 0)
                     {
-                        m_batchPersistor.RequestBatchRestore(m_eventBatches.First());
+                        m_batchPersistor.RequestBatchRestore(m_eventBatches[0]);
                     }
                 }
                 else
@@ -231,12 +230,12 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 else if (i >= m_enqueueBatch.Events.Count && m_eventBatches.Count > 0)
                 {
                     int indexInStoredBatch = i - m_enqueueBatch.Events.Count;
-                    if (indexInStoredBatch < m_eventBatches.Last().Events.Count && m_eventBatches.Last().Events[indexInStoredBatch] is EventFieldList storedEvent)
+                    if (indexInStoredBatch < m_eventBatches[^1].Events.Count &&
+                        m_eventBatches[^1].Events[
+                            indexInStoredBatch] is EventFieldList storedEvent &&
+                        ReferenceEquals(instance, storedEvent.Handle))
                     {
-                        if (ReferenceEquals(instance, storedEvent.Handle))
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
             }
@@ -269,7 +268,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     // Remove from stored batches if needed
                     while (itemsToRemove > 0 && m_eventBatches.Count > 0)
                     {
-                        var batch = m_eventBatches.First();
+                        EventBatch batch = m_eventBatches[0];
                         m_batchPersistor.RestoreSynchronously(batch);
                         int batchCount = batch.Events.Count;
 
@@ -312,7 +311,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     // Remove from stored batches if needed
                     while (itemsToRemove > 0 && m_eventBatches.Count > 0)
                     {
-                        var batch = m_eventBatches.Last();
+                        EventBatch batch = m_eventBatches[^1];
                         m_batchPersistor.RestoreSynchronously(batch);
                         int batchCount = batch.Events.Count;
 

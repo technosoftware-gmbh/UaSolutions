@@ -18,7 +18,9 @@
     <PackageId>$(PackageId).Debug</PackageId>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="SampleDataTypes\SampleCompany.NodeManagers.SampleDataTypes.PredefinedNodes.uanodes;TestData\SampleCompany.NodeManagers.TestData.PredefinedNodes.uanodes;MemoryBuffer\SampleCompany.NodeManagers.MemoryBuffer.PredefinedNodes.uanodes" />
+    <EmbeddedResource Include="TestData\Generated\SampleCompany.NodeManagers.TestData.PredefinedNodes.uanodes" />
+    <EmbeddedResource Include="MemoryBuffer\Generated\SampleCompany.NodeManagers.MemoryBuffer.PredefinedNodes.uanodes" />
+    <EmbeddedResource Include="SampleDataTypes\Generated\SampleCompany.NodeManagers.SampleDataTypes.PredefinedNodes.uanodes" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Alarms\Alarms.cs" />
@@ -28,12 +30,12 @@
     <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
-    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="5.0.0-rc" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
     <ProjectReference Include="..\..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
   </ItemGroup>
   <PropertyGroup Condition="'$(SignAssembly)' == 'true'">

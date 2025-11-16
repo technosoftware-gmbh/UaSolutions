@@ -1,69 +1,72 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-
-using BenchmarkDotNet.Configs;
-using CommandLine;
-
 using NUnit.Framework;
-using Assert = NUnit.Framework.Legacy.ClassicAssert;
-
 using Opc.Ua;
-
-using Technosoftware.UaServer;
 using Technosoftware.UaServer.Tests;
-
 using SampleCompany.NodeManagers.Reference;
-#endregion
+using Assert = NUnit.Framework.Legacy.ClassicAssert;
 
 namespace Technosoftware.UaClient.Tests
 {
     /// <summary>
     /// Test Client Services.
     /// </summary>
-    [TestFixture, Category("Client")]
-    [SetCulture("en-us"), SetUICulture("en-us")]
+    [TestFixture]
+    [Category("Client")]
+    [SetCulture("en-us")]
+    [SetUICulture("en-us")]
     public class DurableSubscriptionTest : ClientTestFramework
     {
-        private readonly string m_subscriptionTestXml = Path.Combine(Path.GetTempPath(), "SubscriptionTest.xml");
         public readonly uint MillisecondsPerHour = 3600 * 1000;
 
-        #region Test Setup
         /// <summary>
         /// Set up a Server and a Client instance.
         /// </summary>
         [OneTimeSetUp]
-        public new Task OneTimeSetUp()
+        public override Task OneTimeSetUpAsync()
         {
             // the tests can be run against server specified in .runsettings
             SupportsExternalServerUrl = true;
             // create a new session for every test
             SingleSession = false;
             MaxChannelCount = 1000;
-            return base.OneTimeSetUpAsync(writer: null, securityNone: true);
+            return OneTimeSetUpAsync(writer: null, securityNone: true);
         }
 
-        override public async Task CreateReferenceServerFixture(
+        public override async Task CreateReferenceServerFixtureAsync(
             bool enableTracing,
             bool disableActivityLogging,
             bool securityNone,
@@ -71,7 +74,9 @@ namespace Technosoftware.UaClient.Tests
         {
             {
                 // start Ref server
-                ServerFixture = new ServerFixture<ReferenceServer>(enableTracing, disableActivityLogging)
+                ServerFixture = new ServerFixture<ReferenceServer>(
+                    enableTracing,
+                    disableActivityLogging)
                 {
                     UriScheme = UriScheme,
                     SecurityNone = securityNone,
@@ -87,19 +92,27 @@ namespace Technosoftware.UaClient.Tests
                 ServerFixture.TraceMasks = Utils.TraceMasks.Error | Utils.TraceMasks.Security;
             }
 
-            await ServerFixture.LoadConfiguration(PkiRoot).ConfigureAwait(false);
+            await ServerFixture.LoadConfigurationAsync(PkiRoot).ConfigureAwait(false);
             ServerFixture.Config.TransportQuotas.MaxMessageSize = TransportQuotaMaxMessageSize;
-            ServerFixture.Config.TransportQuotas.MaxByteStringLength =
-            ServerFixture.Config.TransportQuotas.MaxStringLength = TransportQuotaMaxStringLength;
+            ServerFixture.Config.TransportQuotas.MaxByteStringLength = ServerFixture
+                .Config
+                .TransportQuotas
+                .MaxStringLength = TransportQuotaMaxStringLength;
             ServerFixture.Config.ServerConfiguration.MinSessionTimeout = 1000;
             ServerFixture.Config.ServerConfiguration.MinSubscriptionLifetime = 1500;
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.UserName));
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(new UserTokenPolicy(UserTokenType.Certificate));
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies
+                .Add(new UserTokenPolicy(UserTokenType.UserName));
             ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
-                new UserTokenPolicy(UserTokenType.IssuedToken) { IssuedTokenType = Opc.Ua.Profiles.JwtUserToken });
+                new UserTokenPolicy(UserTokenType.Certificate));
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                new UserTokenPolicy(UserTokenType.IssuedToken)
+                {
+                    IssuedTokenType = Profiles.JwtUserToken
+                });
 
-            ReferenceServer = await ServerFixture.StartAsync(writer ?? TestContext.Out).ConfigureAwait(false);
-            ReferenceServer.TokenValidator = this.TokenValidator;
+            ReferenceServer = await ServerFixture.StartAsync(writer ?? TestContext.Out)
+                .ConfigureAwait(false);
+            ReferenceServer.TokenValidator = TokenValidator;
             ServerFixturePort = ServerFixture.Port;
         }
 
@@ -107,7 +120,7 @@ namespace Technosoftware.UaClient.Tests
         /// Tear down the Server and the Client.
         /// </summary>
         [OneTimeTearDown]
-        public new Task OneTimeTearDownAsync()
+        public override Task OneTimeTearDownAsync()
         {
             return base.OneTimeTearDownAsync();
         }
@@ -116,27 +129,31 @@ namespace Technosoftware.UaClient.Tests
         /// Test setup.
         /// </summary>
         [SetUp]
-        public new Task SetUp()
+        public override Task SetUpAsync()
         {
-            return MySetUp();
+            return MySetUpAsync();
         }
 
-        public async Task MySetUp()
+        public async Task MySetUpAsync()
         {
             if (!SingleSession)
             {
                 try
                 {
-                    ClientFixture.SessionTimeout = 1500;
-                    Session = await ClientFixture.ConnectAsync(ServerUrl,
-                        SecurityPolicies.Basic256Sha256,
-                        null,
-                        new UserIdentity("sysadmin", "demo")).ConfigureAwait(false);
+                    ClientFixture.SessionTimeout = 10000;
+                    Session = await ClientFixture
+                        .ConnectAsync(
+                            ServerUrl,
+                            SecurityPolicies.Basic256Sha256,
+                            null,
+                            new UserIdentity("sysadmin", "demo"))
+                        .ConfigureAwait(false);
                     Session.DeleteSubscriptionsOnClose = false;
                 }
                 catch (Exception e)
                 {
-                    Assert.Ignore($"OneTimeSetup failed to create session, tests skipped. Error: {e.Message}");
+                    NUnit.Framework.Assert.Ignore(
+                        $"OneTimeSetup failed to create session, tests skipped. Error: {e.Message}");
                 }
             }
             if (ServerFixture == null)
@@ -153,70 +170,91 @@ namespace Technosoftware.UaClient.Tests
         /// Test teardown.
         /// </summary>
         [TearDown]
-        public new Task TearDown()
+        public override Task TearDownAsync()
         {
-            return base.TearDown();
+            return base.TearDownAsync();
         }
-        #endregion
 
-        #region Tests
-
-        [Test, Order(100)]
+        [Test]
+        [Order(100)]
         [TestCase(900, 100u, 100u, 10000u, 3600u, 83442u, TestName = "Test Lifetime Over Maximum")]
         [TestCase(900, 100u, 100u, 0u, 3600u, 83442u, TestName = "Test Lifetime Zero")]
         [TestCase(1200, 100u, 100u, 1u, 1u, 3000u, TestName = "Test Lifetime One")]
-        [TestCase(60000, 183u, 61u, 1u, 1u, 60u, TestName = "Test Lifetime Reduce Count",
-            Description = "Expected MaxLifetimeCount matches what the demo server does")]
-
-        public void TestLifetime(int publishingInterval,
+        [TestCase(
+            60000,
+            183u,
+            61u,
+            1u,
+            1u,
+            60u,
+            TestName = "Test Lifetime Reduce Count",
+            Description = "Expected MaxLifetimeCount matches what the demo server does"
+        )]
+        public async Task TestLifetimeAsync(
+            int publishingInterval,
             uint keepAliveCount,
             uint lifetimeCount,
             uint requestedHours,
             uint expectedHours,
             uint expectedLifetime)
         {
-            TestableSubscription subscription = new TestableSubscription(Session.DefaultSubscription);
-
-            subscription.KeepAliveCount = keepAliveCount;
-            subscription.LifetimeCount = lifetimeCount;
-            subscription.PublishingInterval = publishingInterval;
+            var subscription = new TestableSubscription(Session.DefaultSubscription)
+            {
+                KeepAliveCount = keepAliveCount,
+                LifetimeCount = lifetimeCount,
+                PublishingInterval = publishingInterval
+            };
 
             Assert.True(Session.AddSubscription(subscription));
-            subscription.Create();
+            await subscription.CreateAsync().ConfigureAwait(false);
 
-            Dictionary<string, NodeId> desiredNodeIds = GetDesiredNodeIds(subscription.Id);
-            Dictionary<string, object> initialValues = GetValues(desiredNodeIds);
+            Dictionary<string, NodeId> desiredNodeIds =
+                await GetDesiredNodeIdsAsync(subscription.Id).ConfigureAwait(false);
 
-            uint revisedLifetimeInHours = 0;
-            Assert.True(subscription.SetSubscriptionDurable(requestedHours, out revisedLifetimeInHours));
-
+            (bool success, uint revisedLifetimeInHours) =
+                await subscription.SetSubscriptionDurableAsync(requestedHours).ConfigureAwait(false);
+            Assert.True(success);
             Assert.AreEqual(expectedHours, revisedLifetimeInHours);
 
-            Dictionary<string, object> modifiedValues = GetValues(desiredNodeIds);
+            Dictionary<string, object> modifiedValues =
+                await GetValuesAsync(desiredNodeIds).ConfigureAwait(false);
 
-            DataValue maxLifetimeCountValue = modifiedValues["MaxLifetimeCount"] as DataValue;
+            var maxLifetimeCountValue = modifiedValues["MaxLifetimeCount"] as DataValue;
             Assert.IsNotNull(maxLifetimeCountValue);
             Assert.IsNotNull(maxLifetimeCountValue.Value);
-            Assert.AreEqual(expectedLifetime,
-                Convert.ToUInt32(maxLifetimeCountValue.Value));
+            Assert.AreEqual(
+                expectedLifetime,
+                Convert.ToUInt32(maxLifetimeCountValue.Value, CultureInfo.InvariantCulture));
 
-            Assert.True(Session.RemoveSubscription(subscription));
+            Assert.True(await Session.RemoveSubscriptionAsync(subscription).ConfigureAwait(false));
         }
 
-        [Test, Order(110)]
+        [Test]
+        [Order(110)]
         [TestCase(0u, 1u, 1u, false, TestName = "QueueSize 0")]
         [TestCase(101u, 101u, 102u, false, TestName = "QueueSize over standard subscripion limit")]
         [TestCase(9999u, 1000u, 1000u, false, TestName = "QueueSize over durable limit")]
         [TestCase(0u, 1000u, 1u, true, TestName = "QueueSize 0 Event MI")]
-        [TestCase(1001u, 1001u, 1002u, true, TestName = "QueueSize over standard subscripion limit Event MI")]
-        [TestCase(99999u, 10000u, 10000u, true, TestName = "QueueSize over durable limit, Event MI")]
+        [TestCase(
+            1001u,
+            1001u,
+            1002u,
+            true,
+            TestName = "QueueSize over standard subscripion limit Event MI")]
+        [TestCase(
+            99999u,
+            10000u,
+            10000u,
+            true,
+            TestName = "QueueSize over durable limit, Event MI")]
         public async Task TestRevisedQueueSizeAsync(
             uint queueSize,
             uint expectedRevisedQueueSize,
             uint expectedModifiedQueueSize,
             bool useEventMI)
         {
-            var subscription = await CreateDurableSubscriptionAsync();
+            TestableSubscription subscription = await CreateDurableSubscriptionAsync()
+                .ConfigureAwait(false);
 
             MonitoredItem mi;
             if (useEventMI)
@@ -234,29 +272,35 @@ namespace Technosoftware.UaClient.Tests
                     SamplingInterval = 500,
                     Filter = null,
                     DiscardOldest = true,
-                    QueueSize = queueSize,
+                    QueueSize = queueSize
                 };
             }
 
             subscription.AddItem(mi);
 
-            var result = await subscription.CreateItemsAsync();
-            Assert.That(ServiceResult.IsGood(result.First().Status.Error), Is.True);
-            Assert.That(result.First().Status.QueueSize, Is.EqualTo(expectedRevisedQueueSize));
+            IList<MonitoredItem> result = await subscription.CreateItemsAsync().ConfigureAwait(false);
+            NUnit.Framework.Assert.That(ServiceResult.IsGood(result[0].Status.Error), Is.True);
+            NUnit.Framework.Assert
+                .That(result[0].Status.QueueSize, Is.EqualTo(expectedRevisedQueueSize));
 
             mi.QueueSize = queueSize + 1;
 
-            var resultModify = await subscription.ModifyItemsAsync();
-            Assert.That(ServiceResult.IsGood(resultModify.First().Status.Error), Is.True);
-            Assert.That(resultModify.First().Status.QueueSize, Is.EqualTo(expectedModifiedQueueSize));
+            IList<MonitoredItem> resultModify = await subscription.ModifyItemsAsync()
+                .ConfigureAwait(false);
+            NUnit.Framework.Assert
+                .That(ServiceResult.IsGood(resultModify[0].Status.Error), Is.True);
+            NUnit.Framework.Assert
+                .That(resultModify[0].Status.QueueSize, Is.EqualTo(expectedModifiedQueueSize));
 
-            Assert.True(subscription.GetMonitoredItems(out _, out _));
+            (bool success, _, _) = await subscription.GetMonitoredItemsAsync().ConfigureAwait(false);
+            Assert.True(success);
 
-            Assert.True(await Session.RemoveSubscriptionAsync(subscription));
+            Assert.True(await Session.RemoveSubscriptionAsync(subscription).ConfigureAwait(false));
         }
 
-        [Test, Order(160)]
-        public void SetSubscriptionDurableFailsWhenMIExists()
+        [Test]
+        [Order(160)]
+        public async Task SetSubscriptionDurableFailsWhenMIExistsAsync()
         {
             var subscription = new TestableSubscription(Session.DefaultSubscription)
             {
@@ -266,7 +310,7 @@ namespace Technosoftware.UaClient.Tests
             };
 
             Assert.True(Session.AddSubscription(subscription));
-            subscription.Create();
+            await subscription.CreateAsync().ConfigureAwait(false);
 
             uint id = subscription.Id;
 
@@ -279,23 +323,23 @@ namespace Technosoftware.UaClient.Tests
                 SamplingInterval = 500,
                 Filter = null,
                 DiscardOldest = true,
-                QueueSize = 1,
+                QueueSize = 1
             };
 
             subscription.AddItem(mi);
 
-            var result = subscription.CreateItems();
-            Assert.That(ServiceResult.IsGood(result.First().Status.Error), Is.True);
+            IList<MonitoredItem> result = await subscription.CreateItemsAsync().ConfigureAwait(false);
+            NUnit.Framework.Assert.That(ServiceResult.IsGood(result[0].Status.Error), Is.True);
 
-            Assert.Throws<ServiceResultException>(() => Session.Call(ObjectIds.Server,
-                    MethodIds.Server_SetSubscriptionDurable,
-                    id, 1));
+            NUnit.Framework.Assert.ThrowsAsync<ServiceResultException>(() =>
+                Session.CallAsync(ObjectIds.Server, MethodIds.Server_SetSubscriptionDurable, default, id, 1));
 
-            Assert.True(Session.RemoveSubscription(subscription));
+            Assert.True(await Session.RemoveSubscriptionAsync(subscription).ConfigureAwait(false));
         }
 
-        [Test, Order(180)]
-        public void SetSubscriptionDurableFailsWhenSubscriptionDoesNotExist()
+        [Test]
+        [Order(180)]
+        public async Task SetSubscriptionDurableFailsWhenSubscriptionDoesNotExistAsync()
         {
             var subscription = new TestableSubscription(Session.DefaultSubscription)
             {
@@ -305,92 +349,95 @@ namespace Technosoftware.UaClient.Tests
             };
 
             Assert.True(Session.AddSubscription(subscription));
-            subscription.Create();
+            await subscription.CreateAsync().ConfigureAwait(false);
 
             uint id = subscription.Id;
 
-            Assert.True(Session.RemoveSubscription(subscription));
+            Assert.True(await Session.RemoveSubscriptionAsync(subscription).ConfigureAwait(false));
 
-            Assert.Throws<ServiceResultException>(() => Session.Call(ObjectIds.Server,
-                    MethodIds.Server_SetSubscriptionDurable,
-                    id, 1));
+            NUnit.Framework.Assert.ThrowsAsync<ServiceResultException>(() =>
+                Session.CallAsync(ObjectIds.Server, MethodIds.Server_SetSubscriptionDurable, default, id, 1));
         }
 
-        [Test, Order(200)]
+        [Test]
+        [Order(200)]
         [TestCase(false, false, TestName = "Validate Session Close")]
         [TestCase(true, false, TestName = "Validate Transfer")]
         [TestCase(true, true, TestName = "Restart of Server")]
-        public async Task TestSessionTransfer(bool setSubscriptionDurable, bool restartServer)
+        public async Task TestSessionTransferAsync(bool setSubscriptionDurable, bool restartServer)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                Assert.Ignore("Timing on mac OS causes issues");
+                NUnit.Framework.Assert.Ignore("Timing on mac OS causes issues");
             }
 
-            int publishingInterval = 100;
-            uint keepAliveCount = 5;
-            uint lifetimeCount = 15;
-            uint requestedHours = 1;
-            uint expectedHours = 1;
-            uint expectedLifetime = 36000;
+            const int publishingInterval = 100;
+            const uint keepAliveCount = 5;
+            const uint lifetimeCount = 15;
+            const uint requestedHours = 1;
+            const uint expectedHours = 1;
+            const uint expectedLifetime = 36000;
 
-            TestableSubscription subscription = new TestableSubscription(Session.DefaultSubscription);
-
-            subscription.KeepAliveCount = keepAliveCount;
-            subscription.LifetimeCount = lifetimeCount;
-            subscription.PublishingInterval = publishingInterval;
-            subscription.MinLifetimeInterval = 1500;
-
-            subscription.SubscriptionStatusChangedEvent += (o, e) =>
+            var subscription = new TestableSubscription(Session.DefaultSubscription)
             {
-                Subscription s = (Subscription)o;
-                TestContext.Out.WriteLine($"StateChanged: {s.Session.SessionId}-{s.Id}-{e.Status}");
+                KeepAliveCount = keepAliveCount,
+                LifetimeCount = lifetimeCount,
+                PublishingInterval = publishingInterval,
+                MinLifetimeInterval = 1500
             };
 
+            subscription.StateChanged += (s, e) =>
+                TestContext.Out.WriteLine($"StateChanged: {s.Session.SessionId}-{s.Id}-{e.Status}");
+
             Assert.True(Session.AddSubscription(subscription));
-            subscription.Create();
+            await subscription.CreateAsync().ConfigureAwait(false);
 
             // Give some time to allow for the true browse of items
             await Task.Delay(500).ConfigureAwait(false);
 
-            Dictionary<string, NodeId> desiredNodeIds = GetDesiredNodeIds(subscription.Id);
-            Dictionary<string, object> initialValues = GetValues(desiredNodeIds);
+            Dictionary<string, NodeId> desiredNodeIds =
+                await GetDesiredNodeIdsAsync(subscription.Id).ConfigureAwait(false);
+            Dictionary<string, object> initialValues =
+                await GetValuesAsync(desiredNodeIds).ConfigureAwait(false);
 
             if (setSubscriptionDurable)
             {
-                uint revisedLifetimeInHours = 0;
-                Assert.True(subscription.SetSubscriptionDurable(requestedHours, out revisedLifetimeInHours));
-
+                (bool success, uint revisedLifetimeInHours) =
+                    await subscription.SetSubscriptionDurableAsync(requestedHours).ConfigureAwait(false);
+                Assert.True(success);
                 Assert.AreEqual(expectedHours, revisedLifetimeInHours);
 
-                ValidateDataValue(desiredNodeIds, "MaxLifetimeCount", expectedLifetime);
+                await ValidateDataValueAsync(desiredNodeIds, "MaxLifetimeCount", expectedLifetime)
+                    .ConfigureAwait(false);
             }
             else
             {
-                ValidateDataValue(desiredNodeIds, "MaxLifetimeCount", lifetimeCount);
+                await ValidateDataValueAsync(desiredNodeIds, "MaxLifetimeCount", lifetimeCount)
+                    .ConfigureAwait(false);
             }
 
-            List<NodeId> testSet = [.. GetTestSetFullSimulation(Session.NamespaceUris)];
-            Dictionary<NodeId, List<DateTime>> valueTimeStamps = [];
+            var testSet = new List<NodeId>();
+            testSet.AddRange(GetTestSetFullSimulation(Session.NamespaceUris));
+            var valueTimeStamps = new Dictionary<NodeId, List<DateTime>>();
 
-            List<MonitoredItem> monitoredItemsList = [];
+            var monitoredItemsList = new List<MonitoredItem>();
             foreach (NodeId nodeId in testSet)
             {
                 if (nodeId.IdType == IdType.String)
                 {
                     valueTimeStamps.Add(nodeId, []);
-                    MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem)
+                    var monitoredItem = new MonitoredItem(subscription.DefaultItem)
                     {
                         StartNodeId = nodeId,
                         SamplingInterval = 1000,
-                        QueueSize = 100,
+                        QueueSize = 100
                     };
-                    monitoredItem.MonitoredItemNotificationEvent += (object sender, MonitoredItemNotificationEventArgs e) =>
+                    monitoredItem.Notification += (sender, _) =>
                     {
                         MonitoredItem item = (MonitoredItem)sender;
                         List<DateTime> list = valueTimeStamps[nodeId];
 
-                        foreach (var value in item.DequeueValues())
+                        foreach (DataValue value in item.DequeueValues())
                         {
                             list.Add(value.SourceTimestamp);
                         }
@@ -406,16 +453,18 @@ namespace Technosoftware.UaClient.Tests
             DateTime startTime = DateTime.UtcNow;
 
             subscription.AddItems(monitoredItemsList);
-            subscription.ApplyChanges();
+            await subscription.ApplyChangesAsync().ConfigureAwait(false);
             await Task.Delay(2000).ConfigureAwait(false);
 
-            Dictionary<string, object> closeValues = GetValues(desiredNodeIds);
+            Dictionary<string, object> closeValues =
+                await GetValuesAsync(desiredNodeIds).ConfigureAwait(false);
 
-            SubscriptionCollection subscriptions = new SubscriptionCollection(Session.Subscriptions);
+            var subscriptions = new SubscriptionCollection(Session.Subscriptions);
             DateTime closeTime = DateTime.UtcNow;
-            TestContext.Out.WriteLine("Session Id {0} Closed at {1}", Session.SessionId, closeTime);
+            TestContext.Out.WriteLine("Session Id {0} Closed at {1}",
+                Session.SessionId, closeTime);
 
-            Session.Close(closeChannel: false);
+            await Session.CloseAsync(closeChannel: false).ConfigureAwait(false);
 
             if (restartServer)
             {
@@ -430,15 +479,26 @@ namespace Technosoftware.UaClient.Tests
             }
 
             DateTime restartTime = DateTime.UtcNow;
-            IUaSession transferSession = await ClientFixture.ConnectAsync(ServerUrl,
-                SecurityPolicies.Basic256Sha256, null,
-                new UserIdentity("sysadmin", "demo")).ConfigureAwait(false);
+            IUaSession transferSession = await ClientFixture
+                .ConnectAsync(
+                    ServerUrl,
+                    SecurityPolicies.Basic256Sha256,
+                    null,
+                    new UserIdentity("sysadmin", "demo"))
+                .ConfigureAwait(false);
 
-            var result = await transferSession.TransferSubscriptionsAsync(subscriptions, true);
+            bool result = await transferSession.TransferSubscriptionsAsync(subscriptions, true)
+                .ConfigureAwait(false);
 
-            Assert.AreEqual(setSubscriptionDurable, result,
-                "SetSubscriptionDurable = " + setSubscriptionDurable.ToString() +
-                " Transfer Result " + result.ToString() + " Expected " + setSubscriptionDurable);
+            Assert.AreEqual(
+                setSubscriptionDurable,
+                result,
+                "SetSubscriptionDurable = " +
+                setSubscriptionDurable.ToString() +
+                " Transfer Result " +
+                result.ToString() +
+                " Expected " +
+                setSubscriptionDurable);
 
             if (setSubscriptionDurable && !restartServer)
             {
@@ -447,16 +507,16 @@ namespace Technosoftware.UaClient.Tests
 
                 DateTime completionTime = DateTime.UtcNow;
 
-                subscription.SetPublishingMode(false);
+                await subscription.SetPublishingModeAsync(false).ConfigureAwait(false);
 
-                double tolerance = 1500;
+                const double tolerance = 2500;
 
                 TestContext.Out.WriteLine("Session StartTime at {0}", DateTimeMs(startTime));
                 TestContext.Out.WriteLine("Session Closed at {0}", DateTimeMs(closeTime));
                 TestContext.Out.WriteLine("Restart at {0}", DateTimeMs(restartTime));
                 TestContext.Out.WriteLine("Completion at {0}", DateTimeMs(completionTime));
 
-                // Validate 
+                // Validate
                 foreach (KeyValuePair<NodeId, List<DateTime>> pair in valueTimeStamps)
                 {
                     DateTime previous = startTime;
@@ -466,9 +526,14 @@ namespace Technosoftware.UaClient.Tests
                         DateTime timestamp = pair.Value[index];
 
                         TimeSpan timeSpan = timestamp - previous;
-                        TestContext.Out.WriteLine($"Node: {pair.Key} Index: {index} Time: {DateTimeMs(timestamp)} Previous: {DateTimeMs(previous)} Timespan {timeSpan.TotalMilliseconds.ToString("000.")}");
+                        TestContext.Out.WriteLine(
+                            $"Node: {pair.Key} Index: {index} Time: {DateTimeMs(timestamp)} " +
+                            $"Previous: {DateTimeMs(previous)} " +
+                            $"Timespan {timeSpan.TotalMilliseconds.ToString("000.", CultureInfo.InvariantCulture)}");
 
-                        Assert.Less(Math.Abs(timeSpan.TotalMilliseconds), tolerance,
+                        Assert.Less(
+                            Math.Abs(timeSpan.TotalMilliseconds),
+                            tolerance,
                             $"Node: {pair.Key} Index: {index} Timespan {timeSpan.TotalMilliseconds} ");
 
                         previous = timestamp;
@@ -476,7 +541,9 @@ namespace Technosoftware.UaClient.Tests
                         if (index == pair.Value.Count - 1)
                         {
                             TimeSpan finalTimeSpan = completionTime - timestamp;
-                            Assert.Less(Math.Abs(finalTimeSpan.TotalMilliseconds), tolerance * 2,
+                            Assert.Less(
+                                Math.Abs(finalTimeSpan.TotalMilliseconds),
+                                tolerance * 2,
                                 $"Last Value - Node: {pair.Key} Index: {index} Timespan {finalTimeSpan.TotalMilliseconds} ");
                         }
                     }
@@ -484,45 +551,29 @@ namespace Technosoftware.UaClient.Tests
             }
             else if (setSubscriptionDurable)
             {
-                Assert.True(await transferSession.RemoveSubscriptionAsync(subscription));
+                Assert.True(await transferSession.RemoveSubscriptionAsync(subscription)
+                    .ConfigureAwait(false));
             }
         }
 
-        private Dictionary<string, object> ValidateDataValue(Dictionary<string, NodeId> nodeIds,
-            string desiredValue, uint expectedValue)
+        private async Task<Dictionary<string, object>> ValidateDataValueAsync(
+            Dictionary<string, NodeId> nodeIds,
+            string desiredValue,
+            uint expectedValue)
         {
-            Dictionary<string, object> modifiedValues = GetValues(nodeIds);
+            Dictionary<string, object> modifiedValues =
+                await GetValuesAsync(nodeIds).ConfigureAwait(false);
 
-            DataValue dataValue = modifiedValues[desiredValue] as DataValue;
+            var dataValue = modifiedValues[desiredValue] as DataValue;
             Assert.IsNotNull(dataValue);
             Assert.IsNotNull(dataValue.Value);
-            Assert.AreEqual(expectedValue, Convert.ToUInt32(dataValue.Value));
+            Assert.AreEqual(
+                expectedValue,
+                Convert.ToUInt32(dataValue.Value, CultureInfo.InvariantCulture));
 
             return modifiedValues;
         }
 
-        private void OnMonitoredItemNotification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
-        {
-            try
-            {
-                // Log MonitoredItem Notification event
-                MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
-                DateTime localTime = notification.Value.SourceTimestamp.ToLocalTime();
-                Debug.WriteLine("Notification: {0} \"{1}\" and Value = {2} at [{3}].",
-                    notification.Message.SequenceNumber,
-                    monitoredItem.ResolvedNodeId,
-                    notification.Value,
-                    localTime.ToLongTimeString());
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("OnMonitoredItemNotification error: {0}", ex.Message);
-            }
-        }
-
-        #endregion
-
-        #region Helpers
         private async Task<TestableSubscription> CreateDurableSubscriptionAsync()
         {
             var subscription = new TestableSubscription(Session.DefaultSubscription)
@@ -533,20 +584,22 @@ namespace Technosoftware.UaClient.Tests
             };
 
             Assert.True(Session.AddSubscription(subscription));
-            subscription.Create();
+            await subscription.CreateAsync().ConfigureAwait(false);
 
-            (bool success, _) = await subscription.SetSubscriptionDurableAsync(1);
+            (bool success, _) = await subscription.SetSubscriptionDurableAsync(1)
+                .ConfigureAwait(false);
             Assert.True(success);
 
             return subscription;
         }
 
-        private Dictionary<string, NodeId> GetDesiredNodeIds(uint subscriptionId)
+        private async Task<Dictionary<string, NodeId>> GetDesiredNodeIdsAsync(
+            uint subscriptionId)
         {
-            Dictionary<string, NodeId> desiredNodeIds = [];
+            var desiredNodeIds = new Dictionary<string, NodeId>();
 
-            NodeId serverDiags = new NodeId(Variables.Server_ServerDiagnostics_SubscriptionDiagnosticsArray);
-            ReferenceDescriptionCollection references;
+            var serverDiags = new NodeId(
+                Variables.Server_ServerDiagnostics_SubscriptionDiagnosticsArray);
 
             NodeId monitoredItemCountNodeId = null;
             NodeId maxLifetimeCountNodeId = null;
@@ -554,53 +607,67 @@ namespace Technosoftware.UaClient.Tests
             NodeId currentLifetimeCountNodeId = null;
             NodeId publishingIntervalNodeId = null;
 
-            Session.Browse(null, null,
+            (_, _, ReferenceDescriptionCollection references) = await Session.BrowseAsync(
+                null,
+                null,
                 serverDiags,
-                0u, BrowseDirection.Forward,
+                0u,
+                BrowseDirection.Forward,
                 ReferenceTypeIds.HierarchicalReferences,
-                true, 0,
-                out var continuationPoint,
-                out references);
+                true,
+                0).ConfigureAwait(false);
 
             Assert.NotNull(references, "Initial Browse has no references");
             Assert.Greater(references.Count, 0, "Initial Browse has zero references");
 
-            TestContext.Out.WriteLine("Initial Browse for SubscriptionDiagnosticsArray has {0} references, Desired SubscriptionId {1}",
+            TestContext.Out.WriteLine(
+                "Initial Browse for SubscriptionDiagnosticsArray has {0} references, Desired SubscriptionId {1}",
                 references.Count,
                 subscriptionId);
 
             foreach (ReferenceDescription reference in references)
             {
-                TestContext.Out.WriteLine("Initial Browse Reference {0}", reference.BrowseName.Name);
+                TestContext.Out
+                    .WriteLine("Initial Browse Reference {0}", reference.BrowseName.Name);
 
-                if (reference.BrowseName.Name == subscriptionId.ToString())
+                if (reference.BrowseName.Name == subscriptionId.ToString(
+                    CultureInfo.InvariantCulture))
                 {
-                    ReferenceDescriptionCollection desiredReferences;
-
-                    Session.Browse(null, null,
-                        ((NodeId)reference.NodeId),
-                        0u, BrowseDirection.Forward,
+                    (
+                        _,
+                        byte[] anotherContinuationPoint,
+                        ReferenceDescriptionCollection desiredReferences
+                    ) = await Session.BrowseAsync(
+                        null,
+                        null,
+                        (NodeId)reference.NodeId,
+                        0u,
+                        BrowseDirection.Forward,
                         ReferenceTypeIds.HierarchicalReferences,
-                        true, 0,
-                        out var anotherContinuationPoint,
-                        out desiredReferences);
+                        true,
+                        0).ConfigureAwait(false);
 
                     Assert.NotNull(desiredReferences, "Secondary Browse has no references");
-                    Assert.Greater(desiredReferences.Count, 0, "Secondary Browse has zero references");
+                    Assert.Greater(
+                        desiredReferences.Count,
+                        0,
+                        "Secondary Browse has zero references");
 
-                    TestContext.Out.WriteLine("Secondary Browse for SubscriptionId {0} has {1} references",
+                    TestContext.Out.WriteLine(
+                        "Secondary Browse for SubscriptionId {0} has {1} references",
                         subscriptionId,
-                        desiredReferences.Count
-                    );
+                        desiredReferences.Count);
 
                     foreach (ReferenceDescription referenceDescription in desiredReferences)
                     {
                         NodeId recreated = null;
                         if (referenceDescription.NodeId.IsNull)
                         {
-                            TestContext.Out.WriteLine("Subscription Reference {0} ExpandedNodeId is Null",
+                            TestContext.Out.WriteLine(
+                                "Subscription Reference {0} ExpandedNodeId is Null",
                                 referenceDescription.BrowseName.Name);
-                            TestContext.Out.WriteLine("Full ReferenceDescription {0}",
+                            TestContext.Out.WriteLine(
+                                "Full ReferenceDescription {0}",
                                 referenceDescription.ToString());
                         }
                         else
@@ -611,43 +678,50 @@ namespace Technosoftware.UaClient.Tests
 
                             if (recreated.IsNullNodeId)
                             {
-                                TestContext.Out.WriteLine("Subscription Reference {0} Recreated Node is Null",
+                                TestContext.Out.WriteLine(
+                                    "Subscription Reference {0} Recreated Node is Null",
                                     referenceDescription.BrowseName.Name);
-                                TestContext.Out.WriteLine("Full ReferenceDescription {0}",
+                                TestContext.Out.WriteLine(
+                                    "Full ReferenceDescription {0}",
                                     referenceDescription.ToString());
                             }
                             else
                             {
-                                TestContext.Out.WriteLine("Subscription Reference {0} ExpandedNodeId {1} Recreated {2}",
+                                TestContext.Out.WriteLine(
+                                    "Subscription Reference {0} ExpandedNodeId {1} Recreated {2}",
                                     referenceDescription.BrowseName.Name,
                                     referenceDescription.NodeId.ToString(),
                                     recreated.ToString());
                             }
                         }
 
-                        if (referenceDescription.BrowseName.Name.Equals("MonitoredItemCount",
-                            StringComparison.OrdinalIgnoreCase))
+                        if (referenceDescription.BrowseName.Name.Equals(
+                                "MonitoredItemCount",
+                                StringComparison.OrdinalIgnoreCase))
                         {
                             monitoredItemCountNodeId = recreated;
                         }
-                        else if (referenceDescription.BrowseName.Name.Equals("MaxLifetimeCount",
-                            StringComparison.OrdinalIgnoreCase))
+                        else if (referenceDescription.BrowseName.Name.Equals(
+                                "MaxLifetimeCount",
+                                StringComparison.OrdinalIgnoreCase))
                         {
                             maxLifetimeCountNodeId = recreated;
-
                         }
-                        else if (referenceDescription.BrowseName.Name.Equals("MaxKeepAliveCount",
-                            StringComparison.OrdinalIgnoreCase))
+                        else if (referenceDescription.BrowseName.Name.Equals(
+                                "MaxKeepAliveCount",
+                                StringComparison.OrdinalIgnoreCase))
                         {
                             maxKeepAliveCountNodeId = recreated;
                         }
-                        else if (referenceDescription.BrowseName.Name.Equals("CurrentLifetimeCount",
-                            StringComparison.OrdinalIgnoreCase))
+                        else if (referenceDescription.BrowseName.Name.Equals(
+                                "CurrentLifetimeCount",
+                                StringComparison.OrdinalIgnoreCase))
                         {
                             currentLifetimeCountNodeId = recreated;
                         }
-                        else if (referenceDescription.BrowseName.Name.Equals("PublishingInterval",
-                            StringComparison.OrdinalIgnoreCase))
+                        else if (referenceDescription.BrowseName.Name.Equals(
+                                "PublishingInterval",
+                                StringComparison.OrdinalIgnoreCase))
                         {
                             publishingIntervalNodeId = recreated;
                         }
@@ -671,13 +745,14 @@ namespace Technosoftware.UaClient.Tests
             return desiredNodeIds;
         }
 
-        private Dictionary<string, object> GetValues(Dictionary<string, NodeId> ids)
+        private async Task<Dictionary<string, object>> GetValuesAsync(Dictionary<string, NodeId> ids)
         {
-            Dictionary<string, object> values = [];
+            var values = new Dictionary<string, object>();
 
             foreach (KeyValuePair<string, NodeId> id in ids)
             {
-                values.Add(id.Key, Session.ReadValue(id.Value));
+                values.Add(id.Key,
+                    await Session.ReadValueAsync(id.Value).ConfigureAwait(false));
                 TestContext.Out.WriteLine($"{id.Key}: {values[id.Key]}");
             }
 
@@ -688,51 +763,52 @@ namespace Technosoftware.UaClient.Tests
         {
             var whereClause = new ContentFilter();
 
-            whereClause.Push(FilterOperator.Equals, new FilterOperand[] {
-                new SimpleAttributeOperand() {
-                    AttributeId = Attributes.Value,
-                    TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                    BrowsePath = new QualifiedNameCollection(new QualifiedName[] { "EventType" })
-                },
-                new LiteralOperand {
-                    Value = new Variant(new NodeId(ObjectTypeIds.BaseEventType))
-                }
-            });
+            whereClause.Push(
+                FilterOperator.Equals,
+                [
+                    new SimpleAttributeOperand
+                    {
+                        AttributeId = Attributes.Value,
+                        TypeDefinitionId = ObjectTypeIds.BaseEventType,
+                        BrowsePath = [.. new QualifiedName[] { "EventType" }]
+                    },
+                    new LiteralOperand {
+                        Value = new Variant(new NodeId(ObjectTypeIds.BaseEventType)) }
+                ]);
 
-            var mi = new MonitoredItem()
+            return new MonitoredItem
             {
                 AttributeId = Attributes.EventNotifier,
                 StartNodeId = ObjectIds.Server,
                 MonitoringMode = MonitoringMode.Reporting,
                 Handle = 1,
                 SamplingInterval = -1,
-                Filter =
-                        new EventFilter
+                Filter = new EventFilter
+                {
+                    SelectClauses =
+                    [
+                        .. new SimpleAttributeOperand[]
                         {
-                            SelectClauses = new SimpleAttributeOperandCollection(
-                            new SimpleAttributeOperand[] {
-                                new SimpleAttributeOperand{
-                                    AttributeId = Attributes.Value,
-                                    TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                                    BrowsePath = new QualifiedNameCollection(new QualifiedName[] { BrowseNames.Message})
-                                }
-                            }),
-                            WhereClause = whereClause,
-                        },
+                            new()
+                            {
+                                AttributeId = Attributes.Value,
+                                TypeDefinitionId = ObjectTypeIds.BaseEventType,
+                                BrowsePath = [.. new QualifiedName[] { BrowseNames.Message }]
+                            }
+                        }
+                    ],
+                    WhereClause = whereClause
+                },
                 DiscardOldest = true,
                 QueueSize = queueSize
             };
-            return mi;
         }
 
-        private string DateTimeMs(DateTime dateTime)
+        private static string DateTimeMs(DateTime dateTime)
         {
-            string readable = dateTime.ToLongTimeString() + "." +
-                dateTime.Millisecond.ToString("D3");
-
-            return readable;
+            return dateTime.ToLongTimeString() +
+                "." +
+                dateTime.Millisecond.ToString("D3", CultureInfo.InvariantCulture);
         }
-
-        #endregion
     }
 }

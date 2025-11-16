@@ -7,8 +7,8 @@
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Unified Architecture .NET Standard Libraries 
-// and Samples. The complete license agreement for that can be found here:
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
@@ -17,11 +17,9 @@
 using System;
 using System.Diagnostics.Tracing;
 using Microsoft.Extensions.Logging;
-
 using Opc.Ua;
 using static Opc.Ua.Utils;
-using Technosoftware.UaServer.Sessions;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -39,10 +37,12 @@ namespace Technosoftware.UaServer
     /// <summary>
     /// Event source for high performance logging.
     /// </summary>
-    [EventSource(Name = "Technosoftware.UAServer", Guid = "22B5B923-D612-4F47-B413-1FBEA289B475")]
+    [EventSource(Name = "OPC-UA-Server", Guid = "86FF2AAB-8FF6-46CB-8CE3-E0211950B30C")]
     internal sealed class UaServerEventSource : EventSource
     {
-        // client event ids
+        /// <summary>
+        /// client event ids
+        /// </summary>
         private const int kSendResponseId = 1;
         private const int kServerCallId = kSendResponseId + 1;
         private const int kSessionStateId = kServerCallId + 1;
@@ -53,16 +53,30 @@ namespace Technosoftware.UaServer
         /// </summary>
         private const string kSendResponseMessage = "ChannelId {0}: SendResponse {1}";
         private const string kServerCallMessage = "Server Call={0}, Id={1}";
-        private const string kSessionStateMessage = "Session {0}, Id={1}, Name={2}, ChannelId={3}, User={4}";
+
+        private const string kSessionStateMessage
+            = "Session {0}, Id={1}, Name={2}, ChannelId={3}, User={4}";
+
         private const string kMonitoredItemReadyMessage = "IsReadyToPublish[{0}] {1}";
 
         /// <summary>
-        /// The Server ILogger event Ids used for event messages, when calling back to ILogger.
+        /// The ServerData ILogger event Ids used for event messages, when calling back to ILogger.
         /// </summary>
-        private readonly EventId m_sendResponseEventId = new EventId(TraceMasks.ServiceDetail, nameof(SendResponse));
-        private readonly EventId m_serverCallEventId = new EventId(TraceMasks.ServiceDetail, nameof(ServerCall));
-        private readonly EventId m_sessionStateMessageEventId = new EventId(TraceMasks.Information, nameof(SessionState));
-        private readonly EventId m_monitoredItemReadyEventId = new EventId(TraceMasks.OperationDetail, nameof(MonitoredItemReady));
+        private readonly EventId m_sendResponseEventId = new(
+            TraceMasks.ServiceDetail,
+            nameof(SendResponse));
+
+        private readonly EventId m_serverCallEventId = new(
+            TraceMasks.ServiceDetail,
+            nameof(ServerCall));
+
+        private readonly EventId m_sessionStateMessageEventId = new(
+            TraceMasks.Information,
+            nameof(SessionState));
+
+        private readonly EventId m_monitoredItemReadyEventId = new(
+            TraceMasks.OperationDetail,
+            nameof(MonitoredItemReady));
 
         /// <summary>
         /// The send response.
@@ -94,22 +108,43 @@ namespace Technosoftware.UaServer
         /// The state of the session.
         /// </summary>
         [Event(kSessionStateId, Message = kSessionStateMessage, Level = EventLevel.Informational)]
-        public void SessionState(string context, string sessionId, string sessionName, string secureChannelId, string identity)
+        public void SessionState(
+            string context,
+            string sessionId,
+            string sessionName,
+            string secureChannelId,
+            string identity)
         {
             if (IsEnabled())
             {
-                WriteEvent(kSessionStateId, context, sessionId, sessionName, secureChannelId, identity);
+                WriteEvent(
+                    kSessionStateId,
+                    context,
+                    sessionId,
+                    sessionName,
+                    secureChannelId,
+                    identity);
             }
             else if (Logger.IsEnabled(LogLevel.Information))
             {
-                LogInfo(m_sessionStateMessageEventId, kSessionStateMessage, context, sessionId, sessionName, secureChannelId, identity);
+                LogInfo(
+                    m_sessionStateMessageEventId,
+                    kSessionStateMessage,
+                    context,
+                    sessionId,
+                    sessionName,
+                    secureChannelId,
+                    identity);
             }
         }
 
         /// <summary>
         /// The state of the server session.
         /// </summary>
-        [Event(kMonitoredItemReadyId, Message = kMonitoredItemReadyMessage, Level = EventLevel.Verbose)]
+        [Event(
+            kMonitoredItemReadyId,
+            Message = kMonitoredItemReadyMessage,
+            Level = EventLevel.Verbose)]
         public void MonitoredItemReady(uint id, string state)
         {
             if ((TraceMask & TraceMasks.OperationDetail) != 0)
@@ -131,14 +166,19 @@ namespace Technosoftware.UaServer
         [NonEvent]
         public void ServerCallNative(RequestType requestType, uint requestId)
         {
+            string requestTypeString = Enum.GetName(
+#if !NET8_0_OR_GREATER
+                typeof(RequestType),
+#endif
+                requestType);
             if (IsEnabled())
             {
-                ServerCall(Enum.GetName(typeof(RequestType), requestType), requestId);
+                ServerCall(requestTypeString, requestId);
             }
             else if ((TraceMask & TraceMasks.ServiceDetail) != 0 &&
                 Logger.IsEnabled(LogLevel.Trace))
             {
-                LogTrace(m_serverCallEventId, kServerCallMessage, Enum.GetName(typeof(RequestType), requestType), requestId);
+                LogTrace(m_serverCallEventId, kServerCallMessage, requestTypeString, requestId);
             }
         }
 
@@ -156,7 +196,12 @@ namespace Technosoftware.UaServer
                 }
                 else if (Logger.IsEnabled(LogLevel.Trace))
                 {
-                    LogTrace(TraceMasks.ServiceDetail, "WRITE: NodeId={0} Value={1} Range={2}", nodeId, wrappedValue, range);
+                    LogTrace(
+                        TraceMasks.ServiceDetail,
+                        "WRITE: NodeId={0} Value={1} Range={2}",
+                        nodeId,
+                        wrappedValue,
+                        range);
                 }
             }
         }
@@ -175,7 +220,12 @@ namespace Technosoftware.UaServer
                 }
                 else if (Logger.IsEnabled(LogLevel.Trace))
                 {
-                    LogTrace(TraceMasks.ServiceDetail, "READ: NodeId={0} Value={1} Range={2}", nodeId, wrappedValue, range);
+                    LogTrace(
+                        TraceMasks.ServiceDetail,
+                        "READ: NodeId={0} Value={1} Range={2}",
+                        nodeId,
+                        wrappedValue,
+                        range);
                 }
             }
         }
@@ -213,8 +263,12 @@ namespace Technosoftware.UaServer
                 }
                 else if (Logger.IsEnabled(LogLevel.Trace))
                 {
-                    LogTrace("DEQUEUE VALUE: Value={0} CODE={1}<{2:X8}> OVERFLOW={3}",
-                        wrappedValue, statusCode.Code, statusCode.Code, statusCode.Overflow);
+                    LogTrace(
+                        "DEQUEUE VALUE: Value={0} CODE={1}<{2:X8}> OVERFLOW={3}",
+                        wrappedValue,
+                        statusCode.Code,
+                        statusCode.Code,
+                        statusCode.Overflow);
                 }
             }
         }
@@ -233,8 +287,14 @@ namespace Technosoftware.UaServer
                 }
                 else if (Logger.IsEnabled(LogLevel.Trace))
                 {
-                    LogTrace(TraceMasks.OperationDetail, "QUEUE VALUE[{0}]: Value={1} CODE={2}<{3:X8}> OVERFLOW={4}",
-                        id, wrappedValue, statusCode.Code, statusCode.Code, statusCode.Overflow);
+                    LogTrace(
+                        TraceMasks.OperationDetail,
+                        "QUEUE VALUE[{0}]: Value={1} CODE={2}<{3:X8}> OVERFLOW={4}",
+                        id,
+                        wrappedValue,
+                        statusCode.Code,
+                        statusCode.Code,
+                        statusCode.Overflow);
                 }
             }
         }

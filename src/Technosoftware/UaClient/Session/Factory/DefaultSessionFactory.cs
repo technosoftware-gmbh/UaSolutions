@@ -1,13 +1,13 @@
 #region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
+// Web: https://technosoftware.com
 //
-// The Software is subject to the Technosoftware GmbH Software License 
+// The Software is subject to the Technosoftware GmbH Software License
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Foundation MIT License. 
+// The Software is based on the OPC Foundation MIT License.
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
@@ -19,9 +19,8 @@ using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -34,7 +33,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The default instance of the factory.
         /// </summary>
-        public static readonly DefaultSessionFactory Instance = new DefaultSessionFactory();
+        public static readonly DefaultSessionFactory Instance = new();
 
         /// <summary>
         /// Force use of the default instance.
@@ -42,7 +41,7 @@ namespace Technosoftware.UaClient
         protected DefaultSessionFactory()
         {
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region IUaSessionFactory Methods
         /// <inheritdoc/>
@@ -56,11 +55,20 @@ namespace Technosoftware.UaClient
             IList<string> preferredLocales,
             CancellationToken ct = default)
         {
-            return CreateAsync(configuration, endpoint, updateBeforeConnect, false, sessionName, sessionTimeout, identity, preferredLocales, ct);
+            return CreateAsync(
+                configuration,
+                endpoint,
+                updateBeforeConnect,
+                false,
+                sessionName,
+                sessionTimeout,
+                identity,
+                preferredLocales,
+                ct);
         }
 
         /// <inheritdoc/>
-        public async virtual Task<IUaSession> CreateAsync(
+        public virtual async Task<IUaSession> CreateAsync(
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
             bool updateBeforeConnect,
@@ -71,13 +79,24 @@ namespace Technosoftware.UaClient
             IList<string> preferredLocales,
             CancellationToken ct = default)
         {
-            return await Session.CreateAsync(this, configuration, (ITransportWaitingConnection)null, endpoint,
-                updateBeforeConnect, checkDomain, sessionName, sessionTimeout,
-                identity, preferredLocales, ct).ConfigureAwait(false);
+            return await Session
+                .CreateAsync(
+                    this,
+                    configuration,
+                    (ITransportWaitingConnection)null,
+                    endpoint,
+                    updateBeforeConnect,
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    identity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public async virtual Task<IUaSession> CreateAsync(
+        public virtual async Task<IUaSession> CreateAsync(
             ApplicationConfiguration configuration,
             ITransportWaitingConnection connection,
             ConfiguredEndpoint endpoint,
@@ -89,14 +108,24 @@ namespace Technosoftware.UaClient
             IList<string> preferredLocales,
             CancellationToken ct = default)
         {
-            return await Session.CreateAsync(this, configuration, connection, endpoint,
-                updateBeforeConnect, checkDomain, sessionName, sessionTimeout,
-                identity, preferredLocales, ct
-                ).ConfigureAwait(false);
+            return await Session
+                .CreateAsync(
+                    this,
+                    configuration,
+                    connection,
+                    endpoint,
+                    updateBeforeConnect,
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    identity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public async virtual Task<IUaSession> CreateAsync(
+        public virtual async Task<IUaSession> CreateAsync(
             ApplicationConfiguration configuration,
             ReverseConnectManager reverseConnectManager,
             ConfiguredEndpoint endpoint,
@@ -106,58 +135,79 @@ namespace Technosoftware.UaClient
             uint sessionTimeout,
             IUserIdentity userIdentity,
             IList<string> preferredLocales,
-            CancellationToken ct = default
-            )
+            CancellationToken ct = default)
         {
             if (reverseConnectManager == null)
             {
-                return await this.CreateAsync(configuration, endpoint, updateBeforeConnect,
-                    checkDomain, sessionName, sessionTimeout, userIdentity, preferredLocales, ct).ConfigureAwait(false);
+                return await CreateAsync(
+                        configuration,
+                        endpoint,
+                        updateBeforeConnect,
+                        checkDomain,
+                        sessionName,
+                        sessionTimeout,
+                        userIdentity,
+                        preferredLocales,
+                        ct)
+                    .ConfigureAwait(false);
             }
 
             ITransportWaitingConnection connection;
             do
             {
-                connection = await reverseConnectManager.WaitForConnectionAsync(
-                    endpoint.EndpointUrl,
-                    endpoint.ReverseConnect?.ServerUri,
-                    ct).ConfigureAwait(false);
+                connection = await reverseConnectManager
+                    .WaitForConnectionAsync(
+                        endpoint.EndpointUrl,
+                        endpoint.ReverseConnect?.ServerUri,
+                        ct)
+                    .ConfigureAwait(false);
 
                 if (updateBeforeConnect)
                 {
-                    await endpoint.UpdateFromServerAsync(
-                        endpoint.EndpointUrl, connection,
-                        endpoint.Description.SecurityMode,
-                        endpoint.Description.SecurityPolicyUri,
-                        ct).ConfigureAwait(false);
+                    await endpoint
+                        .UpdateFromServerAsync(
+                            endpoint.EndpointUrl,
+                            connection,
+                            endpoint.Description.SecurityMode,
+                            endpoint.Description.SecurityPolicyUri,
+                            ct)
+                        .ConfigureAwait(false);
                     updateBeforeConnect = false;
                     connection = null;
                 }
             } while (connection == null);
 
             return await CreateAsync(
-                configuration,
-                connection,
-                endpoint,
-                false,
-                checkDomain,
-                sessionName,
-                sessionTimeout,
-                userIdentity,
-                preferredLocales,
-                ct).ConfigureAwait(false);
+                    configuration,
+                    connection,
+                    endpoint,
+                    false,
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    userIdentity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
         public virtual IUaSession Create(
-           ApplicationConfiguration configuration,
-           ITransportChannel channel,
-           ConfiguredEndpoint endpoint,
-           X509Certificate2 clientCertificate,
-           EndpointDescriptionCollection availableEndpoints = null,
-           StringCollection discoveryProfileUris = null)
+            ApplicationConfiguration configuration,
+            ITransportChannel channel,
+            ConfiguredEndpoint endpoint,
+            X509Certificate2 clientCertificate,
+            EndpointDescriptionCollection availableEndpoints = null,
+            StringCollection discoveryProfileUris = null)
         {
-            return Session.Create(this, configuration, channel, endpoint, clientCertificate, availableEndpoints, discoveryProfileUris);
+            return Session.Create(
+                this,
+                configuration,
+                channel,
+                endpoint,
+                clientCertificate,
+                availableEndpoints,
+                discoveryProfileUris);
         }
 
         /// <inheritdoc/>
@@ -169,33 +219,62 @@ namespace Technosoftware.UaClient
             bool checkDomain,
             CancellationToken ct = default)
         {
-            return Session.CreateChannelAsync(configuration, connection, endpoint, updateBeforeConnect, checkDomain, ct);
+            return Session.CreateChannelAsync(
+                configuration,
+                connection,
+                endpoint,
+                updateBeforeConnect,
+                checkDomain,
+                ct);
         }
 
         /// <inheritdoc/>
-        public virtual async Task<IUaSession> RecreateAsync(IUaSession sessionTemplate, CancellationToken ct = default)
+        public virtual async Task<IUaSession> RecreateAsync(
+            IUaSession sessionTemplate,
+            CancellationToken ct = default)
         {
-            return !(sessionTemplate is Session template)
-                ? throw new ArgumentOutOfRangeException(nameof(sessionTemplate), "The IUaSession provided is not of a supported type.")
-                : (IUaSession)await Session.RecreateAsync(template, ct).ConfigureAwait(false);
+            if (sessionTemplate is not Session template)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(sessionTemplate),
+                    "The ISession provided is not of a supported type.");
+            }
+
+            return await Session.RecreateAsync(template, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public virtual async Task<IUaSession> RecreateAsync(IUaSession sessionTemplate, ITransportWaitingConnection connection, CancellationToken ct = default)
+        public virtual async Task<IUaSession> RecreateAsync(
+            IUaSession sessionTemplate,
+            ITransportWaitingConnection connection,
+            CancellationToken ct = default)
         {
-            return !(sessionTemplate is Session template)
-                ? throw new ArgumentOutOfRangeException(nameof(sessionTemplate), "The IUaSession provided is not of a supported type")
-                : (IUaSession)await Session.RecreateAsync(template, connection, ct).ConfigureAwait(false);
+            if (sessionTemplate is not Session template)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(sessionTemplate),
+                    "The ISession provided is not of a supported type");
+            }
+
+            return await Session.RecreateAsync(template, connection, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public virtual async Task<IUaSession> RecreateAsync(IUaSession sessionTemplate, ITransportChannel transportChannel, CancellationToken ct = default)
+        public virtual async Task<IUaSession> RecreateAsync(
+            IUaSession sessionTemplate,
+            ITransportChannel transportChannel,
+            CancellationToken ct = default)
         {
-            return !(sessionTemplate is Session template)
-                ? throw new ArgumentOutOfRangeException(nameof(sessionTemplate), "The IUaSession provided is not of a supported type")
-                : (IUaSession)await Session.RecreateAsync(template, transportChannel, ct).ConfigureAwait(false);
+            if (sessionTemplate is not Session template)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(sessionTemplate),
+                    "The ISession provided is not of a supported type");
+            }
+            return await Session.RecreateAsync(template, transportChannel, ct)
+                .ConfigureAwait(false);
         }
-        #endregion
+        #endregion IUaSessionFactory Methods
 
         #region IUaSessionInstantiator Members
         /// <inheritdoc/>
@@ -216,8 +295,14 @@ namespace Technosoftware.UaClient
             EndpointDescriptionCollection availableEndpoints = null,
             StringCollection discoveryProfileUris = null)
         {
-            return new Session(channel, configuration, endpoint, clientCertificate, availableEndpoints, discoveryProfileUris);
+            return new Session(
+                channel,
+                configuration,
+                endpoint,
+                clientCertificate,
+                availableEndpoints,
+                discoveryProfileUris);
         }
-        #endregion
+        #endregion IUaSessionInstantiator Members
     }
 }

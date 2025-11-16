@@ -16,18 +16,19 @@ using System.Linq;
 using System.Threading;
 using Opc.Ua;
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription
 {
     public class DurableDataChangeMonitoredItemQueue : IUaDataChangeMonitoredItemQueue
     {
-        #region Constants
         private const uint kBatchSize = 1000;
-        #endregion Constants
 
-        #region Constructors
+        /// <summary>
+        /// Invoked when the queue is disposed
+        /// </summary>
+        public event EventHandler Disposed;
+
         /// <summary>
         /// Creates an empty queue.
         /// </summary>
@@ -61,38 +62,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             QueueSize = queue.QueueSize;
             ItemsInQueue = queue.ItemsInQueue;
         }
-        #endregion Constructors
 
-
-        #region IDisposable Members
-        /// <inheritdoc/>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// An overrideable version of the Dispose.
-        /// </summary>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                Disposed?.Invoke(this, EventArgs.Empty);
-            }
-        }
-        #endregion IDisposable Members
-
-
-        #region Events
-        /// <summary>
-        /// Invoked when the queue is disposed
-        /// </summary>
-        public event EventHandler Disposed;
-        #endregion Events
-
-        #region Public Methods
         /// <inheritdoc/>
         public uint MonitoredItemId { get; }
 
@@ -150,6 +120,43 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             HandleEnqueueBatching();
         }
 
+        /// <summary>
+        /// persists batches if needed
+        /// </summary>
+        private void HandleEnqueueBatching()
+        {
+            // Store the batch if it is full
+            if (m_enqueueBatch.Values.Count >= kBatchSize)
+            {
+                // Special case: if the enqueue and dequeue batch are the same only one batch exists, so no storing is needed
+                if (m_dequeueBatch == m_enqueueBatch)
+                {
+                    m_dequeueBatch = new DataChangeBatch(
+                        m_enqueueBatch.Values,
+                        kBatchSize,
+                        MonitoredItemId);
+                    m_enqueueBatch = new DataChangeBatch([], kBatchSize, MonitoredItemId);
+                }
+                // persist the batch
+                else
+                {
+                    Opc.Ua.Utils.LogDebug("Storing batch for monitored item {0}", MonitoredItemId);
+
+                    var batchToStore = new DataChangeBatch(
+                        m_enqueueBatch.Values,
+                        kBatchSize,
+                        MonitoredItemId);
+                    m_dataChangeBatches.Add(batchToStore);
+                    if (m_dataChangeBatches.Count > 1)
+                    {
+                        m_batchPersistor.RequestBatchPersist(m_dataChangeBatches[^2]);
+                    }
+
+                    m_enqueueBatch = new DataChangeBatch([], kBatchSize, MonitoredItemId);
+                }
+            }
+        }
+
         /// <inheritdoc/>
         public void OverwriteLastValue(DataValue value, ServiceResult error)
         {
@@ -159,16 +166,16 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             }
             if (m_enqueueBatch.Values.Count > 0)
             {
-                m_enqueueBatch.Values[m_enqueueBatch.Values.Count - 1] = (value, error);
+                m_enqueueBatch.Values[^1] = (value, error);
             }
             else if (m_dataChangeBatches.Count > 0)
             {
-                DataChangeBatch batch = m_dataChangeBatches.Last();
-                batch.Values[batch.Values.Count - 1] = (value, error);
+                DataChangeBatch batch = m_dataChangeBatches[^1];
+                batch.Values[^1] = (value, error);
             }
             else
             {
-                m_dequeueBatch.Values[m_dequeueBatch.Values.Count - 1] = (value, error);
+                m_dequeueBatch.Values[^1] = (value, error);
             }
         }
 
@@ -199,16 +206,16 @@ namespace SampleCompany.NodeManagers.DurableSubscription
 
             if (m_enqueueBatch.Values.Count > 0)
             {
-                return m_enqueueBatch.Values[m_enqueueBatch.Values.Count - 1].Item1;
+                return m_enqueueBatch.Values[^1].Item1;
             }
             else if (m_dataChangeBatches.Count > 0)
             {
-                var batch = m_dataChangeBatches.Last();
-                return batch.Values[batch.Values.Count - 1].Item1;
+                DataChangeBatch batch = m_dataChangeBatches[^1];
+                return batch.Values[^1].Item1;
             }
             else
             {
-                return m_dequeueBatch.Values[m_dequeueBatch.Values.Count - 1].Item1;
+                return m_dequeueBatch.Values[^1].Item1;
             }
         }
 
@@ -248,52 +255,6 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             return true;
         }
 
-        /// <inheritdoc/>
-        public DataValue PeekOldestValue()
-        {
-            // check for empty queue.
-            if (ItemsInQueue == 0)
-            {
-                return null;
-            }
-
-            return m_dequeueBatch.Values[0].Item1;
-        }
-        #endregion Public Methods
-
-        #region Private Methods
-        /// <summary>
-        /// persists batches if needed
-        /// </summary>
-        private void HandleEnqueueBatching()
-        {
-            // Store the batch if it is full
-            if (m_enqueueBatch.Values.Count >= kBatchSize)
-            {
-                // Special case: if the enqueue and dequeue batch are the same only one batch exists, so no storing is needed
-                if (m_dequeueBatch == m_enqueueBatch)
-                {
-                    m_dequeueBatch = new DataChangeBatch(m_enqueueBatch.Values, kBatchSize, MonitoredItemId);
-                    m_enqueueBatch = new DataChangeBatch(new List<(DataValue, ServiceResult)>(), kBatchSize, MonitoredItemId);
-                }
-                // persist the batch
-                else
-                {
-                    Opc.Ua.Utils.LogDebug("Storing batch for monitored item {0}", MonitoredItemId);
-
-                    var batchToStore = new DataChangeBatch(m_enqueueBatch.Values, kBatchSize, MonitoredItemId);
-                    m_dataChangeBatches.Add(batchToStore);
-                    if (m_dataChangeBatches.Count > 1)
-                    {
-                        m_batchPersistor.RequestBatchPersist(m_dataChangeBatches[m_dataChangeBatches.Count - 2]);
-                    }
-
-                    m_enqueueBatch = new DataChangeBatch(new List<(DataValue, ServiceResult)>(), kBatchSize, MonitoredItemId);
-                }
-            }
-
-        }
-
         /// <summary>
         /// Restores batches if needed
         /// </summary>
@@ -326,25 +287,58 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 }
             }
         }
-        #endregion Private Methods
 
-        #region Private Fields
+        /// <inheritdoc/>
+        public DataValue PeekOldestValue()
+        {
+            // check for empty queue.
+            if (ItemsInQueue == 0)
+            {
+                return null;
+            }
+
+            return m_dequeueBatch.Values[0].Item1;
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// An overrideable version of the Dispose.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Disposed?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
         private DataChangeBatch m_enqueueBatch;
-        private List<DataChangeBatch> m_dataChangeBatches = new List<DataChangeBatch>();
+        private readonly List<DataChangeBatch> m_dataChangeBatches = [];
         private DataChangeBatch m_dequeueBatch;
         private bool m_queueErrors;
         private readonly IBatchPersistor m_batchPersistor;
-        #endregion
     }
+
     /// <summary>
     /// Batch of Datachanges and corresponding errors
     /// </summary>
     public class DataChangeBatch : BatchBase
     {
-        public DataChangeBatch(List<(DataValue, ServiceResult)> values, uint batchSize, uint monitoredItemId) : base(batchSize, monitoredItemId)
+        public DataChangeBatch(
+            List<(DataValue, ServiceResult)> values,
+            uint batchSize,
+            uint monitoredItemId)
+            : base(batchSize, monitoredItemId)
         {
             Values = values;
         }
+
         public List<(DataValue, ServiceResult)> Values { get; set; }
 
         public override void SetPersisted()
@@ -365,11 +359,17 @@ namespace SampleCompany.NodeManagers.DurableSubscription
     public class StorableDataChangeQueue
     {
         public bool IsDurable { get; set; }
+
         public uint MonitoredItemId { get; set; }
+
         public int ItemsInQueue { get; set; }
+
         public uint QueueSize { get; set; }
+
         public DataChangeBatch EnqueueBatch { get; set; }
+
         public List<DataChangeBatch> DataChangeBatches { get; set; }
+
         public DataChangeBatch DequeueBatch { get; set; }
     }
 }

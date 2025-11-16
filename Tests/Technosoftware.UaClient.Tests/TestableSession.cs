@@ -1,36 +1,49 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2023 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using System;
 using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
-
 using Opc.Ua;
-
-using Technosoftware.UaServer.Tests;
-#endregion
 
 namespace Technosoftware.UaClient.Tests
 {
-    #region Namespace Declarations
-    /// <remarks />
-    public static partial class Namespaces
+    /// <summary>
+    /// Namespaces
+    /// </summary>
+    public static class Namespaces
     {
         /// <summary>
         /// The URI for the OpcUaClient namespace (.NET code namespace is 'Opc.Ua.Client').
         /// </summary>
         public const string OpcUaClient = "http://opcfoundation.org/UA/Client/Types.xsd";
     }
-    #endregion
 
     /// <summary>
     /// A subclass of a session for testing purposes, e.g. to override some implementations.
@@ -40,7 +53,6 @@ namespace Technosoftware.UaClient.Tests
     [KnownType(typeof(TestableMonitoredItem))]
     public class TestableSession : Session
     {
-        #region Constructors
         /// <summary>
         /// Constructs a new instance of the <see cref="Session"/> class.
         /// </summary>
@@ -51,13 +63,12 @@ namespace Technosoftware.UaClient.Tests
             ISessionChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint)
-        :
-            this(channel as ITransportChannel, configuration, endpoint, null)
+            : this(channel as ITransportChannel, configuration, endpoint, null)
         {
         }
 
         /// <summary>
-        /// Constructs a new instance of the <see cref="ISession"/> class.
+        /// Constructs a new instance of the <see cref="IUaSession"/> class.
         /// </summary>
         /// <param name="channel">The channel used to communicate with the server.</param>
         /// <param name="configuration">The configuration for the client application.</param>
@@ -80,22 +91,26 @@ namespace Technosoftware.UaClient.Tests
             X509Certificate2 clientCertificate,
             EndpointDescriptionCollection availableEndpoints = null,
             StringCollection discoveryProfileUris = null)
-            : base(channel, configuration, endpoint, clientCertificate, availableEndpoints, discoveryProfileUris)
+            : base(
+                channel,
+                configuration,
+                endpoint,
+                clientCertificate,
+                availableEndpoints,
+                discoveryProfileUris)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ISession"/> class.
+        /// Initializes a new instance of the <see cref="IUaSession"/> class.
         /// </summary>
         /// <param name="channel">The channel.</param>
         /// <param name="template">The template session.</param>
         /// <param name="copyEventHandlers">if set to <c>true</c> the event handlers are copied.</param>
         public TestableSession(ITransportChannel channel, Session template, bool copyEventHandlers)
-        :
-            base(channel, template, copyEventHandlers)
+            : base(channel, template, copyEventHandlers)
         {
         }
-        #endregion
 
         /// <summary>
         /// The timespan offset to be used to modify the request header timestamp.
@@ -104,10 +119,13 @@ namespace Technosoftware.UaClient.Tests
         public TimeSpan TimestampOffset { get; set; } = new TimeSpan(0);
 
         /// <inheritdoc/>
-        protected override void UpdateRequestHeader(IServiceRequest request, bool useDefaults, string serviceName)
+        protected override void UpdateRequestHeader(
+            IServiceRequest request,
+            bool useDefaults,
+            string serviceName)
         {
             base.UpdateRequestHeader(request, useDefaults, serviceName);
-            request.RequestHeader.Timestamp = request.RequestHeader.Timestamp + TimestampOffset;
+            request.RequestHeader.Timestamp += TimestampOffset;
         }
 
         /// <inheritdoc/>
@@ -115,7 +133,7 @@ namespace Technosoftware.UaClient.Tests
         {
             return new TestableSession(channel, this, copyEventHandlers)
             {
-                TimestampOffset = this.TimestampOffset,
+                TimestampOffset = TimestampOffset
             };
         }
     }
@@ -127,7 +145,6 @@ namespace Technosoftware.UaClient.Tests
     [KnownType(typeof(TestableMonitoredItem))]
     public class TestableSubscription : Subscription
     {
-        #region Constructors
         /// <summary>
         /// Constructs a new instance of the <see cref="TestableSubscription"/> class.
         /// </summary>
@@ -149,7 +166,6 @@ namespace Technosoftware.UaClient.Tests
         public TestableSubscription(Subscription template, bool copyEventHandlers)
             : base(template, copyEventHandlers)
         {
-            Initialize();
         }
 
         /// <summary>
@@ -159,16 +175,7 @@ namespace Technosoftware.UaClient.Tests
         protected new void Initialize(StreamingContext context)
         {
             base.Initialize(context);
-            Initialize();
         }
-
-        /// <summary>
-        /// Sets the private members to default values.
-        /// </summary>
-        private void Initialize()
-        {
-        }
-        #endregion
 
         /// <inheritdoc/>
         public override Subscription CloneSubscription(bool copyEventHandlers)
@@ -184,7 +191,6 @@ namespace Technosoftware.UaClient.Tests
     [KnownType(typeof(TestableMonitoredItem))]
     public class TestableMonitoredItem : MonitoredItem
     {
-        #region Constructors
         /// <summary>
         /// Constructs a new instance of the <see cref="TestableMonitoredItem"/> class.
         /// </summary>
@@ -198,13 +204,15 @@ namespace Technosoftware.UaClient.Tests
         public TestableMonitoredItem(MonitoredItem template)
             : this(template, false, false)
         {
-
         }
 
         /// <summary>
         /// Constructs a new instance of the <see cref="TestableMonitoredItem"/> class.
         /// </summary>
-        public TestableMonitoredItem(MonitoredItem template, bool copyEventHandlers, bool copyClientHandle)
+        public TestableMonitoredItem(
+            MonitoredItem template,
+            bool copyEventHandlers,
+            bool copyClientHandle)
             : base(template, copyEventHandlers, copyClientHandle)
         {
         }
@@ -222,16 +230,16 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// Sets the private members to default values.
         /// </summary>
-        private void Initialize()
+        private static void Initialize()
         {
         }
-        #endregion
 
         /// <inheritdoc/>
-        public override MonitoredItem CloneMonitoredItem(bool copyEventHandlers, bool copyClientHandle)
+        public override MonitoredItem CloneMonitoredItem(
+            bool copyEventHandlers,
+            bool copyClientHandle)
         {
             return new TestableMonitoredItem(this, copyEventHandlers, copyClientHandle);
         }
     }
-
 }

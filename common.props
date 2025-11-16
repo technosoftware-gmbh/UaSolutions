@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Product>OPC UA Solutions .NET</Product>
     <RepositoryUrl>https://github.com/technosoftware-gmbh/UaSolutions</RepositoryUrl>
-    <VersionPrefix>4.2.0</VersionPrefix>
+    <VersionPrefix>5.0.0-rc</VersionPrefix>
     <VersionSuffix>rc-$([System.DateTime]::Now.ToString("yyyyMMdd"))</VersionSuffix>
     <Copyright>Copyright © 2011 - 2025 Technosoftware GmbH</Copyright>
     <PackagePrefix>Technosoftware.UaSolutions</PackagePrefix>
@@ -18,23 +18,24 @@
     <LangVersion>13.0</LangVersion>
     <EnablePackageValidation>true</EnablePackageValidation>
     <!-- to check the package validation on a release build, uncomment here -->
-    <!--<PackageValidationBaselineVersion>4.2.0</PackageValidationBaselineVersion>-->
+    <!--<PackageValidationBaselineVersion>5.0.0/PackageValidationBaselineVersion>-->
     <!-- to regenerate the compatibility suppression file, uncomment here -->
     <!--<GenerateCompatibilitySuppressionFile>true</GenerateCompatibilitySuppressionFile>-->
     <NuGetAuditMode>all</NuGetAuditMode>
     <NuGetAudit>true</NuGetAudit>
   </PropertyGroup>
-
   <PropertyGroup>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
-    <EnableNETAnalyzers>false</EnableNETAnalyzers>
-    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+    <AnalysisLevel>preview</AnalysisLevel>
+    <AnalysisMode>all</AnalysisMode>
+    <AnalysisModeStyle>default</AnalysisModeStyle>
   </PropertyGroup>
-
+  <ItemGroup Condition="$(NO_RCS) == ''">
+    <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" Version="4.14.0" />
+    <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" Version="4.14.0" />
+  </ItemGroup>
   <PropertyGroup>
     <PackageIcon>images/TechnosoftwareGmbH.png</PackageIcon>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>

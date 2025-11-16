@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/AArnott/Nerdbank.GitVersioning/master/src/NerdBank.GitVersioning/version.schema.json",
-  "version": "4.2.0",
+  "version": "5.0.0-rc",
   "versionHeightOffset": 0,
   "nugetPackageVersion": {
     "semVer": 2
@@ -8,7 +8,7 @@
   "publicReleaseRefSpec": [
     "^refs/heads/main$",
     "^refs/heads/master$",
-    "^refs/heads/develop/",
+    "^refs/heads/dev/",
     "^refs/heads/release/\\d+\\.\\d+\\.\\d+"
   ],
   "cloudBuild": {

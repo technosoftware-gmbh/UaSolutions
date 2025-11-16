@@ -12,8 +12,6 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.Numerics;
 using System.Threading;
 using System.Xml;
@@ -21,7 +19,6 @@ using Opc.Ua;
 using BrowseNames = Opc.Ua.BrowseNames;
 using ObjectIds = Opc.Ua.ObjectIds;
 using ReferenceTypes = Opc.Ua.ReferenceTypes;
-using Opc.Ua.Test;
 using Technosoftware.UaServer;
 #endregion Using Directives
 
@@ -38,8 +35,9 @@ namespace SampleCompany.NodeManagers.Reference
         /// </summary>
         public ReferenceServerNodeManager(
             IUaServerData server,
-            ApplicationConfiguration configuration)
-            : base(server, configuration, Namespaces.ReferenceServer)
+            ApplicationConfiguration configuration,
+            bool useSamplingGroups = false)
+            : base(server, configuration, useSamplingGroups, Namespaces.ReferenceServer)
         {
             SystemContext.NodeIdFactory = this;
 
@@ -3958,7 +3956,6 @@ namespace SampleCompany.NodeManagers.Reference
             variable.InstrumentRange.OnWriteValue = OnWriteAnalogRange;
 
             return variable;
-
         }
         #endregion DataAccess Server Facet related Methods
 
@@ -4222,7 +4219,6 @@ namespace SampleCompany.NodeManagers.Reference
             uint numVariables)
         {
             return CreateDynamicVariables(parent, path, name, description, (uint)dataType, valueRank, numVariables);
-
         }
 
         private BaseDataVariableState[] CreateDynamicVariables(
@@ -4265,7 +4261,6 @@ namespace SampleCompany.NodeManagers.Reference
             IList<object> inputArguments,
             IList<object> outputArguments)
         {
-
             // all arguments must be provided.
             if (inputArguments.Count < 2)
             {
@@ -4294,7 +4289,6 @@ namespace SampleCompany.NodeManagers.Reference
             IList<object> inputArguments,
             IList<object> outputArguments)
         {
-
             // all arguments must be provided.
             if (inputArguments.Count < 2)
             {
@@ -4322,7 +4316,6 @@ namespace SampleCompany.NodeManagers.Reference
             IList<object> inputArguments,
             IList<object> outputArguments)
         {
-
             // all arguments must be provided.
             if (inputArguments.Count < 2)
             {
@@ -4350,7 +4343,6 @@ namespace SampleCompany.NodeManagers.Reference
             IList<object> inputArguments,
             IList<object> outputArguments)
         {
-
             // all arguments must be provided.
             if (inputArguments.Count < 2)
             {
@@ -4378,7 +4370,6 @@ namespace SampleCompany.NodeManagers.Reference
             IList<object> inputArguments,
             IList<object> outputArguments)
         {
-
             // all arguments must be provided.
             if (inputArguments.Count < 1)
             {
@@ -4405,7 +4396,6 @@ namespace SampleCompany.NodeManagers.Reference
             IList<object> inputArguments,
             IList<object> outputArguments)
         {
-
             // all arguments must be provided.
             if (inputArguments.Count < 1)
             {
@@ -4486,7 +4476,6 @@ namespace SampleCompany.NodeManagers.Reference
 
                 var handle = new UaNodeHandle { NodeId = nodeId, Node = node, Validated = true };
 
-
                 return handle;
             }
         }
@@ -4494,7 +4483,7 @@ namespace SampleCompany.NodeManagers.Reference
         /// <summary>
         /// Verifies that the specified node exists.
         /// </summary>
-        public override NodeState ValidateNode(
+        protected override NodeState ValidateNode(
            UaServerContext context,
            UaNodeHandle handle,
            IDictionary<NodeId, NodeState> cache)

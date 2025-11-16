@@ -17,7 +17,7 @@
 using Opc.Ua;
 #endregion
 
-namespace Technosoftware.UaServer.Sessions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     ///     The possible reasons for a session related event.

@@ -12,13 +12,9 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
-using System.Xml;
-using System.IO;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
@@ -41,16 +37,13 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && m_updateTimer != null)
             {
-                if (m_updateTimer != null)
-                {
-                    m_updateTimer.Dispose();
-                    m_updateTimer = null;
-                }
+                m_updateTimer.Dispose();
+                m_updateTimer = null;
             }
         }
-        #endregion
+        #endregion IDisposable Members
 
         #region Public Interface
         /// <summary>
@@ -65,9 +58,7 @@ namespace SampleCompany.NodeManagers.TestData
                     return null;
                 }
 
-                HistoryRecord record = null;
-
-                if (!m_records.TryGetValue(nodeId, out record))
+                if (!m_records.TryGetValue(nodeId, out HistoryRecord record))
                 {
                     return null;
                 }
@@ -83,20 +74,20 @@ namespace SampleCompany.NodeManagers.TestData
         {
             lock (m_lock)
             {
-                var record = new HistoryRecord {
-                    RawData = new List<HistoryEntry>(),
+                var record = new HistoryRecord
+                {
+                    RawData = [],
                     Historizing = true,
                     DataType = dataType
                 };
 
                 DateTime now = DateTime.UtcNow;
 
-                for (var ii = 1000; ii >= 0; ii--)
+                for (int ii = 1000; ii >= 0; ii--)
                 {
-                    var entry = new HistoryEntry {
-                        Value = new DataValue {
-                            ServerTimestamp = now.AddSeconds(-(ii * 10))
-                        }
+                    var entry = new HistoryEntry
+                    {
+                        Value = new DataValue { ServerTimestamp = now.AddSeconds(-(ii * 10)) }
                     };
                     entry.Value.SourceTimestamp = entry.Value.ServerTimestamp.AddMilliseconds(1234);
                     entry.IsModified = false;
@@ -104,29 +95,21 @@ namespace SampleCompany.NodeManagers.TestData
                     switch (dataType)
                     {
                         case BuiltInType.Int32:
-                        {
                             entry.Value.Value = ii;
                             break;
-                        }
                     }
 
                     record.RawData.Add(entry);
                 }
 
-                if (m_records == null)
-                {
-                    m_records = new Dictionary<NodeId, HistoryRecord>();
-                }
+                m_records ??= [];
 
                 m_records[nodeId] = record;
 
-                if (m_updateTimer == null)
-                {
-                    m_updateTimer = new Timer(OnUpdate, null, 10000, 10000);
-                }
+                m_updateTimer ??= new Timer(OnUpdate, null, 10000, 10000);
             }
         }
-        #endregion
+        #endregion Public Interface
 
         #region Private Methods
         /// <summary>
@@ -147,22 +130,20 @@ namespace SampleCompany.NodeManagers.TestData
                             continue;
                         }
 
-                        var entry = new HistoryEntry {
-                            Value = new DataValue {
-                                ServerTimestamp = now
-                            }
+                        var entry = new HistoryEntry
+                        {
+                            Value = new DataValue { ServerTimestamp = now }
                         };
-                        entry.Value.SourceTimestamp = entry.Value.ServerTimestamp.AddMilliseconds(-4567);
+                        entry.Value.SourceTimestamp = entry.Value.ServerTimestamp
+                            .AddMilliseconds(-4567);
                         entry.IsModified = false;
 
                         switch (record.DataType)
                         {
                             case BuiltInType.Int32:
-                            {
-                                var lastValue = (int)record.RawData[record.RawData.Count - 1].Value.Value;
+                                int lastValue = (int)record.RawData[^1].Value.Value;
                                 entry.Value.Value = lastValue + 1;
                                 break;
-                            }
                         }
 
                         record.RawData.Add(entry);
@@ -174,13 +155,13 @@ namespace SampleCompany.NodeManagers.TestData
                 Utils.LogError(e, "Unexpected error updating history.");
             }
         }
-        #endregion
+        #endregion Private Methods
 
         #region Private Fields
-        private readonly object m_lock = new object();
+        private readonly Lock m_lock = new();
         private Timer m_updateTimer;
         private Dictionary<NodeId, HistoryRecord> m_records;
-        #endregion
+        #endregion Private Fields
     }
 
     #region HistoryEntry Class
@@ -192,7 +173,7 @@ namespace SampleCompany.NodeManagers.TestData
         public DataValue Value;
         public bool IsModified;
     }
-    #endregion
+    #endregion HistoryEntry Class
 
     #region HistoryRecord Class
     /// <summary>
@@ -204,5 +185,5 @@ namespace SampleCompany.NodeManagers.TestData
         public bool Historizing;
         public BuiltInType DataType;
     }
-    #endregion
+    #endregion HistoryRecord Class
 }

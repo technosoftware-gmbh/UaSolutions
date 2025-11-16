@@ -20,9 +20,9 @@ using System.Xml;
 
 using Opc.Ua;
 
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Configuration
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Privileged identity which can access the system configuration.
@@ -39,6 +39,6 @@ namespace Technosoftware.UaServer.Configuration
         : base(identity, new List<Role> { Role.SecurityAdmin, Role.ConfigureAdmin })
         {
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
     }
 }

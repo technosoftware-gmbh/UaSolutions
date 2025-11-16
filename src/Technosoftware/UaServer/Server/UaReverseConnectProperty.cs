@@ -10,9 +10,10 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using Opc.Ua;
 using System;
-#endregion
+using Opc.Ua;
+using Technosoftware.UaServer;
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -46,41 +47,41 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The Url of the reverse connect client.
         /// </summary>
-        public Uri ClientUrl { get; private set; }
+        public readonly Uri ClientUrl;
 
         /// <summary>
         /// The timeout to use for a reverse connect attempt.
         /// </summary>
-        public int Timeout { get; private set; }
+        public readonly int Timeout;
 
         /// <summary>
         /// If this is an application configuration entry.
         /// </summary>
-        public bool ConfigEntry { get; private set; }
+        public readonly bool ConfigEntry;
 
         /// <summary>
         /// The service result of the last connection attempt.
         /// </summary>
-        public ServiceResult ServiceResult { get; set; }
-
-        /// <summary>
-        /// The maximum number of sessions allowed to the client.
-        /// </summary>
-        public int MaxSessionCount { get; set; }
-
-        /// <summary>
-        /// If the connection is enabled.
-        /// </summary>
-        public bool Enabled { get; set; }
-
-        /// <summary>
-        /// The time when the connection was rejected.
-        /// </summary>
-        public DateTime RejectTime { get; set; }
+        public ServiceResult ServiceResult;
 
         /// <summary>
         /// The last state of the reverse connection.
         /// </summary>
-        public UaReverseConnectState LastState { get; set; } = UaReverseConnectState.Closed;
+        public UaReverseConnectState LastState = UaReverseConnectState.Closed;
+
+        /// <summary>
+        /// The maximum number of sessions allowed to the client.
+        /// </summary>
+        public int MaxSessionCount;
+
+        /// <summary>
+        /// If the connection is enabled.
+        /// </summary>
+        public bool Enabled;
+
+        /// <summary>
+        /// The time when the connection was rejected.
+        /// </summary>
+        public DateTime RejectTime;
     }
 }

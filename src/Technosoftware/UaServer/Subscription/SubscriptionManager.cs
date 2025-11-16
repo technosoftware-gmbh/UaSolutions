@@ -14,50 +14,49 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
+
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Globalization;
-using System.Threading.Tasks;
 using System.Linq;
-using Microsoft.Extensions.Logging;
-
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
+#endregion Using Directives
 
-using Technosoftware.UaServer.Diagnostics;
-#endregion
-
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// A generic session manager object for a server.
     /// </summary>
-    public class SubscriptionManager : IDisposable, IUaSubscriptionManager
+    public class SubscriptionManager : IUaSubscriptionManager
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initializes the manager with its configuration.
         /// </summary>
-        public SubscriptionManager(
-            IUaServerData server,
-            ApplicationConfiguration configuration)
+        public SubscriptionManager(IUaServerData server, ApplicationConfiguration configuration)
         {
-            if (server == null)
-                throw new ArgumentNullException(nameof(server));
             if (configuration == null)
+            {
                 throw new ArgumentNullException(nameof(configuration));
+            }
 
-            m_server = server;
+            m_server = server ?? throw new ArgumentNullException(nameof(server));
 
             m_minPublishingInterval = configuration.ServerConfiguration.MinPublishingInterval;
             m_maxPublishingInterval = configuration.ServerConfiguration.MaxPublishingInterval;
             m_publishingResolution = configuration.ServerConfiguration.PublishingResolution;
-            m_maxSubscriptionLifetime = (uint)configuration.ServerConfiguration.MaxSubscriptionLifetime;
-            m_maxDurableSubscriptionLifetimeInHours = (uint)configuration.ServerConfiguration.MaxDurableSubscriptionLifetimeInHours;
-            m_durableSubscriptionsEnabled = configuration.ServerConfiguration.DurableSubscriptionsEnabled;
-            m_minSubscriptionLifetime = (uint)configuration.ServerConfiguration.MinSubscriptionLifetime;
+            m_maxSubscriptionLifetime = (uint)configuration.ServerConfiguration
+                .MaxSubscriptionLifetime;
+            m_maxDurableSubscriptionLifetimeInHours = (uint)
+                configuration.ServerConfiguration.MaxDurableSubscriptionLifetimeInHours;
+            m_durableSubscriptionsEnabled = configuration.ServerConfiguration
+                .DurableSubscriptionsEnabled;
+            m_minSubscriptionLifetime = (uint)configuration.ServerConfiguration
+                .MinSubscriptionLifetime;
             m_maxMessageCount = (uint)configuration.ServerConfiguration.MaxMessageQueueSize;
-            m_maxNotificationsPerPublish = (uint)configuration.ServerConfiguration.MaxNotificationsPerPublish;
+            m_maxNotificationsPerPublish = (uint)configuration.ServerConfiguration
+                .MaxNotificationsPerPublish;
             m_maxPublishRequestCount = configuration.ServerConfiguration.MaxPublishRequestCount;
             m_maxSubscriptionCount = configuration.ServerConfiguration.MaxSubscriptionCount;
 
@@ -66,7 +65,9 @@ namespace Technosoftware.UaServer.Subscriptions
             m_subscriptions = [];
             m_publishQueues = [];
             m_statusMessages = [];
-            m_lastSubscriptionId = BitConverter.ToInt64(Nonce.CreateRandomNonceData(sizeof(long)), 0);
+            m_lastSubscriptionId = BitConverter.ToInt64(
+                Nonce.CreateRandomNonceData(sizeof(long)),
+                0);
 
             // create a event to signal shutdown.
             m_shutdownEvent = new ManualResetEvent(true);
@@ -75,9 +76,7 @@ namespace Technosoftware.UaServer.Subscriptions
             m_conditionRefreshEvent = new ManualResetEvent(false);
             m_conditionRefreshQueue = new Queue<ConditionRefreshTask>();
         }
-        #endregion
 
-        #region IDisposable Members
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
@@ -94,15 +93,15 @@ namespace Technosoftware.UaServer.Subscriptions
         {
             if (disposing)
             {
-                List<Subscription> subscriptions = null;
+                List<IUaSubscription> subscriptions = null;
                 List<SessionPublishQueue> publishQueues = null;
 
                 lock (m_lock)
                 {
-                    publishQueues = new List<SessionPublishQueue>(m_publishQueues.Values);
+                    publishQueues = [.. m_publishQueues.Values];
                     m_publishQueues.Clear();
 
-                    subscriptions = new List<Subscription>(m_subscriptions.Values);
+                    subscriptions = [.. m_subscriptions.Values];
                     m_subscriptions.Clear();
                 }
 
@@ -111,19 +110,16 @@ namespace Technosoftware.UaServer.Subscriptions
                     Utils.SilentDispose(publishQueue);
                 }
 
-                foreach (Subscription subscription in subscriptions)
+                foreach (IUaSubscription subscription in subscriptions)
                 {
                     Utils.SilentDispose(subscription);
                 }
 
                 Utils.SilentDispose(m_shutdownEvent);
                 Utils.SilentDispose(m_conditionRefreshEvent);
-
             }
         }
-        #endregion
 
-        #region IUaSubscriptionManager Members
         /// <summary>
         /// Raised after a new subscription is created.
         /// </summary>
@@ -136,7 +132,6 @@ namespace Technosoftware.UaServer.Subscriptions
                     m_SubscriptionCreated += value;
                 }
             }
-
             remove
             {
                 lock (m_eventLock)
@@ -158,7 +153,6 @@ namespace Technosoftware.UaServer.Subscriptions
                     m_SubscriptionDeleted += value;
                 }
             }
-
             remove
             {
                 lock (m_eventLock)
@@ -172,9 +166,9 @@ namespace Technosoftware.UaServer.Subscriptions
         /// Returns all of the subscriptions known to the subscription manager.
         /// </summary>
         /// <returns>A list of the subscriptions.</returns>
-        public IList<Subscription> GetSubscriptions()
+        public IList<IUaSubscription> GetSubscriptions()
         {
-            var subscriptions = new List<Subscription>();
+            var subscriptions = new List<IUaSubscription>();
 
             lock (m_lock)
             {
@@ -187,7 +181,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Raises an event related to a subscription.
         /// </summary>
-        protected virtual void RaiseSubscriptionEvent(Subscription subscription, bool deleted)
+        protected virtual void RaiseSubscriptionEvent(IUaSubscription subscription, bool deleted)
         {
             EventHandler<SubscriptionEventArgs> handler = null;
 
@@ -213,9 +207,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
             }
         }
-        #endregion
 
-        #region Public Interface
         /// <summary>
         /// Starts up the manager makes it ready to create subscriptions.
         /// </summary>
@@ -228,17 +220,15 @@ namespace Technosoftware.UaServer.Subscriptions
 
                 m_shutdownEvent.Reset();
 
-                Task.Factory.StartNew(() =>
-                {
-                    PublishSubscriptions(m_publishingResolution);
-                }, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach);
+                Task.Factory.StartNew(
+                    () => PublishSubscriptions(m_publishingResolution),
+                    TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach);
 
                 m_conditionRefreshEvent.Reset();
 
-                Task.Factory.StartNew(() =>
-                {
-                    ConditionRefreshWorker();
-                }, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach);
+                Task.Factory.StartNew(
+                    ConditionRefreshWorker,
+                    TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach);
             }
         }
 
@@ -267,7 +257,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 StoreSubscriptions();
 
                 // dispose of subscriptions objects.
-                foreach (Subscription subscription in m_subscriptions.Values)
+                foreach (IUaSubscription subscription in m_subscriptions.Values)
                 {
                     subscription.Dispose();
                 }
@@ -276,7 +266,6 @@ namespace Technosoftware.UaServer.Subscriptions
             }
         }
 
-        #region Subscription Store / Restore
         /// <summary>
         /// Stores durable subscriptions to  be able to restore them after a restart
         /// </summary>
@@ -289,7 +278,7 @@ namespace Technosoftware.UaServer.Subscriptions
             }
             var subscriptionsToStore = new List<IUaStoredSubscription>();
 
-            foreach (Subscription subscription in m_subscriptions.Values)
+            foreach (IUaSubscription subscription in m_subscriptions.Values)
             {
                 // only store durable subscriptions
                 if (!subscription.IsDurable)
@@ -320,11 +309,13 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Restore durable subscriptions after a server restart
         /// </summary>
+        /// <exception cref="InvalidOperationException"></exception>
         public virtual void RestoreSubscriptions()
         {
             if (m_server.IsRunning)
             {
-                throw new InvalidOperationException("Subscription restore can only occur on startup");
+                throw new InvalidOperationException(
+                    "Subscription restore can only occur on startup");
             }
 
             // only restore subscriptions if durable subscriptions are enabeld
@@ -337,7 +328,6 @@ namespace Technosoftware.UaServer.Subscriptions
 
             try
             {
-
                 restoreResult = m_subscriptionStore.RestoreSubscriptions();
             }
             catch (Exception ex)
@@ -346,8 +336,9 @@ namespace Technosoftware.UaServer.Subscriptions
                 return;
             }
 
-
-            if (!restoreResult.Success || restoreResult.Subscriptions == null || !restoreResult.Subscriptions.Any())
+            if (!restoreResult.Success ||
+                restoreResult.Subscriptions == null ||
+                !restoreResult.Subscriptions.Any())
             {
                 return;
             }
@@ -356,7 +347,7 @@ namespace Technosoftware.UaServer.Subscriptions
 
             foreach (IUaStoredSubscription storedSubscription in restoreResult.Subscriptions)
             {
-                Subscription subscription;
+                IUaSubscription subscription;
 
                 try
                 {
@@ -364,7 +355,10 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
                 catch (Exception ex)
                 {
-                    Utils.LogError(ex, "Failed to restore subscritption with id {0}", storedSubscription.Id);
+                    Utils.LogError(
+                        ex,
+                        "Failed to restore subscritption with id {0}",
+                        storedSubscription.Id);
                     continue;
                 }
 
@@ -380,8 +374,8 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Restore a subscription after a restart
         /// </summary>
-        protected virtual Subscription RestoreSubscription(
-            IUaStoredSubscription storedSubscription)
+        /// <exception cref="ServiceResultException"></exception>
+        protected virtual IUaSubscription RestoreSubscription(IUaStoredSubscription storedSubscription)
         {
             if (m_subscriptions.Count >= m_maxSubscriptionCount)
             {
@@ -389,16 +383,25 @@ namespace Technosoftware.UaServer.Subscriptions
             }
 
             // calculate publishing interval.
-            storedSubscription.PublishingInterval = CalculatePublishingInterval(storedSubscription.PublishingInterval);
+            storedSubscription.PublishingInterval = CalculatePublishingInterval(
+                storedSubscription.PublishingInterval);
 
             // calculate the keep alive count.
-            storedSubscription.MaxKeepaliveCount = CalculateKeepAliveCount(storedSubscription.PublishingInterval, storedSubscription.MaxKeepaliveCount, storedSubscription.IsDurable);
+            storedSubscription.MaxKeepaliveCount = CalculateKeepAliveCount(
+                storedSubscription.PublishingInterval,
+                storedSubscription.MaxKeepaliveCount,
+                storedSubscription.IsDurable);
 
             // calculate the lifetime count.
-            storedSubscription.MaxLifetimeCount = CalculateLifetimeCount(storedSubscription.PublishingInterval, storedSubscription.MaxKeepaliveCount, storedSubscription.MaxLifetimeCount, storedSubscription.IsDurable);
+            storedSubscription.MaxLifetimeCount = CalculateLifetimeCount(
+                storedSubscription.PublishingInterval,
+                storedSubscription.MaxKeepaliveCount,
+                storedSubscription.MaxLifetimeCount,
+                storedSubscription.IsDurable);
 
             // calculate the max notification count.
-            storedSubscription.MaxNotificationsPerPublish = CalculateMaxNotificationsPerPublish(storedSubscription.MaxNotificationsPerPublish);
+            storedSubscription.MaxNotificationsPerPublish = CalculateMaxNotificationsPerPublish(
+                storedSubscription.MaxNotificationsPerPublish);
 
             // create the subscription.
             var subscription = new Subscription(m_server, storedSubscription);
@@ -426,20 +429,21 @@ namespace Technosoftware.UaServer.Subscriptions
 
             return subscription;
         }
-        #endregion
+
         /// <summary>
         /// Signals that a session is closing.
         /// </summary>
-        public virtual void SessionClosing(UaServerOperationContext context, NodeId sessionId, bool deleteSubscriptions)
+        public virtual void SessionClosing(
+            UaServerOperationContext context,
+            NodeId sessionId,
+            bool deleteSubscriptions)
         {
-            // close the publish queue for the session.
-            SessionPublishQueue queue = null;
-            IList<Subscription> subscriptionsToDelete = null;
-            uint publishingIntervalCount = 0;
+            IList<IUaSubscription> subscriptionsToDelete = null;
 
+            // close the publish queue for the session.
             lock (m_lock)
             {
-                if (m_publishQueues.TryGetValue(sessionId, out queue))
+                if (m_publishQueues.TryGetValue(sessionId, out SessionPublishQueue queue))
                 {
                     m_publishQueues.Remove(sessionId);
                     subscriptionsToDelete = queue.Close();
@@ -455,11 +459,10 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
             }
 
-            //remove the expired subscription status change notifications for this session
+            // remove the expired subscription status change notifications for this session
             lock (m_statusMessagesLock)
             {
-                Queue<StatusMessage> statusQueue = null;
-                if (m_statusMessages.TryGetValue(sessionId, out statusQueue))
+                if (m_statusMessages.TryGetValue(sessionId, out Queue<StatusMessage> statusQueue))
                 {
                     m_statusMessages.Remove(sessionId);
                 }
@@ -470,7 +473,7 @@ namespace Technosoftware.UaServer.Subscriptions
             {
                 for (int ii = 0; ii < subscriptionsToDelete.Count; ii++)
                 {
-                    Subscription subscription = subscriptionsToDelete[ii];
+                    IUaSubscription subscription = subscriptionsToDelete[ii];
 
                     // delete the subscription.
                     if (deleteSubscriptions)
@@ -482,28 +485,25 @@ namespace Technosoftware.UaServer.Subscriptions
                         subscription.Delete(context);
 
                         // get the count for the diagnostics.
-                        publishingIntervalCount = GetPublishingIntervalCount();
-
+                        uint publishingIntervalCount = GetPublishingIntervalCount();
                         lock (m_server.DiagnosticsWriteLock)
                         {
-                            ServerDiagnosticsSummaryDataType diagnostics = m_server.ServerDiagnostics;
+                            ServerDiagnosticsSummaryDataType diagnostics = m_server
+                                .ServerDiagnostics;
                             diagnostics.CurrentSubscriptionCount--;
                             diagnostics.PublishingIntervalCount = publishingIntervalCount;
                         }
                     }
-
                     // mark the subscriptions as abandoned.
                     else
                     {
                         lock (m_lock)
                         {
-                            if (m_abandonedSubscriptions == null)
-                            {
-                                m_abandonedSubscriptions = [];
-                            }
-
-                            m_abandonedSubscriptions.Add(subscription);
-                            Utils.LogWarning("Subscription {0}, Id={1}.", "ABANDONED", subscription.Id);
+                            (m_abandonedSubscriptions ??= []).Add(subscription);
+                            Utils.LogWarning(
+                                "Subscription {0}, Id={1}.",
+                                "ABANDONED",
+                                subscription.Id);
                         }
                     }
                 }
@@ -513,9 +513,10 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Refreshes the conditions for the specified subscription.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public void ConditionRefresh(UaServerOperationContext context, uint subscriptionId)
         {
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -541,7 +542,8 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
                 else
                 {
-                    serviceResultException = new ServiceResultException(StatusCodes.BadRefreshInProgress);
+                    serviceResultException = new ServiceResultException(
+                        StatusCodes.BadRefreshInProgress);
                 }
 
                 // trigger the refresh worker.
@@ -557,9 +559,13 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Refreshes the conditions for the specified subscription and monitored item.
         /// </summary>
-        public void ConditionRefresh2(UaServerOperationContext context, uint subscriptionId, uint monitoredItemId)
+        /// <exception cref="ServiceResultException"></exception>
+        public void ConditionRefresh2(
+            UaServerOperationContext context,
+            uint subscriptionId,
+            uint monitoredItemId)
         {
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -595,7 +601,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Completes a refresh conditions request.
         /// </summary>
-        private void DoConditionRefresh(Subscription subscription)
+        private static void DoConditionRefresh(IUaSubscription subscription)
         {
             try
             {
@@ -611,12 +617,14 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Completes a refresh conditions request.
         /// </summary>
-        private void DoConditionRefresh2(Subscription subscription, uint monitoredItemId)
+        private static void DoConditionRefresh2(IUaSubscription subscription, uint monitoredItemId)
         {
             try
             {
-                Utils.LogTrace("Subscription ConditionRefresh2 started, Id={0}, MonitoredItemId={1}.",
-                    subscription.Id, monitoredItemId);
+                Utils.LogTrace(
+                    "Subscription ConditionRefresh2 started, Id={0}, MonitoredItemId={1}.",
+                    subscription.Id,
+                    monitoredItemId);
                 subscription.ConditionRefresh2(monitoredItemId);
             }
             catch (Exception e)
@@ -628,11 +636,10 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Deletes the specified subscription.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public StatusCode DeleteSubscription(UaServerOperationContext context, uint subscriptionId)
         {
-            uint publishingIntervalCount = 0;
-            int monitoredItemCount = 0;
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -644,14 +651,13 @@ namespace Technosoftware.UaServer.Subscriptions
                     if (!NodeId.IsNull(sessionId))
                     {
                         // check that the subscription is the owner.
-                        if (context != null && !Object.ReferenceEquals(context.Session, subscription.Session))
+                        if (context != null &&
+                            !ReferenceEquals(context.Session, subscription.Session))
                         {
                             throw new ServiceResultException(StatusCodes.BadSubscriptionIdInvalid);
                         }
 
-                        SessionPublishQueue queue = null;
-
-                        if (m_publishQueues.TryGetValue(sessionId, out queue))
+                        if (m_publishQueues.TryGetValue(sessionId, out SessionPublishQueue queue))
                         {
                             queue.Remove(subscription, true);
                         }
@@ -666,7 +672,10 @@ namespace Technosoftware.UaServer.Subscriptions
                         if (m_abandonedSubscriptions[ii].Id == subscriptionId)
                         {
                             m_abandonedSubscriptions.RemoveAt(ii);
-                            Utils.LogWarning("Subscription {0}, Id={1}.", "DELETED(ABANDONED)", subscriptionId);
+                            Utils.LogWarning(
+                                "Subscription {0}, Id={1}.",
+                                "DELETED(ABANDONED)",
+                                subscriptionId);
                             break;
                         }
                     }
@@ -678,7 +687,7 @@ namespace Technosoftware.UaServer.Subscriptions
 
             if (subscription != null)
             {
-                monitoredItemCount = subscription.MonitoredItemCount;
+                int monitoredItemCount = subscription.MonitoredItemCount;
 
                 // raise subscription event.
                 RaiseSubscriptionEvent(subscription, true);
@@ -687,7 +696,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 subscription.Delete(context);
 
                 // get the count for the diagnostics.
-                publishingIntervalCount = GetPublishingIntervalCount();
+                uint publishingIntervalCount = GetPublishingIntervalCount();
 
                 lock (m_server.DiagnosticsWriteLock)
                 {
@@ -715,9 +724,11 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Updates the current monitored item count for the session.
         /// </summary>
-        private void UpdateCurrentMonitoredItemsCount(SessionDiagnosticsDataType diagnostics, int change)
+        private static void UpdateCurrentMonitoredItemsCount(
+            SessionDiagnosticsDataType diagnostics,
+            int change)
         {
-            long monitoredItemsCount = (long)diagnostics.CurrentMonitoredItemsCount;
+            long monitoredItemsCount = diagnostics.CurrentMonitoredItemsCount;
             monitoredItemsCount += change;
 
             if (monitoredItemsCount > 0)
@@ -735,17 +746,15 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         private uint GetPublishingIntervalCount()
         {
-            Dictionary<double, uint> publishingDiagnostics = [];
+            var publishingDiagnostics = new Dictionary<double, uint>();
 
             lock (m_lock)
             {
-                foreach (Subscription subscription in m_subscriptions.Values)
+                foreach (IUaSubscription subscription in m_subscriptions.Values)
                 {
                     double publishingInterval = subscription.PublishingInterval;
 
-                    uint total = 0;
-
-                    if (!publishingDiagnostics.TryGetValue(publishingInterval, out total))
+                    if (!publishingDiagnostics.TryGetValue(publishingInterval, out uint total))
                     {
                         total = 0;
                     }
@@ -760,6 +769,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Creates a new subscription.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public virtual void CreateSubscription(
             UaServerOperationContext context,
             double requestedPublishingInterval,
@@ -781,16 +791,10 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
             }
 
-            subscriptionId = 0;
-            revisedPublishingInterval = 0;
-            revisedLifetimeCount = 0;
-            revisedMaxKeepAliveCount = 0;
-
             uint publishingIntervalCount = 0;
-            Subscription subscription = null;
 
             // get session from context.
-            Sessions.Session session = context.Session;
+            IUaSession session = context.Session;
 
             // assign new identifier.
             subscriptionId = Utils.IncrementIdentifier(ref m_lastSubscriptionId);
@@ -799,16 +803,22 @@ namespace Technosoftware.UaServer.Subscriptions
             revisedPublishingInterval = CalculatePublishingInterval(requestedPublishingInterval);
 
             // calculate the keep alive count.
-            revisedMaxKeepAliveCount = CalculateKeepAliveCount(revisedPublishingInterval, requestedMaxKeepAliveCount);
+            revisedMaxKeepAliveCount = CalculateKeepAliveCount(
+                revisedPublishingInterval,
+                requestedMaxKeepAliveCount);
 
             // calculate the lifetime count.
-            revisedLifetimeCount = CalculateLifetimeCount(revisedPublishingInterval, revisedMaxKeepAliveCount, requestedLifetimeCount);
+            revisedLifetimeCount = CalculateLifetimeCount(
+                revisedPublishingInterval,
+                revisedMaxKeepAliveCount,
+                requestedLifetimeCount);
 
             // calculate the max notification count.
-            maxNotificationsPerPublish = CalculateMaxNotificationsPerPublish(maxNotificationsPerPublish);
+            maxNotificationsPerPublish = CalculateMaxNotificationsPerPublish(
+                maxNotificationsPerPublish);
 
             // create the subscription.
-            subscription = CreateSubscription(
+            IUaSubscription subscription = CreateSubscription(
                 context,
                 subscriptionId,
                 revisedPublishingInterval,
@@ -824,11 +834,13 @@ namespace Technosoftware.UaServer.Subscriptions
                 m_subscriptions.Add(subscriptionId, subscription);
 
                 // create/update publish queue.
-                SessionPublishQueue queue = null;
 
-                if (!m_publishQueues.TryGetValue(session.Id, out queue))
+                if (!m_publishQueues.TryGetValue(session.Id, out SessionPublishQueue queue))
                 {
-                    m_publishQueues[session.Id] = queue = new SessionPublishQueue(m_server, session, m_maxPublishRequestCount);
+                    m_publishQueues[session.Id] = queue = new SessionPublishQueue(
+                        m_server,
+                        session,
+                        m_maxPublishRequestCount);
                 }
 
                 queue.Add(subscription);
@@ -839,8 +851,9 @@ namespace Technosoftware.UaServer.Subscriptions
 
             lock (m_statusMessagesLock)
             {
-                Queue<StatusMessage> messagesQueue = null;
-                if (!m_statusMessages.TryGetValue(session.Id, out messagesQueue))
+                if (!m_statusMessages.TryGetValue(
+                    session.Id,
+                    out Queue<StatusMessage> messagesQueue))
                 {
                     m_statusMessages[session.Id] = new Queue<StatusMessage>();
                 }
@@ -894,12 +907,18 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
                 catch (Exception e)
                 {
-                    ServiceResult result = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, string.Empty);
+                    var result = ServiceResult.Create(
+                        e,
+                        StatusCodes.BadUnexpectedError,
+                        string.Empty);
                     results.Add(result.Code);
 
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, result);
+                        DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(
+                            m_server,
+                            context,
+                            result);
                         diagnosticInfos.Add(diagnosticInfo);
                         diagnosticsExist = true;
                     }
@@ -915,6 +934,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Publishes a subscription.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public NotificationMessage Publish(
             UaServerOperationContext context,
             SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
@@ -991,17 +1011,20 @@ namespace Technosoftware.UaServer.Subscriptions
         /// Called when a subscription expires.
         /// </summary>
         /// <param name="subscription">The subscription.</param>
-        internal void SubscriptionExpired(Subscription subscription)
+        internal void SubscriptionExpired(IUaSubscription subscription)
         {
             lock (m_statusMessagesLock)
             {
-                StatusMessage message = new StatusMessage();
-                message.SubscriptionId = subscription.Id;
-                message.Message = subscription.PublishTimeout();
+                var message = new StatusMessage
+                {
+                    SubscriptionId = subscription.Id,
+                    Message = subscription.PublishTimeout()
+                };
 
-                Queue<StatusMessage> queue = null;
-
-                if (subscription.SessionId != null && m_statusMessages.TryGetValue(subscription.SessionId, out queue))
+                if (subscription.SessionId != null &&
+                    m_statusMessages.TryGetValue(
+                        subscription.SessionId,
+                        out Queue<StatusMessage> queue))
                 {
                     queue.Enqueue(message);
                 }
@@ -1016,9 +1039,8 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <returns>
         /// True if successful. False if the request has been requeued.
         /// </returns>
-        public bool CompletePublish(
-            UaServerOperationContext context,
-            AsyncPublishOperation operation)
+        /// <exception cref="ServiceResultException"></exception>
+        public bool CompletePublish(UaServerOperationContext context, AsyncPublishOperation operation)
         {
             // get publish queue for session.
             SessionPublishQueue queue = null;
@@ -1031,19 +1053,22 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
             }
 
-            uint subscriptionId = 0;
             UInt32Collection availableSequenceNumbers = null;
-            bool moreNotifications = false;
 
             NotificationMessage message = null;
 
             Utils.LogTrace("Publish #{0} ReceivedFromClient", context.ClientHandle);
             bool requeue = false;
 
+            uint subscriptionId;
+            bool moreNotifications;
             do
             {
                 // wait for a subscription to publish.
-                Subscription subscription = queue.CompletePublish(requeue, operation, operation.Calldata);
+                IUaSubscription subscription = queue.CompletePublish(
+                    requeue,
+                    operation,
+                    operation.Calldata);
 
                 if (subscription == null)
                 {
@@ -1070,15 +1095,16 @@ namespace Technosoftware.UaServer.Subscriptions
                         break;
                     }
 
-                    Utils.LogTrace("Publish False Alarm - Request #{0} Requeued.", context.ClientHandle);
+                    Utils.LogTrace(
+                        "Publish False Alarm - Request #{0} Requeued.",
+                        context.ClientHandle);
                     requeue = true;
                 }
                 finally
                 {
                     queue.PublishCompleted(subscription, moreNotifications);
                 }
-            }
-            while (requeue);
+            } while (requeue);
 
             // fill in response if operation completed.
             if (message != null)
@@ -1133,7 +1159,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 do
                 {
                     // wait for a subscription to publish.
-                    Subscription subscription = queue.Publish(
+                    IUaSubscription subscription = queue.Publish(
                         context.ClientHandle,
                         context.OperationDeadline,
                         requeue,
@@ -1171,15 +1197,16 @@ namespace Technosoftware.UaServer.Subscriptions
                             break;
                         }
 
-                        Utils.LogTrace("Publish False Alarm - Request #{0} Requeued.", context.ClientHandle);
+                        Utils.LogTrace(
+                            "Publish False Alarm - Request #{0} Requeued.",
+                            context.ClientHandle);
                         requeue = true;
                     }
                     finally
                     {
                         queue.PublishCompleted(subscription, moreNotifications);
                     }
-                }
-                while (requeue);
+                } while (requeue);
             }
             finally
             {
@@ -1200,6 +1227,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Modifies an existing subscription.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public void ModifySubscription(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -1216,10 +1244,8 @@ namespace Technosoftware.UaServer.Subscriptions
             revisedLifetimeCount = requestedLifetimeCount;
             revisedMaxKeepAliveCount = requestedMaxKeepAliveCount;
 
-            uint publishingIntervalCount = 0;
-
             // find subscription.
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -1229,19 +1255,27 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
             }
 
-            double publishingInterval = subscription.PublishingInterval;
+            _ = subscription.PublishingInterval;
 
             // calculate publishing interval.
             revisedPublishingInterval = CalculatePublishingInterval(requestedPublishingInterval);
 
             // calculate the keep alive count.
-            revisedMaxKeepAliveCount = CalculateKeepAliveCount(revisedPublishingInterval, requestedMaxKeepAliveCount, subscription.IsDurable);
+            revisedMaxKeepAliveCount = CalculateKeepAliveCount(
+                revisedPublishingInterval,
+                requestedMaxKeepAliveCount,
+                subscription.IsDurable);
 
             // calculate the lifetime count.
-            revisedLifetimeCount = CalculateLifetimeCount(revisedPublishingInterval, revisedMaxKeepAliveCount, requestedLifetimeCount, subscription.IsDurable);
+            revisedLifetimeCount = CalculateLifetimeCount(
+                revisedPublishingInterval,
+                revisedMaxKeepAliveCount,
+                requestedLifetimeCount,
+                subscription.IsDurable);
 
             // calculate the max notification count.
-            maxNotificationsPerPublish = CalculateMaxNotificationsPerPublish(maxNotificationsPerPublish);
+            maxNotificationsPerPublish = CalculateMaxNotificationsPerPublish(
+                maxNotificationsPerPublish);
 
             // update the subscription.
             subscription.Modify(
@@ -1253,7 +1287,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 priority);
 
             // get the count for the diagnostics.
-            publishingIntervalCount = GetPublishingIntervalCount();
+            uint publishingIntervalCount = GetPublishingIntervalCount();
 
             lock (m_server.DiagnosticsWriteLock)
             {
@@ -1261,14 +1295,15 @@ namespace Technosoftware.UaServer.Subscriptions
                 diagnostics.PublishingIntervalCount = publishingIntervalCount;
             }
         }
+
         /// <summary>
         /// Sets a subscription into durable mode
         /// </summary>
         /// <param name="context">the system context.</param>
         /// <param name="subscriptionId">Identifier of the Subscription.</param>
         /// <param name="lifetimeInHours">The requested lifetime in hours for the durable Subscription.</param>
-        /// <param name="revisedLifetimeInHours">The revised lifetime in hours the Server applied to the durable Subscription.</param>
-        /// <returns></returns>
+        /// <param name="revisedLifetimeInHours">The revised lifetime in hours the ServerData applied to the durable Subscription.</param>
+        /// <exception cref="ServiceResultException"></exception>
         public ServiceResult SetSubscriptionDurable(
             ISystemContext context,
             uint subscriptionId,
@@ -1276,7 +1311,7 @@ namespace Technosoftware.UaServer.Subscriptions
             out uint revisedLifetimeInHours)
         {
             revisedLifetimeInHours = 0;
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
             lock (m_lock)
             {
                 if (!m_subscriptions.TryGetValue(subscriptionId, out subscription))
@@ -1298,14 +1333,16 @@ namespace Technosoftware.UaServer.Subscriptions
             }
 
             revisedLifetimeInHours = lifetimeInHours;
-            if (revisedLifetimeInHours == 0 || revisedLifetimeInHours > m_maxDurableSubscriptionLifetimeInHours)
+            if (revisedLifetimeInHours == 0 ||
+                revisedLifetimeInHours > m_maxDurableSubscriptionLifetimeInHours)
             {
                 revisedLifetimeInHours = m_maxDurableSubscriptionLifetimeInHours;
             }
 
-            uint hoursInSeconds = 3_600_000;
+            const uint hoursInSeconds = 3_600_000;
             long lifetimeInSeconds = revisedLifetimeInHours * hoursInSeconds;
-            uint requestedLifeTimeCount = (uint)(lifetimeInSeconds / subscription.PublishingInterval);
+            uint requestedLifeTimeCount = (uint)(lifetimeInSeconds /
+                subscription.PublishingInterval);
 
             return subscription.SetSubscriptionDurable(requestedLifeTimeCount);
         }
@@ -1313,6 +1350,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Sets the publishing mode for a set of subscriptions.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public void SetPublishingMode(
             UaServerOperationContext context,
             bool publishingEnabled,
@@ -1330,7 +1368,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 try
                 {
                     // find subscription.
-                    Subscription subscription = null;
+                    IUaSubscription subscription = null;
 
                     lock (m_lock)
                     {
@@ -1353,12 +1391,18 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
                 catch (Exception e)
                 {
-                    var result = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, string.Empty);
+                    var result = ServiceResult.Create(
+                        e,
+                        StatusCodes.BadUnexpectedError,
+                        string.Empty);
                     results.Add(result.Code);
 
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, result);
+                        DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(
+                            m_server,
+                            context,
+                            result);
                         diagnosticInfos.Add(diagnosticInfo);
                         diagnosticsExist = true;
                     }
@@ -1384,17 +1428,20 @@ namespace Technosoftware.UaServer.Subscriptions
             results = [];
             diagnosticInfos = [];
 
-            Utils.LogInfo("TransferSubscriptions to SessionId={0}, Count={1}, sendInitialValues={2}",
-                context.Session.Id, subscriptionIds.Count, sendInitialValues);
+            Utils.LogInfo(
+                "TransferSubscriptions to SessionId={0}, Count={1}, sendInitialValues={2}",
+                context.Session.Id,
+                subscriptionIds.Count,
+                sendInitialValues);
 
             for (int ii = 0; ii < subscriptionIds.Count; ii++)
             {
-                TransferResult result = new TransferResult();
+                var result = new TransferResult();
                 try
                 {
                     // find subscription.
-                    Subscription subscription = null;
-                    Sessions.Session ownerSession = null;
+                    IUaSubscription subscription = null;
+                    IUaSession ownerSession = null;
 
                     lock (m_lock)
                     {
@@ -1417,35 +1464,38 @@ namespace Technosoftware.UaServer.Subscriptions
 
                         // check if new and old sessions are different
                         ownerSession = subscription.Session;
-                        if (ownerSession != null)
+                        if (ownerSession != null &&
+                            !NodeId.IsNull(ownerSession.Id) &&
+                            ownerSession.Id == context.Session.Id)
                         {
-                            if (!NodeId.IsNull(ownerSession.Id) && ownerSession.Id == context.Session.Id)
+                            result.StatusCode = StatusCodes.BadNothingToDo;
+                            results.Add(result);
+                            if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                             {
-                                result.StatusCode = StatusCodes.BadNothingToDo;
-                                results.Add(result);
-                                if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
-                                {
-                                    diagnosticInfos.Add(null);
-                                }
-                                continue;
+                                diagnosticInfos.Add(null);
                             }
+                            continue;
                         }
                     }
 
                     // get the identity of the current or last owner
-                    UserIdentityToken ownerIdentity = subscription.EffectiveIdentity.GetIdentityToken();
+                    UserIdentityToken ownerIdentity = subscription.EffectiveIdentity
+                        .GetIdentityToken();
 
                     // Validate the identity of the user who owns/owned the subscription
                     // is the same as the new owner.
-                    bool validIdentity = Utils.IsEqualUserIdentity(ownerIdentity, context.Session.EffectiveIdentity.GetIdentityToken());
+                    bool validIdentity = Utils.IsEqualUserIdentity(
+                        ownerIdentity,
+                        context.Session.EffectiveIdentity.GetIdentityToken());
 
                     // Test if anonymous user is using a
                     // secure session using Sign or SignAndEncrypt
                     if (validIdentity && (ownerIdentity is AnonymousIdentityToken))
                     {
-                        var securityMode = context.ChannelContext.EndpointDescription.SecurityMode;
-                        if (securityMode != MessageSecurityMode.Sign &&
-                            securityMode != MessageSecurityMode.SignAndEncrypt)
+                        MessageSecurityMode securityMode = context.ChannelContext
+                            .EndpointDescription
+                            .SecurityMode;
+                        if (securityMode is not MessageSecurityMode.Sign and not MessageSecurityMode.SignAndEncrypt)
                         {
                             validIdentity = false;
                         }
@@ -1469,22 +1519,27 @@ namespace Technosoftware.UaServer.Subscriptions
                         subscription.TransferSession(context, sendInitialValues);
 
                         // remove from queue in old session
-                        if (ownerSession != null)
+                        if (ownerSession != null &&
+                            m_publishQueues.TryGetValue(
+                                ownerSession.Id,
+                                out SessionPublishQueue ownerPublishQueue) &&
+                            ownerPublishQueue != null)
                         {
-                            if (m_publishQueues.TryGetValue(ownerSession.Id, out var ownerPublishQueue) &&
-                                ownerPublishQueue != null)
-                            {
-                                // keep the queued requests for the status message
-                                ownerPublishQueue.Remove(subscription, false);
-                            }
+                            // keep the queued requests for the status message
+                            ownerPublishQueue.Remove(subscription, false);
                         }
 
                         // add to queue in new session, create queue if necessary
-                        if (!m_publishQueues.TryGetValue(context.SessionId, out var publishQueue) ||
+                        if (!m_publishQueues.TryGetValue(
+                                context.SessionId,
+                                out SessionPublishQueue publishQueue) ||
                             publishQueue == null)
                         {
-                            m_publishQueues[context.SessionId] = publishQueue =
-                                new SessionPublishQueue(m_server, context.Session, m_maxPublishRequestCount);
+                            m_publishQueues[context.SessionId]
+                                = publishQueue = new SessionPublishQueue(
+                                m_server,
+                                context.Session,
+                                m_maxPublishRequestCount);
                         }
                         publishQueue.Add(subscription);
                     }
@@ -1492,12 +1547,14 @@ namespace Technosoftware.UaServer.Subscriptions
                     lock (m_statusMessagesLock)
                     {
                         var processedQueue = new Queue<StatusMessage>();
-                        if (m_statusMessages.TryGetValue(context.SessionId, out var messagesQueue) &&
+                        if (m_statusMessages.TryGetValue(
+                                context.SessionId,
+                                out Queue<StatusMessage> messagesQueue) &&
                             messagesQueue != null)
                         {
                             // There must not be any messages left from
                             // the transferred subscription
-                            foreach (var statusMessage in messagesQueue)
+                            foreach (StatusMessage statusMessage in messagesQueue)
                             {
                                 if (statusMessage.SubscriptionId == subscription.Id)
                                 {
@@ -1513,7 +1570,8 @@ namespace Technosoftware.UaServer.Subscriptions
                     {
                         lock (context.Session.DiagnosticsLock)
                         {
-                            SessionDiagnosticsDataType diagnostics = context.Session.SessionDiagnostics;
+                            SessionDiagnosticsDataType diagnostics = context.Session
+                                .SessionDiagnostics;
                             diagnostics.CurrentSubscriptionsCount++;
                         }
                     }
@@ -1527,7 +1585,8 @@ namespace Technosoftware.UaServer.Subscriptions
                     {
                         lock (ownerSession.DiagnosticsLock)
                         {
-                            SessionDiagnosticsDataType diagnostics = ownerSession.SessionDiagnostics;
+                            SessionDiagnosticsDataType diagnostics = ownerSession
+                                .SessionDiagnostics;
                             diagnostics.CurrentSubscriptionsCount--;
                         }
 
@@ -1535,7 +1594,10 @@ namespace Technosoftware.UaServer.Subscriptions
                         bool statusQueued = false;
                         lock (m_statusMessagesLock)
                         {
-                            if (!NodeId.IsNull(ownerSession.Id) && m_statusMessages.TryGetValue(ownerSession.Id, out var queue))
+                            if (!NodeId.IsNull(ownerSession.Id) &&
+                                m_statusMessages.TryGetValue(
+                                    ownerSession.Id,
+                                    out Queue<StatusMessage> queue))
                             {
                                 var message = new StatusMessage
                                 {
@@ -1550,17 +1612,22 @@ namespace Technosoftware.UaServer.Subscriptions
                         lock (m_lock)
                         {
                             // trigger publish response to return status immediately
-                            if (m_publishQueues.TryGetValue(ownerSession.Id, out var ownerPublishQueue) &&
+                            if (m_publishQueues.TryGetValue(
+                                    ownerSession.Id,
+                                    out SessionPublishQueue ownerPublishQueue) &&
                                 ownerPublishQueue != null)
                             {
                                 if (statusQueued)
                                 {
                                     // queue the status message
-                                    bool success = ownerPublishQueue.TryPublishCustomStatus(StatusCodes.GoodSubscriptionTransferred);
+                                    bool success = ownerPublishQueue.TryPublishCustomStatus(
+                                        StatusCodes.GoodSubscriptionTransferred);
                                     if (!success)
                                     {
-                                        Utils.LogWarning("Failed to queue Good_SubscriptionTransferred for SessionId {0}, SubscriptionId {1} due to an empty request queue.",
-                                            ownerSession.Id, subscription.Id);
+                                        Utils.LogWarning(
+                                            "Failed to queue Good_SubscriptionTransferred for SessionId {0}, SubscriptionId {1} due to an empty request queue.",
+                                            ownerSession.Id,
+                                            subscription.Id);
                                     }
                                 }
 
@@ -1571,7 +1638,8 @@ namespace Technosoftware.UaServer.Subscriptions
                     }
 
                     // Return the sequence numbers that are available for retransmission.
-                    result.AvailableSequenceNumbers = subscription.AvailableSequenceNumbersForRetransmission();
+                    result.AvailableSequenceNumbers = subscription
+                        .AvailableSequenceNumbersForRetransmission();
 
                     lock (subscription.DiagnosticsLock)
                     {
@@ -1586,20 +1654,27 @@ namespace Technosoftware.UaServer.Subscriptions
                         diagnosticInfos.Add(null);
                     }
 
-                    Utils.LogInfo("Transferred subscription Id {0} to SessionId {1}", subscription.Id, context.Session.Id);
+                    Utils.LogInfo(
+                        "Transferred subscription Id {0} to SessionId {1}",
+                        subscription.Id,
+                        context.Session.Id);
                 }
                 catch (Exception e)
                 {
                     result.StatusCode = StatusCodes.Bad;
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
-                        diagnosticInfos.Add(new DiagnosticInfo(e, context.DiagnosticsMask, false, null));
+                        diagnosticInfos.Add(
+                            new DiagnosticInfo(e, context.DiagnosticsMask, false, null));
                     }
                 }
 
                 for (int i = 0; i < results.Count; i++)
                 {
-                    m_server.ReportAuditTransferSubscriptionEvent(context.AuditEntryId, context.Session, results[i].StatusCode);
+                    m_server.ReportAuditTransferSubscriptionEvent(
+                        context.AuditEntryId,
+                        context.Session,
+                        results[i].StatusCode);
                 }
             }
         }
@@ -1607,13 +1682,14 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Republishes a previously published notification message.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public NotificationMessage Republish(
             UaServerOperationContext context,
             uint subscriptionId,
             uint retransmitSequenceNumber)
         {
             // find subscription.
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -1630,6 +1706,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Updates the triggers for the monitored item.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public void SetTriggering(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -1642,7 +1719,7 @@ namespace Technosoftware.UaServer.Subscriptions
             out DiagnosticInfoCollection removeDiagnosticInfos)
         {
             // find subscription.
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -1667,6 +1744,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Adds monitored items to a subscription.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public void CreateMonitoredItems(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -1675,10 +1753,8 @@ namespace Technosoftware.UaServer.Subscriptions
             out MonitoredItemCreateResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            int monitoredItemCountIncrement = 0;
-
             // find subscription.
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -1698,7 +1774,8 @@ namespace Technosoftware.UaServer.Subscriptions
                 out results,
                 out diagnosticInfos);
 
-            monitoredItemCountIncrement = subscription.MonitoredItemCount - currentMonitoredItemCount;
+            int monitoredItemCountIncrement = subscription.MonitoredItemCount -
+                currentMonitoredItemCount;
 
             // update diagnostics.
             if (context.Session != null)
@@ -1714,6 +1791,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Modifies monitored items in a subscription.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public void ModifyMonitoredItems(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -1723,7 +1801,7 @@ namespace Technosoftware.UaServer.Subscriptions
             out DiagnosticInfoCollection diagnosticInfos)
         {
             // find subscription.
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -1745,6 +1823,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Deletes the monitored items in a subscription.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public void DeleteMonitoredItems(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -1752,10 +1831,8 @@ namespace Technosoftware.UaServer.Subscriptions
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            int monitoredItemCountIncrement = 0;
-
             // find subscription.
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -1774,7 +1851,8 @@ namespace Technosoftware.UaServer.Subscriptions
                 out results,
                 out diagnosticInfos);
 
-            monitoredItemCountIncrement = subscription.MonitoredItemCount - currentMonitoredItemCount;
+            int monitoredItemCountIncrement = subscription.MonitoredItemCount -
+                currentMonitoredItemCount;
 
             // update diagnostics.
             if (context.Session != null)
@@ -1790,6 +1868,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Changes the monitoring mode for a set of items.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         public void SetMonitoringMode(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -1799,7 +1878,7 @@ namespace Technosoftware.UaServer.Subscriptions
             out DiagnosticInfoCollection diagnosticInfos)
         {
             // find subscription.
-            Subscription subscription = null;
+            IUaSubscription subscription = null;
 
             lock (m_lock)
             {
@@ -1817,8 +1896,6 @@ namespace Technosoftware.UaServer.Subscriptions
                 out results,
                 out diagnosticInfos);
         }
-        #endregion
-        #region Public Static Methods
 
         /// <summary>
         /// Calculate a revised queue size for a monitored item based on the provided maximum allowed queue sizes.
@@ -1829,9 +1906,12 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <param name="maxQueueSize">the maximum queue size for regular subscriptions</param>
         ///  <param name="maxDurableQueueSize">the maxmimum queue size for durable subscriptions</param>
         /// <returns>the revised queue size</returns>
-        public static uint CalculateRevisedQueueSize(bool isDurable, uint queueSize, uint maxQueueSize, uint maxDurableQueueSize)
+        public static uint CalculateRevisedQueueSize(
+            bool isDurable,
+            uint queueSize,
+            uint maxQueueSize,
+            uint maxDurableQueueSize)
         {
-
             //reqular limit
             if (queueSize > maxQueueSize && !isDurable)
             {
@@ -1847,9 +1927,7 @@ namespace Technosoftware.UaServer.Subscriptions
             //no revision needed as size within limits
             return queueSize;
         }
-        #endregion
 
-        #region Protected Methods
         /// <summary>
         /// Calculates the publishing interval.
         /// </summary>
@@ -1872,7 +1950,9 @@ namespace Technosoftware.UaServer.Subscriptions
 
             if (publishingInterval % m_publishingResolution != 0)
             {
-                publishingInterval = (((int)publishingInterval) / ((int)m_publishingResolution) + 1) * m_publishingResolution;
+                publishingInterval =
+                    ((((int)publishingInterval) / m_publishingResolution) + 1) *
+                    m_publishingResolution;
             }
 
             return publishingInterval;
@@ -1881,7 +1961,10 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Calculates the keep alive count.
         /// </summary>
-        protected virtual uint CalculateKeepAliveCount(double publishingInterval, uint keepAliveCount, bool isDurableSubscription = false)
+        protected virtual uint CalculateKeepAliveCount(
+            double publishingInterval,
+            uint keepAliveCount,
+            bool isDurableSubscription = false)
         {
             // set default.
             if (keepAliveCount == 0)
@@ -1889,7 +1972,9 @@ namespace Technosoftware.UaServer.Subscriptions
                 keepAliveCount = 3;
             }
 
-            ulong maxSubscriptionLifetime = isDurableSubscription ? m_maxDurableSubscriptionLifetimeInHours : m_maxSubscriptionLifetime;
+            ulong maxSubscriptionLifetime = isDurableSubscription
+                ? m_maxDurableSubscriptionLifetimeInHours
+                : m_maxSubscriptionLifetime;
 
             double keepAliveInterval = keepAliveCount * publishingInterval;
 
@@ -1898,12 +1983,10 @@ namespace Technosoftware.UaServer.Subscriptions
             {
                 keepAliveCount = (uint)(maxSubscriptionLifetime / publishingInterval);
 
-                if (keepAliveCount < uint.MaxValue)
+                if (keepAliveCount < uint.MaxValue &&
+                    maxSubscriptionLifetime % publishingInterval != 0)
                 {
-                    if (maxSubscriptionLifetime % publishingInterval != 0)
-                    {
-                        keepAliveCount++;
-                    }
+                    keepAliveCount++;
                 }
 
                 keepAliveInterval = keepAliveCount * publishingInterval;
@@ -1914,12 +1997,10 @@ namespace Technosoftware.UaServer.Subscriptions
             {
                 keepAliveCount = (uint)(m_maxPublishingInterval / publishingInterval);
 
-                if (keepAliveCount < uint.MaxValue)
+                if (keepAliveCount < uint.MaxValue &&
+                    m_maxPublishingInterval % publishingInterval != 0)
                 {
-                    if (m_maxPublishingInterval % publishingInterval != 0)
-                    {
-                        keepAliveCount++;
-                    }
+                    keepAliveCount++;
                 }
             }
 
@@ -1929,11 +2010,17 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Calculates the lifetime count.
         /// </summary>
-        protected virtual uint CalculateLifetimeCount(double publishingInterval, uint keepAliveCount, uint lifetimeCount, bool isDurableSubscription = false)
+        protected virtual uint CalculateLifetimeCount(
+            double publishingInterval,
+            uint keepAliveCount,
+            uint lifetimeCount,
+            bool isDurableSubscription = false)
         {
             const int kMillisecondsToHours = 3_600_000;
 
-            ulong maxSubscriptionLifetime = isDurableSubscription ? m_maxDurableSubscriptionLifetimeInHours * kMillisecondsToHours : m_maxSubscriptionLifetime;
+            ulong maxSubscriptionLifetime = isDurableSubscription
+                ? m_maxDurableSubscriptionLifetimeInHours * kMillisecondsToHours
+                : m_maxSubscriptionLifetime;
 
             double lifetimeInterval = lifetimeCount * publishingInterval;
 
@@ -1942,12 +2029,10 @@ namespace Technosoftware.UaServer.Subscriptions
             {
                 lifetimeCount = (uint)(maxSubscriptionLifetime / publishingInterval);
 
-                if (lifetimeCount < uint.MaxValue)
+                if (lifetimeCount < uint.MaxValue &&
+                    maxSubscriptionLifetime % publishingInterval != 0)
                 {
-                    if (maxSubscriptionLifetime % publishingInterval != 0)
-                    {
-                        lifetimeCount++;
-                    }
+                    lifetimeCount++;
                 }
             }
 
@@ -1968,16 +2053,15 @@ namespace Technosoftware.UaServer.Subscriptions
             }
 
             // apply the minimum.
-            if (m_minSubscriptionLifetime > publishingInterval && m_minSubscriptionLifetime > lifetimeInterval)
+            if (m_minSubscriptionLifetime > publishingInterval &&
+                m_minSubscriptionLifetime > lifetimeInterval)
             {
                 lifetimeCount = (uint)(m_minSubscriptionLifetime / publishingInterval);
 
-                if (lifetimeCount < uint.MaxValue)
+                if (lifetimeCount < uint.MaxValue &&
+                    m_minSubscriptionLifetime % publishingInterval != 0)
                 {
-                    if (m_minSubscriptionLifetime % publishingInterval != 0)
-                    {
-                        lifetimeCount++;
-                    }
+                    lifetimeCount++;
                 }
             }
 
@@ -1989,7 +2073,8 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         protected virtual uint CalculateMaxNotificationsPerPublish(uint maxNotificationsPerPublish)
         {
-            if (maxNotificationsPerPublish == 0 || maxNotificationsPerPublish > m_maxNotificationsPerPublish)
+            if (maxNotificationsPerPublish == 0 ||
+                maxNotificationsPerPublish > m_maxNotificationsPerPublish)
             {
                 return m_maxNotificationsPerPublish;
             }
@@ -2000,7 +2085,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Creates a new instance of a subscription.
         /// </summary>
-        protected virtual Subscription CreateSubscription(
+        protected virtual IUaSubscription CreateSubscription(
             UaServerOperationContext context,
             uint subscriptionId,
             double publishingInterval,
@@ -2010,7 +2095,7 @@ namespace Technosoftware.UaServer.Subscriptions
             byte priority,
             bool publishingEnabled)
         {
-            Subscription subscription = new Subscription(
+            return new Subscription(
                 m_server,
                 context.Session,
                 subscriptionId,
@@ -2021,16 +2106,15 @@ namespace Technosoftware.UaServer.Subscriptions
                 priority,
                 publishingEnabled,
                 m_maxMessageCount);
-
-            return subscription;
         }
-        #endregion
 
-        #region Private Methods
         /// <summary>
         /// Checks if there is a status message to return.
         /// </summary>
-        private bool ReturnPendingStatusMessage(UaServerOperationContext context, out NotificationMessage message, out uint subscriptionId)
+        private bool ReturnPendingStatusMessage(
+            UaServerOperationContext context,
+            out NotificationMessage message,
+            out uint subscriptionId)
         {
             message = null;
             subscriptionId = 0;
@@ -2038,15 +2122,15 @@ namespace Technosoftware.UaServer.Subscriptions
             // check for status messages.
             lock (m_statusMessagesLock)
             {
-                if (m_statusMessages.TryGetValue(context.SessionId, out Queue<StatusMessage> statusQueue))
+                if (m_statusMessages.TryGetValue(
+                        context.SessionId,
+                        out Queue<StatusMessage> statusQueue) &&
+                    statusQueue.Count > 0)
                 {
-                    if (statusQueue.Count > 0)
-                    {
-                        StatusMessage status = statusQueue.Dequeue();
-                        subscriptionId = status.SubscriptionId;
-                        message = status.Message;
-                        return true;
-                    }
+                    StatusMessage status = statusQueue.Dequeue();
+                    subscriptionId = status.SubscriptionId;
+                    message = status.Message;
+                    return true;
                 }
             }
             return false;
@@ -2059,17 +2143,19 @@ namespace Technosoftware.UaServer.Subscriptions
         {
             try
             {
-                Utils.LogInfo("Subscription - Publish Thread {0:X8} Started.", Environment.CurrentManagedThreadId);
+                Utils.LogInfo(
+                    "Subscription - Publish Thread {0:X8} Started.",
+                    Environment.CurrentManagedThreadId);
 
                 int sleepCycle = Convert.ToInt32(data, CultureInfo.InvariantCulture);
                 int timeToWait = sleepCycle;
 
-                do
+                while (true)
                 {
                     DateTime start = DateTime.UtcNow;
 
                     SessionPublishQueue[] queues = null;
-                    Subscription[] abandonedSubscriptions = null;
+                    IUaSubscription[] abandonedSubscriptions = null;
 
                     lock (m_lock)
                     {
@@ -2080,7 +2166,8 @@ namespace Technosoftware.UaServer.Subscriptions
                         // collect abandoned subscriptions.
                         if (m_abandonedSubscriptions != null && m_abandonedSubscriptions.Count > 0)
                         {
-                            abandonedSubscriptions = new Subscription[m_abandonedSubscriptions.Count];
+                            abandonedSubscriptions = new IUaSubscription[m_abandonedSubscriptions
+                                .Count];
 
                             for (int ii = 0; ii < abandonedSubscriptions.Length; ii++)
                             {
@@ -2098,25 +2185,22 @@ namespace Technosoftware.UaServer.Subscriptions
                     // check the publish timer for each abandoned subscription.
                     if (abandonedSubscriptions != null)
                     {
-                        List<Subscription> subscriptionsToDelete = [];
+                        var subscriptionsToDelete = new List<IUaSubscription>();
 
                         for (int ii = 0; ii < abandonedSubscriptions.Length; ii++)
                         {
-                            Subscription subscription = abandonedSubscriptions[ii];
+                            IUaSubscription subscription = abandonedSubscriptions[ii];
 
                             if (subscription.PublishTimerExpired() != UaPublishingState.Expired)
                             {
                                 continue;
                             }
 
-                            if (subscriptionsToDelete == null)
-                            {
-                                subscriptionsToDelete = [];
-                            }
-
-                            subscriptionsToDelete.Add(subscription);
+                            (subscriptionsToDelete ??= []).Add(subscription);
                             SubscriptionExpired(subscription);
-                            Utils.LogInfo("Subscription - Abandoned Subscription Id={0} Delete Scheduled.", subscription.Id);
+                            Utils.LogInfo(
+                                "Subscription - Abandoned Subscription Id={0} Delete Scheduled.",
+                                subscription.Id);
                         }
 
                         // schedule cleanup on a background thread.
@@ -2136,18 +2220,22 @@ namespace Technosoftware.UaServer.Subscriptions
 
                     if (m_shutdownEvent.WaitOne(timeToWait))
                     {
-                        Utils.LogInfo("Subscription - Publish Thread {0:X8} Exited Normally.", Environment.CurrentManagedThreadId);
+                        Utils.LogInfo(
+                            "Subscription - Publish Thread {0:X8} Exited Normally.",
+                            Environment.CurrentManagedThreadId);
                         break;
                     }
 
                     int delay = (int)(DateTime.UtcNow - start).TotalMilliseconds;
                     timeToWait = sleepCycle;
                 }
-                while (true);
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Subscription - Publish Thread {0:X8} Exited Unexpectedly.", Environment.CurrentManagedThreadId);
+                Utils.LogError(
+                    e,
+                    "Subscription - Publish Thread {0:X8} Exited Unexpectedly.",
+                    Environment.CurrentManagedThreadId);
             }
         }
 
@@ -2158,12 +2246,13 @@ namespace Technosoftware.UaServer.Subscriptions
         {
             try
             {
-                Utils.LogInfo("Subscription - ConditionRefresh Thread {0:X8} Started.", Environment.CurrentManagedThreadId);
+                Utils.LogInfo(
+                    "Subscription - ConditionRefresh Thread {0:X8} Started.",
+                    Environment.CurrentManagedThreadId);
 
-                do
+                while (true)
                 {
                     ConditionRefreshTask conditionRefreshTask = null;
-                    ;
 
                     lock (m_conditionRefreshLock)
                     {
@@ -2181,30 +2270,33 @@ namespace Technosoftware.UaServer.Subscriptions
                     {
                         m_conditionRefreshEvent.WaitOne();
                     }
+                    else if (conditionRefreshTask.MonitoredItemId == 0)
+                    {
+                        DoConditionRefresh(conditionRefreshTask.Subscription);
+                    }
                     else
                     {
-                        if (conditionRefreshTask.MonitoredItemId == 0)
-                        {
-                            DoConditionRefresh(conditionRefreshTask.Subscription);
-                        }
-                        else
-                        {
-                            DoConditionRefresh2(conditionRefreshTask.Subscription, conditionRefreshTask.MonitoredItemId);
-                        }
+                        DoConditionRefresh2(
+                            conditionRefreshTask.Subscription,
+                            conditionRefreshTask.MonitoredItemId);
                     }
 
                     // use shutdown event to end loop
                     if (m_shutdownEvent.WaitOne(0))
                     {
-                        Utils.LogInfo("Subscription - ConditionRefresh Thread {0:X8} Exited Normally.", Environment.CurrentManagedThreadId);
+                        Utils.LogInfo(
+                            "Subscription - ConditionRefresh Thread {0:X8} Exited Normally.",
+                            Environment.CurrentManagedThreadId);
                         break;
                     }
                 }
-                while (true);
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Subscription - ConditionRefresh Thread {0:X8} Exited Unexpectedly.", Environment.CurrentManagedThreadId);
+                Utils.LogError(
+                    e,
+                    "Subscription - ConditionRefresh Thread {0:X8} Exited Unexpectedly.",
+                    Environment.CurrentManagedThreadId);
             }
         }
 
@@ -2213,16 +2305,18 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         /// <param name="server">The server.</param>
         /// <param name="subscriptionsToDelete">The subscriptions to delete.</param>
-        internal static void CleanupSubscriptions(IUaServerData server, IList<Subscription> subscriptionsToDelete)
+        internal static void CleanupSubscriptions(
+            IUaServerData server,
+            IList<IUaSubscription> subscriptionsToDelete)
         {
             if (subscriptionsToDelete != null && subscriptionsToDelete.Count > 0)
             {
-                Utils.LogInfo("Server - {0} Subscriptions scheduled for delete.", subscriptionsToDelete.Count);
+                Utils.LogInfo(
+                    "Server - {0} Subscriptions scheduled for delete.",
+                    subscriptionsToDelete.Count);
 
-                Task.Run(() =>
-                {
-                    CleanupSubscriptions(new object[] { server, subscriptionsToDelete });
-                });
+                Task.Run(
+                    () => CleanupSubscriptions(new object[] { server, subscriptionsToDelete }));
             }
         }
 
@@ -2237,10 +2331,8 @@ namespace Technosoftware.UaServer.Subscriptions
 
                 object[] args = (object[])data;
 
-                IUaServerData server = (IUaServerData)args[0];
-                List<Subscription> subscriptions = (List<Subscription>)args[1];
-
-                foreach (Subscription subscription in subscriptions)
+                var server = (IUaServerData)args[0];
+                foreach (IUaSubscription subscription in (List<IUaSubscription>)args[1])
                 {
                     server.DeleteSubscription(subscription.Id);
                 }
@@ -2252,42 +2344,30 @@ namespace Technosoftware.UaServer.Subscriptions
                 Utils.LogError(e, "Server - CleanupSubscriptions Task Halted Unexpectedly");
             }
         }
-        #endregion
 
-        #region StatusMessage Class
         private class StatusMessage
         {
             public uint SubscriptionId;
             public NotificationMessage Message;
         }
-        #endregion
 
-        #region ConditionRefreshTask Class
         private class ConditionRefreshTask
         {
-            public ConditionRefreshTask(Subscription subscription, uint monitoredItemId)
+            public ConditionRefreshTask(IUaSubscription subscription, uint monitoredItemId)
             {
                 Subscription = subscription;
                 MonitoredItemId = monitoredItemId;
             }
 
-            public Subscription Subscription { get; private set; }
-            public uint MonitoredItemId { get; private set; }
+            public IUaSubscription Subscription { get; }
+
+            public uint MonitoredItemId { get; }
 
             public override bool Equals(object obj)
             {
-                var crt = obj as ConditionRefreshTask;
-
-                if (crt != null)
-                {
-                    if (Subscription?.Id == crt.Subscription?.Id &&
-                        MonitoredItemId == crt.MonitoredItemId)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
+                return obj is ConditionRefreshTask crt &&
+                    Subscription?.Id == crt.Subscription?.Id &&
+                    MonitoredItemId == crt.MonitoredItemId;
             }
 
             public override int GetHashCode()
@@ -2295,37 +2375,34 @@ namespace Technosoftware.UaServer.Subscriptions
                 return HashCode.Combine(Subscription.Id, MonitoredItemId);
             }
         }
-        #endregion
 
-        #region Private Fields
-        private readonly object m_lock = new object();
+        private readonly Lock m_lock = new();
         private long m_lastSubscriptionId;
-        private IUaServerData m_server;
-        private double m_minPublishingInterval;
-        private double m_maxPublishingInterval;
-        private int m_publishingResolution;
-        private uint m_maxSubscriptionLifetime;
-        private uint m_maxDurableSubscriptionLifetimeInHours;
-        private uint m_minSubscriptionLifetime;
-        private uint m_maxMessageCount;
-        private uint m_maxNotificationsPerPublish;
-        private int m_maxPublishRequestCount;
-        private int m_maxSubscriptionCount;
-        private bool m_durableSubscriptionsEnabled;
-        private Dictionary<uint, Subscription> m_subscriptions;
-        private List<Subscription> m_abandonedSubscriptions;
-        private NodeIdDictionary<Queue<StatusMessage>> m_statusMessages;
-        private NodeIdDictionary<SessionPublishQueue> m_publishQueues;
-        private ManualResetEvent m_shutdownEvent;
-        private Queue<ConditionRefreshTask> m_conditionRefreshQueue;
-        private ManualResetEvent m_conditionRefreshEvent;
-        private IUaSubscriptionStore m_subscriptionStore;
+        private readonly IUaServerData m_server;
+        private readonly double m_minPublishingInterval;
+        private readonly double m_maxPublishingInterval;
+        private readonly int m_publishingResolution;
+        private readonly uint m_maxSubscriptionLifetime;
+        private readonly uint m_maxDurableSubscriptionLifetimeInHours;
+        private readonly uint m_minSubscriptionLifetime;
+        private readonly uint m_maxMessageCount;
+        private readonly uint m_maxNotificationsPerPublish;
+        private readonly int m_maxPublishRequestCount;
+        private readonly int m_maxSubscriptionCount;
+        private readonly bool m_durableSubscriptionsEnabled;
+        private readonly Dictionary<uint, IUaSubscription> m_subscriptions;
+        private List<IUaSubscription> m_abandonedSubscriptions;
+        private readonly NodeIdDictionary<Queue<StatusMessage>> m_statusMessages;
+        private readonly NodeIdDictionary<SessionPublishQueue> m_publishQueues;
+        private readonly ManualResetEvent m_shutdownEvent;
+        private readonly Queue<ConditionRefreshTask> m_conditionRefreshQueue;
+        private readonly ManualResetEvent m_conditionRefreshEvent;
+        private readonly IUaSubscriptionStore m_subscriptionStore;
 
-        private readonly object m_statusMessagesLock = new object();
-        private readonly object m_eventLock = new object();
-        private readonly object m_conditionRefreshLock = new object();
+        private readonly Lock m_statusMessagesLock = new();
+        private readonly Lock m_eventLock = new();
+        private readonly Lock m_conditionRefreshLock = new();
         private event EventHandler<SubscriptionEventArgs> m_SubscriptionCreated;
         private event EventHandler<SubscriptionEventArgs> m_SubscriptionDeleted;
-        #endregion
     }
 }

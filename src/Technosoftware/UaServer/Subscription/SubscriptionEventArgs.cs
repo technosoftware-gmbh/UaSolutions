@@ -19,7 +19,7 @@ using System;
 
 #endregion
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     ///     A class which provides the event arguments for subscription related event.

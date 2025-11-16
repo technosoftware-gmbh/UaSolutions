@@ -1,13 +1,13 @@
 #region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
+// Web: https://technosoftware.com
 //
-// The Software is subject to the Technosoftware GmbH Software License 
+// The Software is subject to the Technosoftware GmbH Software License
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Foundation MIT License. 
+// The Software is based on the OPC Foundation MIT License.
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
@@ -18,14 +18,13 @@ using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
     /// <summary>
-    /// Object that creates instances of an IUaSessions object.
+    /// Object that creates instances of an ISessions object.
     /// </summary>
     public interface IUaSessionFactory
     {
@@ -85,19 +84,19 @@ namespace Technosoftware.UaClient
         /// <param name="availableEndpoints">The list of available endpoints returned by server in GetEndpoints() response.</param>
         /// <param name="discoveryProfileUris">The value of profileUris used in GetEndpoints() request.</param>
         IUaSession Create(
-           ApplicationConfiguration configuration,
-           ITransportChannel channel,
-           ConfiguredEndpoint endpoint,
-           X509Certificate2 clientCertificate,
-           EndpointDescriptionCollection availableEndpoints = null,
-           StringCollection discoveryProfileUris = null);
+            ApplicationConfiguration configuration,
+            ITransportChannel channel,
+            ConfiguredEndpoint endpoint,
+            X509Certificate2 clientCertificate,
+            EndpointDescriptionCollection availableEndpoints = null,
+            StringCollection discoveryProfileUris = null);
 
         /// <summary>
         /// Creates a secure channel to the specified endpoint.
         /// </summary>
         /// <param name="configuration">The application configuration.</param>
         /// <param name="connection">The client endpoint for the reverse connect.</param>
-        /// <param name="endpoint">A configured endpoint to connect to.</param> 
+        /// <param name="endpoint">A configured endpoint to connect to.</param>
         /// <param name="updateBeforeConnect">Update configuration based on server prior connect.</param>
         /// <param name="checkDomain">Check that the certificate specifies a valid domain (computer) name.</param>
         /// <param name="ct">The cancellation token.</param>
@@ -168,7 +167,6 @@ namespace Technosoftware.UaClient
         /// <param name="sessionTemplate">The IUaSession object to use as template</param>
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The new session object.</returns>
-        /// <remarks>The template session must be disposed by the owner.</remarks>
         Task<IUaSession> RecreateAsync(IUaSession sessionTemplate, CancellationToken ct = default);
 
         /// <summary>
@@ -178,8 +176,10 @@ namespace Technosoftware.UaClient
         /// <param name="connection">The waiting reverse connection.</param>
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The new session object.</returns>
-        /// <remarks>The template session must be disposed by the owner.</remarks>
-        Task<IUaSession> RecreateAsync(IUaSession sessionTemplate, ITransportWaitingConnection connection, CancellationToken ct = default);
+        Task<IUaSession> RecreateAsync(
+            IUaSession sessionTemplate,
+            ITransportWaitingConnection connection,
+            CancellationToken ct = default);
 
         /// <summary>
         /// Recreates a session based on a specified template using the provided channel.
@@ -188,7 +188,9 @@ namespace Technosoftware.UaClient
         /// <param name="transportChannel">The channel to use to recreate the session.</param>
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The new session object.</returns>
-        /// <remarks>The template session must be disposed by the owner.</remarks>
-        Task<IUaSession> RecreateAsync(IUaSession sessionTemplate, ITransportChannel transportChannel, CancellationToken ct = default);
+        Task<IUaSession> RecreateAsync(
+            IUaSession sessionTemplate,
+            ITransportChannel transportChannel,
+            CancellationToken ct = default);
     }
 }

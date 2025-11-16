@@ -11,9 +11,8 @@
 
 #region Using Directives
 using System;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
@@ -28,9 +27,19 @@ namespace SampleCompany.NodeManagers.Alarms
             Type controllerType,
             int interval,
             bool optional = true,
-            double maxShelveTime = AlarmConstants.NormalMaxTimeShelved,
-            bool create = true) :
-            base(alarmNodeManager, parent, trigger, name, alarmConditionType, controllerType, interval, optional, maxShelveTime, false)
+            double maxShelveTime = AlarmDefines.NORMAL_MAX_TIME_SHELVED,
+            bool create = true)
+            : base(
+                alarmNodeManager,
+                parent,
+                trigger,
+                name,
+                alarmConditionType,
+                controllerType,
+                interval,
+                optional,
+                maxShelveTime,
+                false)
         {
             if (create)
             {
@@ -41,18 +50,14 @@ namespace SampleCompany.NodeManagers.Alarms
         public new void Initialize(
             uint alarmTypeIdentifier,
             string name,
-            double maxTimeShelved = AlarmConstants.NormalMaxTimeShelved)
+            double maxTimeShelved = AlarmDefines.NORMAL_MAX_TIME_SHELVED)
         {
             // Create an alarm and trigger name - Create a base method for creating the trigger, just provide the name
 
-            if (alarm_ == null)
-            {
-                alarm_ = new ExclusiveLevelAlarmState(parent_);
-            }
+            m_alarm ??= new ExclusiveLevelAlarmState(m_parent);
 
             // Call the base class to set parameters
-            Initialize(alarmTypeIdentifier, name, maxTimeShelved, isLimit: false);
+            base.Initialize(alarmTypeIdentifier, name, maxTimeShelved);
         }
-
     }
 }

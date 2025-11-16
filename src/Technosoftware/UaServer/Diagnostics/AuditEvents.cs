@@ -17,13 +17,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Security.Cryptography.X509Certificates;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Diagnostics
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// The implementation of audit events.
@@ -54,27 +52,44 @@ namespace Technosoftware.UaServer.Diagnostics
             {
                 ISystemContext systemContext = server.DefaultAuditContext;
 
-                AuditEventState e = new AuditEventState(null);
+                var e = new AuditEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
-                   "AuditEvent",
-                   "en-US",
-                   $"Method {methodName} failed. Result: {serviceResultException.Message}.");
+                var message = new TranslationInfo(
+                    "AuditEvent",
+                    "en-US",
+                    $"Method {methodName} failed. Result: {serviceResultException.Message}.");
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   new LocalizedText(message),
-                   StatusCode.IsGood(serviceResultException.StatusCode),
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    new LocalizedText(message),
+                    StatusCode.IsGood(serviceResultException.StatusCode),
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
-                e.SetChildValue(systemContext, BrowseNames.SourceName, $"Attribute/{methodName}", false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    $"Attribute/{methodName}",
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
-                e.SetChildValue(systemContext, BrowseNames.ClientUserId, operationContext?.UserIdentity?.DisplayName, false);
-                e.SetChildValue(systemContext, BrowseNames.ClientAuditEntryId, operationContext?.AuditEntryId, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientUserId,
+                    operationContext?.UserIdentity?.DisplayName,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientAuditEntryId,
+                    operationContext?.AuditEntryId,
+                    false);
 
                 server.ReportAuditEvent(systemContext, e);
             }
@@ -112,30 +127,51 @@ namespace Technosoftware.UaServer.Diagnostics
 
             try
             {
-                AuditWriteUpdateEventState e = new AuditWriteUpdateEventState(null);
+                var e = new AuditWriteUpdateEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
-                   "AuditWriteUpdateEvent",
+                var message = new TranslationInfo(
+                    "AuditWriteUpdateEvent",
                     "en-US",
                     "AuditWriteUpdateEvent.");
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   new LocalizedText(message),
-                   StatusCode.IsGood(statusCode),
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    new LocalizedText(message),
+                    StatusCode.IsGood(statusCode),
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, writeValue.NodeId, false);
                 e.SetChildValue(systemContext, BrowseNames.SourceName, "Attribute/Write", false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
-                e.SetChildValue(systemContext, BrowseNames.ClientUserId, systemContext?.UserIdentity?.DisplayName, false);
-                e.SetChildValue(systemContext, BrowseNames.ClientAuditEntryId, systemContext?.AuditEntryId, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientUserId,
+                    systemContext?.UserIdentity?.DisplayName,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientAuditEntryId,
+                    systemContext?.AuditEntryId,
+                    false);
 
-                e.SetChildValue(systemContext, BrowseNames.AttributeId, writeValue.AttributeId, false);
-                e.SetChildValue(systemContext, BrowseNames.IndexRange, writeValue.IndexRange, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.AttributeId,
+                    writeValue.AttributeId,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.IndexRange,
+                    writeValue.IndexRange,
+                    false);
 
                 object newValue = writeValue.Value?.Value;
                 if (writeValue.ParsedIndexRange != NumericRange.Empty)
@@ -177,18 +213,31 @@ namespace Technosoftware.UaServer.Diagnostics
 
             try
             {
-                AuditHistoryValueUpdateEventState e = new AuditHistoryValueUpdateEventState(null);
+                var e = new AuditHistoryValueUpdateEventState(null);
 
-                InitializeAuditHistoryUpdateEvent(e,
-                        systemContext,
-                        "AuditHistoryValueUpdateEvent",
-                        "Attribute/HistoryValueUpdate",
-                        updateDataDetails,
-                        statusCode);
+                InitializeAuditHistoryUpdateEvent(
+                    e,
+                    systemContext,
+                    "AuditHistoryValueUpdateEvent",
+                    "Attribute/HistoryValueUpdate",
+                    updateDataDetails,
+                    statusCode);
 
-                e.SetChildValue(systemContext, BrowseNames.UpdatedNode, updateDataDetails.NodeId, false);
-                e.SetChildValue(systemContext, BrowseNames.PerformInsertReplace, updateDataDetails.PerformInsertReplace, false);
-                e.SetChildValue(systemContext, BrowseNames.NewValues, updateDataDetails.UpdateValues.ToArray(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.UpdatedNode,
+                    updateDataDetails.NodeId,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.PerformInsertReplace,
+                    updateDataDetails.PerformInsertReplace,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.NewValues,
+                    updateDataDetails.UpdateValues.ToArray(),
+                    false);
                 e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
 
                 server.ReportAuditEvent(systemContext, e);
@@ -222,17 +271,26 @@ namespace Technosoftware.UaServer.Diagnostics
 
             try
             {
-                AuditHistoryAnnotationUpdateEventState e = new AuditHistoryAnnotationUpdateEventState(null);
+                var e = new AuditHistoryAnnotationUpdateEventState(null);
 
-                InitializeAuditHistoryUpdateEvent(e,
+                InitializeAuditHistoryUpdateEvent(
+                    e,
                     systemContext,
                     "AuditHistoryAnnotationUpdateEvent",
                     "Attribute/HistoryAnnotationUpdate",
                     updateStructureDataDetails,
                     statusCode);
 
-                e.SetChildValue(systemContext, BrowseNames.PerformInsertReplace, updateStructureDataDetails.PerformInsertReplace, false);
-                e.SetChildValue(systemContext, BrowseNames.NewValues, updateStructureDataDetails.UpdateValues?.ToArray(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.PerformInsertReplace,
+                    updateStructureDataDetails.PerformInsertReplace,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.NewValues,
+                    updateStructureDataDetails.UpdateValues?.ToArray(),
+                    false);
                 e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
 
                 server.ReportAuditEvent(systemContext, e);
@@ -266,19 +324,36 @@ namespace Technosoftware.UaServer.Diagnostics
 
             try
             {
-                AuditHistoryEventUpdateEventState e = new AuditHistoryEventUpdateEventState(null);
+                var e = new AuditHistoryEventUpdateEventState(null);
 
-                InitializeAuditHistoryUpdateEvent(e,
+                InitializeAuditHistoryUpdateEvent(
+                    e,
                     systemContext,
                     "AuditHistoryEventUpdateEvent",
                     "Attribute/HistoryEventUpdate",
                     updateEventDetails,
                     statusCode);
 
-                e.SetChildValue(systemContext, BrowseNames.UpdatedNode, updateEventDetails.NodeId, false);
-                e.SetChildValue(systemContext, BrowseNames.PerformInsertReplace, updateEventDetails.PerformInsertReplace, false);
-                e.SetChildValue(systemContext, BrowseNames.Filter, updateEventDetails.Filter, false);
-                e.SetChildValue(systemContext, BrowseNames.NewValues, updateEventDetails.EventData.ToArray(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.UpdatedNode,
+                    updateEventDetails.NodeId,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.PerformInsertReplace,
+                    updateEventDetails.PerformInsertReplace,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.Filter,
+                    updateEventDetails.Filter,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.NewValues,
+                    updateEventDetails.EventData.ToArray(),
+                    false);
                 e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
 
                 server.ReportAuditEvent(systemContext, e);
@@ -312,19 +387,36 @@ namespace Technosoftware.UaServer.Diagnostics
 
             try
             {
-                AuditHistoryRawModifyDeleteEventState e = new AuditHistoryRawModifyDeleteEventState(null);
+                var e = new AuditHistoryRawModifyDeleteEventState(null);
 
-                InitializeAuditHistoryUpdateEvent(e,
+                InitializeAuditHistoryUpdateEvent(
+                    e,
                     systemContext,
                     "AuditHistoryRawModifyDeleteEvent",
                     "Attribute/HistoryRawModifyDelete",
                     deleteRawModifiedDetails,
                     statusCode);
 
-                e.SetChildValue(systemContext, BrowseNames.UpdatedNode, deleteRawModifiedDetails.NodeId, false);
-                e.SetChildValue(systemContext, BrowseNames.IsDeleteModified, deleteRawModifiedDetails.IsDeleteModified, false);
-                e.SetChildValue(systemContext, BrowseNames.StartTime, deleteRawModifiedDetails.StartTime, false);
-                e.SetChildValue(systemContext, BrowseNames.EndTime, deleteRawModifiedDetails.EndTime, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.UpdatedNode,
+                    deleteRawModifiedDetails.NodeId,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.IsDeleteModified,
+                    deleteRawModifiedDetails.IsDeleteModified,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.StartTime,
+                    deleteRawModifiedDetails.StartTime,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.EndTime,
+                    deleteRawModifiedDetails.EndTime,
+                    false);
                 e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
 
                 server.ReportAuditEvent(systemContext, e);
@@ -358,17 +450,26 @@ namespace Technosoftware.UaServer.Diagnostics
 
             try
             {
-                AuditHistoryAtTimeDeleteEventState e = new AuditHistoryAtTimeDeleteEventState(null);
+                var e = new AuditHistoryAtTimeDeleteEventState(null);
 
-                InitializeAuditHistoryUpdateEvent(e,
+                InitializeAuditHistoryUpdateEvent(
+                    e,
                     systemContext,
                     "AuditHistoryAtTimeDeleteEvent",
                     "Attribute/HistoryAtTimeDelete",
                     deleteAtTimeDetails,
                     statusCode);
 
-                e.SetChildValue(systemContext, BrowseNames.UpdatedNode, deleteAtTimeDetails.NodeId, false);
-                e.SetChildValue(systemContext, BrowseNames.ReqTimes, deleteAtTimeDetails.ReqTimes.ToArray(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.UpdatedNode,
+                    deleteAtTimeDetails.NodeId,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ReqTimes,
+                    deleteAtTimeDetails.ReqTimes.ToArray(),
+                    false);
                 e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
 
                 server.ReportAuditEvent(systemContext, e);
@@ -377,7 +478,6 @@ namespace Technosoftware.UaServer.Diagnostics
             {
                 Utils.LogError(ex, "Error while reporting AuditHistoryAtTimeDeleteEvent event.");
             }
-
         }
 
         /// <summary>
@@ -403,17 +503,26 @@ namespace Technosoftware.UaServer.Diagnostics
 
             try
             {
-                AuditHistoryEventDeleteEventState e = new AuditHistoryEventDeleteEventState(null);
+                var e = new AuditHistoryEventDeleteEventState(null);
 
-                InitializeAuditHistoryUpdateEvent(e,
+                InitializeAuditHistoryUpdateEvent(
+                    e,
                     systemContext,
                     "AuditHistoryEventDeleteEvent",
                     "Attribute/HistoryEventDelete",
                     deleteEventDetails,
                     statusCode);
 
-                e.SetChildValue(systemContext, BrowseNames.UpdatedNode, deleteEventDetails.NodeId, false);
-                e.SetChildValue(systemContext, BrowseNames.EventIds, deleteEventDetails.EventIds.ToArray(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.UpdatedNode,
+                    deleteEventDetails.NodeId,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.EventIds,
+                    deleteEventDetails.EventIds.ToArray(),
+                    false);
                 e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
 
                 server.ReportAuditEvent(systemContext, e);
@@ -462,7 +571,9 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting ReportAuditCertificateDataMismatch event.");
+                Utils.LogError(
+                    ex,
+                    "Error while reporting ReportAuditCertificateDataMismatch event.");
             }
         }
 
@@ -485,48 +596,66 @@ namespace Technosoftware.UaServer.Diagnostics
                         case StatusCodes.BadCertificateTimeInvalid:
                         case StatusCodes.BadCertificateIssuerTimeInvalid:
                             // create AuditCertificateExpiredEventType
-                            auditCertificateEventState = new AuditCertificateExpiredEventState(null);
+                            auditCertificateEventState = new AuditCertificateExpiredEventState(
+                                null);
                             break;
                         case StatusCodes.BadCertificateInvalid:
                         case StatusCodes.BadCertificateChainIncomplete:
                         case StatusCodes.BadCertificatePolicyCheckFailed:
                             // create AuditCertificateInvalidEventType
-                            auditCertificateEventState = new AuditCertificateInvalidEventState(null);
+                            auditCertificateEventState = new AuditCertificateInvalidEventState(
+                                null);
                             break;
                         case StatusCodes.BadCertificateUntrusted:
                             // create AuditCertificateUntrustedEventType
-                            auditCertificateEventState = new AuditCertificateUntrustedEventState(null);
+                            auditCertificateEventState = new AuditCertificateUntrustedEventState(
+                                null);
                             break;
                         case StatusCodes.BadCertificateRevoked:
                         case StatusCodes.BadCertificateIssuerRevoked:
                         case StatusCodes.BadCertificateRevocationUnknown:
                         case StatusCodes.BadCertificateIssuerRevocationUnknown:
                             // create AuditCertificateRevokedEventType
-                            auditCertificateEventState = new AuditCertificateRevokedEventState(null);
+                            auditCertificateEventState = new AuditCertificateRevokedEventState(
+                                null);
                             break;
                         case StatusCodes.BadCertificateUseNotAllowed:
                         case StatusCodes.BadCertificateIssuerUseNotAllowed:
                             // create AuditCertificateMismatchEventType
-                            auditCertificateEventState = new AuditCertificateMismatchEventState(null);
+                            auditCertificateEventState = new AuditCertificateMismatchEventState(
+                                null);
                             break;
                     }
                     if (auditCertificateEventState != null)
                     {
                         auditCertificateEventState.Initialize(
-                              systemContext,
-                              null,
-                              EventSeverity.Min,
-                              sre.Message,
-                              false,
-                              DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                            systemContext,
+                            null,
+                            EventSeverity.Min,
+                            sre.Message,
+                            false,
+                            DateTime.UtcNow
+                        ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
-                        auditCertificateEventState.SetChildValue(systemContext, BrowseNames.SourceName, "Security/Certificate", false);
+                        auditCertificateEventState.SetChildValue(
+                            systemContext,
+                            BrowseNames.SourceName,
+                            "Security/Certificate",
+                            false);
 
                         // set AuditSecurityEventType fields
-                        auditCertificateEventState.SetChildValue(systemContext, BrowseNames.StatusCodeId, (StatusCode)sre.InnerResult.StatusCode, false);
+                        auditCertificateEventState.SetChildValue(
+                            systemContext,
+                            BrowseNames.StatusCodeId,
+                            sre.InnerResult.StatusCode,
+                            false);
 
                         // set AuditCertificateEventType fields
-                        auditCertificateEventState.SetChildValue(systemContext, BrowseNames.Certificate, clientCertificate?.RawData, false);
+                        auditCertificateEventState.SetChildValue(
+                            systemContext,
+                            BrowseNames.Certificate,
+                            clientCertificate?.RawData,
+                            false);
 
                         server.ReportAuditEvent(systemContext, auditCertificateEventState);
                     }
@@ -534,7 +663,9 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting ReportAuditCertificateDataMismatch event.");
+                Utils.LogError(
+                    ex,
+                    "Error while reporting ReportAuditCertificateDataMismatch event.");
             }
         }
 
@@ -564,24 +695,37 @@ namespace Technosoftware.UaServer.Diagnostics
                 ISystemContext systemContext = server.DefaultAuditContext;
 
                 // create AuditCertificateDataMismatchEventType
-                AuditCertificateDataMismatchEventState e = new AuditCertificateDataMismatchEventState(null);
+                var e = new AuditCertificateDataMismatchEventState(null);
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   null,
-                   StatusCode.IsGood(statusCode),
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    null,
+                    StatusCode.IsGood(statusCode),
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "Security/Certificate", false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "Security/Certificate",
+                    false);
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 // set AuditSecurityEventType fields
                 e.SetChildValue(systemContext, BrowseNames.StatusCodeId, statusCode, false);
                 // set AuditCertificateEventType fields
-                e.SetChildValue(systemContext, BrowseNames.Certificate, clientCertificate?.RawData, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.Certificate,
+                    clientCertificate?.RawData,
+                    false);
                 // set AuditCertificateDataMismatchEventState fields
                 e.SetChildValue(systemContext, BrowseNames.InvalidUri, invalidUri, false);
                 e.SetChildValue(systemContext, BrowseNames.InvalidHostname, invalidHostName, false);
@@ -590,7 +734,9 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting ReportAuditCertificateDataMismatchEvent event.");
+                Utils.LogError(
+                    ex,
+                    "Error while reporting ReportAuditCertificateDataMismatchEvent event.");
             }
         }
 
@@ -618,19 +764,24 @@ namespace Technosoftware.UaServer.Diagnostics
                 ISystemContext systemContext = server.DefaultAuditContext;
 
                 // create AuditCancelEventState
-                AuditCancelEventState e = new AuditCancelEventState(null);
+                var e = new AuditCancelEventState(null);
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   $"Cancel requested for sessionId: {sessionId} with requestHandle: {requestHandle}",
-                   StatusCode.IsGood(statusCode),
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    $"Cancel requested for sessionId: {sessionId} with requestHandle: {requestHandle}",
+                    StatusCode.IsGood(statusCode),
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceName, "Session/Cancel", false);
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 // set AuditSecurityEventType fields
                 e.SetChildValue(systemContext, BrowseNames.StatusCodeId, statusCode, false);
@@ -652,10 +803,10 @@ namespace Technosoftware.UaServer.Diagnostics
         /// </summary>
         /// <param name="server">The server which reports audit events.</param>
         /// <param name="systemContext">The current system context.</param>
-        /// <param name="roleStateObjectId"></param>
-        /// <param name="method"></param>
-        /// <param name="inputArguments"></param>
-        /// <param name="status"></param>
+        /// <param name="roleStateObjectId">Role</param>
+        /// <param name="method">The method</param>
+        /// <param name="inputArguments">method arguments</param>
+        /// <param name="status">Status of call</param>
         public static void ReportAuditRoleMappingRuleChangedEvent(
             this IAuditEventServer server,
             ISystemContext systemContext,
@@ -673,19 +824,24 @@ namespace Technosoftware.UaServer.Diagnostics
             try
             {
                 // create RoleMappingRuleChangedAuditEventState
-                RoleMappingRuleChangedAuditEventState e = new RoleMappingRuleChangedAuditEventState(null);
+                var e = new RoleMappingRuleChangedAuditEventState(null);
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   $"RoleMappingRuleChanged - {method?.BrowseName}",
-                   status,
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    $"RoleMappingRuleChanged - {method?.BrowseName}",
+                    status,
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceName, "Attribute/Call", false);
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, roleStateObjectId, false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 // set AuditUpdateMethodEventType fields
                 e.SetChildValue(systemContext, BrowseNames.MethodId, method?.NodeId, false);
@@ -695,7 +851,9 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting ReportRoleMappingRuleChangedAuditEvent event.");
+                Utils.LogError(
+                    ex,
+                    "Error while reporting ReportRoleMappingRuleChangedAuditEvent event.");
             }
         }
 
@@ -706,11 +864,11 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <param name="auditEntryId">The audit entry id.</param>
         /// <param name="session">The session object that was created.</param>
         /// <param name="revisedSessionTimeout">The revised session timeout</param>
-        /// <param name="exception">The exception received during create session request</param> 
+        /// <param name="exception">The exception received during create session request</param>
         public static void ReportAuditCreateSessionEvent(
             this IAuditEventServer server,
             string auditEntryId,
-            Sessions.Session session,
+            IUaSession session,
             double revisedSessionTimeout,
             Exception exception = null)
         {
@@ -725,39 +883,68 @@ namespace Technosoftware.UaServer.Diagnostics
                 ISystemContext systemContext = server.DefaultAuditContext;
 
                 // raise an audit event.
-                AuditCreateSessionEventState e = new AuditCreateSessionEventState(null);
+                var e = new AuditCreateSessionEventState(null);
 
                 TranslationInfo message = null;
                 if (exception == null)
                 {
                     message = new TranslationInfo(
-                      "AuditCreateSessionEvent",
-                      "en-US",
-                      $"Session with ID:{session?.Id} was created.");
+                        "AuditCreateSessionEvent",
+                        "en-US",
+                        $"Session with ID:{session?.Id} was created.");
                 }
                 else
                 {
                     message = new TranslationInfo(
-                      "AuditCreateSessionEvent",
-                      "en-US",
-                      $"Error while creating session with ID:{session?.Id}: Exception: {exception.Message}.");
+                        "AuditCreateSessionEvent",
+                        "en-US",
+                        $"Error while creating session with ID:{session?.Id}: Exception: {exception.Message}.");
                 }
 
-                InitializeAuditSessionEvent(systemContext, e, message, exception == null, session, auditEntryId);
+                InitializeAuditSessionEvent(
+                    systemContext,
+                    e,
+                    message,
+                    exception == null,
+                    session,
+                    auditEntryId);
 
-                e.SetChildValue(systemContext, BrowseNames.ClientUserId, "System/CreateSession", false);
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "Session/CreateSession", false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientUserId,
+                    "System/CreateSession",
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "Session/CreateSession",
+                    false);
 
                 // set AuditCreateSessionEventState fields
-                e.SetChildValue(systemContext, BrowseNames.ClientCertificate, session?.ClientCertificate?.RawData, false);
-                e.SetChildValue(systemContext, BrowseNames.ClientCertificateThumbprint, session?.ClientCertificate?.Thumbprint, false);
-                e.SetChildValue(systemContext, BrowseNames.RevisedSessionTimeout, revisedSessionTimeout, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientCertificate,
+                    session?.ClientCertificate?.RawData,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientCertificateThumbprint,
+                    session?.ClientCertificate?.Thumbprint,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.RevisedSessionTimeout,
+                    revisedSessionTimeout,
+                    false);
 
                 server.ReportAuditEvent(systemContext, e);
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting AuditCreateSessionEvent event for SessionId {0}.", session?.Id);
+                Utils.LogError(
+                    ex,
+                    "Error while reporting AuditCreateSessionEvent event for SessionId {0}.",
+                    session?.Id);
             }
         }
 
@@ -768,11 +955,11 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <param name="auditEntryId">The audit entry id.</param>
         /// <param name="session">The session that is activated.</param>
         /// <param name="softwareCertificates">The software certificates</param>
-        /// <param name="exception">The exception received during activate session request</param> 
+        /// <param name="exception">The exception received during activate session request</param>
         public static void ReportAuditActivateSessionEvent(
             this IAuditEventServer server,
             string auditEntryId,
-            Sessions.Session session,
+            IUaSession session,
             IList<SoftwareCertificate> softwareCertificates,
             Exception exception = null)
         {
@@ -786,47 +973,70 @@ namespace Technosoftware.UaServer.Diagnostics
             {
                 ISystemContext systemContext = server.DefaultAuditContext;
 
-                AuditActivateSessionEventState e = new AuditActivateSessionEventState(null);
+                var e = new AuditActivateSessionEventState(null);
 
                 TranslationInfo message = null;
                 if (exception == null)
                 {
                     message = new TranslationInfo(
-                     "AuditActivateSessionEvent",
-                    "en-US",
-                    $"Session with Id:{session?.Id} was activated.");
+                        "AuditActivateSessionEvent",
+                        "en-US",
+                        $"Session with Id:{session?.Id} was activated.");
                 }
                 else
                 {
                     message = new TranslationInfo(
-                      "AuditActivateSessionEvent",
-                      "en-US",
-                      $"Error while activate session with ID:{session?.Id}. Exception: {exception.Message}.");
+                        "AuditActivateSessionEvent",
+                        "en-US",
+                        $"Error while activate session with ID:{session?.Id}. Exception: {exception.Message}.");
                 }
 
-                InitializeAuditSessionEvent(systemContext, e, message, exception == null, session, auditEntryId);
+                InitializeAuditSessionEvent(
+                    systemContext,
+                    e,
+                    message,
+                    exception == null,
+                    session,
+                    auditEntryId);
 
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "Session/ActivateSession", false);
-                e.SetChildValue(systemContext, BrowseNames.UserIdentityToken, Utils.Clone(session?.IdentityToken), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "Session/ActivateSession",
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.UserIdentityToken,
+                    Utils.Clone(session?.IdentityToken),
+                    false);
 
                 if (softwareCertificates != null)
                 {
                     // build the list of SignedSoftwareCertificate
-                    List<SignedSoftwareCertificate> signedSoftwareCertificates = [];
+                    var signedSoftwareCertificates = new List<SignedSoftwareCertificate>();
                     foreach (SoftwareCertificate softwareCertificate in softwareCertificates)
                     {
-                        SignedSoftwareCertificate item = new SignedSoftwareCertificate();
-                        item.CertificateData = softwareCertificate.SignedCertificate.RawData;
+                        var item = new SignedSoftwareCertificate
+                        {
+                            CertificateData = softwareCertificate.SignedCertificate.RawData
+                        };
                         signedSoftwareCertificates.Add(item);
                     }
-                    e.SetChildValue(systemContext, BrowseNames.ClientSoftwareCertificates, signedSoftwareCertificates.ToArray(), false);
+                    e.SetChildValue(
+                        systemContext,
+                        BrowseNames.ClientSoftwareCertificates,
+                        signedSoftwareCertificates.ToArray(),
+                        false);
                 }
 
                 server.ReportAuditEvent(systemContext, e);
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Error while reporting AuditActivateSessionEvent event for SessionId {0}.", session?.Id);
+                Utils.LogError(
+                    e,
+                    "Error while reporting AuditActivateSessionEvent event for SessionId {0}.",
+                    session?.Id);
             }
         }
 
@@ -837,11 +1047,11 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <param name="auditEntryId">The audit entry id.</param>
         /// <param name="session">The session object that was created.</param>
         /// <param name="revisedSessionTimeout">The revised session timeout</param>
-        /// <param name="endpointUrl">The invalid endpoint url</param> 
+        /// <param name="endpointUrl">The invalid endpoint url</param>
         public static void ReportAuditUrlMismatchEvent(
             this IAuditEventServer server,
             string auditEntryId,
-            Sessions.Session session,
+            IUaSession session,
             double revisedSessionTimeout,
             string endpointUrl)
         {
@@ -855,22 +1065,48 @@ namespace Technosoftware.UaServer.Diagnostics
             {
                 ISystemContext systemContext = server.DefaultAuditContext;
 
-                AuditUrlMismatchEventState e = new AuditUrlMismatchEventState(null);
+                var e = new AuditUrlMismatchEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
-                     "AuditUrlMismatchEvent",
-                     "en-US",
-                     $"Session with ID:{session.Id} was created but the endpoint URL does not match the domain names in the server certificate.");
+                var message = new TranslationInfo(
+                    "AuditUrlMismatchEvent",
+                    "en-US",
+                    $"Session with ID:{session.Id} was created but the endpoint URL does not match the domain names in the server certificate.");
 
-                InitializeAuditSessionEvent(systemContext, e, message, false, session, auditEntryId);
+                InitializeAuditSessionEvent(
+                    systemContext,
+                    e,
+                    message,
+                    false,
+                    session,
+                    auditEntryId);
 
-                e.SetChildValue(systemContext, BrowseNames.ClientUserId, "System/CreateSession", false);
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "Session/CreateSession", false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientUserId,
+                    "System/CreateSession",
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "Session/CreateSession",
+                    false);
 
                 // set AuditCreateSessionEventState fields
-                e.SetChildValue(systemContext, BrowseNames.ClientCertificate, session?.ClientCertificate?.RawData, false);
-                e.SetChildValue(systemContext, BrowseNames.ClientCertificateThumbprint, session?.ClientCertificate?.Thumbprint, false);
-                e.SetChildValue(systemContext, BrowseNames.RevisedSessionTimeout, revisedSessionTimeout, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientCertificate,
+                    session?.ClientCertificate?.RawData,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientCertificateThumbprint,
+                    session?.ClientCertificate?.Thumbprint,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.RevisedSessionTimeout,
+                    revisedSessionTimeout,
+                    false);
 
                 // set AuditUrlMismatchEventState
                 e.SetChildValue(systemContext, BrowseNames.EndpointUrl, endpointUrl, false);
@@ -879,7 +1115,10 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Error while reporting AuditUrlMismatchEvent event for SessionId {0}.", session?.Id);
+                Utils.LogError(
+                    e,
+                    "Error while reporting AuditUrlMismatchEvent event for SessionId {0}.",
+                    session?.Id);
             }
         }
 
@@ -895,7 +1134,7 @@ namespace Technosoftware.UaServer.Diagnostics
         public static void ReportAuditCloseSessionEvent(
             this IAuditEventServer server,
             string auditEntryId,
-            Sessions.Session session,
+            IUaSession session,
             string sourceName = "Session/Terminated")
         {
             if (server?.Auditing != true)
@@ -909,9 +1148,9 @@ namespace Technosoftware.UaServer.Diagnostics
                 ISystemContext systemContext = server.DefaultAuditContext;
 
                 // raise an audit event.
-                AuditSessionEventState e = new AuditSessionEventState(null);
+                var e = new AuditSessionEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
+                var message = new TranslationInfo(
                     "AuditCloseSessionEvent",
                     "en-US",
                     $"Session with ID:{session?.Id} was closed.");
@@ -924,7 +1163,10 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting AuditSessionEventState close event for SessionId {0}.", session?.Id);
+                Utils.LogError(
+                    ex,
+                    "Error while reporting AuditSessionEventState close event for SessionId {0}.",
+                    session?.Id);
             }
         }
 
@@ -938,7 +1180,7 @@ namespace Technosoftware.UaServer.Diagnostics
         public static void ReportAuditTransferSubscriptionEvent(
             this IAuditEventServer server,
             string auditEntryId,
-            Sessions.Session session,
+            IUaSession session,
             StatusCode statusCode)
         {
             if (server?.Auditing != true)
@@ -952,23 +1194,36 @@ namespace Technosoftware.UaServer.Diagnostics
                 ISystemContext systemContext = server.DefaultAuditContext;
 
                 // raise an audit event.
-                AuditSessionEventState e = new AuditSessionEventState(null);
+                var e = new AuditSessionEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
+                var message = new TranslationInfo(
                     "AuditSessionEventState",
                     "en-US",
                     $"Transfer subscription for session ID:{session?.Id} has statusCode {statusCode}.");
 
-                InitializeAuditSessionEvent(systemContext, e, message, StatusCode.IsGood(statusCode), session, auditEntryId);
+                InitializeAuditSessionEvent(
+                    systemContext,
+                    e,
+                    message,
+                    StatusCode.IsGood(statusCode),
+                    session,
+                    auditEntryId);
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, session.Id, false);
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "Session/TransferSubscriptions", false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "Session/TransferSubscriptions",
+                    false);
 
                 server.ReportAuditEvent(systemContext, e);
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting AuditSessionEventState close event for SessionId {0}.", session?.Id);
+                Utils.LogError(
+                    ex,
+                    "Error while reporting AuditSessionEventState close event for SessionId {0}.",
+                    session?.Id);
             }
         }
 
@@ -995,47 +1250,66 @@ namespace Technosoftware.UaServer.Diagnostics
         {
             try
             {
-                CertificateUpdatedAuditEventState e = new CertificateUpdatedAuditEventState(null);
+                var e = new CertificateUpdatedAuditEventState(null);
 
                 TranslationInfo message = null;
                 if (exception == null)
                 {
                     message = new TranslationInfo(
-                       "CertificateUpdatedAuditEvent",
-                       "en-US",
-                       "CertificateUpdatedAuditEvent.");
+                        "CertificateUpdatedAuditEvent",
+                        "en-US",
+                        "CertificateUpdatedAuditEvent.");
                 }
                 else
                 {
                     message = new TranslationInfo(
-                      "CertificateUpdatedAuditEvent",
-                      "en-US",
-                      $"CertificateUpdatedAuditEvent - Exception: {exception.Message}.");
+                        "CertificateUpdatedAuditEvent",
+                        "en-US",
+                        $"CertificateUpdatedAuditEvent - Exception: {exception.Message}.");
                 }
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   new LocalizedText(message),
-                   exception == null,
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    new LocalizedText(message),
+                    exception == null,
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, objectId, false);
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "Method/UpdateCertificate", false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "Method/UpdateCertificate",
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 e.SetChildValue(systemContext, BrowseNames.MethodId, method.NodeId, false);
                 e.SetChildValue(systemContext, BrowseNames.InputArguments, inputArguments, false);
 
-                e.SetChildValue(systemContext, BrowseNames.CertificateGroup, certificateGroupId, false);
-                e.SetChildValue(systemContext, BrowseNames.CertificateType, certificateTypeId, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.CertificateGroup,
+                    certificateGroupId,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.CertificateType,
+                    certificateTypeId,
+                    false);
 
                 server.ReportAuditEvent(systemContext, e);
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting ReportCertificateUpdatedAuditEvent event.");
+                Utils.LogError(
+                    ex,
+                    "Error while reporting ReportCertificateUpdatedAuditEvent event.");
             }
         }
 
@@ -1056,24 +1330,26 @@ namespace Technosoftware.UaServer.Diagnostics
         {
             try
             {
-                CertificateUpdateRequestedAuditEventState e = new CertificateUpdateRequestedAuditEventState(null);
+                var e = new CertificateUpdateRequestedAuditEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
-                       "CertificateUpdateRequestedAuditEvent",
-                       "en-US",
-                       "CertificateUpdateRequestedAuditEvent.");
+                var message = new TranslationInfo(
+                    "CertificateUpdateRequestedAuditEvent",
+                    "en-US",
+                    "CertificateUpdateRequestedAuditEvent.");
 
-                e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   new LocalizedText(message),
-                   true,
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                e.Initialize(systemContext, null, EventSeverity.Min, new LocalizedText(message), true, DateTime.UtcNow); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, objectId, false);
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "Method/UpdateCertificate", false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "Method/UpdateCertificate",
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 e.SetChildValue(systemContext, BrowseNames.MethodId, method?.NodeId, false);
                 e.SetChildValue(systemContext, BrowseNames.InputArguments, inputArguments, false);
@@ -1082,7 +1358,9 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting CertificateUpdateRequestedAuditEvent event.");
+                Utils.LogError(
+                    ex,
+                    "Error while reporting CertificateUpdateRequestedAuditEvent event.");
             }
         }
 
@@ -1109,24 +1387,33 @@ namespace Technosoftware.UaServer.Diagnostics
 
             try
             {
-                AuditAddNodesEventState e = new AuditAddNodesEventState(null);
+                var e = new AuditAddNodesEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
-                           "AuditAddNodesEventState",
-                           "en-US",
-                           $"'{customMessage}' returns StatusCode: {statusCode.ToString(null, CultureInfo.InvariantCulture)}.");
+                var message = new TranslationInfo(
+                    "AuditAddNodesEventState",
+                    "en-US",
+                    $"'{customMessage}' returns StatusCode: {statusCode.ToString(null, CultureInfo.InvariantCulture)}.");
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   new LocalizedText(message),
-                   StatusCode.IsGood(statusCode),
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    new LocalizedText(message),
+                    StatusCode.IsGood(statusCode),
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "NodeManagement/AddNodes", false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "NodeManagement/AddNodes",
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 e.SetChildValue(systemContext, BrowseNames.NodesToAdd, addNodesItems, false);
 
@@ -1161,24 +1448,33 @@ namespace Technosoftware.UaServer.Diagnostics
 
             try
             {
-                AuditDeleteNodesEventState e = new AuditDeleteNodesEventState(null);
+                var e = new AuditDeleteNodesEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
-                           "AuditDeleteNodesEventState",
-                           "en-US",
-                           $"'{customMessage}' returns StatusCode: {statusCode.ToString(null, CultureInfo.InvariantCulture)}.");
+                var message = new TranslationInfo(
+                    "AuditDeleteNodesEventState",
+                    "en-US",
+                    $"'{customMessage}' returns StatusCode: {statusCode.ToString(null, CultureInfo.InvariantCulture)}.");
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   new LocalizedText(message),
-                   StatusCode.IsGood(statusCode),
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    new LocalizedText(message),
+                    StatusCode.IsGood(statusCode),
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "NodeManagement/DeleteNodes", false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "NodeManagement/DeleteNodes",
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 e.SetChildValue(systemContext, BrowseNames.NodesToDelete, nodesToDelete, false);
 
@@ -1216,7 +1512,7 @@ namespace Technosoftware.UaServer.Diagnostics
             try
             {
                 // raise an audit event.
-                AuditOpenSecureChannelEventState e = new AuditOpenSecureChannelEventState(null);
+                var e = new AuditOpenSecureChannelEventState(null);
                 TranslationInfo message = null;
                 if (exception == null)
                 {
@@ -1234,7 +1530,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 }
 
                 StatusCode statusCode = StatusCodes.Good;
-                while (exception != null && !(exception is ServiceResultException))
+                while (exception is not null and not ServiceResultException)
                 {
                     exception = exception.InnerException;
                 }
@@ -1265,12 +1561,25 @@ namespace Technosoftware.UaServer.Diagnostics
                     EventSeverity.Min,
                     new LocalizedText(message),
                     exception == null,
-                    actionTimestamp);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    actionTimestamp
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "SecureChannel/OpenSecureChannel", false);
-                e.SetChildValue(systemContext, BrowseNames.ClientUserId, "System/OpenSecureChannel", false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "SecureChannel/OpenSecureChannel",
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientUserId,
+                    "System/OpenSecureChannel",
+                    false);
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 // set AuditSecurityEventType fields
                 e.SetChildValue(systemContext, BrowseNames.StatusCodeId, statusCode, false);
@@ -1279,12 +1588,36 @@ namespace Technosoftware.UaServer.Diagnostics
                 e.SetChildValue(systemContext, BrowseNames.SecureChannelId, globalChannelId, false);
 
                 // set AuditOpenSecureChannelEventType fields
-                e.SetChildValue(systemContext, BrowseNames.ClientCertificate, clientCertificate?.RawData, false);
-                e.SetChildValue(systemContext, BrowseNames.ClientCertificateThumbprint, clientCertificate?.Thumbprint, false);
-                e.SetChildValue(systemContext, BrowseNames.RequestType, request?.RequestType, false);
-                e.SetChildValue(systemContext, BrowseNames.SecurityPolicyUri, endpointDescription?.SecurityPolicyUri, false);
-                e.SetChildValue(systemContext, BrowseNames.SecurityMode, endpointDescription?.SecurityMode, false);
-                e.SetChildValue(systemContext, BrowseNames.RequestedLifetime, request?.RequestedLifetime, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientCertificate,
+                    clientCertificate?.RawData,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientCertificateThumbprint,
+                    clientCertificate?.Thumbprint,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.RequestType,
+                    request?.RequestType,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SecurityPolicyUri,
+                    endpointDescription?.SecurityPolicyUri,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SecurityMode,
+                    endpointDescription?.SecurityMode,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.RequestedLifetime,
+                    request?.RequestedLifetime,
+                    false);
 
                 server.ReportAuditEvent(systemContext, e);
             }
@@ -1314,7 +1647,7 @@ namespace Technosoftware.UaServer.Diagnostics
             try
             {
                 // raise an audit event.
-                AuditChannelEventState e = new AuditChannelEventState(null);
+                var e = new AuditChannelEventState(null);
 
                 TranslationInfo message = null;
                 if (exception == null)
@@ -1333,7 +1666,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 }
 
                 StatusCode statusCode = StatusCodes.Good;
-                while (exception != null && !(exception is ServiceResultException))
+                while (exception is not null and not ServiceResultException)
                 {
                     exception = exception.InnerException;
                 }
@@ -1350,16 +1683,25 @@ namespace Technosoftware.UaServer.Diagnostics
                     EventSeverity.Min,
                     new LocalizedText(message),
                     exception == null,
-                    DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
-                e.SetChildValue(systemContext, BrowseNames.SourceName, "SecureChannel/CloseSecureChannel", false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.SourceName,
+                    "SecureChannel/CloseSecureChannel",
+                    false);
 
-                string clientUserId = "System/CloseSecureChannel";
+                const string clientUserId = "System/CloseSecureChannel";
                 //operationContext.UserIdentity?.DisplayName, or ”System/CloseSecureChannel”
 
                 e.SetChildValue(systemContext, BrowseNames.ClientUserId, clientUserId, false);
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 // set AuditSecurityEventType fields
                 e.SetChildValue(systemContext, BrowseNames.StatusCodeId, statusCode, false);
@@ -1379,13 +1721,14 @@ namespace Technosoftware.UaServer.Diagnostics
         /// Reports the AuditUpdateMethodEventType
         /// </summary>
         /// <param name="server">The server which reports audit events.</param>
-        /// <param name="systemContext">Server information.</param>
+        /// <param name="systemContext">ServerData information.</param>
         /// <param name="objectId">The id of the object where the method is executed.</param>
         /// <param name="methodId">The NodeId of the object that the method resides in.</param>
         /// <param name="inputArgs">The InputArguments of the method </param>
         /// <param name="customMessage">Custom message for delete nodes.</param>
         /// <param name="statusCode">The resulting status code.</param>
-        public static void ReportAuditUpdateMethodEvent(this IAuditEventServer server,
+        public static void ReportAuditUpdateMethodEvent(
+            this IAuditEventServer server,
             ISystemContext systemContext,
             NodeId objectId,
             NodeId methodId,
@@ -1400,27 +1743,40 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             try
             {
-                AuditUpdateMethodEventState e = new AuditUpdateMethodEventState(null);
+                var e = new AuditUpdateMethodEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
-                           "AuditUpdateMethodEventState",
-                           "en-US",
-                           $"'{customMessage}' returns StatusCode: {statusCode.ToString(null, CultureInfo.InvariantCulture)}.");
+                var message = new TranslationInfo(
+                    "AuditUpdateMethodEventState",
+                    "en-US",
+                    $"'{customMessage}' returns StatusCode: {statusCode.ToString(null, CultureInfo.InvariantCulture)}.");
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   new LocalizedText(message),
-                   StatusCode.IsGood(statusCode),
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    new LocalizedText(message),
+                    StatusCode.IsGood(statusCode),
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, objectId, false);
                 e.SetChildValue(systemContext, BrowseNames.SourceName, "Attribute/Call", false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
-                e.SetChildValue(systemContext, BrowseNames.ClientUserId, systemContext?.UserIdentity?.DisplayName, false);
-                e.SetChildValue(systemContext, BrowseNames.ClientAuditEntryId, systemContext?.AuditEntryId, false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientUserId,
+                    systemContext?.UserIdentity?.DisplayName,
+                    false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientAuditEntryId,
+                    systemContext?.AuditEntryId,
+                    false);
 
                 e.SetChildValue(systemContext, BrowseNames.MethodId, methodId, false);
                 e.SetChildValue(systemContext, BrowseNames.InputArguments, inputArgs, false);
@@ -1454,24 +1810,29 @@ namespace Technosoftware.UaServer.Diagnostics
         {
             try
             {
-                TrustListUpdatedAuditEventState e = new TrustListUpdatedAuditEventState(null);
+                var e = new TrustListUpdatedAuditEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
-                   "TrustListUpdatedAuditEvent",
-                   "en-US",
-                   $"TrustListUpdatedAuditEvent result is: {statusCode.ToString(null, CultureInfo.InvariantCulture)}");
+                var message = new TranslationInfo(
+                    "TrustListUpdatedAuditEvent",
+                    "en-US",
+                    $"TrustListUpdatedAuditEvent result is: {statusCode.ToString(null, CultureInfo.InvariantCulture)}");
 
                 e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   new LocalizedText(message),
-                   StatusCode.IsGood(statusCode),
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                    systemContext,
+                    null,
+                    EventSeverity.Min,
+                    new LocalizedText(message),
+                    StatusCode.IsGood(statusCode),
+                    DateTime.UtcNow
+                ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, objectId, false);
                 e.SetChildValue(systemContext, BrowseNames.SourceName, sourceName, false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 e.SetChildValue(systemContext, BrowseNames.MethodId, methodId, false);
                 e.SetChildValue(systemContext, BrowseNames.InputArguments, inputParameters, false);
@@ -1503,24 +1864,22 @@ namespace Technosoftware.UaServer.Diagnostics
         {
             try
             {
-                TrustListUpdateRequestedAuditEventState e = new TrustListUpdateRequestedAuditEventState(null);
+                var e = new TrustListUpdateRequestedAuditEventState(null);
 
-                TranslationInfo message = new TranslationInfo(
-                   "TrustListUpdateRequestedAuditEvent",
-                   "en-US",
-                   $"TrustListUpdateRequestedAuditEvent.");
+                var message = new TranslationInfo(
+                    "TrustListUpdateRequestedAuditEvent",
+                    "en-US",
+                    "TrustListUpdateRequestedAuditEvent.");
 
-                e.Initialize(
-                   systemContext,
-                   null,
-                   EventSeverity.Min,
-                   new LocalizedText(message),
-                   true,
-                   DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                e.Initialize(systemContext, null, EventSeverity.Min, new LocalizedText(message), true, DateTime.UtcNow); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
                 e.SetChildValue(systemContext, BrowseNames.SourceNode, objectId, false);
                 e.SetChildValue(systemContext, BrowseNames.SourceName, sourceName, false);
-                e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.LocalTime,
+                    Utils.GetTimeZoneInfo(),
+                    false);
 
                 e.SetChildValue(systemContext, BrowseNames.MethodId, methodId, false);
                 e.SetChildValue(systemContext, BrowseNames.InputArguments, inputParameters, false);
@@ -1529,7 +1888,9 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex, "Error while reporting TrustListUpdateRequestedAuditEvent event.");
+                Utils.LogError(
+                    ex,
+                    "Error while reporting TrustListUpdateRequestedAuditEvent event.");
             }
         }
         #endregion Report Audit Events
@@ -1552,27 +1913,44 @@ namespace Technosoftware.UaServer.Diagnostics
             HistoryUpdateDetails historyUpdateDetails,
             StatusCode statusCode)
         {
-            TranslationInfo message = new TranslationInfo(
-               auditEventName,
-               "en-US",
-               $"{auditEventName} has Result: {statusCode.ToString(null, CultureInfo.InvariantCulture)}.");
+            var message = new TranslationInfo(
+                auditEventName,
+                "en-US",
+                $"{auditEventName} has Result: {statusCode.ToString(null, CultureInfo.InvariantCulture)}.");
 
             e.Initialize(
-               systemContext,
-               null,
-               EventSeverity.Min,
-               new LocalizedText(message),
-               StatusCode.IsGood(statusCode),
-               DateTime.UtcNow);  // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
+                systemContext,
+                null,
+                EventSeverity.Min,
+                new LocalizedText(message),
+                StatusCode.IsGood(statusCode),
+                DateTime.UtcNow
+            ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
-            e.SetChildValue(systemContext, BrowseNames.SourceNode, historyUpdateDetails.NodeId, false);
+            e.SetChildValue(
+                systemContext,
+                BrowseNames.SourceNode,
+                historyUpdateDetails.NodeId,
+                false);
             e.SetChildValue(systemContext, BrowseNames.SourceName, sourceName, false);
             e.SetChildValue(systemContext, BrowseNames.LocalTime, Utils.GetTimeZoneInfo(), false);
 
-            e.SetChildValue(systemContext, BrowseNames.ClientUserId, systemContext?.UserIdentity?.DisplayName, false);
-            e.SetChildValue(systemContext, BrowseNames.ClientAuditEntryId, systemContext?.AuditEntryId, false);
+            e.SetChildValue(
+                systemContext,
+                BrowseNames.ClientUserId,
+                systemContext?.UserIdentity?.DisplayName,
+                false);
+            e.SetChildValue(
+                systemContext,
+                BrowseNames.ClientAuditEntryId,
+                systemContext?.AuditEntryId,
+                false);
 
-            e.SetChildValue(systemContext, BrowseNames.ParameterDataTypeId, historyUpdateDetails.TypeId, false);
+            e.SetChildValue(
+                systemContext,
+                BrowseNames.ParameterDataTypeId,
+                historyUpdateDetails.TypeId,
+                false);
         }
 
         /// <summary>
@@ -1583,7 +1961,7 @@ namespace Technosoftware.UaServer.Diagnostics
             AuditEventState e,
             TranslationInfo message,
             bool status,
-            Sessions.Session session,
+            IUaSession session,
             string auditEntryId)
         {
             e.Initialize(
@@ -1597,13 +1975,21 @@ namespace Technosoftware.UaServer.Diagnostics
             e.SetChildValue(systemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
 
             // set AuditEventType properties
-            e.SetChildValue(systemContext, BrowseNames.ClientUserId, session?.Identity?.DisplayName, false);
+            e.SetChildValue(
+                systemContext,
+                BrowseNames.ClientUserId,
+                session?.Identity?.DisplayName,
+                false);
             e.SetChildValue(systemContext, BrowseNames.ClientAuditEntryId, auditEntryId, false);
             // set AuditCreateSessionEventType & AuditActivateSessionsEventType properties
-            e.SetChildValue(systemContext, BrowseNames.SecureChannelId, session?.SecureChannelId, false);
-            // set AuditSessionEventType 
+            e.SetChildValue(
+                systemContext,
+                BrowseNames.SecureChannelId,
+                session?.SecureChannelId,
+                false);
+            // set AuditSessionEventType
             e.SetChildValue(systemContext, BrowseNames.SessionId, session?.Id, false);
         }
-        #endregion
+        #endregion Private helpers
     }
 }

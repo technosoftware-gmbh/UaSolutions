@@ -14,12 +14,9 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
 using Opc.Ua;
-
-#endregion
-
-namespace Technosoftware.UaServer.Aggregates
+#endregion Using Directives
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// A aggregate filter with additional state information.

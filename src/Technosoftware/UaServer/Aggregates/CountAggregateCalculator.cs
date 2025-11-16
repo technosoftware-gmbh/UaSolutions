@@ -14,18 +14,15 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
 using System;
 using System.Collections.Generic;
-
 using Opc.Ua;
+#endregion Using Directives
 
-#endregion
-
-namespace Technosoftware.UaServer.Aggregates
+namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Calculates the value of an aggregate. 
+    /// Calculates the value of an aggregate.
     /// </summary>
     public class CountAggregateCalculator : AggregateCalculator
     {
@@ -46,12 +43,11 @@ namespace Technosoftware.UaServer.Aggregates
             double processingInterval,
             bool stepped,
             AggregateConfiguration configuration)
-        :
-            base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
+            : base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
         {
             SetPartialBit = true;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Overridden Methods
         /// <summary>
@@ -66,37 +62,21 @@ namespace Technosoftware.UaServer.Aggregates
                 switch (id.Value)
                 {
                     case Objects.AggregateFunction_Count:
-                    {
                         return ComputeCount(slice);
-                    }
-
                     case Objects.AggregateFunction_AnnotationCount:
-                    {
                         return ComputeAnnotationCount(slice);
-                    }
-
                     case Objects.AggregateFunction_DurationInStateZero:
-                    {
                         return ComputeDurationInState(slice, false);
-                    }
-
                     case Objects.AggregateFunction_DurationInStateNonZero:
-                    {
                         return ComputeDurationInState(slice, true);
-                    }
-
                     case Objects.AggregateFunction_NumberOfTransitions:
-                    {
                         return ComputeNumberOfTransitions(slice);
-                    }
                 }
             }
 
             return base.ComputeValue(slice);
         }
-        #endregion
 
-        #region Protected Methods
         /// <summary>
         /// Calculates the Count aggregate for the timeslice.
         /// </summary>
@@ -123,10 +103,12 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(count, TypeInfo.Scalars.Int32);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(count, TypeInfo.Scalars.Int32),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
             value.StatusCode = GetValueBasedStatusCode(slice, values, value.StatusCode);
 
             if (!StatusCode.IsBad(value.StatusCode))
@@ -161,10 +143,12 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(count, TypeInfo.Scalars.Int32);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(count, TypeInfo.Scalars.Int32),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
             value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
 
             // return result.
@@ -204,20 +188,19 @@ namespace Technosoftware.UaServer.Aggregates
                         duration += regions[ii].Duration;
                     }
                 }
-                else
+                else if (regions[ii].StartValue == 0)
                 {
-                    if (regions[ii].StartValue == 0)
-                    {
-                        duration += regions[ii].Duration;
-                    }
+                    duration += regions[ii].Duration;
                 }
             }
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(duration, TypeInfo.Scalars.Double);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(duration, TypeInfo.Scalars.Double),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
             value.StatusCode = GetTimeBasedStatusCode(regions, value.StatusCode);
             value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
 
@@ -242,18 +225,15 @@ namespace Technosoftware.UaServer.Aggregates
             // determine whether a transition occurs at the StartTime
             double lastValue = double.NaN;
 
-            if (slice.EarlyBound != null)
+            if (slice.EarlyBound != null && StatusCode.IsGood(slice.EarlyBound.Value.StatusCode))
             {
-                if (StatusCode.IsGood(slice.EarlyBound.Value.StatusCode))
+                try
                 {
-                    try
-                    {
-                        lastValue = CastToDouble(slice.EarlyBound.Value);
-                    }
-                    catch (Exception)
-                    {
-                        lastValue = double.NaN;
-                    }
+                    lastValue = CastToDouble(slice.EarlyBound.Value);
+                }
+                catch (Exception)
+                {
+                    lastValue = double.NaN;
                 }
             }
 
@@ -267,8 +247,7 @@ namespace Technosoftware.UaServer.Aggregates
                     continue;
                 }
 
-                double nextValue = 0;
-
+                double nextValue;
                 try
                 {
                     nextValue = CastToDouble(values[ii]);
@@ -278,28 +257,27 @@ namespace Technosoftware.UaServer.Aggregates
                     continue;
                 }
 
-                if (!double.IsNaN(lastValue))
+                if (!double.IsNaN(lastValue) && lastValue != nextValue)
                 {
-                    if (lastValue != nextValue)
-                    {
-                        count++;
-                    }
+                    count++;
                 }
 
                 lastValue = nextValue;
             }
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(count, TypeInfo.Scalars.Int32);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(count, TypeInfo.Scalars.Int32),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
             value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
             value.StatusCode = GetValueBasedStatusCode(slice, values, value.StatusCode);
 
             // return result.
             return value;
         }
-        #endregion
+        #endregion Overridden Methods
     }
 }

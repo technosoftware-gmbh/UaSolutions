@@ -15,7 +15,7 @@
 
 #region Using Directives
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -24,34 +24,31 @@ namespace Technosoftware.UaServer
     /// </summary>
     /// <remarks>
     /// A UaNodeHandle is created when GetManagerHandle is called and will only contain
-    /// information found by parsing the NodeId. The ValidateNode method is used to 
-    /// verify that the NodeId refers to a real Node and find a NodeState object that 
+    /// information found by parsing the NodeId. The ValidateNode method is used to
+    /// verify that the NodeId refers to a real Node and find a NodeState object that
     /// can be used to access the Node.
     /// </remarks>
     public class UaNodeHandle
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
-        ///     Initializes a new instance of the <see cref="UaNodeHandle"/> class.
+        /// Initializes a new instance of the <see cref="UaNodeHandle"/> class.
         /// </summary>
         public UaNodeHandle()
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="UaNodeHandle"/> class.
+        /// Initializes a new instance of the <see cref="UaNodeHandle"/> class.
         /// </summary>
         /// <param name="nodeId">The node id.</param>
         /// <param name="node">The node.</param>
         public UaNodeHandle(NodeId nodeId, NodeState node)
         {
-            this.NodeId = nodeId;
-            this.Validated = true;
-            this.Node = node;
+            NodeId = nodeId;
+            Validated = true;
+            Node = node;
         }
-        #endregion
 
-        #region Public Interface
         /// <summary>
         /// The NodeId provided by the client.
         /// </summary>
@@ -100,6 +97,5 @@ namespace Technosoftware.UaServer
         /// An object that can be used to manage the items which are monitoring the node.
         /// </summary>
         public UaMonitoredNode MonitoredNode { get; set; }
-        #endregion
     }
 }

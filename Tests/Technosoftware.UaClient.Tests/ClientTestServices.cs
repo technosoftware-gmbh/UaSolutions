@@ -1,19 +1,34 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using Opc.Ua;
-
 using Technosoftware.UaServer.Tests;
-#endregion
 
 namespace Technosoftware.UaClient.Tests
 {
@@ -22,11 +37,11 @@ namespace Technosoftware.UaClient.Tests
     /// </summary>
     public class ClientTestServices : IServerTestServices
     {
-        private IUaSession session_;
+        private readonly IUaSession m_session;
 
         public ClientTestServices(IUaSession session)
         {
-            session_ = session;
+            m_session = session;
         }
 
         public ResponseHeader Browse(
@@ -37,9 +52,15 @@ namespace Technosoftware.UaClient.Tests
             out BrowseResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return session_.Browse(requestHeader, view,
-                requestedMaxReferencesPerNode, nodesToBrowse,
-                out results, out diagnosticInfos);
+            BrowseResponse response = m_session.BrowseAsync(
+                requestHeader,
+                view,
+                requestedMaxReferencesPerNode,
+                nodesToBrowse,
+                default).GetAwaiter().GetResult();
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader BrowseNext(
@@ -49,9 +70,14 @@ namespace Technosoftware.UaClient.Tests
             out BrowseResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return session_.BrowseNext(requestHeader,
-                releaseContinuationPoints, continuationPoints,
-                out results, out diagnosticInfos);
+            BrowseNextResponse response = m_session.BrowseNextAsync(
+                requestHeader,
+                releaseContinuationPoints,
+                continuationPoints,
+                default).GetAwaiter().GetResult();
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader CreateSubscription(
@@ -67,9 +93,20 @@ namespace Technosoftware.UaClient.Tests
             out uint revisedLifetimeCount,
             out uint revisedMaxKeepAliveCount)
         {
-            return session_.CreateSubscription(requestHeader, requestedPublishingInterval, requestedLifetimeCount, requestedMaxKeepAliveCount,
-                maxNotificationsPerPublish, publishingEnabled, priority,
-                out subscriptionId, out revisedPublishingInterval, out revisedLifetimeCount, out revisedMaxKeepAliveCount);
+            CreateSubscriptionResponse response = m_session.CreateSubscriptionAsync(
+                requestHeader,
+                requestedPublishingInterval,
+                requestedLifetimeCount,
+                requestedMaxKeepAliveCount,
+                maxNotificationsPerPublish,
+                publishingEnabled,
+                priority,
+                default).GetAwaiter().GetResult();
+            subscriptionId = response.SubscriptionId;
+            revisedPublishingInterval = response.RevisedPublishingInterval;
+            revisedLifetimeCount = response.RevisedLifetimeCount;
+            revisedMaxKeepAliveCount = response.RevisedMaxKeepAliveCount;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader CreateMonitoredItems(
@@ -80,8 +117,15 @@ namespace Technosoftware.UaClient.Tests
             out MonitoredItemCreateResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return session_.CreateMonitoredItems(requestHeader, subscriptionId, timestampsToReturn, itemsToCreate,
-                out results, out diagnosticInfos);
+            CreateMonitoredItemsResponse response = m_session.CreateMonitoredItemsAsync(
+                requestHeader,
+                subscriptionId,
+                timestampsToReturn,
+                itemsToCreate,
+                default).GetAwaiter().GetResult();
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader ModifySubscription(
@@ -96,9 +140,19 @@ namespace Technosoftware.UaClient.Tests
             out uint revisedLifetimeCount,
             out uint revisedMaxKeepAliveCount)
         {
-            return session_.ModifySubscription(requestHeader, subscriptionId, requestedPublishingInterval,
-                requestedLifetimeCount, requestedMaxKeepAliveCount, maxNotificationsPerPublish,
-                priority, out revisedPublishingInterval, out revisedLifetimeCount, out revisedMaxKeepAliveCount);
+            ModifySubscriptionResponse response = m_session.ModifySubscriptionAsync(
+                requestHeader,
+                subscriptionId,
+                requestedPublishingInterval,
+                requestedLifetimeCount,
+                requestedMaxKeepAliveCount,
+                maxNotificationsPerPublish,
+                priority,
+                default).GetAwaiter().GetResult();
+            revisedPublishingInterval = response.RevisedPublishingInterval;
+            revisedLifetimeCount = response.RevisedLifetimeCount;
+            revisedMaxKeepAliveCount = response.RevisedMaxKeepAliveCount;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader ModifyMonitoredItems(
@@ -109,7 +163,15 @@ namespace Technosoftware.UaClient.Tests
             out MonitoredItemModifyResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return session_.ModifyMonitoredItems(requestHeader, subscriptionId, timestampsToReturn, itemsToModify, out results, out diagnosticInfos);
+            ModifyMonitoredItemsResponse response = m_session.ModifyMonitoredItemsAsync(
+                requestHeader,
+                subscriptionId,
+                timestampsToReturn,
+                itemsToModify,
+                default).GetAwaiter().GetResult();
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader Publish(
@@ -122,8 +184,17 @@ namespace Technosoftware.UaClient.Tests
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return session_.Publish(requestHeader, subscriptionAcknowledgements, out subscriptionId, out availableSequenceNumbers,
-                out moreNotifications, out notificationMessage, out results, out diagnosticInfos);
+            PublishResponse response = m_session.PublishAsync(
+                requestHeader,
+                subscriptionAcknowledgements,
+                default).GetAwaiter().GetResult();
+            subscriptionId = response.SubscriptionId;
+            availableSequenceNumbers = response.AvailableSequenceNumbers;
+            moreNotifications = response.MoreNotifications;
+            notificationMessage = response.NotificationMessage;
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader SetPublishingMode(
@@ -133,7 +204,33 @@ namespace Technosoftware.UaClient.Tests
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return session_.SetPublishingMode(requestHeader, publishingEnabled, subscriptionIds, out results, out diagnosticInfos);
+            SetPublishingModeResponse response = m_session.SetPublishingModeAsync(
+                requestHeader,
+                publishingEnabled,
+                subscriptionIds,
+                default).GetAwaiter().GetResult();
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
+        }
+
+        public ResponseHeader SetMonitoringMode(
+            RequestHeader requestHeader,
+            uint subscriptionId,
+            MonitoringMode monitoringMode,
+            UInt32Collection monitoredItemIds,
+            out StatusCodeCollection results,
+            out DiagnosticInfoCollection diagnosticInfos)
+        {
+            SetMonitoringModeResponse response = m_session.SetMonitoringModeAsync(
+                requestHeader,
+                subscriptionId,
+                monitoringMode,
+                monitoredItemIds,
+                default).GetAwaiter().GetResult();
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader Republish(
@@ -142,7 +239,13 @@ namespace Technosoftware.UaClient.Tests
             uint retransmitSequenceNumber,
             out NotificationMessage notificationMessage)
         {
-            return session_.Republish(requestHeader, subscriptionId, retransmitSequenceNumber, out notificationMessage);
+            RepublishResponse response = m_session.RepublishAsync(
+                requestHeader,
+                subscriptionId,
+                retransmitSequenceNumber,
+                default).GetAwaiter().GetResult();
+            notificationMessage = response.NotificationMessage;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader DeleteSubscriptions(
@@ -151,7 +254,13 @@ namespace Technosoftware.UaClient.Tests
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return session_.DeleteSubscriptions(requestHeader, subscriptionIds, out results, out diagnosticInfos);
+            DeleteSubscriptionsResponse response = m_session.DeleteSubscriptionsAsync(
+                requestHeader,
+                subscriptionIds,
+                default).GetAwaiter().GetResult();
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader TransferSubscriptions(
@@ -161,7 +270,14 @@ namespace Technosoftware.UaClient.Tests
             out TransferResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return session_.TransferSubscriptions(requestHeader, subscriptionIds, sendInitialValues, out results, out diagnosticInfos);
+            TransferSubscriptionsResponse response = m_session.TransferSubscriptionsAsync(
+                requestHeader,
+                subscriptionIds,
+                sendInitialValues,
+                default).GetAwaiter().GetResult();
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
         }
 
         public ResponseHeader TranslateBrowsePathsToNodeIds(
@@ -170,9 +286,14 @@ namespace Technosoftware.UaClient.Tests
             out BrowsePathResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return session_.TranslateBrowsePathsToNodeIds(requestHeader,
-                browsePaths,
-                out results, out diagnosticInfos);
+            TranslateBrowsePathsToNodeIdsResponse response =
+                m_session.TranslateBrowsePathsToNodeIdsAsync(
+                    requestHeader,
+                    browsePaths,
+                    default).GetAwaiter().GetResult();
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+            return response.ResponseHeader;
         }
     }
 }

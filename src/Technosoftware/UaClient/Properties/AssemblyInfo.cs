@@ -21,7 +21,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo(
     "Technosoftware.UaClient.Tests, PublicKey = "
         +
-    // Technosoftware GmbH Strong Name Public Key
+        // Technosoftware GmbH Strong Name Public Key
         "0024000004800000940000000602000000240000525341310004000001000100c183fdb506d6e7"
         + "3b26cb69769655178d84d104e7dfd49167d338c4938db3e75d12e8e68929ab7ec2cccc74e33b11"
         + "b81d8fac6625c56cdf795220c7988460fb5bc721e8031fd148d3bde09d05a421fd44bd9c849c7f"

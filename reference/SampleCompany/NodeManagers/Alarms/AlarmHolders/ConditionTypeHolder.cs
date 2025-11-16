@@ -12,17 +12,13 @@
 #region Using Directives
 using System;
 using System.Globalization;
-
 using Opc.Ua;
-#endregion
-
-#pragma warning disable CS1591
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
     public class ConditionTypeHolder : BaseEventTypeHolder
     {
-
         protected ConditionTypeHolder(
             AlarmNodeManager alarmNodeManager,
             FolderState parent,
@@ -31,21 +27,24 @@ namespace SampleCompany.NodeManagers.Alarms
             SupportedAlarmConditionType alarmConditionType,
             Type controllerType,
             int interval,
-            bool optional) :
-            base(alarmNodeManager, parent, trigger, name, alarmConditionType, controllerType, interval, optional)
+            bool optional)
+            : base(
+                alarmNodeManager,
+                parent,
+                trigger,
+                name,
+                alarmConditionType,
+                controllerType,
+                interval,
+                optional)
         {
-            alarmConditionType_ = alarmConditionType;
+            m_alarmConditionType = alarmConditionType;
         }
 
-        protected new void Initialize(
-            uint alarmTypeIdentifier,
-            string name)
+        protected new void Initialize(uint alarmTypeIdentifier, string name)
         {
-            if (alarm_ == null)
-            {
-                // this is invalid
-                alarm_ = new ConditionState(parent_);
-            }
+            // this is invalid
+            m_alarm ??= new ConditionState(m_parent);
 
             ConditionState alarm = GetAlarm();
 
@@ -54,9 +53,10 @@ namespace SampleCompany.NodeManagers.Alarms
 
             // Set all ConditionType Parameters
             alarm.ClientUserId.Value = "Anonymous";
-            alarm.ConditionClassId.Value = alarmConditionType_.Node;
-            alarm.ConditionClassName.Value = new LocalizedText("", alarmConditionType_.ConditionName);
-            alarm.ConditionName.Value = alarmRootName_;
+            alarm.ConditionClassId.Value = m_alarmConditionType.Node;
+            alarm.ConditionClassName.Value
+                = new LocalizedText(string.Empty, m_alarmConditionType.ConditionName);
+            alarm.ConditionName.Value = m_alarmRootName;
             Utils.LogTrace("Alarm ConditionName = {0}", alarm.ConditionName.Value);
 
             alarm.BranchId.Value = new NodeId();
@@ -64,9 +64,9 @@ namespace SampleCompany.NodeManagers.Alarms
 
             alarm.SetEnableState(SystemContext, true);
             alarm.Quality.Value = StatusCodes.Good;
-            alarm.LastSeverity.Value = AlarmConstants.InactiveSeverity;
-            alarm.Severity.Value = AlarmConstants.InactiveSeverity;
-            alarm.Comment.Value = new LocalizedText("en", "");
+            alarm.LastSeverity.Value = AlarmDefines.INACTIVE_SEVERITY;
+            alarm.Severity.Value = AlarmDefines.INACTIVE_SEVERITY;
+            alarm.Comment.Value = new LocalizedText("en", string.Empty);
 
             // Set Method Handlers
             alarm.OnEnableDisable = OnEnableDisableAlarm;
@@ -76,12 +76,9 @@ namespace SampleCompany.NodeManagers.Alarms
             alarm.ConditionSubClassName = null;
         }
 
-
         public BaseEventState FindBranch()
         {
-            BaseEventState state = null;
-
-            return state;
+            return null;
         }
 
         protected override void CreateBranch()
@@ -96,24 +93,29 @@ namespace SampleCompany.NodeManagers.Alarms
                 // This could be a transition between alarm states,
                 // or a transition to inactive
                 // So a branch can only be created when the severity changes
-                if (currentSeverity > AlarmConstants.InactiveSeverity &&
+                if (currentSeverity > AlarmDefines.INACTIVE_SEVERITY &&
                     newSeverity != currentSeverity)
                 {
                     NodeId branchId = GetNewBranchId();
                     ConditionState branch = alarm.CreateBranch(SystemContext, branchId);
 
-                    var postEventId = Utils.ToHexString(branch.EventId.Value as byte[]);
+                    string postEventId = Utils.ToHexString(branch.EventId.Value);
 
-                    Log("CreateBranch", " Branch " + branchId.ToString() +
-                        " EventId " + postEventId + " created, Message " + alarm.Message.Value.Text);
+                    Log(
+                        "CreateBranch",
+                        " Branch " +
+                        branchId +
+                        " EventId " +
+                        postEventId +
+                        " created, Message " +
+                        alarm.Message.Value.Text);
 
-                    alarmController_.SetBranchCount(alarm.GetBranchCount());
+                    m_alarmController.SetBranchCount(alarm.GetBranchCount());
                 }
             }
         }
 
         #region Overrides
-
         public override void SetValue(string message = "")
         {
             ConditionState alarm = GetAlarm();
@@ -127,7 +129,7 @@ namespace SampleCompany.NodeManagers.Alarms
                 alarm.SetSeverity(SystemContext, (EventSeverity)newSeverity);
                 if (message.Length == 0)
                 {
-                    message = "Alarm Event Value = " + trigger_.Value.ToString();
+                    message = "Alarm Event Value = " + m_trigger.Value;
                 }
 
                 alarm.Message.Value = new LocalizedText("en", message);
@@ -135,17 +137,12 @@ namespace SampleCompany.NodeManagers.Alarms
                 ReportEvent();
             }
         }
-
-        #endregion
+        #endregion Overrides
 
         #region Child Helpers
-
         public void ReportEvent(ConditionState alarm = null)
         {
-            if (alarm == null)
-            {
-                alarm = GetAlarm();
-            }
+            alarm ??= GetAlarm();
 
             if (alarm.EnabledState.Id.Value)
             {
@@ -153,8 +150,12 @@ namespace SampleCompany.NodeManagers.Alarms
                 alarm.Time.Value = DateTime.UtcNow;
                 alarm.ReceiveTime.Value = alarm.Time.Value;
 
-                Log("ReportEvent", " Value " + alarmController_.GetValue().ToString(CultureInfo.InvariantCulture) +
-                    " Message " + alarm.Message.Value.Text);
+                Log(
+                    "ReportEvent",
+                    " Value " +
+                    m_alarmController.GetValue().ToString(CultureInfo.InvariantCulture) +
+                    " Message " +
+                    alarm.Message.Value.Text);
 
                 alarm.ClearChangeMasks(SystemContext, true);
 
@@ -166,44 +167,40 @@ namespace SampleCompany.NodeManagers.Alarms
 
         protected virtual ushort GetSeverity()
         {
-            ushort severity = AlarmConstants.InactiveSeverity;
+            ushort severity = AlarmDefines.INACTIVE_SEVERITY;
 
-            var level = alarmController_.GetValue();
+            int level = m_alarmController.GetValue();
 
             if (Analog)
             {
-                if (level <= AlarmConstants.LowLowAlarm && Analog)
+                if (level <= AlarmDefines.LOWLOW_ALARM && Analog)
                 {
-                    severity = AlarmConstants.LowLowSeverity;
+                    severity = AlarmDefines.LOWLOW_SEVERITY;
                 }
                 // Level is Low
-                else if (level <= AlarmConstants.LowAlarm)
+                else if (level <= AlarmDefines.LOW_ALARM)
                 {
-                    severity = AlarmConstants.LowSeverity;
+                    severity = AlarmDefines.LOW_SEVERITY;
                 }
                 // Level is HighHigh
-                else if (level >= AlarmConstants.HighHighAlarm && Analog)
+                else if (level >= AlarmDefines.HIGHHIGH_ALARM && Analog)
                 {
-                    severity = AlarmConstants.HighHighSeverity;
+                    severity = AlarmDefines.HIGHHIGH_SEVERITY;
                 }
                 // Level is High
-                else if (level >= AlarmConstants.HighAlarm)
+                else if (level >= AlarmDefines.HIGH_ALARM)
                 {
-                    severity = AlarmConstants.HighSeverity;
+                    severity = AlarmDefines.HIGH_SEVERITY;
                 }
             }
-            else
+            else if (level <= AlarmDefines.BOOL_LOW_ALARM)
             {
-                if (level <= AlarmConstants.BoolLowAlarm)
-                {
-                    severity = AlarmConstants.LowSeverity;
-                }
-                // Level is High
-                else if (level >= AlarmConstants.BoolHighAlarm)
-                {
-                    severity = AlarmConstants.HighSeverity;
-                }
-
+                severity = AlarmDefines.LOW_SEVERITY;
+            }
+            // Level is High
+            else if (level >= AlarmDefines.BOOL_HIGH_ALARM)
+            {
+                severity = AlarmDefines.HIGH_SEVERITY;
             }
 
             return severity;
@@ -211,8 +208,8 @@ namespace SampleCompany.NodeManagers.Alarms
 
         protected bool IsActive()
         {
-            var isActive = false;
-            if (GetSeverity() > AlarmConstants.InactiveSeverity)
+            bool isActive = false;
+            if (GetSeverity() > AlarmDefines.INACTIVE_SEVERITY)
             {
                 isActive = true;
             }
@@ -221,9 +218,9 @@ namespace SampleCompany.NodeManagers.Alarms
 
         protected bool WasActive()
         {
-            var wasActive = false;
+            bool wasActive = false;
             ConditionState alarm = GetAlarm();
-            if (alarm.Severity.Value > AlarmConstants.InactiveSeverity)
+            if (alarm.Severity.Value > AlarmDefines.INACTIVE_SEVERITY)
             {
                 wasActive = true;
             }
@@ -232,9 +229,9 @@ namespace SampleCompany.NodeManagers.Alarms
 
         protected bool ShouldEvent()
         {
-            var shouldEvent = false;
+            bool shouldEvent = false;
             ConditionState alarm = GetAlarm();
-            var newSeverity = GetSeverity();
+            ushort newSeverity = GetSeverity();
             if (newSeverity != alarm.Severity.Value)
             {
                 shouldEvent = true;
@@ -242,25 +239,18 @@ namespace SampleCompany.NodeManagers.Alarms
 
             return shouldEvent;
         }
-
-        #endregion
+        #endregion Child Helpers
 
         #region Helpers
-
         private ConditionState GetAlarm(BaseEventState alarm = null)
         {
-            if (alarm == null)
-            {
-                alarm = alarm_;
-            }
+            alarm ??= m_alarm;
             return (ConditionState)alarm;
         }
 
-
-
         protected bool IsEvent(string caller, byte[] eventId)
         {
-            var isEvent = IsEvent(eventId);
+            bool isEvent = IsEvent(eventId);
 
             if (!isEvent)
             {
@@ -274,9 +264,7 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             return " Requested Event " + Utils.ToHexString(eventId);
         }
-
-
-        #endregion
+        #endregion Helpers
 
         #region Method Handlers 
         public ServiceResult OnEnableDisableAlarm(
@@ -291,14 +279,18 @@ namespace SampleCompany.NodeManagers.Alarms
             if (enabling != alarm.EnabledState.Id.Value)
             {
                 alarm.SetEnableState(SystemContext, enabling);
-                alarm.Message.Value = enabling ? "Enabling" : "Disabling" + " alarm " + MapName;
+                alarm.Message.Value = enabling ? "Enabling" : "Disabling alarm " + MapName;
 
                 // if disabled, it will not fire
                 ReportEvent();
             }
+            else if (enabling)
+            {
+                status = StatusCodes.BadConditionAlreadyEnabled;
+            }
             else
             {
-                status = enabling ? (StatusCode)StatusCodes.BadConditionAlreadyEnabled : (StatusCode)StatusCodes.BadConditionAlreadyDisabled;
+                status = StatusCodes.BadConditionAlreadyDisabled;
             }
 
             return status;
@@ -315,31 +307,31 @@ namespace SampleCompany.NodeManagers.Alarms
             ConditionState alarmOrBranch = alarm.GetEventByEventId(eventId);
             if (alarmOrBranch == null)
             {
-                var errorMessage = "Unknown event id " + Utils.ToHexString(eventId);
+                string errorMessage = "Unknown event id " + Utils.ToHexString(eventId);
                 alarm.Message.Value = "OnAddComment " + errorMessage;
                 LogError("OnAddComment", errorMessage);
                 return StatusCodes.BadEventIdUnknown;
             }
 
-            alarmController_.OnAddComment();
+            m_alarmController.OnAddComment();
 
             // Don't call ReportEvent,  Core will send the event.
 
-            delayedMessages_.Add("OnAddComment");
+            m_delayedMessages.Add("OnAddComment");
 
             return ServiceResult.Good;
         }
 
         protected bool CanSetComment(LocalizedText comment)
         {
-            var canSetComment = false;
+            bool canSetComment = false;
 
             if (comment != null)
             {
                 canSetComment = true;
 
-                var emptyComment = comment.Text == null || comment.Text.Length == 0;
-                var emptyLocale = comment.Locale == null || comment.Locale.Length == 0;
+                bool emptyComment = string.IsNullOrEmpty(comment.Text);
+                bool emptyLocale = string.IsNullOrEmpty(comment.Locale);
 
                 if (emptyComment && emptyLocale)
                 {
@@ -354,10 +346,6 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             return true;
         }
-
-        #endregion
+        #endregion Method Handlers 
     }
-
-
-
 }

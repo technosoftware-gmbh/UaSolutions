@@ -21,7 +21,7 @@ using Opc.Ua;
 
 #endregion
 
-namespace Technosoftware.UaServer.Server
+namespace Technosoftware.UaServer
 {
     /// <summary>
     ///     The event arguments provided when a new notification message arrives.

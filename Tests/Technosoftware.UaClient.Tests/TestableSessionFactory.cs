@@ -1,24 +1,37 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2022 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Opc.Ua;
-
-using Technosoftware.UaServer.Tests;
-#endregion
 
 namespace Technosoftware.UaClient.Tests
 {
@@ -30,7 +43,7 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// The default instance of the factory.
         /// </summary>
-        public new static readonly TestableSessionFactory Instance = new TestableSessionFactory();
+        public static new readonly TestableSessionFactory Instance = new();
 
         /// <summary>
         /// Force use of the default instance.
@@ -39,7 +52,6 @@ namespace Technosoftware.UaClient.Tests
         {
         }
 
-        #region ISessionFactory Members
         /// <inheritdoc/>
         public override Task<IUaSession> CreateAsync(
             ApplicationConfiguration configuration,
@@ -51,11 +63,20 @@ namespace Technosoftware.UaClient.Tests
             IList<string> preferredLocales,
             CancellationToken ct = default)
         {
-            return CreateAsync(configuration, endpoint, updateBeforeConnect, false, sessionName, sessionTimeout, identity, preferredLocales, ct);
+            return CreateAsync(
+                configuration,
+                endpoint,
+                updateBeforeConnect,
+                false,
+                sessionName,
+                sessionTimeout,
+                identity,
+                preferredLocales,
+                ct);
         }
 
         /// <inheritdoc/>
-        public async override Task<IUaSession> CreateAsync(
+        public override async Task<IUaSession> CreateAsync(
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
             bool updateBeforeConnect,
@@ -66,13 +87,24 @@ namespace Technosoftware.UaClient.Tests
             IList<string> preferredLocales,
             CancellationToken ct = default)
         {
-            return await Session.CreateAsync(this, configuration, (ITransportWaitingConnection)null, endpoint,
-                updateBeforeConnect, checkDomain, sessionName, sessionTimeout,
-                identity, preferredLocales, ct).ConfigureAwait(false);
+            return await Session
+                .CreateAsync(
+                    this,
+                    configuration,
+                    (ITransportWaitingConnection)null,
+                    endpoint,
+                    updateBeforeConnect,
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    identity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public async override Task<IUaSession> CreateAsync(
+        public override async Task<IUaSession> CreateAsync(
             ApplicationConfiguration configuration,
             ITransportWaitingConnection connection,
             ConfiguredEndpoint endpoint,
@@ -84,14 +116,24 @@ namespace Technosoftware.UaClient.Tests
             IList<string> preferredLocales,
             CancellationToken ct = default)
         {
-            return await Session.CreateAsync(this, configuration, connection, endpoint,
-                updateBeforeConnect, checkDomain, sessionName, sessionTimeout,
-                identity, preferredLocales, ct
-                ).ConfigureAwait(false);
+            return await Session
+                .CreateAsync(
+                    this,
+                    configuration,
+                    connection,
+                    endpoint,
+                    updateBeforeConnect,
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    identity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public async override Task<IUaSession> CreateAsync(
+        public override async Task<IUaSession> CreateAsync(
             ApplicationConfiguration configuration,
             ReverseConnectManager reverseConnectManager,
             ConfiguredEndpoint endpoint,
@@ -101,62 +143,81 @@ namespace Technosoftware.UaClient.Tests
             uint sessionTimeout,
             IUserIdentity userIdentity,
             IList<string> preferredLocales,
-            CancellationToken ct = default
-            )
+            CancellationToken ct = default)
         {
             if (reverseConnectManager == null)
             {
-                return await this.CreateAsync(configuration, endpoint, updateBeforeConnect,
-                    checkDomain, sessionName, sessionTimeout, userIdentity, preferredLocales, ct).ConfigureAwait(false);
+                return await CreateAsync(
+                        configuration,
+                        endpoint,
+                        updateBeforeConnect,
+                        checkDomain,
+                        sessionName,
+                        sessionTimeout,
+                        userIdentity,
+                        preferredLocales,
+                        ct)
+                    .ConfigureAwait(false);
             }
 
             ITransportWaitingConnection connection;
             do
             {
-                connection = await reverseConnectManager.WaitForConnectionAsync(
-                    endpoint.EndpointUrl,
-                    endpoint.ReverseConnect?.ServerUri,
-                    ct).ConfigureAwait(false);
+                connection = await reverseConnectManager
+                    .WaitForConnectionAsync(
+                        endpoint.EndpointUrl,
+                        endpoint.ReverseConnect?.ServerUri,
+                        ct)
+                    .ConfigureAwait(false);
 
                 if (updateBeforeConnect)
                 {
-                    await endpoint.UpdateFromServerAsync(
-                        endpoint.EndpointUrl, connection,
-                        endpoint.Description.SecurityMode,
-                        endpoint.Description.SecurityPolicyUri,
-                        ct).ConfigureAwait(false);
+                    await endpoint
+                        .UpdateFromServerAsync(
+                            endpoint.EndpointUrl,
+                            connection,
+                            endpoint.Description.SecurityMode,
+                            endpoint.Description.SecurityPolicyUri,
+                            ct)
+                        .ConfigureAwait(false);
                     updateBeforeConnect = false;
                     connection = null;
                 }
             } while (connection == null);
 
             return await CreateAsync(
-                configuration,
-                connection,
-                endpoint,
-                false,
-                checkDomain,
-                sessionName,
-                sessionTimeout,
-                userIdentity,
-                preferredLocales,
-                ct).ConfigureAwait(false);
+                    configuration,
+                    connection,
+                    endpoint,
+                    false,
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    userIdentity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
         public override IUaSession Create(
-           ApplicationConfiguration configuration,
-           ITransportChannel channel,
-           ConfiguredEndpoint endpoint,
-           X509Certificate2 clientCertificate,
-           EndpointDescriptionCollection availableEndpoints = null,
-           StringCollection discoveryProfileUris = null)
+            ApplicationConfiguration configuration,
+            ITransportChannel channel,
+            ConfiguredEndpoint endpoint,
+            X509Certificate2 clientCertificate,
+            EndpointDescriptionCollection availableEndpoints = null,
+            StringCollection discoveryProfileUris = null)
         {
-            return Session.Create(this, configuration, channel, endpoint, clientCertificate, availableEndpoints, discoveryProfileUris);
+            return Session.Create(
+                this,
+                configuration,
+                channel,
+                endpoint,
+                clientCertificate,
+                availableEndpoints,
+                discoveryProfileUris);
         }
-        #endregion
 
-        #region ISessionInstantiator Members
         /// <inheritdoc/>
         public override Session Create(
             ISessionChannel channel,
@@ -175,8 +236,13 @@ namespace Technosoftware.UaClient.Tests
             EndpointDescriptionCollection availableEndpoints = null,
             StringCollection discoveryProfileUris = null)
         {
-            return new TestableSession(channel, configuration, endpoint, clientCertificate, availableEndpoints, discoveryProfileUris);
+            return new TestableSession(
+                channel,
+                configuration,
+                endpoint,
+                clientCertificate,
+                availableEndpoints,
+                discoveryProfileUris);
         }
-        #endregion
     }
 }

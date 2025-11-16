@@ -17,36 +17,26 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-
 using Opc.Ua;
+#endregion Using Directives
 
-using Technosoftware.UaServer.Diagnostics;
-#endregion
-
-namespace Technosoftware.UaServer.Server
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// An object that manages requests from within the server.
     /// </summary>
     public class RequestManager : IDisposable
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initilizes the manager.
         /// </summary>
-        /// <param name="server"></param>
         public RequestManager(IUaServerData server)
         {
-            if (server == null)
-                throw new ArgumentNullException(nameof(server));
-
-            m_server = server;
+            m_server = server ?? throw new ArgumentNullException(nameof(server));
             m_requests = [];
             m_requestTimer = null;
         }
-        #endregion
 
-        #region IDisposable Members
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
@@ -59,7 +49,6 @@ namespace Technosoftware.UaServer.Server
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", MessageId = "m_requestTimer")]
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -68,7 +57,7 @@ namespace Technosoftware.UaServer.Server
 
                 lock (m_requestsLock)
                 {
-                    operations = new List<UaServerOperationContext>(m_requests.Values);
+                    operations = [.. m_requests.Values];
                     m_requests.Clear();
                 }
 
@@ -81,13 +70,11 @@ namespace Technosoftware.UaServer.Server
                 m_requestTimer = null;
             }
         }
-        #endregion
 
-        #region Public Members
         /// <summary>
         /// Raised when the status of an outstanding request changes.
         /// </summary>
-        public event EventHandler<RequestCancelledEventArgs> RequestCancelledEvent
+        public event EventHandler<RequestCancelledEventArgs> RequestCancelled
         {
             add
             {
@@ -96,7 +83,6 @@ namespace Technosoftware.UaServer.Server
                     m_RequestCancelled += value;
                 }
             }
-
             remove
             {
                 lock (m_lock)
@@ -109,11 +95,13 @@ namespace Technosoftware.UaServer.Server
         /// <summary>
         /// Called when a new request arrives.
         /// </summary>
-        /// <param name="context"></param>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public void RequestReceived(UaServerOperationContext context)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
 
             lock (m_requestsLock)
             {
@@ -129,10 +117,13 @@ namespace Technosoftware.UaServer.Server
         /// <summary>
         /// Called when a request completes (normally or abnormally).
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public void RequestCompleted(UaServerOperationContext context)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
 
             lock (m_requestsLock)
             {
@@ -159,7 +150,10 @@ namespace Technosoftware.UaServer.Server
                         cancelledRequests.Add(request.RequestId);
 
                         // report the AuditCancelEventType
-                        m_server.ReportAuditCancelEvent(request.Session.Id, requestHandle, StatusCodes.Good);
+                        m_server.ReportAuditCancelEvent(
+                            request.Session.Id,
+                            requestHandle,
+                            StatusCodes.Good);
                     }
                 }
             }
@@ -176,9 +170,10 @@ namespace Technosoftware.UaServer.Server
                     {
                         try
                         {
-                            m_RequestCancelled(this,
+                            m_RequestCancelled(
+                                this,
                                 new RequestCancelledEventArgs(cancelledRequests[ii],
-                                    StatusCodes.BadRequestCancelledByRequest));
+                                StatusCodes.BadRequestCancelledByRequest));
                         }
                         catch (Exception e)
                         {
@@ -188,15 +183,13 @@ namespace Technosoftware.UaServer.Server
                 }
             }
         }
-        #endregion
 
-        #region Private Methods
         /// <summary>
         /// Checks for any expired requests and changes their status.
         /// </summary>
         private void OnTimerExpired(object state)
         {
-            List<uint> expiredRequests = [];
+            var expiredRequests = new List<uint>();
 
             // flag requests as expired.
             lock (m_requestsLock)
@@ -245,16 +238,12 @@ namespace Technosoftware.UaServer.Server
                 }
             }
         }
-        #endregion
 
-        #region Private Fields
-        private readonly object m_lock = new object();
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
-        private IUaServerData m_server;
-        private Dictionary<uint, UaServerOperationContext> m_requests;
-        private readonly object m_requestsLock = new object();
+        private readonly Lock m_lock = new();
+        private readonly IUaServerData m_server;
+        private readonly Dictionary<uint, UaServerOperationContext> m_requests;
+        private readonly Lock m_requestsLock = new();
         private Timer m_requestTimer;
         private event EventHandler<RequestCancelledEventArgs> m_RequestCancelled;
-        #endregion
     }
 }

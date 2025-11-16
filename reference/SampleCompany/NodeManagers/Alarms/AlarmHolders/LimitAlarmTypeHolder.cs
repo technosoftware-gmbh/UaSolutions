@@ -11,16 +11,13 @@
 
 #region Using Directives
 using System;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
-    class LimitAlarmTypeHolder : AlarmConditionTypeHolder
+    internal class LimitAlarmTypeHolder : AlarmConditionTypeHolder
     {
-        private bool isLimit_ = true;
-
         public LimitAlarmTypeHolder(
             AlarmNodeManager alarmNodeManager,
             FolderState parent,
@@ -30,9 +27,19 @@ namespace SampleCompany.NodeManagers.Alarms
             Type controllerType,
             int interval,
             bool optional = true,
-            double maxShelveTime = AlarmConstants.NormalMaxTimeShelved,
-            bool create = true) :
-            base(alarmNodeManager, parent, trigger, name, alarmConditionType, controllerType, interval, optional, maxShelveTime, false)
+            double maxShelveTime = AlarmDefines.NORMAL_MAX_TIME_SHELVED,
+            bool create = true)
+            : base(
+                alarmNodeManager,
+                parent,
+                trigger,
+                name,
+                alarmConditionType,
+                controllerType,
+                interval,
+                optional,
+                maxShelveTime,
+                false)
         {
             if (create)
             {
@@ -40,39 +47,21 @@ namespace SampleCompany.NodeManagers.Alarms
             }
         }
 
-        public void Initialize(
+        public new void Initialize(
             uint alarmTypeIdentifier,
             string name,
-            double maxTimeShelved = AlarmConstants.NormalMaxTimeShelved,
-            bool isLimit = true)
+            double maxTimeShelved = AlarmDefines.NORMAL_MAX_TIME_SHELVED)
         {
             // Create an alarm and trigger name - Create a base method for creating the trigger, just provide the name
 
-            if (alarm_ == null)
-            {
-                alarm_ = new LimitAlarmState(parent_);
-            }
-
-            isLimit_ = isLimit;
+            m_alarm ??= new LimitAlarmState(m_parent);
 
             LimitAlarmState alarm = GetAlarm();
 
-            if (alarm.HighLimit == null)
-            {
-                alarm.HighLimit = new PropertyState<double>(alarm);
-            }
-            if (alarm.HighHighLimit == null)
-            {
-                alarm.HighHighLimit = new PropertyState<double>(alarm);
-            }
-            if (alarm.LowLimit == null)
-            {
-                alarm.LowLimit = new PropertyState<double>(alarm);
-            }
-            if (alarm.LowLowLimit == null)
-            {
-                alarm.LowLowLimit = new PropertyState<double>(alarm);
-            }
+            alarm.HighLimit ??= new PropertyState<double>(alarm);
+            alarm.HighHighLimit ??= new PropertyState<double>(alarm);
+            alarm.LowLimit ??= new PropertyState<double>(alarm);
+            alarm.LowLowLimit ??= new PropertyState<double>(alarm);
 
             if (Optional)
             {
@@ -85,17 +74,17 @@ namespace SampleCompany.NodeManagers.Alarms
             // Call the base class to set parameters
             base.Initialize(alarmTypeIdentifier, name, maxTimeShelved);
 
-            alarm.HighLimit.Value = AlarmConstants.HighAlarm;
-            alarm.HighHighLimit.Value = AlarmConstants.HighHighAlarm;
-            alarm.LowLimit.Value = AlarmConstants.LowAlarm;
-            alarm.LowLowLimit.Value = AlarmConstants.LowLowAlarm;
+            alarm.HighLimit.Value = AlarmDefines.HIGH_ALARM;
+            alarm.HighHighLimit.Value = AlarmDefines.HIGHHIGH_ALARM;
+            alarm.LowLimit.Value = AlarmDefines.LOW_ALARM;
+            alarm.LowLowLimit.Value = AlarmDefines.LOWLOW_ALARM;
 
             if (Optional)
             {
-                alarm.BaseHighLimit.Value = AlarmConstants.HighAlarm;
-                alarm.BaseHighHighLimit.Value = AlarmConstants.HighHighAlarm;
-                alarm.BaseLowLimit.Value = AlarmConstants.LowAlarm;
-                alarm.BaseLowLowLimit.Value = AlarmConstants.LowLowAlarm;
+                alarm.BaseHighLimit.Value = AlarmDefines.HIGH_ALARM;
+                alarm.BaseHighHighLimit.Value = AlarmDefines.HIGHHIGH_ALARM;
+                alarm.BaseLowLimit.Value = AlarmDefines.LOW_ALARM;
+                alarm.BaseLowLowLimit.Value = AlarmDefines.LOWLOW_ALARM;
             }
             else
             {
@@ -106,14 +95,10 @@ namespace SampleCompany.NodeManagers.Alarms
         }
 
         #region Helpers
-
         private LimitAlarmState GetAlarm()
         {
-            return (LimitAlarmState)alarm_;
+            return (LimitAlarmState)m_alarm;
         }
-
-        #endregion
-
-
+        #endregion Helpers
     }
 }

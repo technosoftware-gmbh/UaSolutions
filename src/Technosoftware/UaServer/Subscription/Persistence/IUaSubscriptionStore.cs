@@ -15,11 +15,10 @@
 
 #region Using Directives
 using System.Collections.Generic;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Interface for storing subscriptions on server shutdown and restoring on startup
@@ -42,19 +41,19 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Restore a DataChangeMonitoredItemQueue from storage
         /// </summary>
-        /// <param name="monitoredItemId">Id of the MonitoredItem owning the the queue</param>
+        /// <param name="monitoredItemId">Id of the UaMonitoredItem owning the queue</param>
         /// <returns>the queue</returns>
         IUaDataChangeMonitoredItemQueue RestoreDataChangeMonitoredItemQueue(uint monitoredItemId);
 
         /// <summary>
         /// Restore an EventMonitoredItemQueue from storage
         /// </summary>
-        /// <param name="monitoredItemId">Id of the MonitoredItem owning the queue</param>
+        /// <param name="monitoredItemId">Id of the UaMonitoredItem owning the queue</param>
         /// <returns>the queue</returns>
         IUaEventMonitoredItemQueue RestoreEventMonitoredItemQueue(uint monitoredItemId);
 
         /// <summary>
-        /// Signals created Subscription ids incl. MonitoredItem ids to the SubscriptionStore instance, to signal cleanup can take place
+        /// Signals created Subscription ids incl. UaMonitoredItem ids to the SubscriptionStore instance, to signal cleanup can take place
         /// The store shall clean all stored subscriptions, monitoredItems, and only keep the persitent queues for the monitoredItem ids provided
         /// <param name="createdSubscriptions"> key = subscription id, value = monitoredItem ids </param>
         /// </summary>
@@ -69,7 +68,9 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Creates a new instance of the result
         /// </summary>
-        public RestoreSubscriptionResult(bool succcess, IEnumerable<IUaStoredSubscription> subscriptions)
+        public RestoreSubscriptionResult(
+            bool succcess,
+            IEnumerable<IUaStoredSubscription> subscriptions)
         {
             Success = succcess;
             Subscriptions = subscriptions;
@@ -84,5 +85,5 @@ namespace Technosoftware.UaServer.Subscriptions
         /// The restored subscriptions
         /// </summary>
         public IEnumerable<IUaStoredSubscription> Subscriptions { get; set; }
-    };
+    }
 }
