@@ -14,15 +14,13 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+using System.Linq;
+using System.Threading;
 using Newtonsoft.Json;
 using Opc.Ua;
-using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription
 {

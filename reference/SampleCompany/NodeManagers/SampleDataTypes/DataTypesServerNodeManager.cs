@@ -11,19 +11,14 @@
 
 #region Using Directives
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Threading;
 using System.Reflection;
 using System.Linq;
-
 using Opc.Ua;
-
-using Opc.Ua.Test;
-
 using Technosoftware.UaServer;
 
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.SampleDataTypes
 {
@@ -72,11 +67,12 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
             // update the namespaces.
             NamespaceUris = namespaceUris;
 
-            ServerData.Factory.AddEncodeableTypes(typeof(DataTypesServerNodeManager).Assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(typeof(DataTypesServerNodeManager).Namespace)));
+            ServerData.Factory.AddEncodeableTypes(
+                typeof(DataTypesServerNodeManager).Assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(typeof(DataTypesServerNodeManager).Namespace)));
 
             dynamicNodes_ = new List<BaseDataVariableState>();
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region IDisposable Members
         /// <summary>
@@ -120,10 +116,10 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
             }
             base.Dispose(disposing);
         }
-        #endregion
+        #endregion IDisposable Members
 
         #region INodeIdFactory Members
-        #endregion
+        #endregion INodeIdFactory Members
 
         #region Overridden Methods
         /// <summary>
@@ -146,7 +142,7 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
                 }
             }
 
-            if (resourcePath == String.Empty)
+            if (resourcePath?.Length == 0)
             {
                 // No assembly found containing the nodes of the model. Behaviour here can differ but in this case we just return null.
                 return null;
@@ -156,7 +152,7 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
             predefinedNodes.LoadFromBinaryResource(context, resourcePath, assembly, true);
             return predefinedNodes;
         }
-        #endregion
+        #endregion Overridden Methods
 
         #region IUaNodeManager Methods
         /// <summary>
@@ -192,21 +188,53 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
                     ResetRandomGenerator(1);
                     FolderState staticFolder = CreateFolderState(root_, "Static", "Static", "A folder with a sample static variable.");
                     const string scalarStatic = "Static_";
-                    CreateBaseDataVariableState(staticFolder, scalarStatic + "String", "String", null, Opc.Ua.DataTypeIds.String, ValueRanks.Scalar, AccessLevels.CurrentReadOrWrite, null);
-                    #endregion
+                    CreateBaseDataVariableState(
+                        staticFolder,
+                        scalarStatic + "String",
+                        "String",
+                        null,
+                        Opc.Ua.DataTypeIds.String,
+                        ValueRanks.Scalar,
+                        AccessLevels.CurrentReadOrWrite,
+                        null);
+                    #endregion Static
 
                     #region Simulation
                     FolderState simulationFolder = CreateFolderState(root_, "Simulation", "Simulation", "A folder with simulated variables.");
                     const string simulation = "Simulation_";
 
-                    BaseDataVariableState simulatedVariable = CreateDynamicVariable(simulationFolder, simulation + "Double", "Double", "A simulated variable of type Double. If Enabled is true this value changes based on the defined Interval.", Opc.Ua.DataTypeIds.Double, ValueRanks.Scalar, AccessLevels.CurrentReadOrWrite, null);
+                    BaseDataVariableState simulatedVariable = CreateDynamicVariable(
+                        simulationFolder,
+                        simulation + "Double",
+                        "Double",
+                        "A simulated variable of type Double. If Enabled is true this value changes based on the defined Interval.",
+                        Opc.Ua.DataTypeIds.Double,
+                        ValueRanks.Scalar,
+                        AccessLevels.CurrentReadOrWrite,
+                        null);
 
-                    BaseDataVariableState intervalVariable = CreateBaseDataVariableState(simulationFolder, simulation + "Interval", "Interval", "The Interval used for changing the simulated values.", Opc.Ua.DataTypeIds.UInt16, ValueRanks.Scalar, AccessLevels.CurrentReadOrWrite, simulationInterval_);
+                    BaseDataVariableState intervalVariable = CreateBaseDataVariableState(
+                        simulationFolder,
+                        simulation + "Interval",
+                        "Interval",
+                        "The Interval used for changing the simulated values.",
+                        Opc.Ua.DataTypeIds.UInt16,
+                        ValueRanks.Scalar,
+                        AccessLevels.CurrentReadOrWrite,
+                        simulationInterval_);
                     intervalVariable.OnSimpleWriteValue = OnWriteInterval;
 
-                    BaseDataVariableState enabledVariable = CreateBaseDataVariableState(simulationFolder, simulation + "Enabled", "Enabled", "Specifies whether the simulation is enabled (true) or disabled (false).", Opc.Ua.DataTypeIds.Boolean, ValueRanks.Scalar, AccessLevels.CurrentReadOrWrite, simulationEnabled_);
+                    BaseDataVariableState enabledVariable = CreateBaseDataVariableState(
+                        simulationFolder,
+                        simulation + "Enabled",
+                        "Enabled",
+                        "Specifies whether the simulation is enabled (true) or disabled (false).",
+                        Opc.Ua.DataTypeIds.Boolean,
+                        ValueRanks.Scalar,
+                        AccessLevels.CurrentReadOrWrite,
+                        simulationEnabled_);
                     enabledVariable.OnSimpleWriteValue = OnWriteEnabled;
-                    #endregion
+                    #endregion Simulation
 
                     #region Devices
                     FolderState devices = CreateFolderState(root_, "Devices", "Devices", null);
@@ -220,7 +248,7 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
                     controller.AddReference(ReferenceTypeIds.Organizes, true, devices.NodeId);
                     devices.AddReference(ReferenceTypeIds.Organizes, false, controller.NodeId);
                     AddPredefinedNode(SystemContext, controller);
-                    #endregion
+                    #endregion Devices
 
                     #region Plant
                     FolderState plantFolder = CreateFolderState(root_, "Plant", "Plant", null);
@@ -279,11 +307,10 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
                     plantFolder.AddReference(ReferenceTypeIds.Organizes, false, getMachineDataMethod.NodeId);
                     plantFolder.AddChild(getMachineDataMethod);
 
-
                     // Add the event handler if the method is called
                     getMachineDataMethod.OnCall = OnGetMachineData;
                     AddPredefinedNode(SystemContext, getMachineDataMethod);
-                    #endregion
+                    #endregion Plant
                 }
                 catch (Exception e)
                 {
@@ -297,7 +324,7 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
                 simulationTimer_ = new Timer(DoSimulation, null, 1000, 1000);
             }
         }
-        #endregion
+        #endregion IUaNodeManager Methods
 
         #region Event Handlers
         private ServiceResult OnWriteInterval(ISystemContext context, NodeState node, ref object value)
@@ -361,13 +388,21 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
             }
             return ServiceResult.Good;
         }
-        #endregion
+        #endregion Event Handlers
 
         #region Helper Methods
         /// <summary>
         /// Creates a new variable.
         /// </summary>
-        private BaseDataVariableState CreateDynamicVariable(NodeState parent, string path, string name, string description, NodeId dataType, int valueRank, byte accessLevel, object initialValue)
+        private BaseDataVariableState CreateDynamicVariable(
+            NodeState parent,
+            string path,
+            string name,
+            string description,
+            NodeId dataType,
+            int valueRank,
+            byte accessLevel,
+            object initialValue)
         {
             BaseDataVariableState variable = CreateBaseDataVariableState(parent, path, name, description, dataType, valueRank, accessLevel, initialValue);
             dynamicNodes_.Add(variable);
@@ -394,7 +429,7 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
                 Utils.LogError(e, "Unexpected error doing simulation.");
             }
         }
-        #endregion
+        #endregion Helper Methods
 
         #region Private Fields
         // Track whether Dispose has been called.
@@ -409,6 +444,6 @@ namespace SampleCompany.NodeManagers.SampleDataTypes
         private MachineState machine1_;
         private MachineState machine2_;
         private FolderState root_;
-        #endregion
+        #endregion Private Fields
     }
 }

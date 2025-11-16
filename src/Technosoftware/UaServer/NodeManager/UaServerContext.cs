@@ -15,7 +15,7 @@
 
 #region Using Directives
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -24,7 +24,6 @@ namespace Technosoftware.UaServer
     /// </summary>
     public class UaServerContext : SystemContext
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemContext"/> class.
         /// </summary>
@@ -57,7 +56,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="server">The server.</param>
         /// <param name="session">The session.</param>
-        public UaServerContext(IUaServerData server, Sessions.Session session)
+        public UaServerContext(IUaServerData server, IUaSession session)
         {
             OperationContext = null;
             SessionId = session.Id;
@@ -68,9 +67,7 @@ namespace Technosoftware.UaServer
             TypeTable = server.TypeTree;
             EncodeableFactory = server.Factory;
         }
-        #endregion
 
-        #region Public Members
         /// <summary>
         /// The operation context associated with system context.
         /// </summary>
@@ -116,7 +113,7 @@ namespace Technosoftware.UaServer
         /// <returns>
         /// A copy of the system context that references the new session.
         /// </returns>
-        public UaServerContext Copy(Sessions.Session session)
+        public UaServerContext Copy(IUaSession session)
         {
             var copy = (UaServerContext)MemberwiseClone();
 
@@ -163,6 +160,5 @@ namespace Technosoftware.UaServer
 
             return copy;
         }
-        #endregion
     }
 }

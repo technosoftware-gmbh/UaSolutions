@@ -1,13 +1,13 @@
 #region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
+// Web: https://technosoftware.com
 //
-// The Software is subject to the Technosoftware GmbH Software License 
+// The Software is subject to the Technosoftware GmbH Software License
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Foundation MIT License. 
+// The Software is based on the OPC Foundation MIT License.
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
@@ -20,9 +20,8 @@ using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -34,7 +33,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The default instance of the factory.
         /// </summary>
-        public new static readonly TraceableSessionFactory Instance = new TraceableSessionFactory();
+        public static new readonly TraceableSessionFactory Instance = new();
 
         /// <summary>
         /// Force use of the default instance.
@@ -58,12 +57,19 @@ namespace Technosoftware.UaClient
             IList<string> preferredLocales,
             CancellationToken ct = default)
         {
-            using (Activity activity = TraceableSession.ActivitySource.StartActivity())
-            {
-                IUaSession session = await base.CreateAsync(configuration, endpoint, updateBeforeConnect, false,
-                    sessionName, sessionTimeout, identity, preferredLocales, ct).ConfigureAwait(false);
-                return new TraceableSession(session);
-            }
+            using Activity activity = TraceableSession.ActivitySource.StartActivity();
+            IUaSession session = await base.CreateAsync(
+                    configuration,
+                    endpoint,
+                    updateBeforeConnect,
+                    false,
+                    sessionName,
+                    sessionTimeout,
+                    identity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
+            return new TraceableSession(session);
         }
 
         /// <inheritdoc/>
@@ -78,14 +84,23 @@ namespace Technosoftware.UaClient
             IList<string> preferredLocales,
             CancellationToken ct = default)
         {
-            using (Activity activity = TraceableSession.ActivitySource.StartActivity())
-            {
-                IUaSession session = await Session.CreateAsync(this, configuration, (ITransportWaitingConnection)null, endpoint,
-                    updateBeforeConnect, checkDomain, sessionName, sessionTimeout,
-                    identity, preferredLocales, ct).ConfigureAwait(false);
+            using Activity activity = TraceableSession.ActivitySource.StartActivity();
+            IUaSession session = await Session
+                .CreateAsync(
+                    this,
+                    configuration,
+                    (ITransportWaitingConnection)null,
+                    endpoint,
+                    updateBeforeConnect,
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    identity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
 
-                return new TraceableSession(session);
-            }
+            return new TraceableSession(session);
         }
 
         /// <inheritdoc/>
@@ -101,30 +116,43 @@ namespace Technosoftware.UaClient
             IList<string> preferredLocales,
             CancellationToken ct = default)
         {
-            using (Activity activity = TraceableSession.ActivitySource.StartActivity())
-            {
-                IUaSession session = await Session.CreateAsync(this, configuration, connection, endpoint,
-                    updateBeforeConnect, checkDomain, sessionName, sessionTimeout,
-                    identity, preferredLocales, ct
-                    ).ConfigureAwait(false);
+            using Activity activity = TraceableSession.ActivitySource.StartActivity();
+            IUaSession session = await Session
+                .CreateAsync(
+                    this,
+                    configuration,
+                    connection,
+                    endpoint,
+                    updateBeforeConnect,
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    identity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
 
-                return new TraceableSession(session);
-            }
+            return new TraceableSession(session);
         }
 
         /// <inheritdoc/>
         public override IUaSession Create(
-           ApplicationConfiguration configuration,
-           ITransportChannel channel,
-           ConfiguredEndpoint endpoint,
-           X509Certificate2 clientCertificate,
-           EndpointDescriptionCollection availableEndpoints = null,
-           StringCollection discoveryProfileUris = null)
+            ApplicationConfiguration configuration,
+            ITransportChannel channel,
+            ConfiguredEndpoint endpoint,
+            X509Certificate2 clientCertificate,
+            EndpointDescriptionCollection availableEndpoints = null,
+            StringCollection discoveryProfileUris = null)
         {
-            using (Activity activity = TraceableSession.ActivitySource.StartActivity())
-            {
-                return new TraceableSession(base.Create(configuration, channel, endpoint, clientCertificate, availableEndpoints, discoveryProfileUris));
-            }
+            using Activity activity = TraceableSession.ActivitySource.StartActivity();
+            return new TraceableSession(
+                base.Create(
+                    configuration,
+                    channel,
+                    endpoint,
+                    clientCertificate,
+                    availableEndpoints,
+                    discoveryProfileUris));
         }
 
         /// <inheritdoc/>
@@ -136,10 +164,15 @@ namespace Technosoftware.UaClient
             bool checkDomain,
             CancellationToken ct = default)
         {
-            using (Activity activity = TraceableSession.ActivitySource.StartActivity())
-            {
-                return await base.CreateChannelAsync(configuration, connection, endpoint, updateBeforeConnect, checkDomain, ct).ConfigureAwait(false);
-            }
+            using Activity activity = TraceableSession.ActivitySource.StartActivity();
+            return await base.CreateChannelAsync(
+                    configuration,
+                    connection,
+                    endpoint,
+                    updateBeforeConnect,
+                    checkDomain,
+                    ct)
+                .ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
@@ -153,64 +186,79 @@ namespace Technosoftware.UaClient
             uint sessionTimeout,
             IUserIdentity userIdentity,
             IList<string> preferredLocales,
-            CancellationToken ct = default
-            )
+            CancellationToken ct = default)
         {
-            using (Activity activity = TraceableSession.ActivitySource.StartActivity())
-            {
-                IUaSession session = await base.CreateAsync(configuration,
-                    reverseConnectManager, endpoint,
+            using Activity activity = TraceableSession.ActivitySource.StartActivity();
+            IUaSession session = await base.CreateAsync(
+                    configuration,
+                    reverseConnectManager,
+                    endpoint,
                     updateBeforeConnect,
-                    checkDomain, sessionName,
-                    sessionTimeout, userIdentity,
-                    preferredLocales, ct).ConfigureAwait(false);
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    userIdentity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
 
-                return new TraceableSession(session);
-            }
+            return new TraceableSession(session);
         }
 
         /// <inheritdoc/>
-        public override async Task<IUaSession> RecreateAsync(IUaSession sessionTemplate, CancellationToken ct = default)
+        public override async Task<IUaSession> RecreateAsync(
+            IUaSession sessionTemplate,
+            CancellationToken ct = default)
         {
             Session session = ValidateIUaSession(sessionTemplate);
-            using (Activity activity = TraceableSession.ActivitySource.StartActivity())
-            {
-                return new TraceableSession(await Session.RecreateAsync(session, ct).ConfigureAwait(false));
-            }
+            using Activity activity = TraceableSession.ActivitySource.StartActivity();
+            return new TraceableSession(
+                await Session.RecreateAsync(session, ct).ConfigureAwait(false));
         }
 
         /// <inheritdoc/>
-        public override async Task<IUaSession> RecreateAsync(IUaSession sessionTemplate, ITransportWaitingConnection connection, CancellationToken ct = default)
+        public override async Task<IUaSession> RecreateAsync(
+            IUaSession sessionTemplate,
+            ITransportWaitingConnection connection,
+            CancellationToken ct = default)
         {
             Session session = ValidateIUaSession(sessionTemplate);
-            using (Activity activity = TraceableSession.ActivitySource.StartActivity())
-            {
-                return new TraceableSession(await Session.RecreateAsync(session, connection, ct).ConfigureAwait(false));
-            }
+            using Activity activity = TraceableSession.ActivitySource.StartActivity();
+            return new TraceableSession(
+                await Session.RecreateAsync(session, connection, ct).ConfigureAwait(false));
         }
 
         /// <inheritdoc/>
-        public override async Task<IUaSession> RecreateAsync(IUaSession sessionTemplate, ITransportChannel channel, CancellationToken ct = default)
+        public override async Task<IUaSession> RecreateAsync(
+            IUaSession sessionTemplate,
+            ITransportChannel channel,
+            CancellationToken ct = default)
         {
             Session session = ValidateIUaSession(sessionTemplate);
-            using (Activity activity = TraceableSession.ActivitySource.StartActivity())
-            {
-                return new TraceableSession(await Session.RecreateAsync(session, channel, ct).ConfigureAwait(false));
-            }
+            using Activity activity = TraceableSession.ActivitySource.StartActivity();
+            return new TraceableSession(
+                await Session.RecreateAsync(session, channel, ct).ConfigureAwait(false));
         }
-        #endregion
+        #endregion IUaSessionFactory Members
 
         #region Private Methods
-        private Session ValidateIUaSession(IUaSession sessionTemplate)
+        private static Session ValidateIUaSession(IUaSession sessionTemplate)
         {
-            if (!(sessionTemplate is Session session))
+            if (sessionTemplate is not Session session)
             {
-                session = sessionTemplate is TraceableSession template
-                    ? (Session)template.Session
-                    : throw new ArgumentOutOfRangeException(nameof(sessionTemplate), "The IUaSession provided is not of a supported type.");
+                if (sessionTemplate is TraceableSession template)
+                {
+                    session = (Session)template.Session;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(sessionTemplate),
+                        "The ISession provided is not of a supported type.");
+                }
             }
             return session;
         }
-        #endregion
+        #endregion Private Methods
     }
 }

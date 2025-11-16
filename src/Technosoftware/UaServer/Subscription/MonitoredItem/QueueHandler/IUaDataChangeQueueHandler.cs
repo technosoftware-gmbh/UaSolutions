@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {

@@ -25,15 +25,18 @@ using Newtonsoft.Json;
 using Opc.Ua;
 #endregion
 
-namespace Technosoftware.UaServer.UserDatabase
+namespace Technosoftware.UaServer
 {
     [Serializable]
-    class User
+    internal class User
     {
         [JsonRequired]
         public Guid ID { get; set; }
+
         public string UserName { get; set; }
+
         public string Hash { get; set; }
+
         public IEnumerable<Role> Roles { get; set; }
     }
 
@@ -62,7 +65,7 @@ namespace Technosoftware.UaServer.UserDatabase
             {
                 throw new ArgumentException("Password cannot be empty.", nameof(password));
             }
-            if (//User Exists
+            if ( //User Exists
                 Users.SingleOrDefault(x => x.UserName == userName) != null)
             {
                 return false;
@@ -70,7 +73,12 @@ namespace Technosoftware.UaServer.UserDatabase
 
             string hash = Hash(password);
 
-            var user = new User { UserName = userName, Hash = hash, Roles = roles };
+            var user = new User
+            {
+                UserName = userName,
+                Hash = hash,
+                Roles = roles
+            };
 
             Users.Add(user);
 
@@ -78,6 +86,7 @@ namespace Technosoftware.UaServer.UserDatabase
 
             return true;
         }
+
         /// <inheritdoc/>
         public bool DeleteUser(string userName)
         {
@@ -86,7 +95,7 @@ namespace Technosoftware.UaServer.UserDatabase
                 throw new ArgumentException("UserName cannot be empty.", nameof(userName));
             }
 
-            var user = Users.SingleOrDefault(x => x.UserName == userName);
+            User user = Users.SingleOrDefault(x => x.UserName == userName);
 
             if (user == null)
             {
@@ -95,6 +104,7 @@ namespace Technosoftware.UaServer.UserDatabase
             Users.Remove(user);
             return true;
         }
+
         /// <inheritdoc/>
         public bool CheckCredentials(string userName, string password)
         {
@@ -107,7 +117,7 @@ namespace Technosoftware.UaServer.UserDatabase
                 throw new ArgumentException("Password cannot be empty.", nameof(password));
             }
 
-            var user = Users.SingleOrDefault(x => x.UserName == userName);
+            User user = Users.SingleOrDefault(x => x.UserName == userName);
 
             if (user == null)
             {
@@ -116,6 +126,7 @@ namespace Technosoftware.UaServer.UserDatabase
 
             return Check(user.Hash, password);
         }
+
         /// <inheritdoc/>
         public IEnumerable<Role> GetUserRoles(string userName)
         {
@@ -123,15 +134,13 @@ namespace Technosoftware.UaServer.UserDatabase
             {
                 throw new ArgumentException("UserName cannot be empty.", nameof(userName));
             }
-            var user = Users.SingleOrDefault(x => x.UserName == userName);
-
-            if (user == null)
-            {
-                throw new ArgumentException("No user found with the UserName " + userName);
-            }
+            User user =
+                Users.SingleOrDefault(x => x.UserName == userName)
+                ?? throw new ArgumentException("No user found with the UserName " + userName);
 
             return user.Roles;
         }
+
         /// <inheritdoc/>
         public bool ChangePassword(string userName, string oldPassword, string newPassword)
         {
@@ -141,14 +150,16 @@ namespace Technosoftware.UaServer.UserDatabase
             }
             if (string.IsNullOrEmpty(oldPassword))
             {
-                throw new ArgumentException("Current Password cannot be empty.", nameof(oldPassword));
+                throw new ArgumentException(
+                    "Current Password cannot be empty.",
+                    nameof(oldPassword));
             }
             if (string.IsNullOrEmpty(newPassword))
             {
                 throw new ArgumentException("New Password cannot be empty.", nameof(newPassword));
             }
 
-            var user = Users.SingleOrDefault(x => x.UserName == userName);
+            User user = Users.SingleOrDefault(x => x.UserName == userName);
 
             if (user == null)
             {
@@ -157,8 +168,7 @@ namespace Technosoftware.UaServer.UserDatabase
 
             if (Check(user.Hash, oldPassword))
             {
-                var newHash = Hash(newPassword);
-                user.Hash = newHash;
+                user.Hash = Hash(newPassword);
                 return true;
             }
             return false;
@@ -179,14 +189,12 @@ namespace Technosoftware.UaServer.UserDatabase
         {
             lock (Lock)
             {
-                queryCounterResetTime = DateTime.UtcNow;
+                QueryCounterResetTime = DateTime.UtcNow;
                 // assign IDs to new users
-                var queryNewUsers = from x in Users
-                                    where x.ID == Guid.Empty
-                                    select x;
+                IEnumerable<User> queryNewUsers = from x in Users where x.ID == Guid.Empty select x;
                 if (Users.Count > 0)
                 {
-                    foreach (var user in queryNewUsers)
+                    foreach (User user in queryNewUsers)
                     {
                         user.ID = Guid.NewGuid();
                     }
@@ -197,68 +205,50 @@ namespace Technosoftware.UaServer.UserDatabase
         #endregion
 
         #region IPasswordHasher
-        private string Hash(string password)
+        private static string Hash(string password)
         {
 #if NETSTANDARD2_0 || NET462
-#pragma warning disable CA5379 // Ensure Key Derivation Function algorithm is sufficiently strong
-            using (var algorithm = new Rfc2898DeriveBytes(
-                password,
-                kSaltSize,
-                kIterations))
-            {
-#pragma warning restore CA5379 // Ensure Key Derivation Function algorithm is sufficiently strong
+            using var algorithm = new Rfc2898DeriveBytes(password, kSaltSize, kIterations);
 #else
-            using (var algorithm = new Rfc2898DeriveBytes(
+            using var algorithm = new Rfc2898DeriveBytes(
                 password,
                 kSaltSize,
                 kIterations,
-                HashAlgorithmName.SHA512))
-            {
+                HashAlgorithmName.SHA512);
 #endif
-                var key = Convert.ToBase64String(algorithm.GetBytes(kKeySize));
-                var salt = Convert.ToBase64String(algorithm.Salt);
+            string key = Convert.ToBase64String(algorithm.GetBytes(kKeySize));
+            string salt = Convert.ToBase64String(algorithm.Salt);
 
-                return $"{kIterations}.{salt}.{key}";
-            }
+            return $"{kIterations}.{salt}.{key}";
         }
 
-        private bool Check(string hash, string password)
+        private static bool Check(string hash, string password)
         {
-            var separator = new char[] { '.' };
-            var parts = hash.Split(separator, 3);
+            char[] separator = ['.'];
+            string[] parts = hash.Split(separator, 3);
 
             if (parts.Length != 3)
             {
-                throw new FormatException("Unexpected hash format. " +
-                  "Should be formatted as `{iterations}.{salt}.{hash}`");
+                throw new FormatException(
+                    "Unexpected hash format. Should be formatted as `{iterations}.{salt}.{hash}`");
             }
 
-            var iterations = Convert.ToInt32(parts[0], CultureInfo.InvariantCulture.NumberFormat);
-            var salt = Convert.FromBase64String(parts[1]);
-            var key = Convert.FromBase64String(parts[2]);
+            int iterations = Convert.ToInt32(parts[0], CultureInfo.InvariantCulture.NumberFormat);
+            byte[] salt = Convert.FromBase64String(parts[1]);
+            byte[] key = Convert.FromBase64String(parts[2]);
 
 #if NETSTANDARD2_0 || NET462
-#pragma warning disable CA5379 // Ensure Key Derivation Function algorithm is sufficiently strong
-            using (var algorithm = new Rfc2898DeriveBytes(
-                password,
-                salt,
-                iterations))
-            {
-#pragma warning restore CA5379 // Ensure Key Derivation Function algorithm is sufficiently strong
+            using var algorithm = new Rfc2898DeriveBytes(password, salt, iterations);
 #else
-            using (var algorithm = new Rfc2898DeriveBytes(
+            using var algorithm = new Rfc2898DeriveBytes(
                 password,
                 salt,
                 iterations,
-                HashAlgorithmName.SHA512))
-            {
+                HashAlgorithmName.SHA512);
 #endif
-                var keyToCheck = algorithm.GetBytes(kKeySize);
+            byte[] keyToCheck = algorithm.GetBytes(kKeySize);
 
-                var verified = keyToCheck.SequenceEqual(key);
-
-                return verified;
-            }
+            return keyToCheck.SequenceEqual(key);
         }
 
         #endregion
@@ -268,25 +258,37 @@ namespace Technosoftware.UaServer.UserDatabase
         internal void OnDeserializedMethod(StreamingContext context)
         {
             Lock = new object();
-            queryCounterResetTime = DateTime.UtcNow;
+            QueryCounterResetTime = DateTime.UtcNow;
         }
         #endregion
 
         #region Internal Fields
         [NonSerialized]
-        internal object Lock = new object();
+        internal object Lock = new();
+
         [NonSerialized]
-        internal DateTime queryCounterResetTime = DateTime.UtcNow;
+        internal DateTime QueryCounterResetTime = DateTime.UtcNow;
+
+        /// <summary>
+        /// 128 bit
+        /// </summary>
         [NonSerialized]
-        private const int kSaltSize = 16; // 128 bit
+        private const int kSaltSize = 16;
+
+        /// <summary>
+        /// 10k
+        /// </summary>
         [NonSerialized]
-        private const int kIterations = 10000; // 10k
+        private const int kIterations = 10000;
+
+        /// <summary>
+        /// 256 bit
+        /// </summary>
         [NonSerialized]
-        private const int kKeySize = 32; // 256 bit
+        private const int kKeySize = 32;
+
         [JsonProperty]
         internal ICollection<User> Users = new HashSet<User>();
         #endregion
     }
-
 }
-

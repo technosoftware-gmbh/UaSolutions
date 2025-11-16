@@ -12,10 +12,7 @@
 #region Using Directives
 using System;
 using System.Threading;
-using Opc.Ua;
-using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription
 {

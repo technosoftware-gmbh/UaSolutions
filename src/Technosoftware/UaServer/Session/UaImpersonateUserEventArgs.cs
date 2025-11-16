@@ -26,6 +26,7 @@ namespace Technosoftware.UaServer
     /// <summary>
     ///     A class which provides the event arguments for session related event.
     /// </summary>
+    [Obsolete("Use ImpersonateUserEventArgs")]
     public class UaImpersonateUserEventArgs : EventArgs
     {
         #region Constructors, Destructor, Initialization

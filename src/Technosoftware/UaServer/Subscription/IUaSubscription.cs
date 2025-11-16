@@ -14,20 +14,21 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
+using System;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
     /// <summary>
     /// An interface used by the monitored items to signal the subscription.
     /// </summary>
-    public interface IUaSubscription
+    public interface IUaSubscription : IDisposable
     {
         /// <summary>
         /// The session that owns the monitored item.
         /// </summary>
-        Sessions.Session Session { get; }
+        IUaSession Session { get; }
 
         /// <summary>
         /// The subscriptions owner identity.
@@ -38,6 +39,46 @@ namespace Technosoftware.UaServer
         /// The identifier for the item that is unique within the server.
         /// </summary>
         uint Id { get; }
+
+        /// <summary>
+        /// The identifier for the session that owns the subscription.
+        /// </summary>
+        NodeId SessionId { get; }
+
+        /// <summary>
+        /// The number of monitored items.
+        /// </summary>
+        int MonitoredItemCount { get; }
+
+        /// <summary>
+        /// The priority assigned to the subscription.
+        /// </summary>
+        byte Priority { get; }
+
+        /// <summary>
+        /// The publishing rate for the subscription.
+        /// </summary>
+        double PublishingInterval { get; }
+
+        /// <summary>
+        /// True if the subscription is set to durable and supports long lifetime and queue size
+        /// </summary>
+        bool IsDurable { get; }
+
+        /// <summary>
+        /// Gets the lock that must be acquired before accessing the contents of the Diagnostics property.
+        /// </summary>
+        object DiagnosticsLock { get; }
+
+        /// <summary>
+        /// Gets the lock that must be acquired before updating the contents of the Diagnostics property.
+        /// </summary>
+        object DiagnosticsWriteLock { get; }
+
+        /// <summary>
+        /// Gets the current diagnostics for the subscription.
+        /// </summary>
+        SubscriptionDiagnosticsDataType Diagnostics { get; }
 
         /// <summary>
         /// Called when a monitored item is ready to publish.
@@ -53,5 +94,169 @@ namespace Technosoftware.UaServer
         /// Called when a value of monitored item is discarded in the monitoring queue.
         /// </summary>
         void QueueOverflowHandler();
+
+        /// <summary>
+        /// Checks if the subscription is ready to publish.
+        /// </summary>
+        UaPublishingState PublishTimerExpired();
+
+        /// <summary>
+        /// Returns the available sequence numbers for retransmission
+        /// For example used in Transfer Subscription
+        /// </summary>
+        UInt32Collection AvailableSequenceNumbersForRetransmission();
+
+        /// <summary>
+        /// Refreshes the conditions.
+        /// </summary>
+        void ConditionRefresh2(uint monitoredItemId);
+
+        /// <summary>
+        /// Refreshes the conditions.
+        /// </summary>
+        void ConditionRefresh();
+
+        /// <summary>
+        /// Updates the publishing parameters for the subscription.
+        /// </summary>
+        void Modify(
+            UaServerOperationContext context,
+            double publishingInterval,
+            uint maxLifetimeCount,
+            uint maxKeepAliveCount,
+            uint maxNotificationsPerPublish,
+            byte priority);
+
+        /// <summary>
+        /// Changes the monitoring mode for a set of items.
+        /// </summary>
+        void SetMonitoringMode(
+            UaServerOperationContext context,
+            MonitoringMode monitoringMode,
+            UInt32Collection monitoredItemIds,
+            out StatusCodeCollection results,
+            out DiagnosticInfoCollection diagnosticInfos);
+
+        /// <summary>
+        /// Enables/disables publishing for the subscription.
+        /// </summary>
+        void SetPublishingMode(UaServerOperationContext context, bool publishingEnabled);
+
+        /// <summary>
+        /// Deletes the monitored items in a subscription.
+        /// </summary>
+        void DeleteMonitoredItems(
+            UaServerOperationContext context,
+            UInt32Collection monitoredItemIds,
+            out StatusCodeCollection results,
+            out DiagnosticInfoCollection diagnosticInfos);
+
+        /// <summary>
+        /// Modifies monitored items in a subscription.
+        /// </summary>
+        void ModifyMonitoredItems(
+            UaServerOperationContext context,
+            TimestampsToReturn timestampsToReturn,
+            MonitoredItemModifyRequestCollection itemsToModify,
+            out MonitoredItemModifyResultCollection results,
+            out DiagnosticInfoCollection diagnosticInfos);
+
+        /// <summary>
+        /// Adds monitored items to a subscription.
+        /// </summary>
+        void CreateMonitoredItems(
+            UaServerOperationContext context,
+            TimestampsToReturn timestampsToReturn,
+            MonitoredItemCreateRequestCollection itemsToCreate,
+            out MonitoredItemCreateResultCollection results,
+            out DiagnosticInfoCollection diagnosticInfos);
+
+        /// <summary>
+        /// Gets the monitored items for the subscription.
+        /// </summary>
+        void GetMonitoredItems(out uint[] serverHandles, out uint[] clientHandles);
+
+        /// <summary>
+        /// Sets the subscription to durable mode.
+        /// </summary>
+        ServiceResult SetSubscriptionDurable(uint maxLifetimeCount);
+
+        /// <summary>
+        /// Initiates resending of all data monitored items in a Subscription
+        /// </summary>
+        void ResendData(UaServerOperationContext context);
+
+        /// <summary>
+        /// Tells the subscription that the owning session is being closed.
+        /// </summary>
+        void SessionClosed();
+
+        /// <summary>
+        /// Removes a message from the message queue.
+        /// </summary>
+        ServiceResult Acknowledge(UaServerOperationContext context, uint sequenceNumber);
+
+        /// <summary>
+        /// Deletes the subscription.
+        /// </summary>
+        void Delete(UaServerOperationContext context);
+
+        /// <summary>
+        /// Verifies that a condition refresh operation is permitted.
+        /// </summary>
+        void ValidateConditionRefresh(UaServerOperationContext context);
+
+        /// <summary>
+        /// Verifies that a condition refresh operation is permitted.
+        /// </summary>
+        void ValidateConditionRefresh2(UaServerOperationContext context, uint monitoredItemId);
+
+        /// <summary>
+        /// Returns a cached notification message.
+        /// </summary>
+        NotificationMessage Republish(UaServerOperationContext context, uint retransmitSequenceNumber);
+
+        /// <summary>
+        /// Publishes a timeout status message.
+        /// </summary>
+        NotificationMessage PublishTimeout();
+
+        /// <summary>
+        /// Publishes a SubscriptionTransferred status message.
+        /// </summary>
+        NotificationMessage SubscriptionTransferred();
+
+        /// <summary>
+        /// Returns all available notifications.
+        /// </summary>
+        NotificationMessage Publish(
+            UaServerOperationContext context,
+            out UInt32Collection availableSequenceNumbers,
+            out bool moreNotifications);
+
+        /// <summary>
+        /// Transfers the subscription to a new session.
+        /// </summary>
+        /// <param name="context">The session to which the subscription is transferred.</param>
+        /// <param name="sendInitialValues">Whether the first Publish response shall contain current values.</param>
+        void TransferSession(UaServerOperationContext context, bool sendInitialValues);
+
+        /// <summary>
+        /// Updates the triggers for the monitored item.
+        /// </summary>
+        void SetTriggering(
+            UaServerOperationContext context,
+            uint triggeringItemId,
+            UInt32Collection linksToAdd,
+            UInt32Collection linksToRemove,
+            out StatusCodeCollection addResults,
+            out DiagnosticInfoCollection addDiagnosticInfos,
+            out StatusCodeCollection removeResults,
+            out DiagnosticInfoCollection removeDiagnosticInfos);
+
+        /// <summary>
+        /// Return a StorableSubscription for restore after a server restart
+        /// </summary>
+        IUaStoredSubscription ToStorableSubscription();
     }
 }

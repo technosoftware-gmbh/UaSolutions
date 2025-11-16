@@ -16,10 +16,10 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Text;
-
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -29,30 +29,13 @@ namespace Technosoftware.UaServer
     public interface IUaStandardNodeManager : IUaNodeManager
     {
         /// <summary>
-        /// Gets the server that the node manager belongs to.
-        /// </summary>
-        IUaServerData ServerData { get; }
-
-        /// <summary>
-        /// Acquires the lock on the node manager.
-        /// </summary>
-        object Lock { get; }
-
-        /// <summary>
         /// Called when the session is closed.
         /// </summary>
-        /// <param name="context">The UA server implementation of the ISystemContext interface.</param>
-        /// <param name="sessionId">The session identifier.</param>
-        /// <param name="deleteSubscriptions">if set to <c>true</c> subscriptions are to be deleted.</param>
         void SessionClosing(UaServerOperationContext context, NodeId sessionId, bool deleteSubscriptions);
 
         /// <summary>
         /// Returns true if the node is in the view.
         /// </summary>
-        /// <param name="context">The UA server implementation of the ISystemContext interface.</param>
-        /// <param name="viewId">The view identifier.</param>
-        /// <param name="nodeHandle">The node to check.</param>
-        /// <returns>True if the node is in the view.</returns>
         bool IsNodeInView(UaServerOperationContext context, NodeId viewId, object nodeHandle);
 
         /// <summary>
@@ -61,7 +44,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <remarks>
         /// Returns null if the node does not exist.
-        /// It should return null in case the implementation wishes to handover the task to the parent INodeManager.GetNodeMetadata
+        /// It should return null in case the implementation wishes to handover the task to the parent IUaNodeManager.GetNodeMetadata
         /// </remarks>
         UaNodeMetadata GetPermissionMetadata(
             UaServerOperationContext context,
@@ -69,21 +52,5 @@ namespace Technosoftware.UaServer
             BrowseResultMask resultMask,
             Dictionary<NodeId, List<object>> uniqueNodesServiceAttributesCache,
             bool permissionsOnly);
-
-        /// <summary>
-        /// Validates Role permissions for the specified NodeId
-        /// </summary>
-        /// <param name="operationContext"></param>
-        /// <param name="nodeId"></param>
-        /// <param name="requestedPermission"></param>
-        /// <returns></returns>
-        ServiceResult ValidateRolePermissions(UaServerOperationContext operationContext, NodeId nodeId, PermissionType requestedPermission);
-
-        /// <summary>
-        /// Validates if the specified event monitored item has enough permissions to receive the specified event
-        /// </summary>
-        /// <returns></returns>
-        ServiceResult ValidateEventRolePermissions(IUaEventMonitoredItem monitoredItem, IFilterTarget filterTarget);
-
     }
 }

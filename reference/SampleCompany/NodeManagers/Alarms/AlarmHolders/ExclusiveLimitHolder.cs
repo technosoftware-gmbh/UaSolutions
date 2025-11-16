@@ -11,15 +11,14 @@
 
 #region Using Directives
 using System;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 #pragma warning disable CS0219
 
 namespace SampleCompany.NodeManagers.Alarms
 {
-    class ExclusiveLimitHolder : LimitAlarmTypeHolder
+    internal class ExclusiveLimitHolder : LimitAlarmTypeHolder
     {
         public ExclusiveLimitHolder(
             AlarmNodeManager alarmNodeManager,
@@ -30,9 +29,19 @@ namespace SampleCompany.NodeManagers.Alarms
             Type controllerType,
             int interval,
             bool optional = true,
-            double maxShelveTime = AlarmConstants.NormalMaxTimeShelved,
-            bool create = true) :
-            base(alarmNodeManager, parent, trigger, name, alarmConditionType, controllerType, interval, optional, maxShelveTime, false)
+            double maxShelveTime = AlarmDefines.NORMAL_MAX_TIME_SHELVED,
+            bool create = true)
+            : base(
+                alarmNodeManager,
+                parent,
+                trigger,
+                name,
+                alarmConditionType,
+                controllerType,
+                interval,
+                optional,
+                maxShelveTime,
+                false)
         {
             if (create)
             {
@@ -43,14 +52,11 @@ namespace SampleCompany.NodeManagers.Alarms
         public new void Initialize(
             uint alarmTypeIdentifier,
             string name,
-            double maxTimeShelved = AlarmConstants.NormalMaxTimeShelved)
+            double maxTimeShelved = AlarmDefines.NORMAL_MAX_TIME_SHELVED)
         {
             // Create an alarm and trigger name - Create a base method for creating the trigger, just provide the name
 
-            if (alarm_ == null)
-            {
-                alarm_ = new ExclusiveLimitAlarmState(parent_);
-            }
+            m_alarm ??= new ExclusiveLimitAlarmState(m_parent);
 
             ExclusiveLimitAlarmState alarm = GetAlarm();
 
@@ -59,7 +65,6 @@ namespace SampleCompany.NodeManagers.Alarms
 
             alarm.SetLimitState(SystemContext, LimitAlarmStates.Inactive);
         }
-
 
         public override void SetValue(string message = "")
         {
@@ -71,19 +76,19 @@ namespace SampleCompany.NodeManagers.Alarms
             {
                 LimitAlarmStates state = LimitAlarmStates.Inactive;
 
-                if (newSeverity == AlarmConstants.HighHighSeverity)
+                if (newSeverity == AlarmDefines.HIGHHIGH_SEVERITY)
                 {
                     state = LimitAlarmStates.HighHigh;
                 }
-                else if (newSeverity == AlarmConstants.HighSeverity)
+                else if (newSeverity == AlarmDefines.HIGH_SEVERITY)
                 {
                     state = LimitAlarmStates.High;
                 }
-                else if (newSeverity == AlarmConstants.LowSeverity)
+                else if (newSeverity == AlarmDefines.LOW_SEVERITY)
                 {
                     state = LimitAlarmStates.Low;
                 }
-                else if (newSeverity == AlarmConstants.LowLowSeverity)
+                else if (newSeverity == AlarmDefines.LOWLOW_SEVERITY)
                 {
                     state = LimitAlarmStates.LowLow;
                 }
@@ -96,8 +101,7 @@ namespace SampleCompany.NodeManagers.Alarms
 
         private ExclusiveLimitAlarmState GetAlarm()
         {
-            return (ExclusiveLimitAlarmState)alarm_;
+            return (ExclusiveLimitAlarmState)m_alarm;
         }
-
     }
 }

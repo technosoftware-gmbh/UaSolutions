@@ -1,39 +1,49 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
-using System;
 using System.Globalization;
 using System.IO;
-using Opc.Ua;
-#endregion
 
-namespace Technosoftware.UaServer.Tests
+namespace Opc.Ua.Server.Tests
 {
-
     /// <summary>
     /// A NUnit trace logger replacement.
     /// </summary>
-    public class NUnitTraceLogger
+    public sealed class NUnitTraceLogger
     {
-        private TextWriter writer_;
-        private int traceMasks_;
+        private TextWriter m_writer;
+        private readonly int m_traceMasks;
 
         /// <summary>
         /// Create a nunit trace logger which replaces the default logging.
         /// </summary>
-        public static NUnitTraceLogger Create(
-            TextWriter writer,
-            ApplicationConfiguration config,
-            int traceMasks)
+        public static NUnitTraceLogger Create(TextWriter writer, int traceMasks)
         {
             var traceLogger = new NUnitTraceLogger(writer, traceMasks);
 
@@ -47,7 +57,7 @@ namespace Technosoftware.UaServer.Tests
 
         public void SetWriter(TextWriter writer)
         {
-            writer_ = writer;
+            m_writer = writer;
         }
 
         /// <summary>
@@ -55,8 +65,8 @@ namespace Technosoftware.UaServer.Tests
         /// </summary>
         private NUnitTraceLogger(TextWriter writer, int traceMasks)
         {
-            writer_ = writer;
-            traceMasks_ = traceMasks;
+            m_writer = writer;
+            m_traceMasks = traceMasks;
         }
 
         /// <summary>
@@ -66,13 +76,14 @@ namespace Technosoftware.UaServer.Tests
         /// <param name="e">The trace event args.</param>
         public void TraceEventHandler(object sender, TraceEventArgs e)
         {
-            if ((e.TraceMask & traceMasks_) != 0)
+            if ((e.TraceMask & m_traceMasks) != 0)
             {
                 if (e.Exception != null)
                 {
-                    writer_.WriteLine(e.Exception);
+                    m_writer.WriteLine(e.Exception);
                 }
-                writer_.WriteLine(string.Format(CultureInfo.InvariantCulture, e.Format, e.Arguments ?? Array.Empty<object>()));
+                m_writer.WriteLine(
+                    string.Format(CultureInfo.InvariantCulture, e.Format, e.Arguments ?? []));
             }
         }
     }

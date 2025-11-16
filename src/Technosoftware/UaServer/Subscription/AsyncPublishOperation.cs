@@ -14,21 +14,16 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
 using Opc.Ua;
+#endregion Using Directives
 
-using Technosoftware.UaServer.Server;
-
-#endregion
-
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Stores the state of an asynchronous publish operation.
-    /// </summary>  
+    /// </summary>
     public class AsyncPublishOperation
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncPublishOperation"/> class.
         /// </summary>
@@ -36,19 +31,17 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <param name="request">The request.</param>
         /// <param name="server">The server.</param>
         public AsyncPublishOperation(
-             UaServerOperationContext context,
-             IEndpointIncomingRequest request,
-             UaStandardServer server)
+            UaServerOperationContext context,
+            IEndpointIncomingRequest request,
+            UaStandardServer server)
         {
-            m_context = context;
+            Context = context;
             m_request = request;
             m_server = server;
-            m_response = new PublishResponse();
+            Response = new PublishResponse();
             m_request.Calldata = this;
         }
-        #endregion
 
-        #region IDisposable Members
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
@@ -67,44 +60,30 @@ namespace Technosoftware.UaServer.Subscriptions
                 m_request.OperationCompleted(null, StatusCodes.BadServerHalted);
             }
         }
-        #endregion
 
-        #region Public Members
         /// <summary>
         /// Gets the context.
         /// </summary>
         /// <value>The context.</value>
-        public UaServerOperationContext Context
-        {
-            get { return m_context; }
-        }
+        public UaServerOperationContext Context { get; }
 
         /// <summary>
         /// Gets the request handle.
         /// </summary>
         /// <value>The request handle.</value>
-        public uint RequestHandle
-        {
-            get { return m_request.Request.RequestHeader.RequestHandle; }
-        }
+        public uint RequestHandle => m_request.Request.RequestHeader.RequestHandle;
 
         /// <summary>
         /// Gets the response.
         /// </summary>
         /// <value>The response.</value>
-        public PublishResponse Response
-        {
-            get { return m_response; }
-        }
+        public PublishResponse Response { get; }
 
         /// <summary>
         /// Gets the calldata.
         /// </summary>
         /// <value>The calldata.</value>
-        public object Calldata
-        {
-            get { return m_calldata; }
-        }
+        public object Calldata { get; private set; }
 
         /// <summary>
         /// Schedules a thread to complete the request.
@@ -112,17 +91,11 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <param name="calldata">The data that is used to complete the operation</param>
         public void CompletePublish(object calldata)
         {
-            m_calldata = calldata;
+            Calldata = calldata;
             m_server.ScheduleIncomingRequest(m_request);
         }
-        #endregion
 
-        #region Private Fields
-        private IEndpointIncomingRequest m_request;
-        private UaStandardServer m_server;
-        private UaServerOperationContext m_context;
-        private PublishResponse m_response;
-        private object m_calldata;
-        #endregion
+        private readonly IEndpointIncomingRequest m_request;
+        private readonly UaStandardServer m_server;
     }
 }

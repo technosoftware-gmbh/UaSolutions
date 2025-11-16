@@ -1,57 +1,68 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using System.Threading.Tasks;
-
 using NUnit.Framework;
-using Assert = NUnit.Framework.Legacy.ClassicAssert;
-
 using Opc.Ua;
-#endregion
+using Technosoftware.UaServer;
+using Assert = NUnit.Framework.Legacy.ClassicAssert;
 
 namespace Technosoftware.UaServer.Tests
 {
     /// <summary>
-    /// Test Standard Server stratup.
+    /// Test Standard Server startup.
     /// </summary>
-    [TestFixture, Category("Server")]
-    [SetCulture("en-us"), SetUICulture("en-us")]
+    [TestFixture]
+    [Category("Server")]
+    [SetCulture("en-us")]
+    [SetUICulture("en-us")]
     [Parallelizable]
     public class ServerStartupTests
     {
-        const double MaxAge = 10000;
-        const uint TimeoutHint = 10000;
-
         [DatapointSource]
-        public string[] UriSchemes = [Utils.UriSchemeOpcTcp, Utils.UriSchemeHttps, Utils.UriSchemeOpcHttps];
+        public string[] UriSchemes = [Utils.UriSchemeOpcTcp, Utils.UriSchemeHttps, Utils
+            .UriSchemeOpcHttps];
 
-        #region Test Methods
         /// <summary>
         /// Start a server fixture with different uri schemes.
         /// </summary>
         [Theory]
-        public async Task StartServerAsync(
-            string uriScheme
-            )
+        public async Task StartServerAsync(string uriScheme)
         {
             var fixture = new ServerFixture<UaStandardServer>();
             Assert.NotNull(fixture);
             fixture.UriScheme = uriScheme;
-            var server = await fixture.StartAsync(TestContext.Out).ConfigureAwait(false);
+            UaStandardServer server = await fixture.StartAsync(TestContext.Out).ConfigureAwait(false);
             fixture.SetTraceOutput(TestContext.Out);
             Assert.NotNull(server);
             await Task.Delay(1000).ConfigureAwait(false);
             await fixture.StopAsync().ConfigureAwait(false);
         }
-        #endregion
     }
 }

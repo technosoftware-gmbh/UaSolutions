@@ -1,17 +1,33 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using Opc.Ua;
-#endregion
 
 namespace Technosoftware.UaServer.Tests
 {
@@ -99,6 +115,14 @@ namespace Technosoftware.UaServer.Tests
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos);
 
+        ResponseHeader SetMonitoringMode(
+            RequestHeader requestHeader,
+            uint subscriptionId,
+            MonitoringMode monitoringMode,
+            UInt32Collection monitoredItemIds,
+            out StatusCodeCollection results,
+            out DiagnosticInfoCollection diagnosticInfos);
+
         ResponseHeader Republish(
             RequestHeader requestHeader,
             uint subscriptionId,
@@ -124,11 +148,11 @@ namespace Technosoftware.UaServer.Tests
     /// </summary>
     public class ServerTestServices : IServerTestServices
     {
-        ISessionServer server_;
+        private readonly ISessionServer m_server;
 
         public ServerTestServices(ISessionServer server)
         {
-            server_ = server;
+            m_server = server;
         }
 
         public ResponseHeader Browse(
@@ -139,9 +163,13 @@ namespace Technosoftware.UaServer.Tests
             out BrowseResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return server_.Browse(
-                requestHeader, view, requestedMaxReferencesPerNode,
-                nodesToBrowse, out results, out diagnosticInfos);
+            return m_server.Browse(
+                requestHeader,
+                view,
+                requestedMaxReferencesPerNode,
+                nodesToBrowse,
+                out results,
+                out diagnosticInfos);
         }
 
         public ResponseHeader BrowseNext(
@@ -151,9 +179,12 @@ namespace Technosoftware.UaServer.Tests
             out BrowseResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return server_.BrowseNext(
-                requestHeader, releaseContinuationPoints, continuationPoints,
-                out results, out diagnosticInfos);
+            return m_server.BrowseNext(
+                requestHeader,
+                releaseContinuationPoints,
+                continuationPoints,
+                out results,
+                out diagnosticInfos);
         }
 
         public ResponseHeader CreateSubscription(
@@ -169,9 +200,18 @@ namespace Technosoftware.UaServer.Tests
             out uint revisedLifetimeCount,
             out uint revisedMaxKeepAliveCount)
         {
-            return server_.CreateSubscription(requestHeader, requestedPublishingInterval, requestedLifetimeCount, requestedMaxKeepAliveCount,
-                maxNotificationsPerPublish, publishingEnabled, priority,
-                out subscriptionId, out revisedPublishingInterval, out revisedLifetimeCount, out revisedMaxKeepAliveCount);
+            return m_server.CreateSubscription(
+                requestHeader,
+                requestedPublishingInterval,
+                requestedLifetimeCount,
+                requestedMaxKeepAliveCount,
+                maxNotificationsPerPublish,
+                publishingEnabled,
+                priority,
+                out subscriptionId,
+                out revisedPublishingInterval,
+                out revisedLifetimeCount,
+                out revisedMaxKeepAliveCount);
         }
 
         public ResponseHeader CreateMonitoredItems(
@@ -182,8 +222,13 @@ namespace Technosoftware.UaServer.Tests
             out MonitoredItemCreateResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return server_.CreateMonitoredItems(requestHeader, subscriptionId, timestampsToReturn, itemsToCreate,
-                out results, out diagnosticInfos);
+            return m_server.CreateMonitoredItems(
+                requestHeader,
+                subscriptionId,
+                timestampsToReturn,
+                itemsToCreate,
+                out results,
+                out diagnosticInfos);
         }
 
         public ResponseHeader ModifySubscription(
@@ -198,9 +243,17 @@ namespace Technosoftware.UaServer.Tests
             out uint revisedLifetimeCount,
             out uint revisedMaxKeepAliveCount)
         {
-            return server_.ModifySubscription(requestHeader, subscriptionId, requestedPublishingInterval,
-                requestedLifetimeCount, requestedMaxKeepAliveCount, maxNotificationsPerPublish,
-                priority, out revisedPublishingInterval, out revisedLifetimeCount, out revisedMaxKeepAliveCount);
+            return m_server.ModifySubscription(
+                requestHeader,
+                subscriptionId,
+                requestedPublishingInterval,
+                requestedLifetimeCount,
+                requestedMaxKeepAliveCount,
+                maxNotificationsPerPublish,
+                priority,
+                out revisedPublishingInterval,
+                out revisedLifetimeCount,
+                out revisedMaxKeepAliveCount);
         }
 
         public ResponseHeader ModifyMonitoredItems(
@@ -211,7 +264,13 @@ namespace Technosoftware.UaServer.Tests
             out MonitoredItemModifyResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return server_.ModifyMonitoredItems(requestHeader, subscriptionId, timestampsToReturn, itemsToModify, out results, out diagnosticInfos);
+            return m_server.ModifyMonitoredItems(
+                requestHeader,
+                subscriptionId,
+                timestampsToReturn,
+                itemsToModify,
+                out results,
+                out diagnosticInfos);
         }
 
         public ResponseHeader Publish(
@@ -224,8 +283,15 @@ namespace Technosoftware.UaServer.Tests
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return server_.Publish(requestHeader, subscriptionAcknowledgements, out subscriptionId, out availableSequenceNumbers,
-                out moreNotifications, out notificationMessage, out results, out diagnosticInfos);
+            return m_server.Publish(
+                requestHeader,
+                subscriptionAcknowledgements,
+                out subscriptionId,
+                out availableSequenceNumbers,
+                out moreNotifications,
+                out notificationMessage,
+                out results,
+                out diagnosticInfos);
         }
 
         public ResponseHeader SetPublishingMode(
@@ -235,7 +301,29 @@ namespace Technosoftware.UaServer.Tests
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return server_.SetPublishingMode(requestHeader, publishingEnabled, subscriptionIds, out results, out diagnosticInfos);
+            return m_server.SetPublishingMode(
+                requestHeader,
+                publishingEnabled,
+                subscriptionIds,
+                out results,
+                out diagnosticInfos);
+        }
+
+        public ResponseHeader SetMonitoringMode(
+            RequestHeader requestHeader,
+            uint subscriptionId,
+            MonitoringMode monitoringMode,
+            UInt32Collection monitoredItemIds,
+            out StatusCodeCollection results,
+            out DiagnosticInfoCollection diagnosticInfos)
+        {
+            return m_server.SetMonitoringMode(
+                requestHeader,
+                subscriptionId,
+                monitoringMode,
+                monitoredItemIds,
+                out results,
+                out diagnosticInfos);
         }
 
         public ResponseHeader Republish(
@@ -244,7 +332,11 @@ namespace Technosoftware.UaServer.Tests
             uint retransmitSequenceNumber,
             out NotificationMessage notificationMessage)
         {
-            return server_.Republish(requestHeader, subscriptionId, retransmitSequenceNumber, out notificationMessage);
+            return m_server.Republish(
+                requestHeader,
+                subscriptionId,
+                retransmitSequenceNumber,
+                out notificationMessage);
         }
 
         public ResponseHeader DeleteSubscriptions(
@@ -253,7 +345,11 @@ namespace Technosoftware.UaServer.Tests
             out StatusCodeCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return server_.DeleteSubscriptions(requestHeader, subscriptionIds, out results, out diagnosticInfos);
+            return m_server.DeleteSubscriptions(
+                requestHeader,
+                subscriptionIds,
+                out results,
+                out diagnosticInfos);
         }
 
         public ResponseHeader TransferSubscriptions(
@@ -263,7 +359,12 @@ namespace Technosoftware.UaServer.Tests
             out TransferResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return server_.TransferSubscriptions(requestHeader, subscriptionIds, sendInitialValues, out results, out diagnosticInfos);
+            return m_server.TransferSubscriptions(
+                requestHeader,
+                subscriptionIds,
+                sendInitialValues,
+                out results,
+                out diagnosticInfos);
         }
 
         public ResponseHeader TranslateBrowsePathsToNodeIds(
@@ -272,9 +373,11 @@ namespace Technosoftware.UaServer.Tests
             out BrowsePathResultCollection results,
             out DiagnosticInfoCollection diagnosticInfos)
         {
-            return server_.TranslateBrowsePathsToNodeIds(
-                requestHeader, browsePaths,
-                out results, out diagnosticInfos);
+            return m_server.TranslateBrowsePathsToNodeIds(
+                requestHeader,
+                browsePaths,
+                out results,
+                out diagnosticInfos);
         }
     }
 }

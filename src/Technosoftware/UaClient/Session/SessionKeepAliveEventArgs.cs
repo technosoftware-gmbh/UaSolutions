@@ -1,4 +1,4 @@
-﻿#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
@@ -24,6 +24,7 @@ namespace Technosoftware.UaClient
     /// <summary>
     /// The event arguments provided when a keep alive response arrives.
     /// </summary>
+    [Obsolete("Use KeepAliveEventArgs instead.")]
     public class SessionKeepAliveEventArgs : EventArgs
     {
         #region Constructors, Destructor, Initialization

@@ -14,13 +14,13 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
     /// <summary>
     /// The current publishing state for a subscription.
-    /// </summary>  
+    /// </summary>
     public enum UaPublishingState
     {
         /// <summary>

@@ -27,9 +27,9 @@
     <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
     <ProjectReference Include="..\..\..\src\Technosoftware\UaClient\Technosoftware.UaClient.csproj" />
   </ItemGroup>
   <ItemGroup>

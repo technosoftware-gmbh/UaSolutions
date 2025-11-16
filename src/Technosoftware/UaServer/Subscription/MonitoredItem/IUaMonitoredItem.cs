@@ -16,10 +16,8 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-
 using Opc.Ua;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -37,7 +35,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The session that owns the monitored item.
         /// </summary>
-        Sessions.Session Session { get; }
+        IUaSession Session { get; }
 
         /// <summary>
         /// The monitored items owner identity.
@@ -100,6 +98,11 @@ namespace Technosoftware.UaServer
         bool IsResendData { get; }
 
         /// <summary>
+        /// The node id being monitored.
+        /// </summary>
+        NodeId NodeId { get; }
+
+        /// <summary>
         /// Set the resend data trigger flag.
         /// </summary>
         void SetupResendDataTrigger();
@@ -128,6 +131,12 @@ namespace Technosoftware.UaServer
         /// Return a <see cref="IUaStoredMonitoredItem"/> for restore a after a server restart
         /// </summary>
         IUaStoredMonitoredItem ToStorableMonitoredItem();
+
+        /// <summary>
+        /// Changes the monitoring mode for the item.
+        /// returns the previous monitoring mode.
+        /// </summary>
+        MonitoringMode SetMonitoringMode(MonitoringMode monitoringMode);
     }
 
     /// <summary>
@@ -163,6 +172,11 @@ namespace Technosoftware.UaServer
         void QueueEvent(IFilterTarget instance);
 
         /// <summary>
+        /// Adds an event to the queue.
+        /// </summary>
+        void QueueEvent(IFilterTarget instance, bool bypassFilter);
+
+        /// <summary>
         /// The filter used by the monitored item.
         /// </summary>
         EventFilter EventFilter { get; }
@@ -170,8 +184,11 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Publishes all available event notifications.
         /// </summary>
-        /// <returns>True if the caller should re-queue the item for publishing after the next interval elapses.</returns>
-        bool Publish(UaServerOperationContext context, Queue<EventFieldList> notifications, uint maxNotificationsPerPublish);
+        /// <returns>True if the caller should re-queue the item for publishing after the next interval elaspses.</returns>
+        bool Publish(
+            UaServerOperationContext context,
+            Queue<EventFieldList> notifications,
+            uint maxNotificationsPerPublish);
 
         /// <summary>
         /// Modifies the attributes for monitored item.
@@ -186,11 +203,6 @@ namespace Technosoftware.UaServer
             double samplingInterval,
             uint queueSize,
             bool discardOldest);
-
-        /// <summary>
-        /// Changes the monitoring mode for the item.
-        /// </summary>
-        void SetMonitoringMode(MonitoringMode monitoringMode);
     }
 
     /// <summary>
@@ -211,7 +223,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Publishes all available data change notifications.
         /// </summary>
-        /// <returns>True if the caller should re-queue the item for publishing after the next interval elapses.</returns>
+        /// <returns>True if the caller should re-queue the item for publishing after the next interval elaspses.</returns>
         bool Publish(
             UaServerOperationContext context,
             Queue<MonitoredItemNotification> notifications,
@@ -240,6 +252,27 @@ namespace Technosoftware.UaServer
         QualifiedName DataEncoding { get; }
 
         /// <summary>
+        /// Whether the monitored item should report a value without checking if it was changed.
+        /// </summary>
+        bool AlwaysReportUpdates { get; set; }
+
+        /// <summary>
+        /// Sets a flag indicating that the semantics for the monitored node have changed.
+        /// </summary>
+        /// <remarks>
+        /// The StatusCode for next value reported by the monitored item will have the SemanticsChanged bit set.
+        /// </remarks>
+        void SetSemanticsChanged();
+
+        /// <summary>
+        /// Sets a flag indicating that the structure of the monitored node has changed.
+        /// </summary>
+        /// <remarks>
+        /// The StatusCode for next value reported by the monitored item will have the StructureChanged bit set.
+        /// </remarks>
+        void SetStructureChanged();
+
+        /// <summary>
         /// Updates the queue with a data value or an error.
         /// </summary>
         void QueueValue(DataValue value, ServiceResult error, bool ignoreFilters);
@@ -266,6 +299,11 @@ namespace Technosoftware.UaServer
         double MinimumSamplingInterval { get; }
 
         /// <summary>
+        /// The number of milliseconds until the next sample.
+        /// </summary>
+        int TimeToNextSample { get; }
+
+        /// <summary>
         /// Used to check whether the item is ready to sample.
         /// </summary>
         bool SamplingIntervalExpired();
@@ -290,11 +328,6 @@ namespace Technosoftware.UaServer
             bool discardOldest);
 
         /// <summary>
-        /// Changes the monitoring mode for the item.
-        /// </summary>
-        void SetMonitoringMode(MonitoringMode monitoringMode);
-
-        /// <summary>
         /// Updates the sampling interval for an item.
         /// </summary>
         void SetSamplingInterval(double samplingInterval);
@@ -306,7 +339,7 @@ namespace Technosoftware.UaServer
     /// <remarks>
     /// Bits 1-8 are reserved for internal use. NodeManagers may use other bits.
     /// </remarks>
-    public static class UaMonitoredItemTypeMask
+    public static class MonitoredItemTypeMask
     {
         /// <summary>
         /// The monitored item subscribes to data changes.

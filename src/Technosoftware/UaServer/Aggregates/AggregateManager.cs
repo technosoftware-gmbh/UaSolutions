@@ -15,12 +15,11 @@
 
 #region Using Directives
 using System;
-using System.Collections.Generic;
-
+using System.Threading;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Aggregates
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// An object that manages aggregate factories supported by the server.
@@ -37,8 +36,8 @@ namespace Technosoftware.UaServer.Aggregates
             m_factories = [];
             m_minimumProcessingInterval = 1000;
         }
-        #endregion
-
+        #endregion Constructors, Destructor, Initialization
+        
         #region IDisposable Members
         /// <summary>
         /// Frees any unmanaged resources.
@@ -46,12 +45,12 @@ namespace Technosoftware.UaServer.Aggregates
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", MessageId = "m_requestTimer")]
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -59,7 +58,7 @@ namespace Technosoftware.UaServer.Aggregates
                 // TBD
             }
         }
-        #endregion
+        #endregion IDisposable Members
 
         #region Public Members
         /// <summary>
@@ -92,7 +91,6 @@ namespace Technosoftware.UaServer.Aggregates
                     return m_minimumProcessingInterval;
                 }
             }
-
             set
             {
                 lock (m_lock)
@@ -111,15 +109,14 @@ namespace Technosoftware.UaServer.Aggregates
         {
             lock (m_lock)
             {
-                if (m_defaultConfiguration == null)
+                m_defaultConfiguration ??= new AggregateConfiguration
                 {
-                    m_defaultConfiguration = new AggregateConfiguration();
-                    m_defaultConfiguration.PercentDataBad = 100;
-                    m_defaultConfiguration.PercentDataGood = 100;
-                    m_defaultConfiguration.TreatUncertainAsBad = false;
-                    m_defaultConfiguration.UseSlopedExtrapolation = false;
-                    m_defaultConfiguration.UseServerCapabilitiesDefaults = false;
-                }
+                    PercentDataBad = 100,
+                    PercentDataGood = 100,
+                    TreatUncertainAsBad = false,
+                    UseSlopedExtrapolation = false,
+                    UseServerCapabilitiesDefaults = false
+                };
 
                 return m_defaultConfiguration;
             }
@@ -146,7 +143,6 @@ namespace Technosoftware.UaServer.Aggregates
         /// <param name="processingInterval">The processing interval.</param>
         /// <param name="stepped">Whether stepped interpolation should be used.</param>
         /// <param name="configuration">The configuration to use.</param>
-        /// <returns></returns>
         public IUaAggregateCalculator CreateCalculator(
             NodeId aggregateId,
             DateTime startTime,
@@ -176,14 +172,13 @@ namespace Technosoftware.UaServer.Aggregates
                 configuration = GetDefaultConfiguration(null);
             }
 
-            IUaAggregateCalculator calculator = factory(aggregateId, startTime, endTime, processingInterval, stepped, configuration);
-
-            if (calculator == null)
-            {
-                return null;
-            }
-
-            return calculator;
+            return factory(
+                aggregateId,
+                startTime,
+                endTime,
+                processingInterval,
+                stepped,
+                configuration);
         }
 
         /// <summary>
@@ -192,17 +187,17 @@ namespace Technosoftware.UaServer.Aggregates
         /// <param name="aggregateId">The id of the aggregate function.</param>
         /// <param name="aggregateName">The id of the aggregate name.</param>
         /// <param name="factory">The factory used to create calculators.</param>
-        public void RegisterFactory(NodeId aggregateId, string aggregateName, AggregatorFactory factory)
+        public void RegisterFactory(
+            NodeId aggregateId,
+            string aggregateName,
+            AggregatorFactory factory)
         {
             lock (m_lock)
             {
                 m_factories[aggregateId] = factory;
             }
 
-            if (m_server != null)
-            {
-                m_server.DiagnosticsNodeManager.AddAggregateFunction(aggregateId, aggregateName, true);
-            }
+            m_server?.DiagnosticsNodeManager.AddAggregateFunction(aggregateId, aggregateName, true);
         }
 
         /// <summary>
@@ -216,17 +211,17 @@ namespace Technosoftware.UaServer.Aggregates
                 m_factories.Remove(aggregateId);
             }
         }
-        #endregion
+        #endregion Public Members
 
         #region Private Methods
-        #endregion
+        #endregion Private Methods
 
         #region Private Fields
-        private readonly object m_lock = new object();
+        private readonly Lock m_lock = new();
         private readonly IUaServerData m_server;
         private AggregateConfiguration m_defaultConfiguration;
-        private NodeIdDictionary<AggregatorFactory> m_factories;
+        private readonly NodeIdDictionary<AggregatorFactory> m_factories;
         private double m_minimumProcessingInterval;
-        #endregion
+        #endregion Private Fields
     }
 }

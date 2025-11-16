@@ -10,15 +10,9 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 using Opc.Ua;
-
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.MemoryBuffer
 {
@@ -33,7 +27,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         public MemoryBufferMonitoredItem(
             IUaServerData server,
             IUaNodeManager nodeManager,
-            object mangerHandle,
+            object managerHandle,
             uint offset,
             uint subscriptionId,
             uint id,
@@ -50,11 +44,10 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             bool discardOldest,
             double minimumSamplingInterval,
             bool createDurable)
-        :
-            base(
+            : base(
                 server,
                 nodeManager,
-                mangerHandle,
+                managerHandle,
                 subscriptionId,
                 id,
                 itemToMonitor,
@@ -71,7 +64,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 minimumSamplingInterval,
                 createDurable)
         {
-            offset_ = offset;
+            Offset = offset;
         }
 
         /// <summary>
@@ -83,14 +76,9 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             object managerHandle,
             uint offset,
             IUaStoredMonitoredItem storedMonitoredItem)
-        :
-            base(
-                server,
-                nodeManager,
-                managerHandle,
-                storedMonitoredItem)
+            : base(server, nodeManager, managerHandle, storedMonitoredItem)
         {
-            offset_ = offset;
+            Offset = offset;
         }
 
         /// <summary>
@@ -102,7 +90,8 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             uint clientHandle,
             double samplingInterval)
         {
-            return base.ModifyAttributes(diagnosticsMasks,
+            return ModifyAttributes(
+                diagnosticsMasks,
                 timestampsToReturn,
                 clientHandle,
                 null,
@@ -116,14 +105,6 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         /// <summary>
         /// The offset in the memory buffer.
         /// </summary>
-        public uint Offset
-        {
-            get
-            {
-                return offset_;
-            }
-        }
-
-        private uint offset_;
+        public uint Offset { get; }
     }
 }

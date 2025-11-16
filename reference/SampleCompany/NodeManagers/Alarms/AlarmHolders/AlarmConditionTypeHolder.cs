@@ -12,11 +12,8 @@
 #region Using Directives
 using System;
 using System.Globalization;
-
 using Opc.Ua;
-#endregion
-
-#pragma warning disable CS1591
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
@@ -31,9 +28,18 @@ namespace SampleCompany.NodeManagers.Alarms
             Type controllerType,
             int interval,
             bool optional = true,
-            double maxShelveTime = AlarmConstants.NormalMaxTimeShelved,
-            bool create = true) :
-            base(alarmNodeManager, parent, trigger, name, alarmConditionType, controllerType, interval, optional, false)
+            double maxShelveTime = AlarmDefines.NORMAL_MAX_TIME_SHELVED,
+            bool create = true)
+            : base(
+                alarmNodeManager,
+                parent,
+                trigger,
+                name,
+                alarmConditionType,
+                controllerType,
+                interval,
+                optional,
+                false)
         {
             if (create)
             {
@@ -44,59 +50,49 @@ namespace SampleCompany.NodeManagers.Alarms
         public void Initialize(
             uint alarmTypeIdentifier,
             string name,
-            double maxTimeShelved = AlarmConstants.NormalMaxTimeShelved)
+            double maxTimeShelved = AlarmDefines.NORMAL_MAX_TIME_SHELVED)
         {
             // Create an alarm and trigger name - Create a base method for creating the trigger, just provide the name
 
-            if (alarm_ == null)
-            {
-                alarm_ = new AlarmConditionState(parent_);
-            }
+            m_alarm ??= new AlarmConditionState(m_parent);
 
             AlarmConditionState alarm = GetAlarm();
 
             if (Optional)
             {
-                if (alarm.SuppressedState == null)
-                {
-                    alarm.SuppressedState = new TwoStateVariableState(alarm);
-                }
+                alarm.SuppressedState ??= new TwoStateVariableState(alarm);
 
-
-                if (alarm.OutOfServiceState == null)
-                {
-                    alarm.OutOfServiceState = new TwoStateVariableState(alarm);
-                }
+                alarm.OutOfServiceState ??= new TwoStateVariableState(alarm);
 
                 if (alarm.ShelvingState == null)
                 {
                     alarm.ShelvingState = new ShelvedStateMachineState(alarm);
-                    alarm.ShelvingState.Create(SystemContext,
+                    alarm.ShelvingState.Create(
+                        SystemContext,
                         null,
                         BrowseNames.ShelvingState,
                         BrowseNames.ShelvingState,
                         false);
                 }
-                if (alarm.MaxTimeShelved == null)
-                {
-                    // Off normal does not create MaxTimeShelved.
-                    alarm.MaxTimeShelved = new PropertyState<double>(alarm);
-                }
-
+                // Off normal does not create MaxTimeShelved.
+                alarm.MaxTimeShelved ??= new PropertyState<double>(alarm);
             }
-
 
             // Call the base class to set parameters
             base.Initialize(alarmTypeIdentifier, name);
 
             alarm.SetActiveState(SystemContext, active: false);
-            alarm.InputNode.Value = new NodeId(trigger_.NodeId);
+            alarm.InputNode.Value = new NodeId(m_trigger.NodeId);
 
             if (Optional)
             {
                 alarm.SetSuppressedState(SystemContext, suppressed: false);
-                alarm.SetShelvingState(SystemContext, shelved: false, oneShot: false, shelvingTime: Double.MaxValue);
-                alarm.ShelvingState.LastTransition.Value = new LocalizedText("");
+                alarm.SetShelvingState(
+                    SystemContext,
+                    shelved: false,
+                    oneShot: false,
+                    shelvingTime: double.MaxValue);
+                alarm.ShelvingState.LastTransition.Value = new LocalizedText(string.Empty);
                 alarm.ShelvingState.LastTransition.Id.Value = 0;
 
                 alarm.OnShelve = OnShelve;
@@ -105,10 +101,8 @@ namespace SampleCompany.NodeManagers.Alarms
 
                 alarm.MaxTimeShelved.Value = maxTimeShelved;
 
-                alarm.LatchedState.Value = new LocalizedText("");
+                alarm.LatchedState.Value = new LocalizedText(string.Empty);
                 alarm.LatchedState.Id.Value = false;
-
-
             }
             else
             {
@@ -121,12 +115,10 @@ namespace SampleCompany.NodeManagers.Alarms
         }
 
         #region Overrides
-
         public override void SetValue(string message = "")
         {
-            var setValue = false;
+            bool setValue = false;
             AlarmConditionState alarm = GetAlarm();
-
 
             if (ShouldEvent())
             {
@@ -137,17 +129,18 @@ namespace SampleCompany.NodeManagers.Alarms
 
             if (UpdateSuppression())
             {
-                if (message.Length <= 0)
+                if (message.Length == 0)
                 {
-                    message = "Updating due to Shelving State Update: " + alarm.ShelvingState.CurrentState.Value.ToString();
+                    message = "Updating due to Shelving State Update: " +
+                        alarm.ShelvingState.CurrentState.Value;
                 }
                 setValue = true;
             }
             else if (UpdateSuppression())
             {
-                if (message.Length <= 0)
+                if (message.Length == 0)
                 {
-                    message = "Updating due to Suppression Update: " + alarm.SuppressedState.Value.ToString();
+                    message = "Updating due to Suppression Update: " + alarm.SuppressedState.Value;
                 }
                 setValue = true;
             }
@@ -162,57 +155,52 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             AlarmConditionState alarm = GetAlarm();
 
-            var retainState = true;
+            bool retainState = true;
 
-            if (!alarm.ActiveState.Id.Value)
+            if (!alarm.ActiveState.Id.Value && alarm.AckedState.Id.Value)
             {
-                if (alarm.AckedState.Id.Value)
+                if (Optional)
                 {
-                    if (Optional)
-                    {
-                        if (alarm.ConfirmedState.Id.Value)
-                        {
-                            retainState = false;
-                        }
-                    }
-                    else
+                    if (alarm.ConfirmedState.Id.Value)
                     {
                         retainState = false;
                     }
+                }
+                else
+                {
+                    retainState = false;
                 }
             }
 
             return retainState;
         }
 
-        protected override void SetActive(BaseEventState baseEvent, bool activeState)
+        protected override void SetActive(BaseEventState state, bool activeState)
         {
-            AlarmConditionState alarm = GetAlarm(baseEvent);
+            AlarmConditionState alarm = GetAlarm(state);
             alarm.SetActiveState(SystemContext, activeState);
         }
 
         protected override bool UpdateShelving()
         {
             // Don't have to worry about changing state to Unshelved, there is an SDK timer to deal with that.
-            var update = false;
-
-            return update;
+            return false;
         }
 
         protected override bool UpdateSuppression()
         {
-            var update = false;
+            bool update = false;
             if (Optional)
             {
                 AlarmConditionState alarm = GetAlarm();
 
-                if (alarmController_.ShouldSuppress())
+                if (m_alarmController.ShouldSuppress())
                 {
                     alarm.SetSuppressedState(SystemContext, true);
                     update = true;
                 }
 
-                if (alarmController_.ShouldUnsuppress())
+                if (m_alarmController.ShouldUnsuppress())
                 {
                     alarm.SetSuppressedState(SystemContext, false);
                     update = true;
@@ -220,25 +208,17 @@ namespace SampleCompany.NodeManagers.Alarms
             }
             return update;
         }
-
-        #endregion
+        #endregion Overrides
 
         #region Helpers
-
         private AlarmConditionState GetAlarm(BaseEventState alarm = null)
         {
-            if (alarm == null)
-            {
-                alarm = alarm_;
-            }
+            alarm ??= m_alarm;
             return (AlarmConditionState)alarm;
         }
-
-
-        #endregion
+        #endregion Helpers
 
         #region Methods
-
         private ServiceResult OnShelve(
             ISystemContext context,
             AlarmConditionState alarm,
@@ -246,12 +226,20 @@ namespace SampleCompany.NodeManagers.Alarms
             bool oneShot,
             double shelvingTime)
         {
-            var shelved = "Shelved";
-            var dueTo = "";
+            string shelved = "Shelved";
+            string dueTo = string.Empty;
 
             if (shelving)
             {
-                dueTo = oneShot ? " due to OneShotShelve" : " due to TimedShelve of " + shelvingTime.ToString(CultureInfo.InvariantCulture);
+                if (oneShot)
+                {
+                    dueTo = " due to OneShotShelve";
+                }
+                else
+                {
+                    dueTo = " due to TimedShelve of " +
+                        shelvingTime.ToString(CultureInfo.InvariantCulture);
+                }
             }
             else
             {
@@ -267,9 +255,7 @@ namespace SampleCompany.NodeManagers.Alarms
         /// <summary>
         /// Called when the alarm is shelved.
         /// </summary>
-        private ServiceResult OnTimedUnshelve(
-            ISystemContext context,
-            AlarmConditionState alarm)
+        private ServiceResult OnTimedUnshelve(ISystemContext context, AlarmConditionState alarm)
         {
             // update the alarm state and produce and event.
             alarm.Message.Value = "The timed shelving period expired.";
@@ -279,7 +265,6 @@ namespace SampleCompany.NodeManagers.Alarms
 
             return ServiceResult.Good;
         }
-
-        #endregion
+        #endregion Methods
     }
 }

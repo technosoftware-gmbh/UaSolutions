@@ -1,31 +1,43 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
-
-#region Using Directives
+/* ========================================================================
+ * Copyright (c) 2005-2024 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
-
 using Opc.Ua;
-using SampleCompany.NodeManagers.Reference;
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.NodeManager;
-using Technosoftware.UaServer.Sessions;
-using Technosoftware.UaServer.Tests;
-#endregion
+using SampleCompany.NodeManagers.Reference;
 
 namespace Technosoftware.UaClient.Tests
 {
     /// <summary>
+    /// <para>
     /// Reference Server modification which allows to change the maximum number
     /// of (browse) continuation points during the execution of a test.
     /// This makes it easier to compare browse results without any restriction
@@ -34,13 +46,15 @@ namespace Technosoftware.UaClient.Tests
     /// To make this work some other classes must be derived and modified, as
     /// well (see the ServerSessionWithLimits, SessionManagerWithLimits and
     /// MasterNodeManagerWithLimits classes).
-    ///
+    /// </para>
+    /// <para>
     /// Use with care. This class and especially its dedicated functionality
     /// should be used for test purposes only.
+    /// </para>
     /// </summary>
     public class ReferenceServerWithLimits : ReferenceServer
     {
-        public uint Test_MaxBrowseReferencesPerNode { get; set; } = 10u;
+        public uint TestMaxBrowseReferencesPerNode { get; set; } = 10u;
         private MasterNodeManager MasterNodeManagerReference { get; set; }
         private SessionManagerWithLimits SessionManagerForTest { get; set; }
 
@@ -55,54 +69,66 @@ namespace Technosoftware.UaClient.Tests
             return base.Browse(
                 requestHeader,
                 view,
-                Test_MaxBrowseReferencesPerNode,
+                TestMaxBrowseReferencesPerNode,
                 nodesToBrowse,
                 out results,
-                out diagnosticInfos
-                );
-
+                out diagnosticInfos);
         }
 
         public void SetMaxNumberOfContinuationPoints(uint maxNumberOfContinuationPoints)
         {
-            Configuration.ServerConfiguration.MaxBrowseContinuationPoints = (int)maxNumberOfContinuationPoints;
-            ((MasterNodeManagerWithLimits)MasterNodeManagerReference).MaxContinuationPointsPerBrowseForUnitTest = maxNumberOfContinuationPoints;
-            List<Technosoftware.UaServer.Sessions.Session> theServerSideSessions = SessionManagerForTest.GetSessions().ToList();
-            foreach (Technosoftware.UaServer.Sessions.Session session in theServerSideSessions)
+            Configuration.ServerConfiguration.MaxBrowseContinuationPoints
+                = (int)maxNumberOfContinuationPoints;
+            ((MasterNodeManagerWithLimits)MasterNodeManagerReference)
+                .MaxContinuationPointsPerBrowseForUnitTest =
+                maxNumberOfContinuationPoints;
+            foreach (UaServer.IUaSession session in SessionManagerForTest.GetSessions().ToList())
             {
                 try
                 {
-                    ((ServerSessionWithLimits)session).SetMaxNumberOfContinuationPoints(maxNumberOfContinuationPoints);
+                    ((ServerSessionWithLimits)session).SetMaxNumberOfContinuationPoints(
+                        maxNumberOfContinuationPoints);
                 }
-                catch { }
+                catch
+                {
+                }
             }
-
         }
 
-        protected override MasterNodeManager CreateMasterNodeManager(IUaServerData server, ApplicationConfiguration configuration)
+        protected override MasterNodeManager CreateMasterNodeManager(
+            IUaServerData server,
+            ApplicationConfiguration configuration)
         {
-            Utils.LogInfo(Utils.TraceMasks.StartStop, "Creating the Reference Server Node Manager.");
+            Utils.LogInfo(
+                Utils.TraceMasks.StartStop,
+                "Creating the Reference Server Node Manager.");
 
             IList<IUaNodeManager> nodeManagers =
             [
                 // create the custom node manager.
-                new ReferenceServerNodeManager(server, configuration),
+                new ReferenceServerNodeManager(server, configuration)
             ];
 
-            foreach (var nodeManagerFactory in NodeManagerFactories)
+            foreach (IUaNodeManagerFactory nodeManagerFactory in NodeManagerFactories)
             {
                 nodeManagers.Add(nodeManagerFactory.Create(server, configuration));
             }
             //this.MasterNodeManagerReference = new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
-            this.MasterNodeManagerReference = new MasterNodeManagerWithLimits(server, configuration, null, nodeManagers.ToArray());
+            MasterNodeManagerReference = new MasterNodeManagerWithLimits(
+                server,
+                configuration,
+                null,
+                [.. nodeManagers]);
             // create master node manager.
-            return this.MasterNodeManagerReference;
+            return MasterNodeManagerReference;
         }
 
-        protected override SessionManager CreateSessionManager(IUaServerData server, ApplicationConfiguration configuration)
+        protected override IUaSessionManager CreateSessionManager(
+            IUaServerData server,
+            ApplicationConfiguration configuration)
         {
-            this.SessionManagerForTest = new SessionManagerWithLimits(server, configuration);
-            return this.SessionManagerForTest;
+            SessionManagerForTest = new SessionManagerWithLimits(server, configuration);
+            return SessionManagerForTest;
         }
     }
 
@@ -110,7 +136,7 @@ namespace Technosoftware.UaClient.Tests
     /// provide a means to set the maximum number of browse continuation points to
     /// the (Server) session.
     /// </summary>
-    public class ServerSessionWithLimits : Technosoftware.UaServer.Sessions.Session
+    public class ServerSessionWithLimits : UaServer.Session
     {
         public ServerSessionWithLimits(
             UaServerOperationContext context,
@@ -120,8 +146,7 @@ namespace Technosoftware.UaClient.Tests
             byte[] clientNonce,
             Nonce serverNonce,
             string sessionName,
-            ApplicationDescription
-            clientDescription,
+            ApplicationDescription clientDescription,
             string endpointUrl,
             X509Certificate2 clientCertificate,
             X509Certificate2Collection clientCertificateChain,
@@ -129,25 +154,22 @@ namespace Technosoftware.UaClient.Tests
             uint maxResponseMessageSize,
             double maxRequestAge,
             int maxBrowseContinuationPoints,
-            int maxHistoryContinuationPoints
-                ) : base(
-                    context,
-                    server,
-                    serverCertificate,
-                    authenticationToken,
-                    clientNonce,
-                    serverNonce,
-                    sessionName,
-                    clientDescription,
-                    endpointUrl,
-                    clientCertificate,
-                    clientCertificateChain,
-                    sessionTimeout,
-                    maxResponseMessageSize,
-                    maxRequestAge,
-                    maxBrowseContinuationPoints,
-                    maxHistoryContinuationPoints
-                    )
+            int maxHistoryContinuationPoints)
+            : base(
+                context,
+                server,
+                serverCertificate,
+                authenticationToken,
+                clientNonce,
+                serverNonce,
+                sessionName,
+                clientDescription,
+                endpointUrl,
+                clientCertificate,
+                clientCertificateChain,
+                sessionTimeout,
+                maxBrowseContinuationPoints,
+                maxHistoryContinuationPoints)
         {
         }
 
@@ -160,21 +182,30 @@ namespace Technosoftware.UaClient.Tests
     /// <summary>
     /// ensures that the (Server) session is the derived one for the test.
     /// </summary>
-    public class SessionManagerWithLimits : Technosoftware.UaServer.Sessions.SessionManager
+    public class SessionManagerWithLimits : SessionManager
     {
-        private IUaServerData m_4TestServer;
-        private int m_4TestMaxRequestAge;
-        private int m_4TestMaxBrowseContinuationPoints;
-        private int m_4TestMaxHistoryContinuationPoints;
-        public SessionManagerWithLimits(IUaServerData server, ApplicationConfiguration configuration) : base(server, configuration)
+        private readonly IUaServerData m_4TestServer;
+        private readonly int m_4TestMaxRequestAge;
+        private readonly int m_4TestMaxBrowseContinuationPoints;
+        private readonly int m_4TestMaxHistoryContinuationPoints;
+
+        public SessionManagerWithLimits(
+            IUaServerData server,
+            ApplicationConfiguration configuration)
+            : base(server, configuration)
         {
             m_4TestServer = server;
             m_4TestMaxRequestAge = configuration.ServerConfiguration.MaxRequestAge;
-            m_4TestMaxBrowseContinuationPoints = configuration.ServerConfiguration.MaxBrowseContinuationPoints;
-            m_4TestMaxHistoryContinuationPoints = configuration.ServerConfiguration.MaxHistoryContinuationPoints;
+            m_4TestMaxBrowseContinuationPoints = configuration.ServerConfiguration
+                .MaxBrowseContinuationPoints;
+            m_4TestMaxHistoryContinuationPoints = configuration.ServerConfiguration
+                .MaxHistoryContinuationPoints;
         }
 
-        protected override Technosoftware.UaServer.Sessions.Session CreateSession(
+        /// <summary>
+        /// TBD - Remove unused parameter.
+        /// </summary>
+        protected override UaServer.IUaSession CreateSession(
             UaServerOperationContext context,
             IUaServerData server,
             X509Certificate2 serverCertificate,
@@ -189,9 +220,9 @@ namespace Technosoftware.UaClient.Tests
             double sessionTimeout,
             uint maxResponseMessageSize,
             int maxRequestAge, // TBD - Remove unused parameter.
-            int maxContinuationPoints) // TBD - Remove unused parameter.
+            int maxContinuationPoints)
         {
-            ServerSessionWithLimits session = new ServerSessionWithLimits(
+            return new ServerSessionWithLimits(
                 context,
                 m_4TestServer,
                 serverCertificate,
@@ -208,8 +239,6 @@ namespace Technosoftware.UaClient.Tests
                 m_4TestMaxRequestAge,
                 m_4TestMaxBrowseContinuationPoints,
                 m_4TestMaxHistoryContinuationPoints);
-
-            return (Technosoftware.UaServer.Sessions.Session)session;
         }
     }
 
@@ -219,16 +248,22 @@ namespace Technosoftware.UaClient.Tests
     /// </summary>
     public class MasterNodeManagerWithLimits : MasterNodeManager
     {
-        public MasterNodeManagerWithLimits(IUaServerData server, ApplicationConfiguration configuration, string dynamicNamespaceUri, params IUaNodeManager[] additionalManagers) : base(server, configuration, dynamicNamespaceUri, additionalManagers)
+        public MasterNodeManagerWithLimits(
+            IUaServerData server,
+            ApplicationConfiguration configuration,
+            string dynamicNamespaceUri,
+            params IUaNodeManager[] additionalManagers)
+            : base(server, configuration, dynamicNamespaceUri, additionalManagers)
         {
         }
 
-        private uint m_maxContinuationPointsPerBrowseForUnitTest = 0;
-        public uint MaxContinuationPointsPerBrowseForUnitTest { get => m_maxContinuationPointsPerBrowseForUnitTest; set => m_maxContinuationPointsPerBrowseForUnitTest = value; }
+        public uint MaxContinuationPointsPerBrowseForUnitTest { get; set; }
 
         /// <summary>
         /// Returns the set of references that meet the filter criteria.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
         public override void Browse(
             UaServerOperationContext context,
             ViewDescription view,
@@ -238,21 +273,25 @@ namespace Technosoftware.UaClient.Tests
             out DiagnosticInfoCollection diagnosticInfos)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
+
             if (nodesToBrowse == null)
+            {
                 throw new ArgumentNullException(nameof(nodesToBrowse));
+            }
 
             if (view != null && !NodeId.IsNull(view.ViewId))
             {
-                IUaNodeManager viewManager = null;
-                object viewHandle = GetManagerHandle(view.ViewId, out viewManager);
+                object viewHandle =
+                    GetManagerHandle(view.ViewId, out IUaNodeManager viewManager)
+                    ?? throw new ServiceResultException(StatusCodes.BadViewIdUnknown);
 
-                if (viewHandle == null)
-                {
-                    throw new ServiceResultException(StatusCodes.BadViewIdUnknown);
-                }
-
-                UaNodeMetadata metadata = viewManager.GetNodeMetadata(context, viewHandle, BrowseResultMask.NodeClass);
+                UaNodeMetadata metadata = viewManager.GetNodeMetadata(
+                    context,
+                    viewHandle,
+                    BrowseResultMask.NodeClass);
 
                 if (metadata == null || metadata.NodeClass != NodeClass.View)
                 {
@@ -260,7 +299,13 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 // validate access rights and role permissions
-                ServiceResult validationResult = ValidatePermissions(context, viewManager, viewHandle, PermissionType.Browse, null, true);
+                ServiceResult validationResult = ValidatePermissions(
+                    context,
+                    viewManager,
+                    viewHandle,
+                    PermissionType.Browse,
+                    null,
+                    true);
                 if (ServiceResult.IsBad(validationResult))
                 {
                     throw new ServiceResultException(validationResult);
@@ -282,9 +327,12 @@ namespace Technosoftware.UaClient.Tests
                     // release all allocated continuation points.
                     foreach (BrowseResult current in results)
                     {
-                        if (current != null && current.ContinuationPoint != null && current.ContinuationPoint.Length > 0)
+                        if (current != null &&
+                            current.ContinuationPoint != null &&
+                            current.ContinuationPoint.Length > 0)
                         {
-                            UaContinuationPoint cp = context.Session.RestoreContinuationPoint(current.ContinuationPoint);
+                            UaContinuationPoint cp = context.Session
+                                .RestoreContinuationPoint(current.ContinuationPoint);
                             cp.Dispose();
                         }
                     }
@@ -295,27 +343,29 @@ namespace Technosoftware.UaClient.Tests
                 BrowseDescription nodeToBrowse = nodesToBrowse[ii];
 
                 // initialize result.
-                BrowseResult result = new BrowseResult();
-                result.StatusCode = StatusCodes.Good;
+                var result = new BrowseResult { StatusCode = StatusCodes.Good };
                 results.Add(result);
 
-                ServiceResult error = null;
+                ServiceResult error;
 
                 // need to trap unexpected exceptions to handle bugs in the node managers.
                 try
                 {
-                    error = base.Browse(
+                    error = Browse(
                         context,
                         view,
                         maxReferencesPerNode,
-                        m_maxContinuationPointsPerBrowseForUnitTest > 0 ?
-                            continuationPointsAssigned < m_maxContinuationPointsPerBrowseForUnitTest : true,
+                        MaxContinuationPointsPerBrowseForUnitTest <= 0 ||
+                        continuationPointsAssigned < MaxContinuationPointsPerBrowseForUnitTest,
                         nodeToBrowse,
                         result);
                 }
                 catch (Exception e)
                 {
-                    error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error browsing node.");
+                    error = ServiceResult.Create(
+                        e,
+                        StatusCodes.BadUnexpectedError,
+                        "Unexpected error browsing node.");
                 }
 
                 // check for continuation point.
@@ -324,7 +374,7 @@ namespace Technosoftware.UaClient.Tests
                     continuationPointsAssigned++;
                 }
 
-                // check for error.   
+                // check for error.
                 result.StatusCode = error.StatusCode;
 
                 if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
@@ -344,7 +394,5 @@ namespace Technosoftware.UaClient.Tests
             // clear the diagnostics array if no diagnostics requested or no errors occurred.
             UpdateDiagnostics(context, diagnosticsExist, ref diagnosticInfos);
         }
-
     }
-
 }

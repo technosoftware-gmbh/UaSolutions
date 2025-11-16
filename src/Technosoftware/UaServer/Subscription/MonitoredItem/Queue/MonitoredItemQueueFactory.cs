@@ -15,11 +15,10 @@
 
 #region Using Directives
 using System;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// A factory for <see cref="IUaDataChangeMonitoredItemQueue"> and </see> <see cref="IUaEventMonitoredItemQueue"/>
@@ -28,8 +27,11 @@ namespace Technosoftware.UaServer.Subscriptions
     {
         /// <inheritdoc/>
         public bool SupportsDurableQueues => false;
+
         /// <inheritdoc/>
-        public IUaDataChangeMonitoredItemQueue CreateDataChangeQueue(bool createDurable, uint monitoredItemId)
+        public IUaDataChangeMonitoredItemQueue CreateDataChangeQueue(
+            bool createDurable,
+            uint monitoredItemId)
         {
             return new DataChangeMonitoredItemQueue(createDurable, monitoredItemId);
         }
@@ -42,6 +44,15 @@ namespace Technosoftware.UaServer.Subscriptions
 
         /// <inheritdoc/>
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Overridable method to dispose of resources.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
         {
             //only needed for managed resources
         }

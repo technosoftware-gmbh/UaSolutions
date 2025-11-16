@@ -17,7 +17,7 @@
 using System.Collections.Generic;
 
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -90,7 +90,7 @@ namespace Technosoftware.UaServer
         void OnMonitoredNodeChanged(ISystemContext context, NodeState node, NodeStateChangeMasks changes);
 
         /// <summary>
-        /// Reads the value of an attribute and reports it to the MonitoredItem.
+        /// Reads the value of an attribute and reports it to the UaMonitoredItem.
         /// </summary>
         void QueueValue(
             ISystemContext context,

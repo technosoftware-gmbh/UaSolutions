@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(TestsTargetFrameworks)</TargetFrameworks>
-    <RootNamespace>Technosoftware.UaStandardServer.Tests</RootNamespace>
+    <RootNamespace>Technosoftware.UaServer.Tests</RootNamespace>
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
 
@@ -41,9 +41,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
     <ProjectReference Include="..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
   </ItemGroup>
 

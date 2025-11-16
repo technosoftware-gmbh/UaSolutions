@@ -72,12 +72,6 @@ namespace SampleCompany.Common
 
             return await Task.FromResult(true).ConfigureAwait(false);
         }
-
-        /// <inheritdoc/>
-        public override bool Show()
-        {
-            return ShowAsync().GetAwaiter().GetResult();
-        }
         #endregion Overridden Methods
 
         #region Private Fields

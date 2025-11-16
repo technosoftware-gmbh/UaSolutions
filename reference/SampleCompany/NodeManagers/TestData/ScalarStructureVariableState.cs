@@ -12,7 +12,7 @@
 #region Using Directives
 using System;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
@@ -54,7 +54,7 @@ namespace SampleCompany.NodeManagers.TestData
             InitializeVariable(context, IntegerValue);
             InitializeVariable(context, UIntegerValue);
         }
-        #endregion
+        #endregion Initialization
 
         #region Protected Methods
         /// <summary>
@@ -63,30 +63,33 @@ namespace SampleCompany.NodeManagers.TestData
         protected void InitializeVariable(ISystemContext context, BaseVariableState variable)
         {
             // set a valid initial value.
-            var system = context.SystemHandle as TestDataSystem;
+            _ = context.SystemHandle as TestDataSystem;
 
             // copy access level to childs
             variable.AccessLevel = AccessLevel;
             variable.UserAccessLevel = UserAccessLevel;
         }
-        #endregion
+        #endregion Protected Methods
 
         #region Public Methods
         public virtual StatusCode OnGenerateValues(ISystemContext context)
         {
-            var system = context.SystemHandle as TestDataSystem;
-
-            if (system == null)
+            if (context.SystemHandle is not TestDataSystem system)
             {
                 return StatusCodes.BadOutOfService;
             }
 
-            var accessLevel = AccessLevel;
-            var userAccessLevel = UserAccessLevel;
+            byte accessLevel = AccessLevel;
+            byte userAccessLevel = UserAccessLevel;
             AccessLevel = UserAccessLevel = AccessLevels.CurrentReadOrWrite;
 
             // generate structure values here
-            ServiceResult result = WriteValueAttribute(context, NumericRange.Empty, system.ReadValue(this), StatusCodes.Good, DateTime.UtcNow);
+            ServiceResult result = WriteValueAttribute(
+                context,
+                NumericRange.Empty,
+                system.ReadValue(this),
+                StatusCodes.Good,
+                DateTime.UtcNow);
 
             AccessLevel = accessLevel;
             UserAccessLevel = userAccessLevel;
@@ -95,6 +98,6 @@ namespace SampleCompany.NodeManagers.TestData
 
             return result.StatusCode;
         }
-        #endregion
+        #endregion Public Methods
     }
 }

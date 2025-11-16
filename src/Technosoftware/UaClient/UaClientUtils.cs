@@ -1,0 +1,328 @@
+#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com
+//
+// The Software is subject to the Technosoftware GmbH Software License
+// Agreement, which can be found here:
+// https://technosoftware.com/documents/Source_License_Agreement.pdf
+//
+// The Software is based on the OPC Foundation MIT License.
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Opc.Ua.Security;
+using Opc.Ua;
+#endregion Using Directives
+
+namespace Technosoftware.UaClient
+{
+    /// <summary>
+    /// Defines numerous re-useable utility functions for clients.
+    /// </summary>
+    public static partial class UaClientUtils
+    {
+        #region Public Properties
+        /// <summary>
+        /// The default timeout in milliseconds to use when discovering servers.
+        /// </summary>
+        public static readonly int DefaultDiscoverTimeout = 15000;
+        #endregion Public Properties
+
+        #region Public Methods (Returns a list of Servers)
+        /// <summary>
+        /// Discovers the servers on the local machine.
+        /// </summary>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="ct">Cancellation token to cancel operation with</param>
+        /// <returns>A list of server urls.</returns>
+        public static ValueTask<IList<string>> DiscoverServersAsync(
+            ApplicationConfiguration configuration,
+            CancellationToken ct = default)
+        {
+            return DiscoverServersAsync(configuration, DefaultDiscoverTimeout, ct);
+        }
+
+        /// <summary>
+        /// Discovers the servers on the local machine.
+        /// </summary>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="discoverTimeout">Operation timeout in milliseconds.</param>
+        /// <param name="ct">Cancellation token to cancel operation with</param>
+        /// <returns>A list of server urls.</returns>
+        public static async ValueTask<IList<string>> DiscoverServersAsync(
+            ApplicationConfiguration configuration,
+            int discoverTimeout,
+            CancellationToken ct = default)
+        {
+            var serverUrls = new List<string>();
+
+            // set a short timeout because this is happening in the drop down event.
+            var endpointConfiguration = EndpointConfiguration.Create(configuration);
+            endpointConfiguration.OperationTimeout = discoverTimeout;
+
+            // Connect to the local discovery server and find the available servers.
+            using (var client = DiscoveryClient.Create(
+                    new Uri(Utils.Format(Utils.DiscoveryUrls[0], "localhost")),
+                    endpointConfiguration))
+            {
+                ApplicationDescriptionCollection servers =
+                    await client.FindServersAsync(null, ct).ConfigureAwait(false);
+
+                // populate the drop down list with the discovery URLs for the available servers.
+                for (int ii = 0; ii < servers.Count; ii++)
+                {
+                    if (servers[ii].ApplicationType == Opc.Ua.ApplicationType.DiscoveryServer)
+                    {
+                        continue;
+                    }
+
+                    for (int jj = 0; jj < servers[ii].DiscoveryUrls.Count; jj++)
+                    {
+                        string discoveryUrl = servers[ii].DiscoveryUrls[jj];
+
+                        // Many servers will use the '/discovery' suffix for the discovery endpoint.
+                        // The URL without this prefix should be the base URL for the server.
+                        if (discoveryUrl.EndsWith(
+                            ConfiguredEndpoint.DiscoverySuffix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            discoveryUrl =
+                                discoveryUrl[..^ConfiguredEndpoint.DiscoverySuffix.Length];
+                        }
+
+                        // ensure duplicates do not get added.
+                        if (!serverUrls.Exists(serverUrl =>
+                                serverUrl.Equals(discoveryUrl, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            serverUrls.Add(discoveryUrl);
+                        }
+                    }
+                }
+            }
+
+            return serverUrls;
+        }
+
+        /// <summary>
+        /// Finds the endpoint that best matches the current settings.
+        /// </summary>
+        public static ValueTask<EndpointDescription> SelectEndpointAsync(
+            ApplicationConfiguration application,
+            ITransportWaitingConnection connection,
+            bool useSecurity,
+            CancellationToken ct = default)
+        {
+            return SelectEndpointAsync(
+                application,
+                connection,
+                useSecurity,
+                DefaultDiscoverTimeout,
+                ct);
+        }
+
+        /// <summary>
+        /// Finds the endpoint that best matches the current settings.
+        /// </summary>
+        public static async ValueTask<EndpointDescription> SelectEndpointAsync(
+            ApplicationConfiguration application,
+            ITransportWaitingConnection connection,
+            bool useSecurity,
+            int discoverTimeout,
+            CancellationToken ct = default)
+        {
+            var endpointConfiguration = EndpointConfiguration.Create(application);
+            endpointConfiguration.OperationTimeout = discoverTimeout > 0
+                ? discoverTimeout
+                : DefaultDiscoverTimeout;
+
+            using var client = DiscoveryClient.Create(
+                application,
+                connection,
+                endpointConfiguration);
+            var url = new Uri(client.Endpoint.EndpointUrl);
+            EndpointDescriptionCollection endpoints =
+                await client.GetEndpointsAsync(null, ct).ConfigureAwait(false);
+            return SelectEndpoint(application, url, endpoints, useSecurity);
+        }
+
+        /// <summary>
+        /// Finds the endpoint that best matches the current settings.
+        /// </summary>
+        /// <param name="application">The application configuration.</param>
+        /// <param name="discoveryUrl">The discovery URL.</param>
+        /// <param name="useSecurity">if set to <c>true</c> select an endpoint
+        /// that uses security.</param>
+        /// <param name="ct">Cancellation token to cancel operation with</param>
+        /// <returns>The best available endpoint.</returns>
+        public static ValueTask<EndpointDescription> SelectEndpointAsync(
+            ApplicationConfiguration application,
+            string discoveryUrl,
+            bool useSecurity,
+            CancellationToken ct = default)
+        {
+            return SelectEndpointAsync(
+                application,
+                discoveryUrl,
+                useSecurity,
+                DefaultDiscoverTimeout,
+                ct);
+        }
+
+        /// <summary>
+        /// Finds the endpoint that best matches the current settings.
+        /// </summary>
+        /// <param name="application">The application configuration.</param>
+        /// <param name="discoveryUrl">The discovery URL.</param>
+        /// <param name="useSecurity">if set to <c>true</c> select an endpoint that uses security.</param>
+        /// <param name="discoverTimeout">The timeout for the discover operation.</param>
+        /// <param name="ct">Cancellation token to cancel operation with</param>
+        /// <returns>The best available endpoint.</returns>
+        public static async ValueTask<EndpointDescription> SelectEndpointAsync(
+            ApplicationConfiguration application,
+            string discoveryUrl,
+            bool useSecurity,
+            int discoverTimeout,
+            CancellationToken ct = default)
+        {
+            Uri uri = GetDiscoveryUrl(discoveryUrl);
+            var endpointConfiguration = EndpointConfiguration.Create(application);
+            endpointConfiguration.OperationTimeout = discoverTimeout;
+
+            using var client = DiscoveryClient.Create(application, uri, endpointConfiguration);
+            // Connect to the server's discovery endpoint and find the available configuration.
+            var url = new Uri(client.Endpoint.EndpointUrl);
+            EndpointDescriptionCollection endpoints =
+                await client.GetEndpointsAsync(null, ct).ConfigureAwait(false);
+            EndpointDescription selectedEndpoint = SelectEndpoint(
+                application,
+                url,
+                endpoints,
+                useSecurity);
+
+            Uri endpointUrl = Utils.ParseUri(selectedEndpoint.EndpointUrl);
+            if (endpointUrl != null && endpointUrl.Scheme == uri.Scheme)
+            {
+                var builder = new UriBuilder(endpointUrl)
+                {
+                    Host = uri.DnsSafeHost,
+                    Port = uri.Port
+                };
+                selectedEndpoint.EndpointUrl = builder.ToString();
+            }
+
+            return selectedEndpoint;
+        }
+
+        /// <summary>
+        /// Select the best supported endpoint from an
+        /// EndpointDescriptionCollection, with or without security.
+        /// </summary>
+        /// <param name="configuration">The application configuration.</param>
+        /// <param name="url">The discovery URL.</param>
+        /// <param name="endpoints"></param>
+        /// <param name="useSecurity">if set to <c>true</c> select an endpoint that uses security.</param>
+        /// <returns>The best available endpoint.</returns>
+        public static EndpointDescription SelectEndpoint(
+            ApplicationConfiguration configuration,
+            Uri url,
+            EndpointDescriptionCollection endpoints,
+            bool useSecurity)
+        {
+            EndpointDescription selectedEndpoint = null;
+
+            // select the best endpoint to use based on the selected URL and the UseSecurity checkbox.
+            for (int ii = 0; ii < endpoints.Count; ii++)
+            {
+                EndpointDescription endpoint = endpoints[ii];
+
+                // check for a match on the URL scheme.
+                if (endpoint.EndpointUrl.StartsWith(url.Scheme, StringComparison.Ordinal))
+                {
+                    // check if security was requested.
+                    if (useSecurity)
+                    {
+                        if (endpoint.SecurityMode == MessageSecurityMode.None)
+                        {
+                            continue;
+                        }
+
+                        if (configuration != null)
+                        {
+                            // skip unsupported security policies
+                            if (!configuration.SecurityConfiguration.SupportedSecurityPolicies
+                                    .Contains(
+                                        endpoint.SecurityPolicyUri))
+                            {
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            // skip unsupported security policies, for backward compatibility only
+                            // may contain policies for which no certificate is available
+                            if (SecurityPolicies.GetDisplayName(endpoint.SecurityPolicyUri) == null)
+                            {
+                                continue;
+                            }
+                        }
+                    }
+                    else if (endpoint.SecurityMode != MessageSecurityMode.None)
+                    {
+                        continue;
+                    }
+
+                    // pick the first available endpoint by default.
+                    selectedEndpoint ??= endpoint;
+
+                    //Select endpoint if it has a higher calculated security level, than the previously selected one
+                    if (SecuredApplication.CalculateSecurityLevel(
+                        endpoint.SecurityMode,
+                        endpoint.SecurityPolicyUri) >
+                        SecuredApplication.CalculateSecurityLevel(
+                            selectedEndpoint.SecurityMode,
+                            selectedEndpoint.SecurityPolicyUri))
+                    {
+                        selectedEndpoint = endpoint;
+                    }
+                }
+            }
+
+            // pick the first available endpoint by default.
+            if (selectedEndpoint == null && endpoints.Count > 0)
+            {
+                selectedEndpoint = endpoints.FirstOrDefault(e =>
+                    e.EndpointUrl?.StartsWith(url.Scheme, StringComparison.Ordinal) == true);
+            }
+
+            // return the selected endpoint.
+            return selectedEndpoint;
+        }
+
+        /// <summary>
+        /// Convert the discoveryUrl to a Uri and modify endpoint as per connection scheme if required.
+        /// </summary>
+        public static Uri GetDiscoveryUrl(string discoveryUrl)
+        {
+            // needs to add the '/discovery' back onto non-UA TCP URLs.
+            if (Utils.IsUriHttpRelatedScheme(discoveryUrl) &&
+                !discoveryUrl.EndsWith(
+                    ConfiguredEndpoint.DiscoverySuffix,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                discoveryUrl += ConfiguredEndpoint.DiscoverySuffix;
+            }
+
+            // parse the selected URL.
+            return new Uri(discoveryUrl);
+        }
+        #endregion Public Methods (Returns a list of Servers)
+    }
+}

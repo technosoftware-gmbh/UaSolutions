@@ -11,9 +11,6 @@
 
 #region Using Directives
 using System.Collections.Generic;
-using Opc.Ua;
-using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription

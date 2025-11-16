@@ -20,7 +20,6 @@ using System.Threading.Tasks;
 using Opc.Ua;
 using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Sessions;
 using SampleCompany.Common;
 #endregion Using Directives
 
@@ -102,7 +101,6 @@ namespace SampleCompany.ReferenceServer
 
                 // load the application configuration.
                 await Application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
-
             }
             catch (Exception ex)
             {
@@ -189,7 +187,7 @@ namespace SampleCompany.ReferenceServer
                 ExitCode = ExitCode.ErrorRunning;
 
                 // print endpoint info
-                foreach (string endpoint in Application.BaseServer.GetEndpoints().Select(e => e.EndpointUrl).Distinct())
+                foreach (string endpoint in Application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct())
                 {
                     m_output.WriteLine(endpoint);
                 }
@@ -198,9 +196,9 @@ namespace SampleCompany.ReferenceServer
                 m_status = Task.Run(StatusThreadAsync);
 
                 // print notification on session events
-                Server.CurrentInstance.SessionManager.SessionActivatedEvent += OnEventStatus;
-                Server.CurrentInstance.SessionManager.SessionClosingEvent += OnEventStatus;
-                Server.CurrentInstance.SessionManager.SessionCreatedEvent += OnEventStatus;
+                Server.CurrentInstance.SessionManager.SessionActivated += OnEventStatus;
+                Server.CurrentInstance.SessionManager.SessionClosing += OnEventStatus;
+                Server.CurrentInstance.SessionManager.SessionCreated += OnEventStatus;
             }
             catch (Exception ex)
             {
@@ -282,7 +280,7 @@ namespace SampleCompany.ReferenceServer
         /// <param name="session">The session.</param>
         /// <param name="reason">The reason</param>
         /// <param name="lastContact">true if the date/time of the last event should also be in the output; false if not.</param>
-        private void PrintSessionStatus(Session session, string reason, bool lastContact = false)
+        private void PrintSessionStatus(IUaSession session, string reason, bool lastContact = false)
         {
             var item = new StringBuilder();
             lock (session.DiagnosticsLock)
@@ -322,10 +320,10 @@ namespace SampleCompany.ReferenceServer
             {
                 if (DateTime.UtcNow - m_lastEventTime > TimeSpan.FromMilliseconds(10000))
                 {
-                    IList<Session> sessions = Server.CurrentInstance.SessionManager.GetSessions();
+                    IList<IUaSession> sessions = Server.CurrentInstance.SessionManager.GetSessions();
                     for (int ii = 0; ii < sessions.Count; ii++)
                     {
-                        Session session = sessions[ii];
+                        IUaSession session = sessions[ii];
                         PrintSessionStatus(session, "-Status-", true);
                     }
                     m_lastEventTime = DateTime.UtcNow;

@@ -1,21 +1,17 @@
 #region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
+// Web: https://technosoftware.com
 //
-// The Software is subject to the Technosoftware GmbH Software License 
+// The Software is subject to the Technosoftware GmbH Software License
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Foundation MIT License. 
+// The Software is based on the OPC Foundation MIT License.
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-
-#if NET6_0_OR_GREATER
-#define PERIODIC_TIMER
-#endif
 
 #region Using Directives
 using System;
@@ -26,24 +22,21 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-
 using Microsoft.Extensions.Logging;
-
-using Opc.Ua;
 using Opc.Ua.Bindings;
-#endregion
+using Opc.Ua;
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
     /// <summary>
     /// Manages a session with a server.
     /// </summary>
-    public partial class Session : SessionClientBatched, IUaSession
+    public class Session : SessionClientBatched, IUaSession
     {
         #region Constants
         private const int kReconnectTimeout = 15000;
@@ -52,7 +45,7 @@ namespace Technosoftware.UaClient
         private const int kDefaultPublishRequestCount = 1;
         private const int kPublishRequestSequenceNumberOutOfOrderThreshold = 10;
         private const int kPublishRequestSequenceNumberOutdatedThreshold = 100;
-        #endregion
+        #endregion Constants
 
         #region Constructors, Destructor, Initialization
         /// <summary>
@@ -65,8 +58,7 @@ namespace Technosoftware.UaClient
             ISessionChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint)
-        :
-            this(channel as ITransportChannel, configuration, endpoint, null)
+            : this(channel as ITransportChannel, configuration, endpoint, null)
         {
         }
 
@@ -94,8 +86,7 @@ namespace Technosoftware.UaClient
             X509Certificate2 clientCertificate,
             EndpointDescriptionCollection availableEndpoints = null,
             StringCollection discoveryProfileUris = null)
-            :
-                base(channel)
+            : base(channel)
         {
             Initialize(channel, configuration, endpoint);
             LoadInstanceCertificateAsync(clientCertificate).GetAwaiter().GetResult();
@@ -110,26 +101,25 @@ namespace Technosoftware.UaClient
         /// <param name="template">The template session.</param>
         /// <param name="copyEventHandlers">if set to <c>true</c> the event handlers are copied.</param>
         public Session(ITransportChannel channel, Session template, bool copyEventHandlers)
-        :
-            base(channel)
+            : base(channel)
         {
             Initialize(channel, template.m_configuration, template.ConfiguredEndpoint);
             LoadInstanceCertificateAsync(template.m_instanceCertificate).GetAwaiter().GetResult();
-            m_sessionFactory = template.m_sessionFactory;
-            m_defaultSubscription = template.m_defaultSubscription;
-            m_deleteSubscriptionsOnClose = template.m_deleteSubscriptionsOnClose;
-            m_transferSubscriptionsOnReconnect = template.m_transferSubscriptionsOnReconnect;
+            SessionFactory = template.SessionFactory;
+            DefaultSubscription = template.DefaultSubscription;
+            DeleteSubscriptionsOnClose = template.DeleteSubscriptionsOnClose;
+            TransferSubscriptionsOnReconnect = template.TransferSubscriptionsOnReconnect;
             m_sessionTimeout = template.m_sessionTimeout;
             m_maxRequestMessageSize = template.m_maxRequestMessageSize;
             m_minPublishRequestCount = template.m_minPublishRequestCount;
             m_maxPublishRequestCount = template.m_maxPublishRequestCount;
             m_preferredLocales = template.PreferredLocales;
             m_sessionName = template.SessionName;
-            m_handle = template.Handle;
+            Handle = template.Handle;
             m_identity = template.Identity;
             m_keepAliveInterval = template.KeepAliveInterval;
             m_checkDomain = template.m_checkDomain;
-            m_continuationPointPolicy = template.m_continuationPointPolicy;
+            ContinuationPointPolicy = template.ContinuationPointPolicy;
             ReturnDiagnostics = template.ReturnDiagnostics;
             if (template.OperationTimeout > 0)
             {
@@ -141,7 +131,8 @@ namespace Technosoftware.UaClient
                 m_KeepAlive = template.m_KeepAlive;
                 m_Publish = template.m_Publish;
                 m_PublishError = template.m_PublishError;
-                m_PublishSequenceNumbersToAcknowledge = template.m_PublishSequenceNumbersToAcknowledge;
+                m_PublishSequenceNumbersToAcknowledge = template
+                    .m_PublishSequenceNumbersToAcknowledge;
                 m_SubscriptionsChanged = template.m_SubscriptionsChanged;
                 m_SessionClosing = template.m_SessionClosing;
                 m_SessionConfigurationChanged = template.m_SessionConfigurationChanged;
@@ -153,7 +144,7 @@ namespace Technosoftware.UaClient
                 AddSubscription(subscription.CloneSubscription(copyEventHandlers));
             }
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Private Methods
         /// <summary>
@@ -173,22 +164,23 @@ namespace Technosoftware.UaClient
             m_endpoint = endpoint;
 
             // update the default subscription.
-            m_defaultSubscription.MinLifetimeInterval = (uint)configuration.ClientConfiguration.MinSubscriptionLifetime;
+            DefaultSubscription.MinLifetimeInterval = (uint)configuration.ClientConfiguration
+                .MinSubscriptionLifetime;
 
             // initialize the message context.
             IServiceMessageContext messageContext = channel.MessageContext;
 
             if (messageContext != null)
             {
-                m_namespaceUris = messageContext.NamespaceUris;
-                m_serverUris = messageContext.ServerUris;
-                m_factory = messageContext.Factory;
+                NamespaceUris = messageContext.NamespaceUris;
+                ServerUris = messageContext.ServerUris;
+                Factory = messageContext.Factory;
             }
             else
             {
-                m_namespaceUris = new NamespaceTable();
-                m_serverUris = new StringTable();
-                m_factory = new EncodeableFactory(EncodeableFactory.GlobalFactory);
+                NamespaceUris = new NamespaceTable();
+                ServerUris = new StringTable();
+                Factory = new EncodeableFactory(EncodeableFactory.GlobalFactory);
             }
 
             // initialize the NodeCache late, it needs references to the namespaceUris
@@ -201,9 +193,9 @@ namespace Technosoftware.UaClient
             m_systemContext = new SystemContext
             {
                 SystemHandle = this,
-                EncodeableFactory = m_factory,
-                NamespaceUris = m_namespaceUris,
-                ServerUris = m_serverUris,
+                EncodeableFactory = Factory,
+                NamespaceUris = NamespaceUris,
+                ServerUris = ServerUris,
                 TypeTable = TypeTree,
                 PreferredLocales = null,
                 SessionId = null,
@@ -216,16 +208,15 @@ namespace Technosoftware.UaClient
         /// </summary>
         private void Initialize()
         {
-            m_sessionFactory = DefaultSessionFactory.Instance;
+            SessionFactory = DefaultSessionFactory.Instance;
             m_sessionTimeout = 0;
-            m_namespaceUris = new NamespaceTable();
-            m_serverUris = new StringTable();
-            m_factory = EncodeableFactory.GlobalFactory;
+            NamespaceUris = new NamespaceTable();
+            ServerUris = new StringTable();
+            Factory = EncodeableFactory.GlobalFactory;
             m_configuration = null;
             m_instanceCertificate = null;
             m_endpoint = null;
             m_subscriptions = [];
-            m_dictionaries = [];
             m_acknowledgementsToSend = [];
             m_acknowledgementsToSendLock = new object();
 #if DEBUG_SEQUENTIALPUBLISHING
@@ -237,14 +228,14 @@ namespace Technosoftware.UaClient
             m_tooManyPublishRequests = 0;
             m_minPublishRequestCount = kDefaultPublishRequestCount;
             m_maxPublishRequestCount = kMaxPublishRequestCountMax;
-            m_sessionName = "";
-            m_deleteSubscriptionsOnClose = true;
-            m_transferSubscriptionsOnReconnect = false;
+            m_sessionName = string.Empty;
+            DeleteSubscriptionsOnClose = true;
+            TransferSubscriptionsOnReconnect = false;
             m_reconnecting = false;
             m_reconnectLock = new SemaphoreSlim(1, 1);
-            m_serverMaxContinuationPointsPerBrowse = 0;
+            ServerMaxContinuationPointsPerBrowse = 0;
 
-            m_defaultSubscription = new Subscription
+            DefaultSubscription = new Subscription
             {
                 DisplayName = "Subscription",
                 PublishingInterval = 1000,
@@ -258,7 +249,9 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Check if all required configuration fields are populated.
         /// </summary>
-        private void ValidateClientConfiguration(ApplicationConfiguration configuration)
+        /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
+        private static void ValidateClientConfiguration(ApplicationConfiguration configuration)
         {
             string configurationField;
             if (configuration == null)
@@ -290,6 +283,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Validates the server nonce and security parameters of user identity.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         private void ValidateServerNonce(
             IUserIdentity identity,
             byte[] serverNonce,
@@ -298,7 +292,8 @@ namespace Technosoftware.UaClient
             MessageSecurityMode channelSecurityMode = MessageSecurityMode.None)
         {
             // skip validation if server nonce is not used for encryption.
-            if (string.IsNullOrEmpty(securityPolicyUri) || securityPolicyUri == SecurityPolicies.None)
+            if (string.IsNullOrEmpty(securityPolicyUri) ||
+                securityPolicyUri == SecurityPolicies.None)
             {
                 return;
             }
@@ -306,35 +301,49 @@ namespace Technosoftware.UaClient
             if (identity != null && identity.TokenType != UserTokenType.Anonymous)
             {
                 // the server nonce should be validated if the token includes a secret.
-                if (!Nonce.ValidateNonce(serverNonce, MessageSecurityMode.SignAndEncrypt, (uint)m_configuration.SecurityConfiguration.NonceLength))
+                if (!Nonce.ValidateNonce(
+                    serverNonce,
+                    MessageSecurityMode.SignAndEncrypt,
+                    (uint)m_configuration.SecurityConfiguration.NonceLength))
                 {
                     if (channelSecurityMode == MessageSecurityMode.SignAndEncrypt ||
                         m_configuration.SecurityConfiguration.SuppressNonceValidationErrors)
                     {
-                        Utils.LogWarning(Utils.TraceMasks.Security, "Warning: The server nonce has not the correct length or is not random enough. The error is suppressed by user setting or because the channel is encrypted.");
+                        Utils.LogWarning(
+                            Utils.TraceMasks.Security,
+                            "Warning: The server nonce has not the correct length or is not random enough. " +
+                            "The error is suppressed by user setting or because the channel is encrypted.");
                     }
                     else
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadNonceInvalid, "The server nonce has not the correct length or is not random enough.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadNonceInvalid,
+                            "The server nonce has not the correct length or is not random enough.");
                     }
                 }
 
                 // check that new nonce is different from the previously returned server nonce.
-                if (previousServerNonce != null && Nonce.CompareNonce(serverNonce, previousServerNonce))
+                if (previousServerNonce != null &&
+                    Nonce.CompareNonce(serverNonce, previousServerNonce))
                 {
                     if (channelSecurityMode == MessageSecurityMode.SignAndEncrypt ||
                         m_configuration.SecurityConfiguration.SuppressNonceValidationErrors)
                     {
-                        Utils.LogWarning(Utils.TraceMasks.Security, "Warning: The Server nonce is equal with previously returned nonce. The error is suppressed by user setting or because the channel is encrypted.");
+                        Utils.LogWarning(
+                            Utils.TraceMasks.Security,
+                            "Warning: The Server nonce is equal with previously returned nonce. " +
+                            "The error is suppressed by user setting or because the channel is encrypted.");
                     }
                     else
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadNonceInvalid, "Server nonce is equal with previously returned nonce.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadNonceInvalid,
+                            "Server nonce is equal with previously returned nonce.");
                     }
                 }
             }
         }
-        #endregion
+        #endregion Private Methods
 
         #region IDisposable Members
         /// <summary>
@@ -346,8 +355,8 @@ namespace Technosoftware.UaClient
             {
                 StopKeepAliveTimer();
 
-                Utils.SilentDispose(m_defaultSubscription);
-                m_defaultSubscription = null;
+                Utils.SilentDispose(DefaultSubscription);
+                DefaultSubscription = null;
 
                 Utils.SilentDispose(m_nodeCache);
                 m_nodeCache = null;
@@ -355,7 +364,7 @@ namespace Technosoftware.UaClient
                 List<Subscription> subscriptions = null;
                 lock (SyncRoot)
                 {
-                    subscriptions = new List<Subscription>(m_subscriptions);
+                    subscriptions = [.. m_subscriptions];
                     m_subscriptions.Clear();
                 }
 
@@ -380,144 +389,91 @@ namespace Technosoftware.UaClient
                 m_SessionConfigurationChanged = null;
             }
         }
-        #endregion
+        #endregion IDisposable Members
 
         #region Events
         /// <summary>
-        ///     Raised when a keep alive arrives from the server or an error is detected.
+        /// Raised when a keep alive arrives from the server or an error is detected.
         /// </summary>
         /// <remarks>
-        ///     Once a session is created a timer will periodically read the server state and current time.
-        ///     If this read operation succeeds this event will be raised each time the keep alive period elapses.
-        ///     If an error is detected (KeepAliveStopped == true) then this event will be raised as well.
+        /// Once a session is created a timer will periodically read the server state and current time.
+        /// If this read operation succeeds this event will be raised each time the keep alive period elapses.
+        /// If an error is detected (KeepAliveStopped == true) then this event will be raised as well.
         /// </remarks>
-        public event EventHandler<SessionKeepAliveEventArgs> SessionKeepAliveEvent
+        public event EventHandler<KeepAliveEventArgs> KeepAlive
         {
-            add
-            {
-                m_KeepAlive += value;
-            }
-
-            remove
-            {
-                m_KeepAlive -= value;
-            }
+            add => m_KeepAlive += value;
+            remove => m_KeepAlive -= value;
         }
 
         /// <summary>
-        ///     Raised when a notification message arrives in a publish response.
+        /// Raised when a notification message arrives in a publish response.
         /// </summary>
         /// <remarks>
-        ///     All publish requests are managed by the Session object. When a response arrives it is
-        ///     validated and passed to the appropriate Subscription object and this event is raised.
+        /// All publish requests are managed by the Session object. When a response arrives it is
+        /// validated and passed to the appropriate Subscription object and this event is raised.
         /// </remarks>
-        public event EventHandler<SessionNotificationEventArgs> SessionNotificationEvent
+        public event EventHandler<NotificationEventArgs> Notification
         {
-            add
-            {
-                m_Publish += value;
-            }
-
-            remove
-            {
-                m_Publish -= value;
-            }
+            add => m_Publish += value;
+            remove => m_Publish -= value;
         }
 
         /// <summary>
-        ///     Raised when an exception occurs while processing a publish response.
+        /// Raised when an exception occurs while processing a publish response.
         /// </summary>
         /// <remarks>
         /// Exceptions in a publish response are not necessarily fatal and the Session will
-        ///     attempt to recover by issuing Republish requests if missing messages are detected.
-        ///     That said, timeout errors may be a symptom of a OperationTimeout that is too short
-        ///     when compared to the shortest PublishingInterval/KeepAliveCount amount the current
-        ///     Subscriptions. The OperationTimeout should be twice the minimum value for
-        ///     PublishingInterval*KeepAliveCount.
+        /// attempt to recover by issuing Republish requests if missing messages are detected.
+        /// That said, timeout errors may be a symptom of a OperationTimeout that is too short
+        /// when compared to the shortest PublishingInterval/KeepAliveCount amount the current
+        /// Subscriptions. The OperationTimeout should be twice the minimum value for
+        /// PublishingInterval*KeepAliveCount.
         /// </remarks>
-        public event EventHandler<SessionPublishErrorEventArgs> SessionPublishErrorEvent
+        public event EventHandler<PublishErrorEventArgs> PublishError
         {
-            add
-            {
-                m_PublishError += value;
-            }
-
-            remove
-            {
-                m_PublishError -= value;
-            }
+            add => m_PublishError += value;
+            remove => m_PublishError -= value;
         }
 
         /// <inheritdoc/>
-        public event EventHandler<PublishSequenceNumbersToAcknowledgeEventArgs> PublishSequenceNumbersToAcknowledgeEvent
+        public event EventHandler<PublishSequenceNumbersToAcknowledgeEventArgs> PublishSequenceNumbersToAcknowledge
         {
-            add
-            {
-                m_PublishSequenceNumbersToAcknowledge += value;
-            }
-
-            remove
-            {
-                m_PublishSequenceNumbersToAcknowledge -= value;
-            }
+            add => m_PublishSequenceNumbersToAcknowledge += value;
+            remove => m_PublishSequenceNumbersToAcknowledge -= value;
         }
 
         /// <summary>
-        ///     Raised when a subscription is added or removed
+        /// Raised when a subscription is added or removed
         /// </summary>
-        public event EventHandler SubscriptionsChangedEvent
+        public event EventHandler SubscriptionsChanged
         {
-            add
-            {
-                m_SubscriptionsChanged += value;
-            }
-
-            remove
-            {
-                m_SubscriptionsChanged -= value;
-            }
+            add => m_SubscriptionsChanged += value;
+            remove => m_SubscriptionsChanged -= value;
         }
 
         /// <summary>
-        ///     Raised to indicate the session is closing.
+        /// Raised to indicate the session is closing.
         /// </summary>
-        public event EventHandler SessionClosingEvent
+        public event EventHandler SessionClosing
         {
-            add
-            {
-                m_SessionClosing += value;
-            }
-
-            remove
-            {
-                m_SessionClosing -= value;
-            }
+            add => m_SessionClosing += value;
+            remove => m_SessionClosing -= value;
         }
 
         /// <inheritdoc/>
-        public event EventHandler SessionConfigurationChangedEvent
+        public event EventHandler SessionConfigurationChanged
         {
-            add
-            {
-                m_SessionConfigurationChanged += value;
-            }
-
-            remove
-            {
-                m_SessionConfigurationChanged -= value;
-            }
+            add => m_SessionConfigurationChanged += value;
+            remove => m_SessionConfigurationChanged -= value;
         }
-        #endregion
+        #endregion Events
 
         #region Public Properties
         /// <summary>
         /// A session factory that was used to create the session.
         /// </summary>
-        public IUaSessionFactory SessionFactory
-        {
-            get => m_sessionFactory;
-            set => m_sessionFactory = value;
-        }
+        public IUaSessionFactory SessionFactory { get; set; }
 
         /// <summary>
         /// Gets the endpoint used to connect to the server.
@@ -530,18 +486,15 @@ namespace Technosoftware.UaClient
         public string SessionName => m_sessionName;
 
         /// <summary>
-        /// Gets the period for which the server will maintain the session if there is no communication from the client.
+        /// Gets the period for wich the server will maintain the session if
+        /// there is no communication from the client.
         /// </summary>
         public double SessionTimeout => m_sessionTimeout;
 
         /// <summary>
         /// Gets the local handle assigned to the session.
         /// </summary>
-        public object Handle
-        {
-            get { return m_handle; }
-            set { m_handle = value; }
-        }
+        public object Handle { get; set; }
 
         /// <summary>
         /// Gets the user identity currently used for the session.
@@ -556,12 +509,12 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets the table of namespace uris known to the server.
         /// </summary>
-        public NamespaceTable NamespaceUris => m_namespaceUris;
+        public NamespaceTable NamespaceUris { get; private set; }
 
         /// <summary>
         /// Gets the table of remote server uris known to the server.
         /// </summary>
-        public StringTable ServerUris => m_serverUris;
+        public StringTable ServerUris { get; private set; }
 
         /// <summary>
         /// Gets the system context for use with the session.
@@ -571,7 +524,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets the factory used to create encodeable objects that the server understands.
         /// </summary>
-        public IEncodeableFactory Factory => m_factory;
+        public IEncodeableFactory Factory { get; private set; }
 
         /// <summary>
         /// Gets the cache of the server's type tree.
@@ -586,17 +539,13 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets the context to use for filter operations.
         /// </summary>
-        public FilterContext FilterContext => new FilterContext(m_namespaceUris, m_nodeCache.TypeTree, m_preferredLocales);
+        public FilterContext FilterContext
+            => new(NamespaceUris, m_nodeCache.TypeTree, m_preferredLocales);
 
         /// <summary>
         /// Gets the locales that the server should use when returning localized text.
         /// </summary>
         public StringCollection PreferredLocales => m_preferredLocales;
-
-        /// <summary>
-        /// Gets the data type system dictionaries in use.
-        /// </summary>
-        public IReadOnlyDictionary<NodeId, DataDictionary> DataTypeSystem => m_dictionaries;
 
         /// <summary>
         /// Gets the subscriptions owned by the session.
@@ -607,7 +556,7 @@ namespace Technosoftware.UaClient
             {
                 lock (SyncRoot)
                 {
-                    return new ReadOnlyList<Subscription>(m_subscriptions);
+                    return [.. m_subscriptions];
                 }
             }
         }
@@ -633,11 +582,7 @@ namespace Technosoftware.UaClient
         /// Default <c>true</c>, set to <c>false</c> if subscriptions need to
         /// be transferred or for durable subscriptions.
         /// </remarks>
-        public bool DeleteSubscriptionsOnClose
-        {
-            get { return m_deleteSubscriptionsOnClose; }
-            set { m_deleteSubscriptionsOnClose = value; }
-        }
+        public bool DeleteSubscriptionsOnClose { get; set; }
 
         /// <summary>
         /// If the subscriptions are transferred when a session is reconnected.
@@ -646,43 +591,28 @@ namespace Technosoftware.UaClient
         /// Default <c>false</c>, set to <c>true</c> if subscriptions should
         /// be transferred after reconnect. Service must be supported by server.
         /// </remarks>
-        public bool TransferSubscriptionsOnReconnect
-        {
-            get { return m_transferSubscriptionsOnReconnect; }
-            set { m_transferSubscriptionsOnReconnect = value; }
-        }
+        public bool TransferSubscriptionsOnReconnect { get; set; }
 
         /// <summary>
         /// Whether the endpoint Url domain is checked in the certificate.
         /// </summary>
-        public bool CheckDomain
-        {
-            get { return m_checkDomain; }
-        }
+        public bool CheckDomain => m_checkDomain;
 
         /// <summary>
         /// Gets or Sets the default subscription for the session.
         /// </summary>
-        public Subscription DefaultSubscription
-        {
-            get { return m_defaultSubscription; }
-            set { m_defaultSubscription = value; }
-        }
+        public Subscription DefaultSubscription { get; set; }
 
         /// <summary>
         /// Gets or Sets how frequently the server is pinged to see if communication is still working.
         /// </summary>
         /// <remarks>
-        /// This interval controls how much time elapses before a communication error is detected.
+        /// This interval controls how much time elaspes before a communication error is detected.
         /// If everything is ok the KeepAlive event will be raised each time this period elapses.
         /// </remarks>
         public int KeepAliveInterval
         {
-            get
-            {
-                return m_keepAliveInterval;
-            }
-
+            get => m_keepAliveInterval;
             set
             {
                 m_keepAliveInterval = value;
@@ -694,8 +624,10 @@ namespace Technosoftware.UaClient
         /// Returns true if the session is not receiving keep alives.
         /// </summary>
         /// <remarks>
-        /// Set to true if the server does not respond for the KeepAliveInterval * 1 (KeepAliveIntervalFactor) + 1 Second (KeepAliveGuardBand) *
-        /// To change the sensitivity of the keep alive check, set the <see cref="m_keepAliveIntervalFactor"/> / <see cref="m_keepAliveGuardBand"/> fields. 
+        /// Set to true if the server does not respond for the
+        /// KeepAliveInterval * 1 (KeepAliveIntervalFactor) + 1 Second (KeepAliveGuardBand) *
+        /// To change the sensitivity of the keep alive check, set the
+        /// <see cref="m_keepAliveIntervalFactor"/> / <see cref="m_keepAliveGuardBand"/> fields.
         /// or if another error was reported.
         /// Set to false is communication is ok or recovered.
         /// </remarks>
@@ -704,12 +636,14 @@ namespace Technosoftware.UaClient
             get
             {
                 StatusCode lastKeepAliveErrorStatusCode = m_lastKeepAliveErrorStatusCode;
-                if (StatusCode.IsGood(lastKeepAliveErrorStatusCode) || lastKeepAliveErrorStatusCode == StatusCodes.BadNoCommunication)
+                if (StatusCode.IsGood(lastKeepAliveErrorStatusCode) ||
+                    lastKeepAliveErrorStatusCode == StatusCodes.BadNoCommunication)
                 {
-                    int delta = HiResClock.TickCount - m_lastKeepAliveTickCount;
+                    int delta = HiResClock.TickCount - LastKeepAliveTickCount;
 
                     // add a guard band to allow for network lag.
-                    return (m_keepAliveInterval * m_keepAliveIntervalFactor + m_keepAliveGuardBand) <= delta;
+                    return ((m_keepAliveInterval * m_keepAliveIntervalFactor) +
+                        m_keepAliveGuardBand) <= delta;
                 }
 
                 // another error was reported which caused keep alive to stop.
@@ -724,7 +658,7 @@ namespace Technosoftware.UaClient
         {
             get
             {
-                var ticks = Interlocked.Read(ref m_lastKeepAliveTime);
+                long ticks = Interlocked.Read(ref m_lastKeepAliveTime);
                 return new DateTime(ticks, DateTimeKind.Utc);
             }
         }
@@ -733,13 +667,7 @@ namespace Technosoftware.UaClient
         /// Gets the TickCount in ms of the last keep alive based on <see cref="HiResClock.TickCount"/>.
         /// Independent of system time changes.
         /// </summary>
-        public int LastKeepAliveTickCount
-        {
-            get
-            {
-                return m_lastKeepAliveTickCount;
-            }
-        }
+        public int LastKeepAliveTickCount { get; private set; }
 
         /// <summary>
         /// Gets the number of outstanding publish or keep alive requests.
@@ -766,7 +694,9 @@ namespace Technosoftware.UaClient
                 {
                     int count = 0;
 
-                    for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First; ii != null; ii = ii.Next)
+                    for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First;
+                        ii != null;
+                        ii = ii.Next)
                     {
                         if (ii.Value.Defunct)
                         {
@@ -790,7 +720,9 @@ namespace Technosoftware.UaClient
                 {
                     int count = 0;
 
-                    for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First; ii != null; ii = ii.Next)
+                    for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First;
+                        ii != null;
+                        ii = ii.Next)
                     {
                         if (!ii.Value.Defunct && ii.Value.RequestTypeId == DataTypes.PublishRequest)
                         {
@@ -806,6 +738,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets and sets the minimum number of publish requests to be used in the session.
         /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public int MinPublishRequestCount
         {
             get => m_minPublishRequestCount;
@@ -813,13 +746,14 @@ namespace Technosoftware.UaClient
             {
                 lock (SyncRoot)
                 {
-                    if (value >= kDefaultPublishRequestCount && value <= kMinPublishRequestCountMax)
+                    if (value is >= kDefaultPublishRequestCount and <= kMinPublishRequestCountMax)
                     {
                         m_minPublishRequestCount = value;
                     }
                     else
                     {
-                        throw new ArgumentOutOfRangeException(nameof(MinPublishRequestCount),
+                        throw new ArgumentOutOfRangeException(
+                            nameof(MinPublishRequestCount),
                             $"Minimum publish request count must be between {kDefaultPublishRequestCount} and {kMinPublishRequestCountMax}.");
                     }
                 }
@@ -829,6 +763,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets and sets the maximum number of publish requests to be used in the session.
         /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public int MaxPublishRequestCount
         {
             get => Math.Max(m_minPublishRequestCount, m_maxPublishRequestCount);
@@ -836,13 +771,14 @@ namespace Technosoftware.UaClient
             {
                 lock (SyncRoot)
                 {
-                    if (value >= kDefaultPublishRequestCount && value <= kMaxPublishRequestCountMax)
+                    if (value is >= kDefaultPublishRequestCount and <= kMaxPublishRequestCountMax)
                     {
                         m_maxPublishRequestCount = value;
                     }
                     else
                     {
-                        throw new ArgumentOutOfRangeException(nameof(MaxPublishRequestCount),
+                        throw new ArgumentOutOfRangeException(
+                            nameof(MaxPublishRequestCount),
                             $"Maximum publish request count must be between {kDefaultPublishRequestCount} and {kMaxPublishRequestCountMax}.");
                     }
                 }
@@ -852,113 +788,33 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Read from the Server capability MaxContinuationPointsPerBrowse when the Operation Limits are fetched
         /// </summary>
-        public uint ServerMaxContinuationPointsPerBrowse
-        {
-            get => m_serverMaxContinuationPointsPerBrowse;
-            set => m_serverMaxContinuationPointsPerBrowse = value;
-        }
+        public uint ServerMaxContinuationPointsPerBrowse { get; set; }
 
         /// <summary>
         /// Read from the Server capability MaxByteStringLength when the Operation Limits are fetched
         /// </summary>
-        public uint ServerMaxByteStringLength
-        {
-            get => m_serverMaxByteStringLength;
-            set => m_serverMaxByteStringLength = value;
-        }
+        public uint ServerMaxByteStringLength { get; set; }
 
         /// <inheritdoc/>
-        public ContinuationPointPolicy ContinuationPointPolicy
-        {
-            get => m_continuationPointPolicy;
-            set => m_continuationPointPolicy = value;
-        }
-        #endregion
+        public ContinuationPointPolicy ContinuationPointPolicy { get; set; }
+            = ContinuationPointPolicy.Default;
+        #endregion Public Properties
 
         #region Public Static Methods
         /// <summary>
-        /// Creates a new communication session with a server by invoking the CreateSession service
-        /// </summary>
-        /// <param name="configuration">The configuration for the client application.</param>
-        /// <param name="endpoint">The endpoint for the server.</param>
-        /// <param name="updateBeforeConnect">If set to <c>true</c> the discovery endpoint is used to update the endpoint description before connecting.</param>
-        /// <param name="sessionName">The name to assign to the session.</param>
-        /// <param name="sessionTimeout">The timeout period for the session.</param>
-        /// <param name="identity">The identity.</param>
-        /// <param name="preferredLocales">The user identity to associate with the session.</param>
-        /// <param name="ct">The cancellation token.</param>
-        /// <returns>The new session object</returns>
-        public static Task<Session> Create(
-            ApplicationConfiguration configuration,
-            ConfiguredEndpoint endpoint,
-            bool updateBeforeConnect,
-            string sessionName,
-            uint sessionTimeout,
-            IUserIdentity identity,
-            IList<string> preferredLocales,
-            CancellationToken ct = default)
-        {
-            return CreateAsync(configuration, endpoint, updateBeforeConnect, false, sessionName, sessionTimeout, identity, preferredLocales, ct);
-        }
-
-        /// <summary>
-        /// Creates a new communication session with a server by invoking the CreateSession service
-        /// </summary>
-        /// <param name="configuration">The configuration for the client application.</param>
-        /// <param name="endpoint">The endpoint for the server.</param>
-        /// <param name="updateBeforeConnect">If set to <c>true</c> the discovery endpoint is used to update the endpoint description before connecting.</param>
-        /// <param name="checkDomain">If set to <c>true</c> then the domain in the certificate must match the endpoint used.</param>
-        /// <param name="sessionName">The name to assign to the session.</param>
-        /// <param name="sessionTimeout">The timeout period for the session.</param>
-        /// <param name="identity">The user identity to associate with the session.</param>
-        /// <param name="preferredLocales">The preferred locales.</param>
-        /// <param name="ct">The cancellation token.</param>
-        /// <returns>The new session object.</returns>
-        public static Task<Session> CreateAsync(
-            ApplicationConfiguration configuration,
-            ConfiguredEndpoint endpoint,
-            bool updateBeforeConnect,
-            bool checkDomain,
-            string sessionName,
-            uint sessionTimeout,
-            IUserIdentity identity,
-            IList<string> preferredLocales,
-            CancellationToken ct = default)
-        {
-            return Create(configuration, (ITransportWaitingConnection)null, endpoint, updateBeforeConnect, checkDomain, sessionName, sessionTimeout, identity, preferredLocales, ct);
-        }
-
-        /// <summary>
-        /// Creates a new session with a server using the specified channel by invoking the CreateSession service
-        /// </summary>
-        /// <param name="configuration">The configuration for the client application.</param>
-        /// <param name="channel">The channel for the server.</param>
-        /// <param name="endpoint">The endpoint for the server.</param>
-        /// <param name="clientCertificate">The certificate to use for the client.</param>
-        /// <param name="availableEndpoints">The list of available endpoints returned by server in GetEndpoints() response.</param>
-        /// <param name="discoveryProfileUris">The value of profileUris used in GetEndpoints() request.</param>
-        public static Session Create(
-           ApplicationConfiguration configuration,
-           ITransportChannel channel,
-           ConfiguredEndpoint endpoint,
-           X509Certificate2 clientCertificate,
-           EndpointDescriptionCollection availableEndpoints = null,
-           StringCollection discoveryProfileUris = null)
-        {
-            return Create(DefaultSessionFactory.Instance, configuration, channel, endpoint, clientCertificate, availableEndpoints, discoveryProfileUris);
-        }
-
-        /// <summary>
-        /// Creates a new session with a server using the specified channel by invoking the CreateSession service.
-        /// With the sessionInstantiator subclasses of Sessions can be created.
+        /// Creates a new session with a server using the specified channel by invoking the
+        /// CreateSession service. With the sessionInstantiator subclasses of Sessions can
+        /// be created.
         /// </summary>
         /// <param name="sessionInstantiator">The Session constructor to use to create the session.</param>
         /// <param name="configuration">The configuration for the client application.</param>
         /// <param name="channel">The channel for the server.</param>
         /// <param name="endpoint">The endpoint for the server.</param>
         /// <param name="clientCertificate">The certificate to use for the client.</param>
-        /// <param name="availableEndpoints">The list of available endpoints returned by server in GetEndpoints() response.</param>
-        /// <param name="discoveryProfileUris">The value of profileUris used in GetEndpoints() request.</param>
+        /// <param name="availableEndpoints">The list of available endpoints returned by
+        /// server in GetEndpoints() response.</param>
+        /// <param name="discoveryProfileUris">The value of profileUris used in GetEndpoints()
+        /// request.</param>
         public static Session Create(
             IUaSessionInstantiator sessionInstantiator,
             ApplicationConfiguration configuration,
@@ -968,7 +824,13 @@ namespace Technosoftware.UaClient
             EndpointDescriptionCollection availableEndpoints = null,
             StringCollection discoveryProfileUris = null)
         {
-            return sessionInstantiator.Create(channel, configuration, endpoint, clientCertificate, availableEndpoints, discoveryProfileUris);
+            return sessionInstantiator.Create(
+                channel,
+                configuration,
+                endpoint,
+                clientCertificate,
+                availableEndpoints,
+                discoveryProfileUris);
         }
 
         /// <summary>
@@ -998,7 +860,8 @@ namespace Technosoftware.UaClient
 
             if (endpointConfiguration == null)
             {
-                endpoint.Configuration = endpointConfiguration = EndpointConfiguration.Create(configuration);
+                endpoint.Configuration = endpointConfiguration = EndpointConfiguration.Create(
+                    configuration);
             }
 
             // create message context.
@@ -1020,22 +883,26 @@ namespace Technosoftware.UaClient
                 configuration.CertificateValidator?.ValidateDomains(
                     X509CertificateLoader.LoadCertificate(endpoint.Description.ServerCertificate),
                     endpoint);
-                checkDomain = false;
             }
 
             X509Certificate2 clientCertificate = null;
             X509Certificate2Collection clientCertificateChain = null;
             if (endpointDescription.SecurityPolicyUri != SecurityPolicies.None)
             {
-                clientCertificate = await LoadCertificateAsync(configuration, endpointDescription.SecurityPolicyUri).ConfigureAwait(false);
-                clientCertificateChain = await LoadCertificateChainAsync(configuration, clientCertificate).ConfigureAwait(false);
+                clientCertificate = await LoadCertificateAsync(
+                    configuration,
+                    endpointDescription.SecurityPolicyUri)
+                    .ConfigureAwait(false);
+                clientCertificateChain = await LoadCertificateChainAsync(
+                    configuration,
+                    clientCertificate)
+                    .ConfigureAwait(false);
             }
 
             // initialize the channel which will be created with the server.
-            ITransportChannel channel;
             if (connection != null)
             {
-                channel = SessionChannel.CreateUaBinaryChannel(
+                return UaChannelBase.CreateUaBinaryChannel(
                     configuration,
                     connection,
                     endpointDescription,
@@ -1044,47 +911,14 @@ namespace Technosoftware.UaClient
                     clientCertificateChain,
                     messageContext);
             }
-            else
-            {
-                channel = SessionChannel.Create(
-                     configuration,
-                     endpointDescription,
-                     endpointConfiguration,
-                     clientCertificate,
-                     clientCertificateChain,
-                     messageContext);
-            }
 
-            return channel;
-        }
-
-        /// <summary>
-        /// Creates a new communication session with a server using a reverse connection.
-        /// </summary>
-        /// <param name="configuration">The configuration for the client application.</param>
-        /// <param name="connection">The client endpoint for the reverse connect.</param>
-        /// <param name="endpoint">The endpoint for the server.</param>
-        /// <param name="updateBeforeConnect">If set to <c>true</c> the discovery endpoint is used to update the endpoint description before connecting.</param>
-        /// <param name="checkDomain">If set to <c>true</c> then the domain in the certificate must match the endpoint used.</param>
-        /// <param name="sessionName">The name to assign to the session.</param>
-        /// <param name="sessionTimeout">The timeout period for the session.</param>
-        /// <param name="identity">The user identity to associate with the session.</param>
-        /// <param name="preferredLocales">The preferred locales.</param>
-        /// <param name="ct">The cancellation token.</param>
-        /// <returns>The new session object.</returns>
-        public static Task<Session> Create(
-            ApplicationConfiguration configuration,
-            ITransportWaitingConnection connection,
-            ConfiguredEndpoint endpoint,
-            bool updateBeforeConnect,
-            bool checkDomain,
-            string sessionName,
-            uint sessionTimeout,
-            IUserIdentity identity,
-            IList<string> preferredLocales,
-            CancellationToken ct = default)
-        {
-            return CreateAsync(DefaultSessionFactory.Instance, configuration, connection, endpoint, updateBeforeConnect, checkDomain, sessionName, sessionTimeout, identity, preferredLocales, ct);
+            return SessionChannel.Create(
+                configuration,
+                endpointDescription,
+                endpointConfiguration,
+                clientCertificate,
+                clientCertificateChain,
+                messageContext);
         }
 
         /// <summary>
@@ -1094,8 +928,10 @@ namespace Technosoftware.UaClient
         /// <param name="configuration">The configuration for the client application.</param>
         /// <param name="connection">The client endpoint for the reverse connect.</param>
         /// <param name="endpoint">The endpoint for the server.</param>
-        /// <param name="updateBeforeConnect">If set to <c>true</c> the discovery endpoint is used to update the endpoint description before connecting.</param>
-        /// <param name="checkDomain">If set to <c>true</c> then the domain in the certificate must match the endpoint used.</param>
+        /// <param name="updateBeforeConnect">If set to <c>true</c> the discovery endpoint is used to
+        /// update the endpoint description before connecting.</param>
+        /// <param name="checkDomain">If set to <c>true</c> then the domain in the certificate must match
+        /// the endpoint used.</param>
         /// <param name="sessionName">The name to assign to the session.</param>
         /// <param name="sessionTimeout">The timeout period for the session.</param>
         /// <param name="identity">The user identity to associate with the session.</param>
@@ -1116,7 +952,14 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             // initialize the channel which will be created with the server.
-            ITransportChannel channel = await Session.CreateChannelAsync(configuration, connection, endpoint, updateBeforeConnect, checkDomain, ct).ConfigureAwait(false);
+            ITransportChannel channel = await CreateChannelAsync(
+                    configuration,
+                    connection,
+                    endpoint,
+                    updateBeforeConnect,
+                    checkDomain,
+                    ct)
+                .ConfigureAwait(false);
 
             // create the session object.
             Session session = sessionInstantiator.Create(channel, configuration, endpoint, null);
@@ -1124,7 +967,15 @@ namespace Technosoftware.UaClient
             // create the session.
             try
             {
-                await session.OpenAsync(sessionName, sessionTimeout, identity, preferredLocales, checkDomain, ct).ConfigureAwait(false);
+                await session
+                    .OpenAsync(
+                        sessionName,
+                        sessionTimeout,
+                        identity,
+                        preferredLocales,
+                        checkDomain,
+                        ct)
+                    .ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -1141,15 +992,17 @@ namespace Technosoftware.UaClient
         /// <param name="configuration">The configuration for the client application.</param>
         /// <param name="reverseConnectManager">The reverse connect manager for the client connection.</param>
         /// <param name="endpoint">The endpoint for the server.</param>
-        /// <param name="updateBeforeConnect">If set to <c>true</c> the discovery endpoint is used to update the endpoint description before connecting.</param>
-        /// <param name="checkDomain">If set to <c>true</c> then the domain in the certificate must match the endpoint used.</param>
+        /// <param name="updateBeforeConnect">If set to <c>true</c> the discovery endpoint is used to
+        /// update the endpoint description before connecting.</param>
+        /// <param name="checkDomain">If set to <c>true</c> then the domain in the certificate must match
+        /// the endpoint used.</param>
         /// <param name="sessionName">The name to assign to the session.</param>
         /// <param name="sessionTimeout">The timeout period for the session.</param>
         /// <param name="userIdentity">The user identity to associate with the session.</param>
         /// <param name="preferredLocales">The preferred locales.</param>
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The new session object.</returns>
-        public static Task<Session> Create(
+        public static Task<Session> CreateAsync(
             ApplicationConfiguration configuration,
             ReverseConnectManager reverseConnectManager,
             ConfiguredEndpoint endpoint,
@@ -1159,10 +1012,20 @@ namespace Technosoftware.UaClient
             uint sessionTimeout,
             IUserIdentity userIdentity,
             IList<string> preferredLocales,
-            CancellationToken ct = default
-            )
+            CancellationToken ct = default)
         {
-            return CreateAsync(DefaultSessionFactory.Instance, configuration, reverseConnectManager, endpoint, updateBeforeConnect, checkDomain, sessionName, sessionTimeout, userIdentity, preferredLocales, ct);
+            return CreateAsync(
+                DefaultSessionFactory.Instance,
+                configuration,
+                reverseConnectManager,
+                endpoint,
+                updateBeforeConnect,
+                checkDomain,
+                sessionName,
+                sessionTimeout,
+                userIdentity,
+                preferredLocales,
+                ct);
         }
 
         /// <summary>
@@ -1172,8 +1035,10 @@ namespace Technosoftware.UaClient
         /// <param name="configuration">The configuration for the client application.</param>
         /// <param name="reverseConnectManager">The reverse connect manager for the client connection.</param>
         /// <param name="endpoint">The endpoint for the server.</param>
-        /// <param name="updateBeforeConnect">If set to <c>true</c> the discovery endpoint is used to update the endpoint description before connecting.</param>
-        /// <param name="checkDomain">If set to <c>true</c> then the domain in the certificate must match the endpoint used.</param>
+        /// <param name="updateBeforeConnect">If set to <c>true</c> the discovery endpoint is used to
+        /// update the endpoint description before connecting.</param>
+        /// <param name="checkDomain">If set to <c>true</c> then the domain in the certificate must
+        /// match the endpoint used.</param>
         /// <param name="sessionName">The name to assign to the session.</param>
         /// <param name="sessionTimeout">The timeout period for the session.</param>
         /// <param name="userIdentity">The user identity to associate with the session.</param>
@@ -1191,207 +1056,100 @@ namespace Technosoftware.UaClient
             uint sessionTimeout,
             IUserIdentity userIdentity,
             IList<string> preferredLocales,
-            CancellationToken ct = default
-            )
+            CancellationToken ct = default)
         {
             if (reverseConnectManager == null)
             {
-                return await CreateAsync(sessionInstantiator, configuration, (ITransportWaitingConnection)null, endpoint, updateBeforeConnect, checkDomain, sessionName, sessionTimeout, userIdentity, preferredLocales, ct).ConfigureAwait(false);
+                return await CreateAsync(
+                        sessionInstantiator,
+                        configuration,
+                        (ITransportWaitingConnection)null,
+                        endpoint,
+                        updateBeforeConnect,
+                        checkDomain,
+                        sessionName,
+                        sessionTimeout,
+                        userIdentity,
+                        preferredLocales,
+                        ct)
+                    .ConfigureAwait(false);
             }
 
-            ITransportWaitingConnection connection = null;
+            ITransportWaitingConnection connection;
             do
             {
-                connection = await reverseConnectManager.WaitForConnectionAsync(
-                    endpoint.EndpointUrl,
-                    endpoint.ReverseConnect?.ServerUri,
-                    ct).ConfigureAwait(false);
+                connection = await reverseConnectManager
+                    .WaitForConnectionAsync(
+                        endpoint.EndpointUrl,
+                        endpoint.ReverseConnect?.ServerUri,
+                        ct)
+                    .ConfigureAwait(false);
 
                 if (updateBeforeConnect)
                 {
-                    await endpoint.UpdateFromServerAsync(
-                        endpoint.EndpointUrl, connection,
-                        endpoint.Description.SecurityMode,
-                        endpoint.Description.SecurityPolicyUri,
-                        ct).ConfigureAwait(false);
+                    await endpoint
+                        .UpdateFromServerAsync(
+                            endpoint.EndpointUrl,
+                            connection,
+                            endpoint.Description.SecurityMode,
+                            endpoint.Description.SecurityPolicyUri,
+                            ct)
+                        .ConfigureAwait(false);
                     updateBeforeConnect = false;
                     connection = null;
                 }
             } while (connection == null);
 
             return await CreateAsync(
-                sessionInstantiator,
-                configuration,
-                connection,
-                endpoint,
-                false,
-                checkDomain,
-                sessionName,
-                sessionTimeout,
-                userIdentity,
-                preferredLocales,
-                ct).ConfigureAwait(false);
+                    sessionInstantiator,
+                    configuration,
+                    connection,
+                    endpoint,
+                    false,
+                    checkDomain,
+                    sessionName,
+                    sessionTimeout,
+                    userIdentity,
+                    preferredLocales,
+                    ct)
+                .ConfigureAwait(false);
         }
-
-        /// <summary>
-        /// Recreates a session based on a specified template.
-        /// </summary>
-        /// <param name="template">The Session object to use as template</param>
-        /// <returns>The new session object.</returns>
-        public static Session Recreate(Session template)
-        {
-            var messageContext = template.m_configuration.CreateMessageContext();
-            messageContext.Factory = template.Factory;
-
-            // create the channel object used to connect to the server.
-            ITransportChannel channel = SessionChannel.Create(
-                template.m_configuration,
-                template.ConfiguredEndpoint.Description,
-                template.ConfiguredEndpoint.Configuration,
-                template.m_instanceCertificate,
-                template.m_configuration.SecurityConfiguration.SendCertificateChain ?
-                    template.m_instanceCertificateChain : null,
-                messageContext);
-
-            // create the session object.
-            Session session = template.CloneSession(channel, true);
-
-            try
-            {
-                session.RecreateRenewUserIdentity();
-                // open the session.
-                session.Open(
-                    template.SessionName,
-                    (uint)template.SessionTimeout,
-                    session.Identity,
-                    template.PreferredLocales,
-                    template.m_checkDomain);
-
-                session.RecreateSubscriptions(template.Subscriptions);
-            }
-            catch (Exception e)
-            {
-                session.Dispose();
-                ThrowCouldNotRecreateSessionException(e, template.SessionName);
-            }
-
-            return session;
-        }
-
-        /// <summary>
-        /// Recreates a session based on a specified template.
-        /// </summary>
-        /// <param name="template">The Session object to use as template</param>
-        /// <param name="connection">The waiting reverse connection.</param>
-        /// <returns>The new session object.</returns>
-        public static Session Recreate(Session template, ITransportWaitingConnection connection)
-        {
-            var messageContext = template.m_configuration.CreateMessageContext();
-            messageContext.Factory = template.Factory;
-
-            // create the channel object used to connect to the server.
-            ITransportChannel channel = SessionChannel.Create(
-                template.m_configuration,
-                connection,
-                template.m_endpoint.Description,
-                template.m_endpoint.Configuration,
-                template.m_instanceCertificate,
-                template.m_configuration.SecurityConfiguration.SendCertificateChain ?
-                    template.m_instanceCertificateChain : null,
-                messageContext);
-
-            // create the session object.
-            Session session = template.CloneSession(channel, true);
-
-            try
-            {
-                session.RecreateRenewUserIdentity();
-                // open the session.
-                session.Open(
-                    template.m_sessionName,
-                    (uint)template.m_sessionTimeout,
-                    session.Identity,
-                    template.m_preferredLocales,
-                    template.m_checkDomain);
-
-                session.RecreateSubscriptions(template.Subscriptions);
-            }
-            catch (Exception e)
-            {
-                session.Dispose();
-                ThrowCouldNotRecreateSessionException(e, template.m_sessionName);
-            }
-
-            return session;
-        }
-
-        /// <summary>
-        /// Recreates a session based on a specified template using the provided channel.
-        /// </summary>
-        /// <param name="template">The Session object to use as template</param>
-        /// <param name="transportChannel">The waiting reverse connection.</param>
-        /// <returns>The new session object.</returns>
-        public static Session Recreate(Session template, ITransportChannel transportChannel)
-        {
-            var messageContext = template.m_configuration.CreateMessageContext();
-            messageContext.Factory = template.Factory;
-
-            // create the session object.
-            Session session = template.CloneSession(transportChannel, true);
-
-            try
-            {
-                session.RecreateRenewUserIdentity();
-                // open the session.
-                session.Open(
-                    template.m_sessionName,
-                    (uint)template.m_sessionTimeout,
-                    session.Identity,
-                    template.m_preferredLocales,
-                    template.m_checkDomain,
-                    false);
-
-                // create the subscriptions.
-                foreach (Subscription subscription in session.Subscriptions)
-                {
-                    subscription.Create();
-                }
-            }
-            catch (Exception e)
-            {
-                session.Dispose();
-                ThrowCouldNotRecreateSessionException(e, template.m_sessionName);
-            }
-
-            return session;
-        }
-        #endregion
+        #endregion Public Static Methods
 
         #region Events
         /// <inheritdoc/>
-        public event RenewUserIdentity RenewUserIdentityEvent
+        public event RenewUserIdentityEventHandler RenewUserIdentity
         {
-            add { m_RenewUserIdentity += value; }
-            remove { m_RenewUserIdentity -= value; }
+            add => m_RenewUserIdentity += value;
+            remove => m_RenewUserIdentity -= value;
         }
-        #endregion
+        #endregion Events
+
+        private event RenewUserIdentityEventHandler m_RenewUserIdentity;
 
         #region Public Methods
         /// <inheritdoc/>
         public bool ApplySessionConfiguration(SessionConfiguration sessionConfiguration)
         {
             if (sessionConfiguration == null)
+            {
                 throw new ArgumentNullException(nameof(sessionConfiguration));
+            }
 
             byte[] serverCertificate = m_endpoint.Description?.ServerCertificate;
             m_sessionName = sessionConfiguration.SessionName;
-            m_serverCertificate = serverCertificate != null ? X509CertificateLoader.LoadCertificate(serverCertificate) : null;
+            m_serverCertificate =
+                serverCertificate != null
+                    ? X509CertificateLoader.LoadCertificate(serverCertificate)
+                    : null;
             m_identity = sessionConfiguration.Identity;
             m_checkDomain = sessionConfiguration.CheckDomain;
             m_serverNonce = sessionConfiguration.ServerNonce.Data;
             m_userTokenSecurityPolicyUri = sessionConfiguration.UserIdentityTokenPolicy;
             m_eccServerEphemeralKey = sessionConfiguration.ServerEccEphemeralKey;
-            SessionCreated(sessionConfiguration.SessionId, sessionConfiguration.AuthenticationToken);
+            SessionCreated(
+                sessionConfiguration.SessionId,
+                sessionConfiguration.AuthenticationToken);
 
             return true;
         }
@@ -1399,114 +1157,25 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public SessionConfiguration SaveSessionConfiguration(Stream stream = null)
         {
+            var serverNonce = Nonce.CreateNonce(
+                m_endpoint.Description?.SecurityPolicyUri,
+                m_serverNonce);
 
-            Nonce serverNonce = Nonce.CreateNonce(m_endpoint.Description?.SecurityPolicyUri, m_serverNonce);
-
-            var sessionConfiguration = new SessionConfiguration(this, serverNonce, m_userTokenSecurityPolicyUri, m_eccServerEphemeralKey, AuthenticationToken);
+            var sessionConfiguration = new SessionConfiguration(
+                this,
+                serverNonce,
+                m_userTokenSecurityPolicyUri,
+                m_eccServerEphemeralKey,
+                AuthenticationToken);
 
             if (stream != null)
             {
                 XmlWriterSettings settings = Utils.DefaultXmlWriterSettings();
-                using (XmlWriter writer = XmlWriter.Create(stream, settings))
-                {
-                    DataContractSerializer serializer = new DataContractSerializer(typeof(SessionConfiguration));
-                    serializer.WriteObject(writer, sessionConfiguration);
-                }
+                using var writer = XmlWriter.Create(stream, settings);
+                var serializer = new DataContractSerializer(typeof(SessionConfiguration));
+                serializer.WriteObject(writer, sessionConfiguration);
             }
             return sessionConfiguration;
-        }
-
-        /// <inheritdoc/>
-        public void Reconnect()
-            => Reconnect(null, null);
-
-        /// <inheritdoc/>
-        public void Reconnect(ITransportWaitingConnection connection)
-            => Reconnect(connection, null);
-
-        /// <inheritdoc/>
-        public void Reconnect(ITransportChannel channel)
-            => Reconnect(null, channel);
-
-        /// <summary>
-        /// Reconnects to the server after a network failure using a waiting connection.
-        /// </summary>
-        private void Reconnect(ITransportWaitingConnection connection, ITransportChannel transportChannel)
-        {
-            bool resetReconnect = false;
-            try
-            {
-                m_reconnectLock.Wait();
-                bool reconnecting = m_reconnecting;
-                m_reconnecting = true;
-                resetReconnect = true;
-                m_reconnectLock.Release();
-
-                // check if already connecting.
-                if (reconnecting)
-                {
-                    Utils.LogWarning("Session is already attempting to reconnect.");
-
-                    throw ServiceResultException.Create(
-                        StatusCodes.BadInvalidState,
-                        "Session is already attempting to reconnect.");
-                }
-
-                StopKeepAliveTimer();
-
-                IAsyncResult result = PrepareReconnectBeginActivate(
-                            connection,
-                    transportChannel);
-
-                if (!result.AsyncWaitHandle.WaitOne(kReconnectTimeout / 2))
-                {
-                    var error = ServiceResult.Create(StatusCodes.BadRequestTimeout, "ACTIVATE SESSION timed out. {0}/{1}", GoodPublishRequestCount, OutstandingRequestCount);
-                    Utils.LogWarning("WARNING: {0}", error.ToString());
-                    var operation = result as ChannelAsyncOperation<int>;
-                    operation?.Fault(false, error);
-                }
-
-                // reactivate session.
-                byte[] serverNonce = null;
-                StatusCodeCollection certificateResults = null;
-                DiagnosticInfoCollection certificateDiagnosticInfos = null;
-
-                var responseHeader = EndActivateSession(
-                    result,
-                    out serverNonce,
-                    out certificateResults,
-                    out certificateDiagnosticInfos);
-
-                ProcessResponseAdditionalHeader(responseHeader, m_serverCertificate);
-
-                Utils.LogInfo("Session RECONNECT {0} completed successfully.", SessionId);
-
-                lock (SyncRoot)
-                {
-                    m_previousServerNonce = m_serverNonce;
-                    m_serverNonce = serverNonce;
-                }
-
-                m_reconnectLock.Wait();
-                m_reconnecting = false;
-                resetReconnect = false;
-                m_reconnectLock.Release();
-
-                StartPublishing(OperationTimeout, true);
-
-                StartKeepAliveTimer();
-
-                IndicateSessionConfigurationChanged();
-            }
-            finally
-            {
-                if (resetReconnect)
-                {
-                    m_reconnectLock.Wait();
-                    m_reconnecting = false;
-                    m_reconnectLock.Release();
-                }
-            }
         }
 
         /// <inheritdoc/>
@@ -1516,887 +1185,166 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public void Save(Stream stream, IEnumerable<Subscription> subscriptions, IEnumerable<Type> knownTypes = null)
+        public void Save(
+            Stream stream,
+            IEnumerable<Subscription> subscriptions,
+            IEnumerable<Type> knownTypes = null)
         {
-            SubscriptionCollection subscriptionList = new SubscriptionCollection(subscriptions);
+            var subscriptionList = new SubscriptionCollection(subscriptions);
             XmlWriterSettings settings = Utils.DefaultXmlWriterSettings();
 
-            using (XmlWriter writer = XmlWriter.Create(stream, settings))
-            {
-                DataContractSerializer serializer = new DataContractSerializer(typeof(SubscriptionCollection), knownTypes);
-                serializer.WriteObject(writer, subscriptionList);
-            }
+            using var writer = XmlWriter.Create(stream, settings);
+            var serializer = new DataContractSerializer(typeof(SubscriptionCollection), knownTypes);
+            serializer.WriteObject(writer, subscriptionList);
         }
 
         /// <inheritdoc/>
-        public void Save(string filePath, IEnumerable<Subscription> subscriptions, IEnumerable<Type> knownTypes = null)
+        public void Save(
+            string filePath,
+            IEnumerable<Subscription> subscriptions,
+            IEnumerable<Type> knownTypes = null)
         {
-            using (FileStream stream = new FileStream(filePath, FileMode.Create))
-            {
-                Save(stream, subscriptions, knownTypes);
-            }
+            using var stream = new FileStream(filePath, FileMode.Create);
+            Save(stream, subscriptions, knownTypes);
         }
 
         /// <inheritdoc/>
-        public IEnumerable<Subscription> Load(Stream stream, bool transferSubscriptions = false, IEnumerable<Type> knownTypes = null)
+        public IEnumerable<Subscription> Load(
+            Stream stream,
+            bool transferSubscriptions = false,
+            IEnumerable<Type> knownTypes = null)
         {
             // secure settings
             XmlReaderSettings settings = Utils.DefaultXmlReaderSettings();
             settings.CloseInput = true;
 
-            using (XmlReader reader = XmlReader.Create(stream, settings))
+            using var reader = XmlReader.Create(stream, settings);
+            var serializer = new DataContractSerializer(typeof(SubscriptionCollection), knownTypes);
+            var subscriptions = (SubscriptionCollection)serializer.ReadObject(reader);
+            foreach (Subscription subscription in subscriptions)
             {
-                DataContractSerializer serializer = new DataContractSerializer(typeof(SubscriptionCollection), knownTypes);
-                SubscriptionCollection subscriptions = (SubscriptionCollection)serializer.ReadObject(reader);
-                foreach (Subscription subscription in subscriptions)
+                if (!transferSubscriptions)
                 {
-                    if (!transferSubscriptions)
+                    // ServerId must be reset if the saved list of subscriptions
+                    // is not used to transfer a subscription
+                    foreach (MonitoredItem monitoredItem in subscription.MonitoredItems)
                     {
-                        // ServerId must be reset if the saved list of subscriptions
-                        // is not used to transfer a subscription
-                        foreach (var monitoredItem in subscription.MonitoredItems)
-                        {
-                            monitoredItem.ServerId = 0;
-                        }
+                        monitoredItem.ServerId = 0;
                     }
-                    AddSubscription(subscription);
                 }
-                return subscriptions;
+                AddSubscription(subscription);
             }
+            return subscriptions;
         }
 
         /// <inheritdoc/>
-        public IEnumerable<Subscription> Load(string filePath, bool transferSubscriptions = false, IEnumerable<Type> knownTypes = null)
+        public IEnumerable<Subscription> Load(
+            string filePath,
+            bool transferSubscriptions = false,
+            IEnumerable<Type> knownTypes = null)
         {
-            using (FileStream stream = File.OpenRead(filePath))
+            using FileStream stream = File.OpenRead(filePath);
+            return Load(stream, transferSubscriptions, knownTypes);
+        }
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(this, obj))
             {
-                return Load(stream, transferSubscriptions, knownTypes);
+                return true;
             }
+
+            if (obj is IUaSession session)
+            {
+                if (!m_endpoint.Equals(session.Endpoint))
+                {
+                    return false;
+                }
+
+                if (!m_sessionName.Equals(session.SessionName, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                if (!SessionId.Equals(session.SessionId))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         /// <inheritdoc/>
-        public void FetchNamespaceTables()
+        public override int GetHashCode()
         {
-            ReadValueIdCollection nodesToRead = PrepareNamespaceTableNodesToRead();
-
-            // read from server.
-            ResponseHeader responseHeader = base.Read(
-                null,
-                0,
-                TimestampsToReturn.Neither,
-                nodesToRead,
-                out DataValueCollection values,
-                out DiagnosticInfoCollection diagnosticInfos);
-
-            ValidateResponse(values, nodesToRead);
-            ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            UpdateNamespaceTable(values, diagnosticInfos, responseHeader);
+            return HashCode.Combine(m_endpoint, m_sessionName, SessionId);
         }
 
         /// <summary>
-        /// Fetch the operation limits of the server.
+        /// An overrideable version of a session clone which is used
+        /// internally to create new subclassed clones from a Session class.
         /// </summary>
-        public void FetchOperationLimits()
+        public virtual Session CloneSession(ITransportChannel channel, bool copyEventHandlers)
         {
-            try
-            {
-                var operationLimitsProperties = typeof(OperationLimits)
-                    .GetProperties().Select(p => p.Name).ToList();
-
-                var nodeIds = new NodeIdCollection(
-                    operationLimitsProperties.Select(name => (NodeId)typeof(VariableIds)
-                    .GetField("Server_ServerCapabilities_OperationLimits_" + name, BindingFlags.Public | BindingFlags.Static)
-                    .GetValue(null))
-                    )
-                {
-                    // add the server capability MaxContinuationPointPerBrowse. Add further capabilities
-                    // later (when support for them will be implemented and in a more generic fashion)
-                    VariableIds.Server_ServerCapabilities_MaxBrowseContinuationPoints
-                };
-                int maxBrowseContinuationPointIndex = nodeIds.Count - 1;
-
-                // add the server transport quota MaxByteStringLength.
-                nodeIds.Add(VariableIds.Server_ServerCapabilities_MaxByteStringLength);
-                int maxByteStringLengthIndex = nodeIds.Count - 1;
-
-                ReadValues(nodeIds, Enumerable.Repeat(typeof(uint), nodeIds.Count).ToList(), out var values, out var errors);
-
-                var configOperationLimits = m_configuration?.ClientConfiguration?.OperationLimits ?? new OperationLimits();
-                var operationLimits = new OperationLimits();
-
-                for (int ii = 0; ii < operationLimitsProperties.Count; ii++)
-                {
-                    var property = typeof(OperationLimits).GetProperty(operationLimitsProperties[ii]);
-                    uint value = (uint)property.GetValue(configOperationLimits);
-                    if (values[ii] != null &&
-                        ServiceResult.IsNotBad(errors[ii]))
-                    {
-                        uint serverValue = (uint)values[ii];
-                        if (serverValue > 0 &&
-                           (value == 0 || serverValue < value))
-                        {
-                            value = serverValue;
-                        }
-                    }
-                    property.SetValue(operationLimits, value);
-                }
-                OperationLimits = operationLimits;
-
-                if (values[maxBrowseContinuationPointIndex] is ushort serverMaxContinuationPointsPerBrowse &&
-                    ServiceResult.IsNotBad(errors[maxBrowseContinuationPointIndex]))
-                {
-                    ServerMaxContinuationPointsPerBrowse = serverMaxContinuationPointsPerBrowse;
-                }
-
-                if (values[maxByteStringLengthIndex] is uint serverMaxByteStringLength &&
-                    ServiceResult.IsNotBad(errors[maxByteStringLengthIndex]))
-                {
-                    ServerMaxByteStringLength = serverMaxByteStringLength;
-                }
-            }
-            catch (Exception ex)
-            {
-                Utils.LogError(ex, "Failed to read operation limits from server. Using configuration defaults.");
-                var operationLimits = m_configuration?.ClientConfiguration?.OperationLimits;
-                if (operationLimits != null)
-                {
-                    OperationLimits = operationLimits;
-                }
-            }
+            return new Session(channel, this, copyEventHandlers);
         }
 
         /// <inheritdoc/>
-        public void FetchTypeTree(ExpandedNodeId typeId)
+        public Task OpenAsync(string sessionName, IUserIdentity identity, CancellationToken ct)
         {
-            Node node = NodeCache.Find(typeId) as Node;
-
-            if (node != null)
-            {
-                var subTypes = new ExpandedNodeIdCollection();
-                foreach (IReference reference in node.Find(ReferenceTypeIds.HasSubtype, false))
-                {
-                    subTypes.Add(reference.TargetId);
-                }
-                if (subTypes.Count > 0)
-                {
-                    FetchTypeTree(subTypes);
-                }
-            }
+            return OpenAsync(sessionName, 0, identity, null, ct);
         }
 
         /// <inheritdoc/>
-        public void FetchTypeTree(ExpandedNodeIdCollection typeIds)
-        {
-            var referenceTypeIds = new NodeIdCollection() { ReferenceTypeIds.HasSubtype };
-            IList<INode> nodes = NodeCache.FindReferences(typeIds, referenceTypeIds, false, false);
-            var subTypes = new ExpandedNodeIdCollection();
-            foreach (INode inode in nodes)
-            {
-                if (inode is Node node)
-                {
-                    foreach (IReference reference in node.Find(ReferenceTypeIds.HasSubtype, false))
-                    {
-                        if (!typeIds.Contains(reference.TargetId))
-                        {
-                            subTypes.Add(reference.TargetId);
-                        }
-                    }
-                }
-            }
-            if (subTypes.Count > 0)
-            {
-                FetchTypeTree(subTypes);
-            }
-        }
-
-        /// <inheritdoc/>
-        public ReferenceDescriptionCollection ReadAvailableEncodings(NodeId variableId)
-        {
-            VariableNode variable = NodeCache.Find(variableId) as VariableNode;
-
-            if (variable == null)
-            {
-                throw ServiceResultException.Create(StatusCodes.BadNodeIdInvalid, "NodeId does not refer to a valid variable node.");
-            }
-
-            // no encodings available if there was a problem reading the data type for the node.
-            if (NodeId.IsNull(variable.DataType))
-            {
-                return [];
-            }
-
-            // no encodings for non-structures.
-            if (!TypeTree.IsTypeOf(variable.DataType, DataTypes.Structure))
-            {
-                return [];
-            }
-
-            // look for cached values.
-            IList<INode> encodings = NodeCache.Find(variableId, ReferenceTypeIds.HasEncoding, false, true);
-
-            if (encodings.Count > 0)
-            {
-                ReferenceDescriptionCollection references = [];
-
-                foreach (INode encoding in encodings)
-                {
-                    ReferenceDescription reference = new ReferenceDescription();
-
-                    reference.ReferenceTypeId = ReferenceTypeIds.HasEncoding;
-                    reference.IsForward = true;
-                    reference.NodeId = encoding.NodeId;
-                    reference.NodeClass = encoding.NodeClass;
-                    reference.BrowseName = encoding.BrowseName;
-                    reference.DisplayName = encoding.DisplayName;
-                    reference.TypeDefinition = encoding.TypeDefinitionId;
-
-                    references.Add(reference);
-                }
-
-                return references;
-            }
-
-            Browser browser = new Browser(this);
-
-            browser.BrowseDirection = BrowseDirection.Forward;
-            browser.ReferenceTypeId = ReferenceTypeIds.HasEncoding;
-            browser.IncludeSubtypes = false;
-            browser.NodeClassMask = 0;
-
-            return browser.Browse(variable.DataType);
-        }
-
-        /// <inheritdoc/>
-        public ReferenceDescription FindDataDescription(NodeId encodingId)
-        {
-            Browser browser = new Browser(this);
-
-            browser.BrowseDirection = BrowseDirection.Forward;
-            browser.ReferenceTypeId = ReferenceTypeIds.HasDescription;
-            browser.IncludeSubtypes = false;
-            browser.NodeClassMask = 0;
-
-            ReferenceDescriptionCollection references = browser.Browse(encodingId);
-
-            if (references.Count == 0)
-            {
-                throw ServiceResultException.Create(StatusCodes.BadNodeIdInvalid, "Encoding does not refer to a valid data description.");
-            }
-
-            return references[0];
-        }
-
-        /// <inheritdoc/>
-        public async Task<DataDictionary> FindDataDictionaryAsync(NodeId descriptionId, CancellationToken ct = default)
-        {
-            // check if the dictionary has already been loaded.
-            foreach (DataDictionary dictionary in m_dictionaries.Values)
-            {
-                if (dictionary.Contains(descriptionId))
-                {
-                    return dictionary;
-                }
-            }
-
-            IList<INode> references = await NodeCache.FindReferencesAsync(descriptionId, ReferenceTypeIds.HasComponent, true, false, ct).ConfigureAwait(false);
-            if (references.Count == 0)
-            {
-                throw ServiceResultException.Create(StatusCodes.BadNodeIdInvalid, "Description does not refer to a valid data dictionary.");
-            }
-
-            // load the dictionary.
-            NodeId dictionaryId = ExpandedNodeId.ToNodeId(references[0].NodeId, m_namespaceUris);
-
-            DataDictionary dictionaryToLoad = new DataDictionary(this);
-
-            dictionaryToLoad.Load(references[0]);
-
-            m_dictionaries[dictionaryId] = dictionaryToLoad;
-
-            return dictionaryToLoad;
-        }
-
-        /// <inheritdoc/>
-        public DataDictionary LoadDataDictionary(ReferenceDescription dictionaryNode, bool forceReload = false)
-        {
-            // check if the dictionary has already been loaded.
-            DataDictionary dictionary;
-            NodeId dictionaryId = ExpandedNodeId.ToNodeId(dictionaryNode.NodeId, m_namespaceUris);
-            if (!forceReload &&
-                m_dictionaries.TryGetValue(dictionaryId, out dictionary))
-            {
-                return dictionary;
-            }
-
-            // load the dictionary.
-            DataDictionary dictionaryToLoad = new DataDictionary(this);
-            dictionaryToLoad.Load(dictionaryId, dictionaryNode.ToString());
-            m_dictionaries[dictionaryId] = dictionaryToLoad;
-            return dictionaryToLoad;
-        }
-
-        /// <inheritdoc/>
-        public async Task<Dictionary<NodeId, DataDictionary>> LoadDataTypeSystemAsync(NodeId dataTypeSystem = null, CancellationToken ct = default)
-        {
-            if (dataTypeSystem == null)
-            {
-                dataTypeSystem = ObjectIds.OPCBinarySchema_TypeSystem;
-            }
-            else
-            if (!Utils.IsEqual(dataTypeSystem, ObjectIds.OPCBinarySchema_TypeSystem) &&
-                !Utils.IsEqual(dataTypeSystem, ObjectIds.XmlSchema_TypeSystem))
-            {
-                throw ServiceResultException.Create(StatusCodes.BadNodeIdInvalid, $"{nameof(dataTypeSystem)} does not refer to a valid data dictionary.");
-            }
-
-            // find the dictionary for the description.
-            IList<INode> references = await this.NodeCache.FindReferencesAsync(dataTypeSystem, ReferenceTypeIds.HasComponent, false, false).ConfigureAwait(false);
-
-            if (references.Count == 0)
-            {
-                throw ServiceResultException.Create(StatusCodes.BadNodeIdInvalid, "Type system does not contain a valid data dictionary.");
-            }
-
-            // batch read all encodings and namespaces
-            var referenceNodeIds = references.Select(r => r.NodeId).ToList();
-
-            // find namespace properties
-            var namespaceReferences = await this.NodeCache.FindReferencesAsync(referenceNodeIds, new NodeIdCollection { ReferenceTypeIds.HasProperty }, false, false).ConfigureAwait(false);
-            var namespaceNodes = namespaceReferences.Where(n => n.BrowseName == BrowseNames.NamespaceUri).ToList();
-            var namespaceNodeIds = namespaceNodes.Select(n => ExpandedNodeId.ToNodeId(n.NodeId, this.NamespaceUris)).ToList();
-
-            // read all schema definitions
-            var referenceExpandedNodeIds = references
-                .Select(r => ExpandedNodeId.ToNodeId(r.NodeId, this.NamespaceUris))
-                .Where(n => n.NamespaceIndex != 0).ToList();
-            IDictionary<NodeId, byte[]> schemas = await DataDictionary.ReadDictionariesAsync(this, referenceExpandedNodeIds, ct).ConfigureAwait(false);
-
-            // read namespace property values
-            var namespaces = new Dictionary<NodeId, string>();
-            ReadValues(namespaceNodeIds, Enumerable.Repeat(typeof(string), namespaceNodeIds.Count).ToList(), out var nameSpaceValues, out var errors);
-
-            // build the namespace dictionary
-            for (int ii = 0; ii < nameSpaceValues.Count; ii++)
-            {
-                if (StatusCode.IsNotBad(errors[ii].StatusCode))
-                {
-                    // servers may optimize space by not returning a dictionary
-                    if (nameSpaceValues[ii] != null)
-                    {
-                        namespaces[((NodeId)referenceNodeIds[ii])] = (string)nameSpaceValues[ii];
-                    }
-                }
-                else
-                {
-                    Utils.LogWarning("Failed to load namespace {0}: {1}", namespaceNodeIds[ii], errors[ii]);
-                }
-            }
-
-            // build the namespace/schema import dictionary
-            var imports = new Dictionary<string, byte[]>();
-            foreach (var r in references)
-            {
-                NodeId nodeId = ExpandedNodeId.ToNodeId(r.NodeId, NamespaceUris);
-                if (schemas.TryGetValue(nodeId, out var schema) && namespaces.TryGetValue(nodeId, out var ns))
-                {
-                    imports[ns] = schema;
-                }
-            }
-
-            // read all type dictionaries in the type system
-            foreach (var r in references)
-            {
-                DataDictionary dictionaryToLoad = null;
-                NodeId dictionaryId = ExpandedNodeId.ToNodeId(r.NodeId, m_namespaceUris);
-                if (dictionaryId.NamespaceIndex != 0 &&
-                    !m_dictionaries.TryGetValue(dictionaryId, out dictionaryToLoad))
-                {
-                    try
-                    {
-                        dictionaryToLoad = new DataDictionary(this);
-                        if (schemas.TryGetValue(dictionaryId, out var schema))
-                        {
-                            dictionaryToLoad.Load(dictionaryId, dictionaryId.ToString(), schema, imports);
-                        }
-                        else
-                        {
-                            dictionaryToLoad.Load(dictionaryId, dictionaryId.ToString());
-                        }
-                        m_dictionaries[dictionaryId] = dictionaryToLoad;
-                    }
-                    catch (Exception ex)
-                    {
-                        Utils.LogError("Dictionary load error for Dictionary {0} : {1}", r.NodeId, ex.Message);
-                    }
-                }
-            }
-
-            return m_dictionaries;
-        }
-
-        /// <inheritdoc/>
-        public void ReadNodes(
-            IList<NodeId> nodeIds,
-            NodeClass nodeClass,
-            out IList<Node> nodeCollection,
-            out IList<ServiceResult> errors,
-            bool optionalAttributes = false)
-        {
-            if (nodeIds.Count == 0)
-            {
-                nodeCollection = new NodeCollection();
-                errors = [];
-                return;
-            }
-
-            if (nodeClass == NodeClass.Unspecified)
-            {
-                ReadNodes(nodeIds, out nodeCollection, out errors, optionalAttributes);
-                return;
-            }
-
-            // determine attributes to read for nodeclass
-            var attributesPerNodeId = new List<IDictionary<uint, DataValue>>(nodeIds.Count);
-            var attributesToRead = new ReadValueIdCollection();
-            nodeCollection = new NodeCollection(nodeIds.Count);
-
-            CreateNodeClassAttributesReadNodesRequest(
-                nodeIds, nodeClass,
-                attributesToRead, attributesPerNodeId,
-                nodeCollection, optionalAttributes);
-
-            ResponseHeader responseHeader = Read(
-                null,
-                0,
-                TimestampsToReturn.Neither,
-                attributesToRead,
-                out DataValueCollection values,
-                out DiagnosticInfoCollection diagnosticInfos);
-
-            ClientBase.ValidateResponse(values, attributesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, attributesToRead);
-
-            errors = new ServiceResult[nodeIds.Count].ToList();
-            ProcessAttributesReadNodesResponse(
-                responseHeader,
-                attributesToRead, attributesPerNodeId,
-                values, diagnosticInfos,
-                nodeCollection, errors);
-        }
-
-        /// <inheritdoc/>
-        public void ReadNodes(
-            IList<NodeId> nodeIds,
-            out IList<Node> nodeCollection,
-            out IList<ServiceResult> errors,
-            bool optionalAttributes = false)
-        {
-            int count = nodeIds.Count;
-            nodeCollection = new NodeCollection(count);
-            errors = new List<ServiceResult>(count);
-
-            if (count == 0)
-            {
-                return;
-            }
-
-            // first read only nodeclasses for nodes from server.
-            var itemsToRead = new ReadValueIdCollection(
-                nodeIds.Select(nodeId =>
-                    new ReadValueId
-                    {
-                        NodeId = nodeId,
-                        AttributeId = Attributes.NodeClass
-                    }));
-
-            DataValueCollection nodeClassValues = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-            ResponseHeader responseHeader = null;
-
-            if (count > 1)
-            {
-                responseHeader = Read(
-                    null,
-                    0,
-                    TimestampsToReturn.Neither,
-                    itemsToRead,
-                    out nodeClassValues,
-                    out diagnosticInfos);
-
-                ClientBase.ValidateResponse(nodeClassValues, itemsToRead);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
-            }
-            else
-            {
-                // for a single node read all attributes to skip the first service call
-                nodeClassValues = [
-                    new DataValue(new Variant((int)NodeClass.Unspecified),
-                    statusCode: StatusCodes.Good)
-                    ];
-            }
-
-            // second determine attributes to read per nodeclass
-            var attributesPerNodeId = new List<IDictionary<uint, DataValue>>(count);
-            var attributesToRead = new ReadValueIdCollection();
-
-            CreateAttributesReadNodesRequest(
-                responseHeader,
-                itemsToRead, nodeClassValues, diagnosticInfos,
-                attributesToRead, attributesPerNodeId,
-                nodeCollection, errors,
-                optionalAttributes);
-
-            if (attributesToRead.Count > 0)
-            {
-                responseHeader = Read(
-                    null,
-                    0,
-                    TimestampsToReturn.Neither,
-                    attributesToRead,
-                    out DataValueCollection values,
-                    out diagnosticInfos);
-
-                ClientBase.ValidateResponse(values, attributesToRead);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, attributesToRead);
-
-                ProcessAttributesReadNodesResponse(
-                    responseHeader,
-                    attributesToRead, attributesPerNodeId,
-                    values, diagnosticInfos,
-                    nodeCollection, errors);
-            }
-        }
-
-        /// <inheritdoc/>
-        public Node ReadNode(NodeId nodeId)
-        {
-            return ReadNode(nodeId, NodeClass.Unspecified, true);
-        }
-
-        /// <inheritdoc/>
-        public Node ReadNode(
-            NodeId nodeId,
-            NodeClass nodeClass,
-            bool optionalAttributes = true)
-        {
-            // build list of attributes.
-            var attributes = CreateAttributes(nodeClass, optionalAttributes);
-
-            // build list of values to read.
-            ReadValueIdCollection itemsToRead = [];
-            foreach (uint attributeId in attributes.Keys)
-            {
-                ReadValueId itemToRead = new ReadValueId
-                {
-                    NodeId = nodeId,
-                    AttributeId = attributeId
-                };
-                itemsToRead.Add(itemToRead);
-            }
-
-            // read from server.
-            DataValueCollection values = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            ResponseHeader responseHeader = Read(
-                null,
-                0,
-                TimestampsToReturn.Neither,
-                itemsToRead,
-                out values,
-                out diagnosticInfos);
-
-            ClientBase.ValidateResponse(values, itemsToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
-
-            return ProcessReadResponse(responseHeader, attributes, itemsToRead, values, diagnosticInfos);
-        }
-
-        /// <inheritdoc/>
-        public DataValue ReadValue(NodeId nodeId)
-        {
-            ReadValueId itemToRead = new ReadValueId
-            {
-                NodeId = nodeId,
-                AttributeId = Attributes.Value
-            };
-
-            ReadValueIdCollection itemsToRead = [
-                itemToRead
-            ];
-
-            // read from server.
-            DataValueCollection values = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            ResponseHeader responseHeader = Read(
-                null,
-                0,
-                TimestampsToReturn.Both,
-                itemsToRead,
-                out values,
-                out diagnosticInfos);
-
-            ClientBase.ValidateResponse(values, itemsToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
-
-            if (StatusCode.IsBad(values[0].StatusCode))
-            {
-                ServiceResult result = ClientBase.GetResult(values[0].StatusCode, 0, diagnosticInfos, responseHeader);
-                throw new ServiceResultException(result);
-            }
-
-            return values[0];
-        }
-
-        /// <inheritdoc/>
-        public void ReadValues(
-            IList<NodeId> nodeIds,
-            out DataValueCollection values,
-            out IList<ServiceResult> errors)
-        {
-            if (nodeIds.Count == 0)
-            {
-                values = [];
-                errors = [];
-                return;
-            }
-
-            // read all values from server.
-            var itemsToRead = new ReadValueIdCollection(
-                nodeIds.Select(nodeId =>
-                    new ReadValueId
-                    {
-                        NodeId = nodeId,
-                        AttributeId = Attributes.Value
-                    }));
-
-            // read from server.
-            errors = new List<ServiceResult>(itemsToRead.Count);
-
-            ResponseHeader responseHeader = Read(
-                null,
-                0,
-                TimestampsToReturn.Both,
-                itemsToRead,
-                out values,
-                out DiagnosticInfoCollection diagnosticInfos);
-
-            ClientBase.ValidateResponse(values, itemsToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
-
-            int ii = 0;
-            foreach (var value in values)
-            {
-                ServiceResult result = ServiceResult.Good;
-                if (StatusCode.IsNotGood(value.StatusCode))
-                {
-                    result = ClientBase.GetResult(value.StatusCode, ii, diagnosticInfos, responseHeader);
-                }
-                errors.Add(result);
-                ii++;
-            }
-        }
-
-        /// <inheritdoc/>
-        public object ReadValue(NodeId nodeId, Type expectedType)
-        {
-            DataValue dataValue = ReadValue(nodeId);
-
-            object value = dataValue.Value;
-
-            if (expectedType != null)
-            {
-                ExtensionObject extension = value as ExtensionObject;
-
-                if (extension != null)
-                {
-                    value = extension.Body;
-                }
-
-                if (!expectedType.IsInstanceOfType(value))
-                {
-                    throw ServiceResultException.Create(
-                        StatusCodes.BadTypeMismatch,
-                        "Server returned value unexpected type: {0}",
-                        (value != null) ? value.GetType().Name : "(null)");
-                }
-            }
-
-            return value;
-        }
-
-        /// <summary>
-        ///     Writes the value of a node.
-        /// </summary>
-        /// <param name="nodeId">The node Id.</param>
-        /// <param name="value">The value to write</param>
-        /// <returns>Status of the write operation</returns>
-        public StatusCode WriteValue(NodeId nodeId, DataValue value)
-        {
-            var values = new WriteValueCollection();
-
-            var writeValue = new WriteValue { NodeId = nodeId, AttributeId = Attributes.Value, Value = value };
-            values.Add(writeValue);
-
-            // Call the Write service
-            _ = Write(null, values, out StatusCodeCollection results, out DiagnosticInfoCollection diagnosticInfos);
-
-            // validate response from the UA server.
-            ValidateResponse(results, values);
-            ValidateDiagnosticInfos(diagnosticInfos, values);
-
-            return results[0];
-        }
-
-        /// <summary>
-        ///     Writes the value of the specified nodes.
-        /// </summary>
-        /// <param name="nodeIds">The node Ids.</param>
-        /// <param name="dataValues">The values to write</param>
-        /// <returns>Status of the write operation for each of the specified node Ids.</returns>
-        public List<StatusCode> WriteValues(IList<NodeId> nodeIds, IList<DataValue> dataValues)
-        {
-            var values = new WriteValueCollection();
-
-            for (var ii = 0; ii < nodeIds.Count; ii++)
-            {
-                var writeValue = new WriteValue { NodeId = nodeIds[ii], AttributeId = Attributes.Value, Value = dataValues[ii] };
-                values.Add(writeValue);
-            }
-
-            // Call the Write service
-            _ = Write(null, values, out StatusCodeCollection results, out DiagnosticInfoCollection diagnosticInfos);
-
-            // validate response from the UA server.
-            ValidateResponse(results, values);
-            ValidateDiagnosticInfos(diagnosticInfos, values);
-
-            return results;
-        }
-
-        /// <summary>
-        ///     Writes the value of the specified nodes.
-        /// </summary>
-        /// <param name="nodeIds">The node Ids.</param>
-        /// <param name="dataValues">The values to write</param>
-        /// <param name="callback">The callback to to be called as soon as the write operation is finished.</param>
-        /// <param name="userData">The user data that is passed to the callback.</param>
-        /// <returns>An object which must be passed to the EndWriteValues method.</returns>
-        public IAsyncResult BeginWriteValues(
-                                IList<NodeId> nodeIds,
-                                IList<DataValue> dataValues,
-                                AsyncCallback callback,
-                                object userData)
-        {
-            var values = new WriteValueCollection();
-
-            for (var ii = 0; ii < nodeIds.Count; ii++)
-            {
-                var writeValue = new WriteValue { NodeId = nodeIds[ii], AttributeId = Attributes.Value, Value = dataValues[ii] };
-                values.Add(writeValue);
-            }
-
-            // Call the Write service
-            return BeginWrite(null, values, callback, userData);
-
-        }
-
-        /// <summary>
-        /// Finishes an asynchronous invocation of the Write service.
-        /// </summary>
-        /// <param name="result">The result returned from BeginWriteValues method.</param>
-        /// <returns>Status of the write operation for each of the specified node Ids.</returns>
-        public List<StatusCode> EndWriteValues(
-            IAsyncResult result)
-        {
-            _ = EndWrite(result, out StatusCodeCollection results, out _);
-
-            return results;
-        }
-
-        /// <inheritdoc/>
-        public ReferenceDescriptionCollection FetchReferences(NodeId nodeId)
-        {
-            ManagedBrowse(
-                requestHeader: null,
-                view: null,
-                nodesToBrowse: [nodeId],
-                maxResultsToReturn: 0,
-                browseDirection: BrowseDirection.Both,
-                referenceTypeId: null,
-                includeSubtypes: true,
-                nodeClassMask: 0,
-                out IList<ReferenceDescriptionCollection> descriptionsList,
-                out var errors
-                );
-            return descriptionsList[0];
-        }
-
-        /// <inheritdoc/>
-        public void FetchReferences(
-            IList<NodeId> nodeIds,
-            out IList<ReferenceDescriptionCollection> referenceDescriptions,
-            out IList<ServiceResult> errors)
-        {
-            ManagedBrowse(
-                requestHeader: null,
-                view: null,
-                nodesToBrowse: nodeIds,
-                maxResultsToReturn: 0,
-                browseDirection: BrowseDirection.Both,
-                referenceTypeId: null,
-                includeSubtypes: true,
-                nodeClassMask: 0,
-                out var result,
-                out var errors01
-                );
-
-            errors = errors01;
-            referenceDescriptions = result;
-            return;
-        }
-
-        /// <inheritdoc/>
-        public void Open(
-            string sessionName,
-            IUserIdentity identity)
-        {
-            Open(sessionName, 0, identity, null);
-        }
-
-        /// <inheritdoc/>
-        public void Open(
-            string sessionName,
-            uint sessionTimeout,
-            IUserIdentity identity,
-            IList<string> preferredLocales)
-        {
-            Open(sessionName, sessionTimeout, identity, preferredLocales, true);
-        }
-        /// <inheritdoc/>
-        public void Open(
+        public Task OpenAsync(
             string sessionName,
             uint sessionTimeout,
             IUserIdentity identity,
             IList<string> preferredLocales,
-            bool checkDomain)
+            CancellationToken ct)
         {
-            Open(sessionName, sessionTimeout, identity, preferredLocales, checkDomain, true);
+            return OpenAsync(sessionName, sessionTimeout, identity, preferredLocales, true, ct);
         }
 
         /// <inheritdoc/>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
-        public void Open(
+        public Task OpenAsync(
             string sessionName,
             uint sessionTimeout,
             IUserIdentity identity,
             IList<string> preferredLocales,
             bool checkDomain,
-            bool closeChannel)
+            CancellationToken ct)
         {
-            OpenValidateIdentity(ref identity, out var identityToken, out var identityPolicy, out string securityPolicyUri, out bool requireEncryption);
+            return OpenAsync(
+                sessionName,
+                sessionTimeout,
+                identity,
+                preferredLocales,
+                checkDomain,
+                true,
+                ct);
+        }
+
+        /// <inheritdoc/>
+        public async Task OpenAsync(
+            string sessionName,
+            uint sessionTimeout,
+            IUserIdentity identity,
+            IList<string> preferredLocales,
+            bool checkDomain,
+            bool closeChannel,
+            CancellationToken ct)
+        {
+            OpenValidateIdentity(
+                ref identity,
+                out UserIdentityToken identityToken,
+                out UserTokenPolicy identityPolicy,
+                out string securityPolicyUri,
+                out bool requireEncryption);
 
             // validate the server certificate /certificate chain.
             X509Certificate2 serverCertificate = null;
@@ -2404,7 +1352,8 @@ namespace Technosoftware.UaClient
 
             if (certificateData != null && certificateData.Length > 0)
             {
-                X509Certificate2Collection serverCertificateChain = Utils.ParseCertificateChainBlob(certificateData);
+                X509Certificate2Collection serverCertificateChain = Utils.ParseCertificateChainBlob(
+                    certificateData);
 
                 if (serverCertificateChain.Count > 0)
                 {
@@ -2417,11 +1366,18 @@ namespace Technosoftware.UaClient
                     // ValidateServerCertificateApplicationUri(serverCertificate);
                     if (checkDomain)
                     {
-                        m_configuration.CertificateValidator.Validate(serverCertificateChain, m_endpoint);
+                        await m_configuration
+                            .CertificateValidator.ValidateAsync(
+                                serverCertificateChain,
+                                m_endpoint,
+                                ct)
+                            .ConfigureAwait(false);
                     }
                     else
                     {
-                        m_configuration.CertificateValidator.Validate(serverCertificateChain);
+                        await m_configuration
+                            .CertificateValidator.ValidateAsync(serverCertificateChain, ct)
+                            .ConfigureAwait(false);
                     }
                     // save for reconnect
                     m_checkDomain = checkDomain;
@@ -2431,18 +1387,13 @@ namespace Technosoftware.UaClient
             // create a nonce.
             uint length = (uint)m_configuration.SecurityConfiguration.NonceLength;
             byte[] clientNonce = Nonce.CreateRandomNonceData(length);
-            NodeId sessionId = null;
-            NodeId sessionCookie = null;
-            byte[] serverNonce = Array.Empty<byte>();
-            byte[] serverCertificateData = Array.Empty<byte>();
-            SignatureData serverSignature = null;
-            EndpointDescriptionCollection serverEndpoints = null;
-            SignedSoftwareCertificateCollection serverSoftwareCertificates = null;
 
             // send the application instance certificate for the client.
-            BuildCertificateData(out byte[] clientCertificateData, out byte[] clientCertificateChainData);
+            BuildCertificateData(
+                out byte[] clientCertificateData,
+                out byte[] clientCertificateChainData);
 
-            ApplicationDescription clientDescription = new ApplicationDescription
+            var clientDescription = new ApplicationDescription
             {
                 ApplicationUri = m_configuration.ApplicationUri,
                 ApplicationName = m_configuration.ApplicationName,
@@ -2456,10 +1407,12 @@ namespace Technosoftware.UaClient
             }
 
             // select the security policy for the user token.
-            RequestHeader requestHeader = CreateRequestHeaderPerUserTokenPolicy(identityPolicy.SecurityPolicyUri, m_endpoint.Description.SecurityPolicyUri);
+            RequestHeader requestHeader = CreateRequestHeaderPerUserTokenPolicy(
+                identityPolicy.SecurityPolicyUri,
+                m_endpoint.Description.SecurityPolicyUri);
 
             bool successCreateSession = false;
-            ResponseHeader responseHeader = null;
+            CreateSessionResponse response = null;
 
             //if security none, first try to connect without certificate
             if (m_endpoint.Description.SecurityPolicyUri == SecurityPolicies.None)
@@ -2467,57 +1420,56 @@ namespace Technosoftware.UaClient
                 //first try to connect with client certificate NULL
                 try
                 {
-                    responseHeader = base.CreateSession(
-                        null,
-                        clientDescription,
-                        m_endpoint.Description.Server.ApplicationUri,
-                        m_endpoint.EndpointUrl.ToString(),
-                        sessionName,
-                        clientNonce,
-                        null,
-                        sessionTimeout,
-                        (uint)MessageContext.MaxMessageSize,
-                        out sessionId,
-                        out sessionCookie,
-                        out m_sessionTimeout,
-                        out serverNonce,
-                        out serverCertificateData,
-                        out serverEndpoints,
-                        out serverSoftwareCertificates,
-                        out serverSignature,
-                        out m_maxRequestMessageSize);
+                    response = await base.CreateSessionAsync(
+                            null,
+                            clientDescription,
+                            m_endpoint.Description.Server.ApplicationUri,
+                            m_endpoint.EndpointUrl.ToString(),
+                            sessionName,
+                            clientNonce,
+                            null,
+                            sessionTimeout,
+                            (uint)MessageContext.MaxMessageSize,
+                            ct)
+                        .ConfigureAwait(false);
 
                     successCreateSession = true;
                 }
                 catch (Exception ex)
                 {
-                    Utils.LogInfo("Create session failed with client certificate NULL. " + ex.Message);
+                    Utils.LogInfo(
+                        "Create session failed with client certificate NULL. " + ex.Message);
                     successCreateSession = false;
                 }
             }
 
             if (!successCreateSession)
             {
-                responseHeader = base.CreateSession(
+                response = await base.CreateSessionAsync(
                         requestHeader,
                         clientDescription,
                         m_endpoint.Description.Server.ApplicationUri,
                         m_endpoint.EndpointUrl.ToString(),
                         sessionName,
                         clientNonce,
-                        clientCertificateChainData != null ? clientCertificateChainData : clientCertificateData,
+                        clientCertificateChainData ?? clientCertificateData,
                         sessionTimeout,
                         (uint)MessageContext.MaxMessageSize,
-                        out sessionId,
-                        out sessionCookie,
-                        out m_sessionTimeout,
-                        out serverNonce,
-                        out serverCertificateData,
-                        out serverEndpoints,
-                        out serverSoftwareCertificates,
-                        out serverSignature,
-                        out m_maxRequestMessageSize);
+                        ct)
+                    .ConfigureAwait(false);
             }
+
+            NodeId sessionId = response.SessionId;
+            NodeId sessionCookie = response.AuthenticationToken;
+            byte[] serverNonce = response.ServerNonce;
+            byte[] serverCertificateData = response.ServerCertificate;
+            SignatureData serverSignature = response.ServerSignature;
+            EndpointDescriptionCollection serverEndpoints = response.ServerEndpoints;
+            SignedSoftwareCertificateCollection serverSoftwareCertificates = response
+                .ServerSoftwareCertificates;
+
+            m_sessionTimeout = response.RevisedSessionTimeout;
+            m_maxRequestMessageSize = response.MaxRequestMessageSize;
 
             // save session id.
             lock (SyncRoot)
@@ -2527,8 +1479,10 @@ namespace Technosoftware.UaClient
             }
 
             Utils.LogInfo("Revised session timeout value: {0}. ", m_sessionTimeout);
-            Utils.LogInfo("Max response message size value: {0}. Max request message size: {1} ",
-                MessageContext.MaxMessageSize, m_maxRequestMessageSize);
+            Utils.LogInfo(
+                "Max response message size value: {0}. Max request message size: {1} ",
+                MessageContext.MaxMessageSize,
+                m_maxRequestMessageSize);
 
             //we need to call CloseSession if CreateSession was successful but some other exception is thrown
             try
@@ -2538,16 +1492,24 @@ namespace Technosoftware.UaClient
 
                 ValidateServerEndpoints(serverEndpoints);
 
-                ValidateServerSignature(serverCertificate, serverSignature, clientCertificateData, clientCertificateChainData, clientNonce);
+                ValidateServerSignature(
+                    serverCertificate,
+                    serverSignature,
+                    clientCertificateData,
+                    clientCertificateChainData,
+                    clientNonce);
 
                 HandleSignedSoftwareCertificates(serverSoftwareCertificates);
 
-                // process additional header
-                ProcessResponseAdditionalHeader(responseHeader, serverCertificate);
+                //  process additional header
+                ProcessResponseAdditionalHeader(response.ResponseHeader, serverCertificate);
 
                 // create the client signature.
-                byte[] dataToSign = Utils.Append(serverCertificate != null ? serverCertificate.RawData : null, serverNonce);
-                SignatureData clientSignature = SecurityPolicies.Sign(m_instanceCertificate, securityPolicyUri, dataToSign);
+                byte[] dataToSign = Utils.Append(serverCertificate?.RawData, serverNonce);
+                SignatureData clientSignature = SecurityPolicies.Sign(
+                    m_instanceCertificate,
+                    securityPolicyUri,
+                    dataToSign);
 
                 // select the security policy for the user token.
                 string tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
@@ -2569,7 +1531,9 @@ namespace Technosoftware.UaClient
                     m_endpoint.Description.SecurityMode);
 
                 // sign data with user token.
-                SignatureData userTokenSignature = identityToken.Sign(dataToSign, tokenSecurityPolicyUri);
+                SignatureData userTokenSignature = identityToken.Sign(
+                    dataToSign,
+                    tokenSecurityPolicyUri);
 
                 // encrypt token.
                 identityToken.Encrypt(
@@ -2582,46 +1546,53 @@ namespace Technosoftware.UaClient
                     m_endpoint.Description.SecurityMode != MessageSecurityMode.None);
 
                 // send the software certificates assigned to the client.
-                SignedSoftwareCertificateCollection clientSoftwareCertificates = GetSoftwareCertificates();
+                SignedSoftwareCertificateCollection clientSoftwareCertificates
+                    = GetSoftwareCertificates();
 
                 // copy the preferred locales if provided.
                 if (preferredLocales != null && preferredLocales.Count > 0)
                 {
-                    m_preferredLocales = new StringCollection(preferredLocales);
+                    m_preferredLocales = [.. preferredLocales];
                 }
 
-                StatusCodeCollection certificateResults = null;
-                DiagnosticInfoCollection certificateDiagnosticInfos = null;
-
                 // activate session.
-                responseHeader = ActivateSession(
-                    null,
-                    clientSignature,
-                    clientSoftwareCertificates,
-                    m_preferredLocales,
-                    new ExtensionObject(identityToken),
-                    userTokenSignature,
-                    out serverNonce,
-                    out certificateResults,
-                    out certificateDiagnosticInfos);
+                ActivateSessionResponse activateResponse = await ActivateSessionAsync(
+                        null,
+                        clientSignature,
+                        clientSoftwareCertificates,
+                        m_preferredLocales,
+                        new ExtensionObject(identityToken),
+                        userTokenSignature,
+                        ct)
+                    .ConfigureAwait(false);
 
-                ProcessResponseAdditionalHeader(responseHeader, serverCertificate);
+                //  process additional header
+                ProcessResponseAdditionalHeader(activateResponse.ResponseHeader, serverCertificate);
+
+                serverNonce = activateResponse.ServerNonce;
+                StatusCodeCollection certificateResults = activateResponse.Results;
+                DiagnosticInfoCollection certificateDiagnosticInfos = activateResponse
+                    .DiagnosticInfos;
 
                 if (certificateResults != null)
                 {
                     for (int i = 0; i < certificateResults.Count; i++)
                     {
-                        Utils.LogInfo("ActivateSession result[{0}] = {1}", i, certificateResults[i]);
+                        Utils.LogInfo(
+                            "ActivateSession result[{0}] = {1}",
+                            i,
+                            certificateResults[i]);
                     }
                 }
 
-                if (certificateResults == null || certificateResults.Count == 0)
+                if (clientSoftwareCertificates?.Count > 0 &&
+                    (certificateResults == null || certificateResults.Count == 0))
                 {
                     Utils.LogInfo("Empty results were received for the ActivateSession call.");
                 }
 
                 // fetch namespaces.
-                FetchNamespaceTables();
+                await FetchNamespaceTablesAsync(ct).ConfigureAwait(false);
 
                 lock (SyncRoot)
                 {
@@ -2634,12 +1605,12 @@ namespace Technosoftware.UaClient
 
                     // update system context.
                     m_systemContext.PreferredLocales = m_preferredLocales;
-                    m_systemContext.SessionId = this.SessionId;
+                    m_systemContext.SessionId = SessionId;
                     m_systemContext.UserIdentity = identity;
                 }
 
                 // fetch operation limits
-                FetchOperationLimits();
+                await FetchOperationLimitsAsync(ct).ConfigureAwait(false);
 
                 // start keep alive thread.
                 StartKeepAliveTimer();
@@ -2647,18 +1618,25 @@ namespace Technosoftware.UaClient
                 // raise event that session configuration changed.
                 IndicateSessionConfigurationChanged();
 
-                // notify session created callback, which was already set in base class only.
+                // call session created callback, which was already set in base class only.
                 SessionCreated(sessionId, sessionCookie);
             }
             catch (Exception)
             {
                 try
                 {
-                    Close(closeChannel);
+                    await base.CloseSessionAsync(null, false, CancellationToken.None)
+                        .ConfigureAwait(false);
+                    if (closeChannel)
+                    {
+                        await CloseChannelAsync(CancellationToken.None).ConfigureAwait(false);
+                    }
                 }
                 catch (Exception e)
                 {
-                    Utils.LogError("Cleanup: CloseSession() or CloseChannel() raised exception. " + e.Message);
+                    Utils.LogError(
+                        "Cleanup: CloseSessionAsync() or CloseChannelAsync() raised exception. " +
+                        e.Message);
                 }
                 finally
                 {
@@ -2670,13 +1648,18 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public void ChangePreferredLocales(StringCollection preferredLocales)
+        public Task ChangePreferredLocalesAsync(
+            StringCollection preferredLocales,
+            CancellationToken ct)
         {
-            UpdateSession(Identity, preferredLocales);
+            return UpdateSessionAsync(Identity, preferredLocales, ct);
         }
 
         /// <inheritdoc/>
-        public void UpdateSession(IUserIdentity identity, StringCollection preferredLocales)
+        public async Task UpdateSessionAsync(
+            IUserIdentity identity,
+            StringCollection preferredLocales,
+            CancellationToken ct = default)
         {
             byte[] serverNonce = null;
 
@@ -2685,40 +1668,39 @@ namespace Technosoftware.UaClient
                 // check connection state.
                 if (!Connected)
                 {
-                    throw new ServiceResultException(StatusCodes.BadInvalidState, "Not connected to server.");
+                    throw new ServiceResultException(
+                        StatusCodes.BadInvalidState,
+                        "Not connected to server.");
                 }
 
                 // get current nonce.
                 serverNonce = m_serverNonce;
 
-                if (preferredLocales == null)
-                {
-                    preferredLocales = m_preferredLocales;
-                }
+                preferredLocales ??= m_preferredLocales;
             }
 
             // get the identity token.
             string securityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
 
             // create the client signature.
-            byte[] dataToSign = Utils.Append(m_serverCertificate != null ? m_serverCertificate.RawData : null, serverNonce);
-            SignatureData clientSignature = SecurityPolicies.Sign(m_instanceCertificate, securityPolicyUri, dataToSign);
+            byte[] dataToSign = Utils.Append(m_serverCertificate?.RawData, serverNonce);
+            SignatureData clientSignature = SecurityPolicies.Sign(
+                m_instanceCertificate,
+                securityPolicyUri,
+                dataToSign);
 
             // choose a default token.
-            if (identity == null)
-            {
-                identity = new UserIdentity();
-            }
+            identity ??= new UserIdentity();
 
             // check that the user identity is supported by the endpoint.
-            UserTokenPolicy identityPolicy = m_endpoint.Description.FindUserTokenPolicy(identity.TokenType, identity.IssuedTokenType, securityPolicyUri);
-
-            if (identityPolicy == null)
-            {
-                throw ServiceResultException.Create(
+            UserTokenPolicy identityPolicy =
+                m_endpoint.Description.FindUserTokenPolicy(
+                    identity.TokenType,
+                    identity.IssuedTokenType,
+                    securityPolicyUri)
+                ?? throw ServiceResultException.Create(
                     StatusCodes.BadUserAccessDenied,
                     "Endpoint does not support the user identity type provided.");
-            }
 
             // select the security policy for the user token.
             string tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
@@ -2731,7 +1713,9 @@ namespace Technosoftware.UaClient
             bool requireEncryption = tokenSecurityPolicyUri != SecurityPolicies.None;
 
             // validate the server certificate before encrypting tokens.
-            if (m_serverCertificate != null && requireEncryption && identity.TokenType != UserTokenType.Anonymous)
+            if (m_serverCertificate != null &&
+                requireEncryption &&
+                identity.TokenType != UserTokenType.Anonymous)
             {
                 m_configuration.CertificateValidator.Validate(m_serverCertificate);
             }
@@ -2747,7 +1731,9 @@ namespace Technosoftware.UaClient
             // sign data with user token.
             UserIdentityToken identityToken = identity.GetIdentityToken();
             identityToken.PolicyId = identityPolicy.PolicyId;
-            SignatureData userTokenSignature = identityToken.Sign(dataToSign, tokenSecurityPolicyUri);
+            SignatureData userTokenSignature = identityToken.Sign(
+                dataToSign,
+                tokenSecurityPolicyUri);
 
             m_userTokenSecurityPolicyUri = tokenSecurityPolicyUri;
 
@@ -2762,24 +1748,21 @@ namespace Technosoftware.UaClient
                 m_endpoint.Description.SecurityMode != MessageSecurityMode.None);
 
             // send the software certificates assigned to the client.
-            SignedSoftwareCertificateCollection clientSoftwareCertificates = GetSoftwareCertificates();
+            SignedSoftwareCertificateCollection clientSoftwareCertificates
+                = GetSoftwareCertificates();
 
-            StatusCodeCollection certificateResults = null;
-            DiagnosticInfoCollection certificateDiagnosticInfos = null;
-
-            // activate session.
-            ResponseHeader responseHeader = ActivateSession(
+            ActivateSessionResponse response = await ActivateSessionAsync(
                 null,
                 clientSignature,
                 clientSoftwareCertificates,
                 preferredLocales,
                 new ExtensionObject(identityToken),
                 userTokenSignature,
-                out serverNonce,
-                out certificateResults,
-                out certificateDiagnosticInfos);
+                ct).ConfigureAwait(false);
 
-            ProcessResponseAdditionalHeader(responseHeader, m_serverCertificate);
+            serverNonce = response.ServerNonce;
+
+            ProcessResponseAdditionalHeader(response.ResponseHeader, m_serverCertificate);
 
             // save nonce and new values.
             lock (SyncRoot)
@@ -2795,7 +1778,7 @@ namespace Technosoftware.UaClient
 
                 // update system context.
                 m_systemContext.PreferredLocales = m_preferredLocales;
-                m_systemContext.SessionId = this.SessionId;
+                m_systemContext.SessionId = SessionId;
                 m_systemContext.UserIdentity = identity;
             }
 
@@ -2803,41 +1786,825 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public void FindComponentIds(
+        public async Task<bool> RemoveSubscriptionAsync(
+            Subscription subscription,
+            CancellationToken ct = default)
+        {
+            if (subscription == null)
+            {
+                throw new ArgumentNullException(nameof(subscription));
+            }
+
+            if (subscription.Created)
+            {
+                await subscription.DeleteAsync(false, ct).ConfigureAwait(false);
+            }
+
+            lock (SyncRoot)
+            {
+                if (!m_subscriptions.Remove(subscription))
+                {
+                    return false;
+                }
+
+                subscription.Session = null;
+            }
+
+            m_SubscriptionsChanged?.Invoke(this, null);
+
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> RemoveSubscriptionsAsync(
+            IEnumerable<Subscription> subscriptions,
+            CancellationToken ct = default)
+        {
+            if (subscriptions == null)
+            {
+                throw new ArgumentNullException(nameof(subscriptions));
+            }
+
+            var subscriptionsToDelete = new List<Subscription>();
+
+            bool removed = PrepareSubscriptionsToDelete(subscriptions, subscriptionsToDelete);
+
+            foreach (Subscription subscription in subscriptionsToDelete)
+            {
+                await subscription.DeleteAsync(true, ct).ConfigureAwait(false);
+            }
+
+            if (removed)
+            {
+                m_SubscriptionsChanged?.Invoke(this, null);
+            }
+
+            return removed;
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> ReactivateSubscriptionsAsync(
+            SubscriptionCollection subscriptions,
+            bool sendInitialValues,
+            CancellationToken ct = default)
+        {
+            UInt32Collection subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
+            int failedSubscriptions = 0;
+
+            if (subscriptionIds.Count > 0)
+            {
+                bool reconnecting = false;
+                await m_reconnectLock.WaitAsync(ct).ConfigureAwait(false);
+                try
+                {
+                    reconnecting = m_reconnecting;
+                    m_reconnecting = true;
+
+                    for (int ii = 0; ii < subscriptions.Count; ii++)
+                    {
+                        if (!await subscriptions[ii]
+                                .TransferAsync(this, subscriptionIds[ii], [], ct)
+                                .ConfigureAwait(false))
+                        {
+                            Utils.LogError(
+                                "SubscriptionId {0} failed to reactivate.",
+                                subscriptionIds[ii]);
+                            failedSubscriptions++;
+                        }
+                    }
+
+                    if (sendInitialValues)
+                    {
+                        (bool success, IList<ServiceResult> resendResults) = await ResendDataAsync(
+                            subscriptions,
+                            ct)
+                            .ConfigureAwait(false);
+                        if (!success)
+                        {
+                            Utils.LogError("Failed to call resend data for subscriptions.");
+                        }
+                        else if (resendResults != null)
+                        {
+                            for (int ii = 0; ii < resendResults.Count; ii++)
+                            {
+                                // no need to try for subscriptions which do not exist
+                                if (StatusCode.IsNotGood(resendResults[ii].StatusCode))
+                                {
+                                    Utils.LogError(
+                                        "SubscriptionId {0} failed to resend data.",
+                                        subscriptionIds[ii]);
+                                }
+                            }
+                        }
+                    }
+
+                    Utils.LogInfo(
+                        "Session REACTIVATE of {0} subscriptions completed. {1} failed.",
+                        subscriptions.Count,
+                        failedSubscriptions);
+                }
+                finally
+                {
+                    m_reconnecting = reconnecting;
+                    m_reconnectLock.Release();
+                }
+
+                StartPublishing(OperationTimeout, true);
+            }
+            else
+            {
+                Utils.LogInfo("No subscriptions. TransferSubscription skipped.");
+            }
+
+            return failedSubscriptions == 0;
+        }
+
+        /// <inheritdoc/>
+        public async Task<(bool, IList<ServiceResult>)> ResendDataAsync(
+            IEnumerable<Subscription> subscriptions,
+            CancellationToken ct)
+        {
+            CallMethodRequestCollection requests = CreateCallRequestsForResendData(subscriptions);
+
+            var errors = new List<ServiceResult>(requests.Count);
+            try
+            {
+                CallResponse response = await CallAsync(null, requests, ct).ConfigureAwait(false);
+                CallMethodResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                ResponseHeader responseHeader = response.ResponseHeader;
+                ValidateResponse(results, requests);
+                ValidateDiagnosticInfos(diagnosticInfos, requests);
+
+                int ii = 0;
+                foreach (CallMethodResult value in results)
+                {
+                    ServiceResult result = ServiceResult.Good;
+                    if (StatusCode.IsNotGood(value.StatusCode))
+                    {
+                        result = GetResult(value.StatusCode, ii, diagnosticInfos, responseHeader);
+                    }
+                    errors.Add(result);
+                    ii++;
+                }
+
+                return (true, errors);
+            }
+            catch (ServiceResultException sre)
+            {
+                Utils.LogError(sre, "Failed to call ResendData on server.");
+            }
+
+            return (false, errors);
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> TransferSubscriptionsAsync(
+            SubscriptionCollection subscriptions,
+            bool sendInitialValues,
+            CancellationToken ct)
+        {
+            UInt32Collection subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
+            int failedSubscriptions = 0;
+
+            if (subscriptionIds.Count > 0)
+            {
+                bool reconnecting = false;
+                await m_reconnectLock.WaitAsync(ct).ConfigureAwait(false);
+                try
+                {
+                    reconnecting = m_reconnecting;
+                    m_reconnecting = true;
+
+                    TransferSubscriptionsResponse response = await base.TransferSubscriptionsAsync(
+                            null,
+                            subscriptionIds,
+                            sendInitialValues,
+                            ct)
+                        .ConfigureAwait(false);
+                    TransferResultCollection results = response.Results;
+                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                    ResponseHeader responseHeader = response.ResponseHeader;
+
+                    if (!StatusCode.IsGood(responseHeader.ServiceResult))
+                    {
+                        Utils.LogError(
+                            "TransferSubscription failed: {0}",
+                            responseHeader.ServiceResult);
+                        return false;
+                    }
+
+                    ValidateResponse(results, subscriptionIds);
+                    ValidateDiagnosticInfos(diagnosticInfos, subscriptionIds);
+
+                    for (int ii = 0; ii < subscriptions.Count; ii++)
+                    {
+                        if (StatusCode.IsGood(results[ii].StatusCode))
+                        {
+                            if (await subscriptions[ii]
+                                    .TransferAsync(
+                                        this,
+                                        subscriptionIds[ii],
+                                        results[ii].AvailableSequenceNumbers,
+                                        ct)
+                                    .ConfigureAwait(false))
+                            {
+                                lock (m_acknowledgementsToSendLock)
+                                {
+                                    // create ack for available sequence numbers
+                                    foreach (uint sequenceNumber in results[ii]
+                                        .AvailableSequenceNumbers)
+                                    {
+                                        AddAcknowledgementToSend(
+                                            m_acknowledgementsToSend,
+                                            subscriptionIds[ii],
+                                            sequenceNumber);
+                                    }
+                                }
+                            }
+                        }
+                        else if (results[ii].StatusCode == StatusCodes.BadNothingToDo)
+                        {
+                            Utils.LogInfo(
+                                "SubscriptionId {0} is already member of the session.",
+                                subscriptionIds[ii]);
+                            failedSubscriptions++;
+                        }
+                        else
+                        {
+                            Utils.LogError(
+                                "SubscriptionId {0} failed to transfer, StatusCode={1}",
+                                subscriptionIds[ii],
+                                results[ii].StatusCode);
+                            failedSubscriptions++;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Utils.LogError(
+                        "Session TRANSFER ASYNC of {0} subscriptions Failed due to unexpected Exception {1}",
+                        subscriptions.Count,
+                        ex.Message);
+                    failedSubscriptions++;
+                }
+                finally
+                {
+                    m_reconnecting = reconnecting;
+                    m_reconnectLock.Release();
+                }
+
+                StartPublishing(OperationTimeout, false);
+            }
+            else
+            {
+                Utils.LogInfo("No subscriptions. TransferSubscription skipped.");
+            }
+
+            return failedSubscriptions == 0;
+        }
+
+        /// <inheritdoc/>
+        public async Task FetchNamespaceTablesAsync(CancellationToken ct = default)
+        {
+            ReadValueIdCollection nodesToRead = PrepareNamespaceTableNodesToRead();
+
+            // read from server.
+            ReadResponse response = await ReadAsync(
+                null,
+                0,
+                TimestampsToReturn.Neither,
+                nodesToRead,
+                ct)
+                .ConfigureAwait(false);
+
+            DataValueCollection values = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            ResponseHeader responseHeader = response.ResponseHeader;
+
+            ValidateResponse(values, nodesToRead);
+            ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
+
+            UpdateNamespaceTable(values, diagnosticInfos, responseHeader);
+        }
+
+        /// <inheritdoc/>
+        public async Task FetchTypeTreeAsync(ExpandedNodeId typeId, CancellationToken ct = default)
+        {
+            if (await NodeCache.FindAsync(typeId, ct).ConfigureAwait(false) is Node node)
+            {
+                var subTypes = new ExpandedNodeIdCollection();
+                foreach (IReference reference in node.Find(ReferenceTypeIds.HasSubtype, false))
+                {
+                    subTypes.Add(reference.TargetId);
+                }
+                if (subTypes.Count > 0)
+                {
+                    await FetchTypeTreeAsync(subTypes, ct).ConfigureAwait(false);
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task FetchTypeTreeAsync(
+            ExpandedNodeIdCollection typeIds,
+            CancellationToken ct = default)
+        {
+            var referenceTypeIds = new NodeIdCollection { ReferenceTypeIds.HasSubtype };
+            IList<INode> nodes = await NodeCache
+                .FindReferencesAsync(typeIds, referenceTypeIds, false, false, ct)
+                .ConfigureAwait(false);
+            var subTypes = new ExpandedNodeIdCollection();
+            foreach (INode inode in nodes)
+            {
+                if (inode is Node node)
+                {
+                    foreach (IReference reference in node.Find(ReferenceTypeIds.HasSubtype, false))
+                    {
+                        if (!typeIds.Contains(reference.TargetId))
+                        {
+                            subTypes.Add(reference.TargetId);
+                        }
+                    }
+                }
+            }
+            if (subTypes.Count > 0)
+            {
+                await FetchTypeTreeAsync(subTypes, ct).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// Fetch the operation limits of the server.
+        /// </summary>
+        public async Task FetchOperationLimitsAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                var operationLimitsProperties = typeof(OperationLimits).GetProperties()
+                    .Select(p => p.Name)
+                    .ToList();
+
+                var nodeIds = new NodeIdCollection(
+                    operationLimitsProperties.Select(name =>
+                        (NodeId)
+                            typeof(VariableIds)
+                                .GetField(
+                                    "Server_ServerCapabilities_OperationLimits_" + name,
+                                    BindingFlags.Public | BindingFlags.Static)
+                                .GetValue(null)))
+                {
+                    // add the server capability MaxContinuationPointPerBrowse and MaxByteStringLength
+                    VariableIds.Server_ServerCapabilities_MaxBrowseContinuationPoints
+                };
+                int maxBrowseContinuationPointIndex = nodeIds.Count - 1;
+
+                nodeIds.Add(VariableIds.Server_ServerCapabilities_MaxByteStringLength);
+                int maxByteStringLengthIndex = nodeIds.Count - 1;
+
+                (DataValueCollection values, IList<ServiceResult> errors) = await ReadValuesAsync(
+                    nodeIds,
+                    ct)
+                    .ConfigureAwait(false);
+
+                OperationLimits configOperationLimits =
+                    m_configuration?.ClientConfiguration?.OperationLimits ?? new OperationLimits();
+                var operationLimits = new OperationLimits();
+
+                for (int ii = 0; ii < operationLimitsProperties.Count; ii++)
+                {
+                    PropertyInfo property = typeof(OperationLimits).GetProperty(
+                        operationLimitsProperties[ii]);
+                    uint value = (uint)property.GetValue(configOperationLimits);
+                    if (values[ii] != null &&
+                        ServiceResult.IsNotBad(errors[ii]) &&
+                        values[ii].Value is uint serverValue &&
+                        serverValue > 0 &&
+                        (value == 0 || serverValue < value))
+                    {
+                        value = serverValue;
+                    }
+                    property.SetValue(operationLimits, value);
+                }
+                OperationLimits = operationLimits;
+
+                if (values[maxBrowseContinuationPointIndex]
+                        .Value is ushort serverMaxContinuationPointsPerBrowse &&
+                    ServiceResult.IsNotBad(errors[maxBrowseContinuationPointIndex]))
+                {
+                    ServerMaxContinuationPointsPerBrowse = serverMaxContinuationPointsPerBrowse;
+                }
+
+                if (values[maxByteStringLengthIndex].Value is uint serverMaxByteStringLength &&
+                    ServiceResult.IsNotBad(errors[maxByteStringLengthIndex]))
+                {
+                    ServerMaxByteStringLength = serverMaxByteStringLength;
+                }
+            }
+            catch (Exception ex)
+            {
+                Utils.LogError(
+                    ex,
+                    "Failed to read operation limits from server. Using configuration defaults.");
+                OperationLimits operationLimits = m_configuration?.ClientConfiguration?
+                    .OperationLimits;
+                if (operationLimits != null)
+                {
+                    OperationLimits = operationLimits;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<(IList<Node>, IList<ServiceResult>)> ReadNodesAsync(
+            IList<NodeId> nodeIds,
+            NodeClass nodeClass,
+            bool optionalAttributes = false,
+            CancellationToken ct = default)
+        {
+            if (nodeIds.Count == 0)
+            {
+                return (new List<Node>(), new List<ServiceResult>());
+            }
+
+            if (nodeClass == NodeClass.Unspecified)
+            {
+                return await ReadNodesAsync(nodeIds, optionalAttributes, ct).ConfigureAwait(false);
+            }
+
+            var nodeCollection = new NodeCollection(nodeIds.Count);
+
+            // determine attributes to read for nodeclass
+            var attributesPerNodeId = new List<IDictionary<uint, DataValue>>(nodeIds.Count);
+            var attributesToRead = new ReadValueIdCollection();
+
+            CreateNodeClassAttributesReadNodesRequest(
+                nodeIds,
+                nodeClass,
+                attributesToRead,
+                attributesPerNodeId,
+                nodeCollection,
+                optionalAttributes);
+
+            ReadResponse readResponse = await ReadAsync(
+                null,
+                0,
+                TimestampsToReturn.Neither,
+                attributesToRead,
+                ct)
+                .ConfigureAwait(false);
+
+            DataValueCollection values = readResponse.Results;
+            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
+
+            ValidateResponse(values, attributesToRead);
+            ValidateDiagnosticInfos(diagnosticInfos, attributesToRead);
+
+            List<ServiceResult> serviceResults = new ServiceResult[nodeIds.Count].ToList();
+            ProcessAttributesReadNodesResponse(
+                readResponse.ResponseHeader,
+                attributesToRead,
+                attributesPerNodeId,
+                values,
+                diagnosticInfos,
+                nodeCollection,
+                serviceResults);
+
+            return (nodeCollection, serviceResults);
+        }
+
+        /// <inheritdoc/>
+        public async Task<(IList<Node>, IList<ServiceResult>)> ReadNodesAsync(
+            IList<NodeId> nodeIds,
+            bool optionalAttributes = false,
+            CancellationToken ct = default)
+        {
+            if (nodeIds.Count == 0)
+            {
+                return (new List<Node>(), new List<ServiceResult>());
+            }
+
+            var nodeCollection = new NodeCollection(nodeIds.Count);
+            var itemsToRead = new ReadValueIdCollection(nodeIds.Count);
+
+            // first read only nodeclasses for nodes from server.
+            itemsToRead =
+            [
+                .. nodeIds.Select(nodeId => new ReadValueId {
+                    NodeId = nodeId,
+                    AttributeId = Attributes.NodeClass })
+            ];
+
+            ReadResponse readResponse = await ReadAsync(
+                null,
+                0,
+                TimestampsToReturn.Neither,
+                itemsToRead,
+                ct)
+                .ConfigureAwait(false);
+
+            DataValueCollection nodeClassValues = readResponse.Results;
+            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
+
+            ValidateResponse(nodeClassValues, itemsToRead);
+            ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
+
+            // second determine attributes to read per nodeclass
+            var attributesPerNodeId = new List<IDictionary<uint, DataValue>>(nodeIds.Count);
+            var serviceResults = new List<ServiceResult>(nodeIds.Count);
+            var attributesToRead = new ReadValueIdCollection();
+
+            CreateAttributesReadNodesRequest(
+                readResponse.ResponseHeader,
+                itemsToRead,
+                nodeClassValues,
+                diagnosticInfos,
+                attributesToRead,
+                attributesPerNodeId,
+                nodeCollection,
+                serviceResults,
+                optionalAttributes);
+
+            if (attributesToRead.Count > 0)
+            {
+                readResponse = await ReadAsync(
+                    null,
+                    0,
+                    TimestampsToReturn.Neither,
+                    attributesToRead,
+                    ct)
+                    .ConfigureAwait(false);
+
+                DataValueCollection values = readResponse.Results;
+                diagnosticInfos = readResponse.DiagnosticInfos;
+
+                ValidateResponse(values, attributesToRead);
+                ValidateDiagnosticInfos(diagnosticInfos, attributesToRead);
+
+                ProcessAttributesReadNodesResponse(
+                    readResponse.ResponseHeader,
+                    attributesToRead,
+                    attributesPerNodeId,
+                    values,
+                    diagnosticInfos,
+                    nodeCollection,
+                    serviceResults);
+            }
+
+            return (nodeCollection, serviceResults);
+        }
+
+        /// <inheritdoc/>
+        public Task<Node> ReadNodeAsync(NodeId nodeId, CancellationToken ct = default)
+        {
+            return ReadNodeAsync(nodeId, NodeClass.Unspecified, true, ct);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Node> ReadNodeAsync(
+            NodeId nodeId,
+            NodeClass nodeClass,
+            bool optionalAttributes = true,
+            CancellationToken ct = default)
+        {
+            // build list of attributes.
+            IDictionary<uint, DataValue> attributes = CreateAttributes(
+                nodeClass,
+                optionalAttributes);
+
+            // build list of values to read.
+            var itemsToRead = new ReadValueIdCollection();
+            foreach (uint attributeId in attributes.Keys)
+            {
+                var itemToRead = new ReadValueId { NodeId = nodeId, AttributeId = attributeId };
+                itemsToRead.Add(itemToRead);
+            }
+
+            // read from server.
+            ReadResponse readResponse = await ReadAsync(
+                null,
+                0,
+                TimestampsToReturn.Neither,
+                itemsToRead,
+                ct)
+                .ConfigureAwait(false);
+
+            DataValueCollection values = readResponse.Results;
+            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
+
+            ValidateResponse(values, itemsToRead);
+            ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
+
+            return ProcessReadResponse(
+                readResponse.ResponseHeader,
+                attributes,
+                itemsToRead,
+                values,
+                diagnosticInfos);
+        }
+
+        /// <inheritdoc/>
+        public async Task<(IList<string>, IList<ServiceResult>)> ReadDisplayNameAsync(
+            IList<NodeId> nodeIds,
+            CancellationToken ct = default)
+        {
+            var displayNames = new List<string>();
+            var errors = new List<ServiceResult>();
+
+            // build list of values to read.
+            var valuesToRead = new ReadValueIdCollection();
+
+            for (int ii = 0; ii < nodeIds.Count; ii++)
+            {
+                var valueToRead = new ReadValueId
+                {
+                    NodeId = nodeIds[ii],
+                    AttributeId = Attributes.DisplayName,
+                    IndexRange = null,
+                    DataEncoding = null
+                };
+
+                valuesToRead.Add(valueToRead);
+            }
+
+            // read the values.
+
+            ReadResponse response = await ReadAsync(
+                null,
+                int.MaxValue,
+                TimestampsToReturn.Neither,
+                valuesToRead,
+                ct).ConfigureAwait(false);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            ResponseHeader responseHeader = response.ResponseHeader;
+
+            // verify that the server returned the correct number of results.
+            ValidateResponse(results, valuesToRead);
+            ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
+
+            for (int ii = 0; ii < nodeIds.Count; ii++)
+            {
+                displayNames.Add(string.Empty);
+                errors.Add(ServiceResult.Good);
+
+                // process any diagnostics associated with bad or uncertain data.
+                if (StatusCode.IsNotGood(results[ii].StatusCode))
+                {
+                    errors[ii] = new ServiceResult(
+                        results[ii].StatusCode,
+                        ii,
+                        diagnosticInfos,
+                        responseHeader.StringTable);
+                    continue;
+                }
+
+                // extract the name.
+                LocalizedText displayName = results[ii].GetValue<LocalizedText>(null);
+
+                if (!LocalizedText.IsNullOrEmpty(displayName))
+                {
+                    displayNames[ii] = displayName.Text;
+                }
+            }
+
+            return (displayNames, errors);
+        }
+
+        /// <inheritdoc/>
+        public async Task<ReferenceDescriptionCollection> ReadAvailableEncodingsAsync(
+            NodeId variableId,
+            CancellationToken ct = default)
+        {
+            if (await NodeCache.FindAsync(variableId, ct).ConfigureAwait(false)
+                is not VariableNode variable)
+            {
+                throw ServiceResultException.Create(
+                    StatusCodes.BadNodeIdInvalid,
+                    "NodeId does not refer to a valid variable node.");
+            }
+
+            // no encodings available if there was a problem reading the
+            // data type for the node.
+            if (NodeId.IsNull(variable.DataType))
+            {
+                return [];
+            }
+
+            // no encodings for non-structures.
+            if (!await NodeCache.IsTypeOfAsync(
+                variable.DataType,
+                DataTypes.Structure,
+                ct).ConfigureAwait(false))
+            {
+                return [];
+            }
+
+            // look for cached values.
+            IList<INode> encodings = await NodeCache.FindAsync(
+                variableId,
+                ReferenceTypeIds.HasEncoding,
+                false,
+                true,
+                ct).ConfigureAwait(false);
+
+            if (encodings.Count > 0)
+            {
+                var references = new ReferenceDescriptionCollection();
+
+                foreach (INode encoding in encodings)
+                {
+                    var reference = new ReferenceDescription
+                    {
+                        ReferenceTypeId = ReferenceTypeIds.HasEncoding,
+                        IsForward = true,
+                        NodeId = encoding.NodeId,
+                        NodeClass = encoding.NodeClass,
+                        BrowseName = encoding.BrowseName,
+                        DisplayName = encoding.DisplayName,
+                        TypeDefinition = encoding.TypeDefinitionId
+                    };
+
+                    references.Add(reference);
+                }
+
+                return references;
+            }
+
+            var browser = new Browser(this)
+            {
+                BrowseDirection = BrowseDirection.Forward,
+                ReferenceTypeId = ReferenceTypeIds.HasEncoding,
+                IncludeSubtypes = false,
+                NodeClassMask = 0
+            };
+
+            return await browser.BrowseAsync(variable.DataType, ct).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task<ReferenceDescription> FindDataDescriptionAsync(NodeId encodingId,
+            CancellationToken ct = default)
+        {
+            var browser = new Browser(this)
+            {
+                BrowseDirection = BrowseDirection.Forward,
+                ReferenceTypeId = ReferenceTypeIds.HasDescription,
+                IncludeSubtypes = false,
+                NodeClassMask = 0
+            };
+
+            ReferenceDescriptionCollection references =
+                await browser.BrowseAsync(encodingId, ct).ConfigureAwait(false);
+
+            if (references.Count == 0)
+            {
+                throw ServiceResultException.Create(
+                    StatusCodes.BadNodeIdInvalid,
+                    "Encoding does not refer to a valid data description.");
+            }
+
+            return references[0];
+        }
+
+        /// <inheritdoc/>
+        public async Task<(NodeIdCollection, IList<ServiceResult>)> FindComponentIdsAsync(
             NodeId instanceId,
             IList<string> componentPaths,
-            out NodeIdCollection componentIds,
-            out IList<ServiceResult> errors)
+            CancellationToken ct = default)
         {
-            componentIds = [];
-            errors = [];
+            var componentIds = new NodeIdCollection();
+            var errors = new List<ServiceResult>();
 
             // build list of paths to translate.
-            BrowsePathCollection pathsToTranslate = [];
+            var pathsToTranslate = new BrowsePathCollection();
 
             for (int ii = 0; ii < componentPaths.Count; ii++)
             {
-                BrowsePath pathToTranslate = new BrowsePath();
-
-                pathToTranslate.StartingNode = instanceId;
-                pathToTranslate.RelativePath = RelativePath.Parse(componentPaths[ii], TypeTree);
+                var pathToTranslate = new BrowsePath
+                {
+                    StartingNode = instanceId,
+                    RelativePath = RelativePath.Parse(componentPaths[ii], TypeTree)
+                };
 
                 pathsToTranslate.Add(pathToTranslate);
             }
 
             // translate the paths.
-            BrowsePathResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            ResponseHeader responseHeader = TranslateBrowsePathsToNodeIds(
+            TranslateBrowsePathsToNodeIdsResponse response = await TranslateBrowsePathsToNodeIdsAsync(
                 null,
                 pathsToTranslate,
-                out results,
-                out diagnosticInfos);
+                ct).ConfigureAwait(false);
+
+            BrowsePathResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            ResponseHeader responseHeader = response.ResponseHeader;
 
             // verify that the server returned the correct number of results.
-            ClientBase.ValidateResponse(results, pathsToTranslate);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, pathsToTranslate);
+            ValidateResponse(results, pathsToTranslate);
+            ValidateDiagnosticInfos(diagnosticInfos, pathsToTranslate);
 
             for (int ii = 0; ii < componentPaths.Count; ii++)
             {
@@ -2847,7 +2614,11 @@ namespace Technosoftware.UaClient
                 // process any diagnostics associated with any error.
                 if (StatusCode.IsBad(results[ii].StatusCode))
                 {
-                    errors[ii] = new ServiceResult(results[ii].StatusCode, ii, diagnosticInfos, responseHeader.StringTable);
+                    errors[ii] = new ServiceResult(
+                        results[ii].StatusCode,
+                        ii,
+                        diagnosticInfos,
+                        responseHeader.StringTable);
                     continue;
                 }
 
@@ -2905,185 +2676,168 @@ namespace Technosoftware.UaClient
                 }
 
                 // suitable target found.
-                componentIds[ii] = ExpandedNodeId.ToNodeId(results[ii].Targets[0].TargetId, m_namespaceUris);
+                componentIds[ii] = ExpandedNodeId.ToNodeId(
+                    results[ii].Targets[0].TargetId,
+                    NamespaceUris);
             }
+            return (componentIds, errors);
         }
 
         /// <inheritdoc/>
-        public void ReadValues(
-            IList<NodeId> variableIds,
-            IList<Type> expectedTypes,
-            out IList<object> values,
-            out IList<ServiceResult> errors)
+        public async Task<T> ReadValueAsync<T>(NodeId nodeId, CancellationToken ct = default)
         {
-            values = [];
-            errors = [];
+            DataValue dataValue = await ReadValueAsync(nodeId, ct).ConfigureAwait(false);
+            object value = dataValue.Value;
 
-            // build list of values to read.
-            ReadValueIdCollection valuesToRead = [];
-
-            for (int ii = 0; ii < variableIds.Count; ii++)
+            if (value is ExtensionObject extension)
             {
-                ReadValueId valueToRead = new ReadValueId();
-
-                valueToRead.NodeId = variableIds[ii];
-                valueToRead.AttributeId = Attributes.Value;
-                valueToRead.IndexRange = null;
-                valueToRead.DataEncoding = null;
-
-                valuesToRead.Add(valueToRead);
+                value = extension.Body;
             }
 
-            // read the values.
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
+            if (!typeof(T).IsInstanceOfType(value))
+            {
+                throw ServiceResultException.Create(
+                    StatusCodes.BadTypeMismatch,
+                    "Server returned value unexpected type: {0}",
+                    value != null ? value.GetType().Name : "(null)");
+            }
+            return (T)value;
+        }
 
-            ResponseHeader responseHeader = Read(
+        /// <inheritdoc/>
+        public async Task<DataValue> ReadValueAsync(NodeId nodeId, CancellationToken ct = default)
+        {
+            var itemToRead = new ReadValueId
+            {
+                NodeId = nodeId,
+                AttributeId = Attributes.Value
+            };
+            var itemsToRead = new ReadValueIdCollection { itemToRead };
+
+            // read from server.
+            ReadResponse readResponse = await ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Both,
-                valuesToRead,
-                out results,
-                out diagnosticInfos);
+                itemsToRead,
+                ct)
+                .ConfigureAwait(false);
 
-            // verify that the server returned the correct number of results.
-            ClientBase.ValidateResponse(results, valuesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
+            DataValueCollection values = readResponse.Results;
+            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
 
-            for (int ii = 0; ii < variableIds.Count; ii++)
+            ValidateResponse(values, itemsToRead);
+            ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
+
+            if (StatusCode.IsBad(values[0].StatusCode))
             {
-                values.Add(null);
-                errors.Add(ServiceResult.Good);
-
-                // process any diagnostics associated with bad or uncertain data.
-                if (StatusCode.IsNotGood(results[ii].StatusCode))
-                {
-                    errors[ii] = new ServiceResult(results[ii].StatusCode, ii, diagnosticInfos, responseHeader.StringTable);
-                    if (StatusCode.IsBad(results[ii].StatusCode))
-                    {
-                        continue;
-                    }
-                }
-
-                object value = results[ii].Value;
-
-                // extract the body from extension objects.
-                ExtensionObject extension = value as ExtensionObject;
-
-                if (extension != null && extension.Body is IEncodeable)
-                {
-                    value = extension.Body;
-                }
-
-                // check expected type.
-                if (expectedTypes[ii] != null && !expectedTypes[ii].IsInstanceOfType(value))
-                {
-                    errors[ii] = ServiceResult.Create(
-                        StatusCodes.BadTypeMismatch,
-                        "Value {0} does not have expected type: {1}.",
-                        value,
-                        expectedTypes[ii].Name);
-
-                    continue;
-                }
-
-                // suitable value found.
-                values[ii] = value;
-            }
-        }
-
-        /// <summary>
-        /// Reads the values for a set of variables.
-        /// </summary>
-        /// <param name="variableIds">The variable ids.</param>
-        /// <param name="maxAge">The maximum age for any value.</param>
-        /// <param name="timestampsToReturn">OPC UA defines two timestamps, the source and the server timestamp. </param>
-        /// <param name="callback">The callback to to be called as soon as the read operation is finished.</param>
-        /// <param name="userData">The user data that is passed to the callback.</param>
-        /// <returns>An object which must be passed to the EndWriteValues method.</returns>
-        public IAsyncResult BeginReadValues(
-            IList<NodeId> variableIds,
-            double maxAge,
-            TimestampsToReturn timestampsToReturn,
-            AsyncCallback callback,
-            object userData)
-        {
-            var values = new ReadValueIdCollection();
-
-            foreach (NodeId variableId in variableIds)
-            {
-                var valueToRead = new ReadValueId
-                {
-                    NodeId = variableId,
-                    AttributeId = Attributes.Value,
-                    IndexRange = null,
-                    DataEncoding = null
-                };
-
-                values.Add(valueToRead);
+                ServiceResult result = GetResult(
+                    values[0].StatusCode,
+                    0,
+                    diagnosticInfos,
+                    readResponse.ResponseHeader);
+                throw new ServiceResultException(result);
             }
 
-            // Call the Write service
-            return BeginRead(null, maxAge, timestampsToReturn, values, callback, userData);
-
-        }
-
-        /// <summary>
-        /// Finishes an asynchronous invocation of the Read service.
-        /// </summary>
-        /// <param name="result">The result returned from BeginReadValues method.</param>
-        /// <returns>Status of the read operation for each of the specified node Ids.</returns>
-        public List<DataValue> EndReadValues(
-            IAsyncResult result)
-        {
-            _ = EndRead(result, out DataValueCollection results, out _);
-
-            return results;
+            return values[0];
         }
 
         /// <inheritdoc/>
-        public byte[] ReadByteStringInChunks(NodeId nodeId)
+        public async Task<(DataValueCollection, IList<ServiceResult>)> ReadValuesAsync(
+            IList<NodeId> nodeIds,
+            CancellationToken ct = default)
         {
-
-            int count = (int)ServerMaxByteStringLength;
-            ;
-
-            int my_MaxByteStringLength = m_configuration.TransportQuotas.MaxByteStringLength;
-            if (my_MaxByteStringLength > 0)
+            if (nodeIds.Count == 0)
             {
-                count = ServerMaxByteStringLength > my_MaxByteStringLength ?
-                    my_MaxByteStringLength : (int)ServerMaxByteStringLength;
+                return (new DataValueCollection(), new List<ServiceResult>());
+            }
+
+            // read all values from server.
+            var itemsToRead = new ReadValueIdCollection(
+                nodeIds.Select(
+                    nodeId => new ReadValueId { NodeId = nodeId, AttributeId = Attributes.Value }));
+
+            // read from server.
+            var errors = new List<ServiceResult>(itemsToRead.Count);
+
+            ReadResponse readResponse = await ReadAsync(
+                null,
+                0,
+                TimestampsToReturn.Both,
+                itemsToRead,
+                ct)
+                .ConfigureAwait(false);
+
+            DataValueCollection values = readResponse.Results;
+            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
+
+            ValidateResponse(values, itemsToRead);
+            ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
+
+            foreach (DataValue value in values)
+            {
+                ServiceResult result = ServiceResult.Good;
+                if (StatusCode.IsBad(value.StatusCode))
+                {
+                    result = GetResult(
+                        values[0].StatusCode,
+                        0,
+                        diagnosticInfos,
+                        readResponse.ResponseHeader);
+                }
+                errors.Add(result);
+            }
+
+            return (values, errors);
+        }
+
+        /// <inheritdoc/>
+        public async Task<byte[]> ReadByteStringInChunksAsync(NodeId nodeId, CancellationToken ct)
+        {
+            int count = (int)ServerMaxByteStringLength;
+
+            int maxByteStringLength = m_configuration.TransportQuotas.MaxByteStringLength;
+            if (maxByteStringLength > 0)
+            {
+                count =
+                    ServerMaxByteStringLength > maxByteStringLength
+                        ? maxByteStringLength
+                        : (int)ServerMaxByteStringLength;
             }
 
             if (count <= 1)
             {
-                throw new ServiceResultException(StatusCodes.BadIndexRangeNoData, "The MaxByteStringLength is not known or too small for reading data in chunks.");
+                throw ServiceResultException.Create(
+                    StatusCodes.BadIndexRangeNoData,
+                    "The MaxByteStringLength is not known or too small for reading data in chunks.");
             }
 
             int offset = 0;
-            List<byte[]> bytes = [];
-
+            using var bytes = new MemoryStream();
             while (true)
             {
-                ReadValueId valueToRead = new ReadValueId
+                var valueToRead = new ReadValueId
                 {
                     NodeId = nodeId,
                     AttributeId = Attributes.Value,
                     IndexRange = new NumericRange(offset, offset + count - 1).ToString(),
                     DataEncoding = null
                 };
-                ReadValueIdCollection readValueIds = [valueToRead];
+                var readValueIds = new ReadValueIdCollection { valueToRead };
 
-                ResponseHeader responseHeader = Read(
+                ReadResponse result = await ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Neither,
                     readValueIds,
-                    out DataValueCollection results,
-                    out DiagnosticInfoCollection diagnosticInfos);
+                    ct)
+                    .ConfigureAwait(false);
 
-                ClientBase.ValidateResponse(results, readValueIds);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, readValueIds);
+                ResponseHeader responseHeader = result.ResponseHeader;
+                DataValueCollection results = result.Results;
+                DiagnosticInfoCollection diagnosticInfos = result.DiagnosticInfos;
+                ValidateResponse(results, readValueIds);
+                ValidateDiagnosticInfos(diagnosticInfos, readValueIds);
 
                 if (offset == 0)
                 {
@@ -3091,7 +2845,9 @@ namespace Technosoftware.UaClient
                     if (wrappedValue.TypeInfo.BuiltInType != BuiltInType.ByteString ||
                         wrappedValue.TypeInfo.ValueRank != ValueRanks.Scalar)
                     {
-                        throw new ServiceResultException(StatusCodes.BadTypeMismatch, "Value is not a ByteString scalar.");
+                        throw new ServiceResultException(
+                            StatusCodes.BadTypeMismatch,
+                            "Value is not a ByteString scalar.");
                     }
                 }
 
@@ -3102,146 +2858,744 @@ namespace Technosoftware.UaClient
                         // this happens when the previous read has fetched all remaining data
                         break;
                     }
-                    ServiceResult serviceResult = ClientBase.GetResult(results[0].StatusCode, 0, diagnosticInfos, responseHeader);
+                    ServiceResult serviceResult = GetResult(
+                        results[0].StatusCode,
+                        0,
+                        diagnosticInfos,
+                        responseHeader);
                     throw new ServiceResultException(serviceResult);
                 }
 
-                byte[] chunk = results[0].Value as byte[];
-                if (chunk == null || chunk.Length == 0)
+                if (results[0].Value is not byte[] chunk || chunk.Length == 0)
                 {
                     break;
                 }
 
-                bytes.Add(chunk);
-
+                bytes.Write(chunk, 0, chunk.Length);
                 if (chunk.Length < count)
                 {
                     break;
                 }
                 offset += count;
             }
-
-            return bytes.SelectMany(a => a).ToArray();
+            return bytes.ToArray();
         }
 
         /// <inheritdoc/>
-        public void ReadDisplayName(
-            IList<NodeId> nodeIds,
-            out IList<string> displayNames,
-            out IList<ServiceResult> errors)
+        public async Task<(
+            ResponseHeader responseHeader,
+            ByteStringCollection continuationPoints,
+            IList<ReferenceDescriptionCollection> referencesList,
+            IList<ServiceResult> errors
+        )> BrowseAsync(
+            RequestHeader requestHeader,
+            ViewDescription view,
+            IList<NodeId> nodesToBrowse,
+            uint maxResultsToReturn,
+            BrowseDirection browseDirection,
+            NodeId referenceTypeId,
+            bool includeSubtypes,
+            uint nodeClassMask,
+            CancellationToken ct = default)
         {
-            displayNames = [];
-            errors = [];
-
-            // build list of values to read.
-            ReadValueIdCollection valuesToRead = [];
-
-            for (int ii = 0; ii < nodeIds.Count; ii++)
+            var browseDescriptions = new BrowseDescriptionCollection();
+            foreach (NodeId nodeToBrowse in nodesToBrowse)
             {
-                ReadValueId valueToRead = new ReadValueId();
-
-                valueToRead.NodeId = nodeIds[ii];
-                valueToRead.AttributeId = Attributes.DisplayName;
-                valueToRead.IndexRange = null;
-                valueToRead.DataEncoding = null;
-
-                valuesToRead.Add(valueToRead);
-            }
-
-            // read the values.
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            ResponseHeader responseHeader = Read(
-                null,
-                int.MaxValue,
-                TimestampsToReturn.Neither,
-                valuesToRead,
-                out results,
-                out diagnosticInfos);
-
-            // verify that the server returned the correct number of results.
-            ClientBase.ValidateResponse(results, valuesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
-
-            for (int ii = 0; ii < nodeIds.Count; ii++)
-            {
-                displayNames.Add(string.Empty);
-                errors.Add(ServiceResult.Good);
-
-                // process any diagnostics associated with bad or uncertain data.
-                if (StatusCode.IsNotGood(results[ii].StatusCode))
+                var description = new BrowseDescription
                 {
-                    errors[ii] = new ServiceResult(results[ii].StatusCode, ii, diagnosticInfos, responseHeader.StringTable);
-                    continue;
-                }
+                    NodeId = nodeToBrowse,
+                    BrowseDirection = browseDirection,
+                    ReferenceTypeId = referenceTypeId,
+                    IncludeSubtypes = includeSubtypes,
+                    NodeClassMask = nodeClassMask,
+                    ResultMask = (uint)BrowseResultMask.All
+                };
 
-                // extract the name.
-                LocalizedText displayName = results[ii].GetValue<LocalizedText>(null);
-
-                if (!LocalizedText.IsNullOrEmpty(displayName))
-                {
-                    displayNames[ii] = displayName.Text;
-                }
+                browseDescriptions.Add(description);
             }
-        }
 
-        /// <inheritdoc/>
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(this, obj))
-                return true;
+            BrowseResponse browseResponse = await BrowseAsync(
+                    requestHeader,
+                    view,
+                    maxResultsToReturn,
+                    browseDescriptions,
+                    ct)
+                .ConfigureAwait(false);
 
-            if (obj is IUaSession session)
+            ValidateResponse(browseResponse.ResponseHeader);
+            BrowseResultCollection results = browseResponse.Results;
+            DiagnosticInfoCollection diagnosticInfos = browseResponse.DiagnosticInfos;
+
+            ValidateResponse(results, browseDescriptions);
+            ValidateDiagnosticInfos(diagnosticInfos, browseDescriptions);
+
+            int ii = 0;
+            var errors = new List<ServiceResult>();
+            var continuationPoints = new ByteStringCollection();
+            var referencesList = new List<ReferenceDescriptionCollection>();
+            foreach (BrowseResult result in results)
             {
-                if (!m_endpoint.Equals(session.Endpoint))
-                    return false;
-                if (!m_sessionName.Equals(session.SessionName, StringComparison.Ordinal))
-                    return false;
-                if (!SessionId.Equals(session.SessionId))
-                    return false;
-
-                return true;
+                if (StatusCode.IsBad(result.StatusCode))
+                {
+                    errors.Add(
+                        new ServiceResult(
+                            result.StatusCode,
+                            ii,
+                            diagnosticInfos,
+                            browseResponse.ResponseHeader.StringTable));
+                }
+                else
+                {
+                    errors.Add(ServiceResult.Good);
+                }
+                continuationPoints.Add(result.ContinuationPoint);
+                referencesList.Add(result.References);
+                ii++;
             }
 
-            return false;
+            return (browseResponse.ResponseHeader, continuationPoints, referencesList, errors);
         }
 
         /// <inheritdoc/>
-        public override int GetHashCode()
+        public async Task<(
+            ResponseHeader responseHeader,
+            ByteStringCollection revisedContinuationPoints,
+            IList<ReferenceDescriptionCollection> referencesList,
+            IList<ServiceResult> errors
+        )> BrowseNextAsync(
+            RequestHeader requestHeader,
+            ByteStringCollection continuationPoints,
+            bool releaseContinuationPoint,
+            CancellationToken ct = default)
         {
-            return HashCode.Combine(m_endpoint, m_sessionName, SessionId);
+            BrowseNextResponse response = await base.BrowseNextAsync(
+                    requestHeader,
+                    releaseContinuationPoint,
+                    continuationPoints,
+                    ct)
+                .ConfigureAwait(false);
+
+            ValidateResponse(response.ResponseHeader);
+
+            BrowseResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+
+            ValidateResponse(results, continuationPoints);
+            ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
+
+            int ii = 0;
+            var errors = new List<ServiceResult>();
+            var revisedContinuationPoints = new ByteStringCollection();
+            var referencesList = new List<ReferenceDescriptionCollection>();
+            foreach (BrowseResult result in results)
+            {
+                if (StatusCode.IsBad(result.StatusCode))
+                {
+                    errors.Add(
+                        new ServiceResult(
+                            result.StatusCode,
+                            ii,
+                            diagnosticInfos,
+                            response.ResponseHeader.StringTable));
+                }
+                else
+                {
+                    errors.Add(ServiceResult.Good);
+                }
+                revisedContinuationPoints.Add(result.ContinuationPoint);
+                referencesList.Add(result.References);
+                ii++;
+            }
+
+            return (response.ResponseHeader, revisedContinuationPoints, referencesList, errors);
+        }
+
+        /// <inheritdoc/>
+        public async Task<(IList<ReferenceDescriptionCollection>, IList<ServiceResult>)> ManagedBrowseAsync(
+            RequestHeader requestHeader,
+            ViewDescription view,
+            IList<NodeId> nodesToBrowse,
+            uint maxResultsToReturn,
+            BrowseDirection browseDirection,
+            NodeId referenceTypeId,
+            bool includeSubtypes,
+            uint nodeClassMask,
+            CancellationToken ct = default)
+        {
+            int count = nodesToBrowse.Count;
+            var result = new List<ReferenceDescriptionCollection>(count);
+            var errors = new List<ServiceResult>(count);
+
+            // first attempt for implementation: create the references for the output in advance.
+            // optimize later, when everything works fine.
+            for (int i = 0; i < nodesToBrowse.Count; i++)
+            {
+                result.Add([]);
+                errors.Add(new ServiceResult(StatusCodes.Good));
+            }
+
+            try
+            {
+                // in the first pass, we browse all nodes from the input.
+                // Some nodes may need to be browsed again, these are then fed into the next pass.
+                var nodesToBrowseForPass = new List<NodeId>(count);
+                nodesToBrowseForPass.AddRange(nodesToBrowse);
+
+                var resultForPass = new List<ReferenceDescriptionCollection>(count);
+                resultForPass.AddRange(result);
+
+                var errorsForPass = new List<ServiceResult>(count);
+                errorsForPass.AddRange(errors);
+
+                int passCount = 0;
+
+                do
+                {
+                    int badNoCPErrorsPerPass = 0;
+                    int badCPInvalidErrorsPerPass = 0;
+                    int otherErrorsPerPass = 0;
+                    uint maxNodesPerBrowse = OperationLimits.MaxNodesPerBrowse;
+
+                    if (ContinuationPointPolicy == ContinuationPointPolicy.Balanced &&
+                        ServerMaxContinuationPointsPerBrowse > 0)
+                    {
+                        maxNodesPerBrowse =
+                            ServerMaxContinuationPointsPerBrowse < maxNodesPerBrowse
+                                ? ServerMaxContinuationPointsPerBrowse
+                                : maxNodesPerBrowse;
+                    }
+
+                    // split input into batches
+                    int batchOffset = 0;
+
+                    var nodesToBrowseForNextPass = new List<NodeId>();
+                    var referenceDescriptionsForNextPass
+                        = new List<ReferenceDescriptionCollection>();
+                    var errorsForNextPass = new List<ServiceResult>();
+
+                    // loop over the batches
+                    foreach (
+                        List<NodeId> nodesToBrowseBatch in nodesToBrowseForPass
+                            .Batch<NodeId, List<NodeId>>(
+                                maxNodesPerBrowse))
+                    {
+                        int nodesToBrowseBatchCount = nodesToBrowseBatch.Count;
+
+                        (IList<ReferenceDescriptionCollection> resultForBatch, IList<ServiceResult> errorsForBatch) =
+                            await BrowseWithBrowseNextAsync(
+                                    requestHeader,
+                                    view,
+                                    nodesToBrowseBatch,
+                                    maxResultsToReturn,
+                                    browseDirection,
+                                    referenceTypeId,
+                                    includeSubtypes,
+                                    nodeClassMask,
+                                    ct)
+                                .ConfigureAwait(false);
+
+                        int resultOffset = batchOffset;
+                        for (int ii = 0; ii < nodesToBrowseBatchCount; ii++)
+                        {
+                            StatusCode statusCode = errorsForBatch[ii].StatusCode;
+                            if (StatusCode.IsBad(statusCode))
+                            {
+                                bool addToNextPass = false;
+                                if (statusCode == StatusCodes.BadNoContinuationPoints)
+                                {
+                                    addToNextPass = true;
+                                    badNoCPErrorsPerPass++;
+                                }
+                                else if (statusCode == StatusCodes.BadContinuationPointInvalid)
+                                {
+                                    addToNextPass = true;
+                                    badCPInvalidErrorsPerPass++;
+                                }
+                                else
+                                {
+                                    otherErrorsPerPass++;
+                                }
+
+                                if (addToNextPass)
+                                {
+                                    nodesToBrowseForNextPass.Add(
+                                        nodesToBrowseForPass[resultOffset]);
+                                    referenceDescriptionsForNextPass.Add(
+                                        resultForPass[resultOffset]);
+                                    errorsForNextPass.Add(errorsForPass[resultOffset]);
+                                }
+                            }
+
+                            resultForPass[resultOffset].Clear();
+                            resultForPass[resultOffset].AddRange(resultForBatch[ii]);
+                            errorsForPass[resultOffset] = errorsForBatch[ii];
+                            resultOffset++;
+                        }
+
+                        batchOffset += nodesToBrowseBatchCount;
+                    }
+
+                    resultForPass = referenceDescriptionsForNextPass;
+                    referenceDescriptionsForNextPass = [];
+
+                    errorsForPass = errorsForNextPass;
+                    errorsForNextPass = [];
+
+                    nodesToBrowseForPass = nodesToBrowseForNextPass;
+                    nodesToBrowseForNextPass = [];
+
+                    const string aggregatedErrorMessage =
+                        "ManagedBrowse: in pass {0}, {1} {2} occured with a status code {3}.";
+
+                    if (badCPInvalidErrorsPerPass > 0)
+                    {
+                        Utils.LogDebug(
+                            aggregatedErrorMessage,
+                            passCount,
+                            badCPInvalidErrorsPerPass,
+                            badCPInvalidErrorsPerPass == 1 ? "error" : "errors",
+                            nameof(StatusCodes.BadContinuationPointInvalid));
+                    }
+                    if (badNoCPErrorsPerPass > 0)
+                    {
+                        Utils.LogDebug(
+                            aggregatedErrorMessage,
+                            passCount,
+                            badNoCPErrorsPerPass,
+                            badNoCPErrorsPerPass == 1 ? "error" : "errors",
+                            nameof(StatusCodes.BadNoContinuationPoints));
+                    }
+                    if (otherErrorsPerPass > 0)
+                    {
+                        Utils.LogDebug(
+                            aggregatedErrorMessage,
+                            passCount,
+                            otherErrorsPerPass,
+                            otherErrorsPerPass == 1 ? "error" : "errors",
+                            $"different from {nameof(StatusCodes.BadNoContinuationPoints)} or {nameof(StatusCodes.BadContinuationPointInvalid)}");
+                    }
+                    if (otherErrorsPerPass == 0 &&
+                        badCPInvalidErrorsPerPass == 0 &&
+                        badNoCPErrorsPerPass == 0)
+                    {
+                        Utils.LogTrace("ManagedBrowse completed with no errors.");
+                    }
+
+                    passCount++;
+                } while (nodesToBrowseForPass.Count > 0);
+            }
+            catch (Exception ex)
+            {
+                Utils.LogError(ex, "ManagedBrowse failed");
+            }
+
+            return (result, errors);
         }
 
         /// <summary>
-        /// An overrideable version of a session clone which is used
-        /// internally to create new subclassed clones from a Session class.
+        /// Used to pass on references to the Service results in the loop in ManagedBrowseAsync.
         /// </summary>
-        public virtual Session CloneSession(ITransportChannel channel, bool copyEventHandlers)
+        /// <typeparam name="T"></typeparam>
+        private class ReferenceWrapper<T>
         {
-            return new Session(channel, this, copyEventHandlers);
-        }
-        #endregion
-
-        #region Close Methods
-        /// <inheritdoc/>
-        public override StatusCode Close()
-        {
-            return Close(m_keepAliveInterval, true);
+            public T Reference { get; set; }
         }
 
-        /// <inheritdoc/>
-        public StatusCode Close(bool closeChannel)
+        /// <summary>
+        /// Call the browse service asynchronously and call browse next,
+        /// if applicable, immediately afterwards. Observe proper treatment
+        /// of specific service results, specifically
+        /// BadNoContinuationPoint and BadContinuationPointInvalid
+        /// </summary>
+        private async Task<(IList<ReferenceDescriptionCollection>, IList<ServiceResult>)> BrowseWithBrowseNextAsync(
+            RequestHeader requestHeader,
+            ViewDescription view,
+            List<NodeId> nodeIds,
+            uint maxResultsToReturn,
+            BrowseDirection browseDirection,
+            NodeId referenceTypeId,
+            bool includeSubtypes,
+            uint nodeClassMask,
+            CancellationToken ct = default)
         {
-            return Close(m_keepAliveInterval, closeChannel);
+            if (requestHeader != null)
+            {
+                requestHeader.RequestHandle = 0;
+            }
+
+            var result = new List<ReferenceDescriptionCollection>(nodeIds.Count);
+
+            (
+                _,
+                ByteStringCollection continuationPoints,
+                IList<ReferenceDescriptionCollection> referenceDescriptions,
+                IList<ServiceResult> errors
+            ) = await BrowseAsync(
+                    requestHeader,
+                    view,
+                    nodeIds,
+                    maxResultsToReturn,
+                    browseDirection,
+                    referenceTypeId,
+                    includeSubtypes,
+                    nodeClassMask,
+                    ct)
+                .ConfigureAwait(false);
+
+            result.AddRange(referenceDescriptions);
+
+            // process any continuation point.
+            List<ReferenceDescriptionCollection> previousResults = result;
+            var errorAnchors = new List<ReferenceWrapper<ServiceResult>>();
+            var previousErrors = new List<ReferenceWrapper<ServiceResult>>();
+            foreach (ServiceResult error in errors)
+            {
+                previousErrors.Add(new ReferenceWrapper<ServiceResult> { Reference = error });
+                errorAnchors.Add(previousErrors[^1]);
+            }
+
+            var nextContinuationPoints = new ByteStringCollection();
+            var nextResults = new List<ReferenceDescriptionCollection>();
+            var nextErrors = new List<ReferenceWrapper<ServiceResult>>();
+
+            for (int ii = 0; ii < nodeIds.Count; ii++)
+            {
+                if (continuationPoints[ii] != null &&
+                    !StatusCode.IsBad(previousErrors[ii].Reference.StatusCode))
+                {
+                    nextContinuationPoints.Add(continuationPoints[ii]);
+                    nextResults.Add(previousResults[ii]);
+                    nextErrors.Add(previousErrors[ii]);
+                }
+            }
+            while (nextContinuationPoints.Count > 0)
+            {
+                if (requestHeader != null)
+                {
+                    requestHeader.RequestHandle = 0;
+                }
+
+                (
+                    _,
+                    ByteStringCollection revisedContinuationPoints,
+                    IList<ReferenceDescriptionCollection> browseNextResults,
+                    IList<ServiceResult> browseNextErrors
+                ) = await BrowseNextAsync(requestHeader, nextContinuationPoints, false, ct)
+                    .ConfigureAwait(false);
+
+                for (int ii = 0; ii < browseNextResults.Count; ii++)
+                {
+                    nextResults[ii].AddRange(browseNextResults[ii]);
+                    nextErrors[ii].Reference = browseNextErrors[ii];
+                }
+
+                previousResults = nextResults;
+                previousErrors = nextErrors;
+
+                nextResults = [];
+                nextErrors = [];
+                nextContinuationPoints = [];
+
+                for (int ii = 0; ii < revisedContinuationPoints.Count; ii++)
+                {
+                    if (revisedContinuationPoints[ii] != null &&
+                        !StatusCode.IsBad(browseNextErrors[ii].StatusCode))
+                    {
+                        nextContinuationPoints.Add(revisedContinuationPoints[ii]);
+                        nextResults.Add(previousResults[ii]);
+                        nextErrors.Add(previousErrors[ii]);
+                    }
+                }
+            }
+            var finalErrors = new List<ServiceResult>(errorAnchors.Count);
+            foreach (ReferenceWrapper<ServiceResult> errorReference in errorAnchors)
+            {
+                finalErrors.Add(errorReference.Reference);
+            }
+
+            return (result, finalErrors);
         }
 
         /// <inheritdoc/>
-        public StatusCode Close(int timeout)
-            => Close(timeout, true);
+        public async Task<IList<object>> CallAsync(
+            NodeId objectId,
+            NodeId methodId,
+            CancellationToken ct = default,
+            params object[] args)
+        {
+            var inputArguments = new VariantCollection();
+
+            if (args != null)
+            {
+                for (int ii = 0; ii < args.Length; ii++)
+                {
+                    inputArguments.Add(new Variant(args[ii]));
+                }
+            }
+
+            var request = new CallMethodRequest
+            {
+                ObjectId = objectId,
+                MethodId = methodId,
+                InputArguments = inputArguments
+            };
+
+            var requests = new CallMethodRequestCollection { request };
+
+            CallMethodResultCollection results;
+            DiagnosticInfoCollection diagnosticInfos;
+
+            CallResponse response = await base.CallAsync(null, requests, ct).ConfigureAwait(false);
+
+            results = response.Results;
+            diagnosticInfos = response.DiagnosticInfos;
+
+            ValidateResponse(results, requests);
+            ValidateDiagnosticInfos(diagnosticInfos, requests);
+
+            if (StatusCode.IsBad(results[0].StatusCode))
+            {
+                throw ServiceResultException.Create(
+                    results[0].StatusCode,
+                    0,
+                    diagnosticInfos,
+                    response.ResponseHeader.StringTable);
+            }
+
+            var outputArguments = new List<object>();
+
+            foreach (Variant arg in results[0].OutputArguments)
+            {
+                outputArguments.Add(arg.Value);
+            }
+
+            return outputArguments;
+        }
 
         /// <inheritdoc/>
-        public virtual StatusCode Close(int timeout, bool closeChannel)
+        public async Task<ReferenceDescriptionCollection> FetchReferencesAsync(
+            NodeId nodeId,
+            CancellationToken ct = default)
+        {
+            (IList<ReferenceDescriptionCollection> descriptions, _) = await ManagedBrowseAsync(
+                    null,
+                    null,
+                    [nodeId],
+                    0,
+                    BrowseDirection.Both,
+                    null,
+                    true,
+                    0,
+                    ct)
+                .ConfigureAwait(false);
+            return descriptions[0];
+        }
+
+        /// <inheritdoc/>
+        public Task<(IList<ReferenceDescriptionCollection>, IList<ServiceResult>)> FetchReferencesAsync(
+            IList<NodeId> nodeIds,
+            CancellationToken ct = default)
+        {
+            return ManagedBrowseAsync(
+                null,
+                null,
+                nodeIds,
+                0,
+                BrowseDirection.Both,
+                null,
+                true,
+                0,
+                ct);
+        }
+
+        /// <summary>
+        /// Recreates a session based on a specified template.
+        /// </summary>
+        /// <param name="sessionTemplate">The Session object to use as template</param>
+        /// <param name="ct">Cancellation Token to cancel operation with</param>
+        /// <returns>The new session object.</returns>
+        public static async Task<Session> RecreateAsync(
+            Session sessionTemplate,
+            CancellationToken ct = default)
+        {
+            ServiceMessageContext messageContext = sessionTemplate.m_configuration
+                .CreateMessageContext();
+            messageContext.Factory = sessionTemplate.Factory;
+
+            // create the channel object used to connect to the server.
+            ITransportChannel channel = SessionChannel.Create(
+                sessionTemplate.m_configuration,
+                sessionTemplate.ConfiguredEndpoint.Description,
+                sessionTemplate.ConfiguredEndpoint.Configuration,
+                sessionTemplate.m_instanceCertificate,
+                sessionTemplate.m_configuration.SecurityConfiguration.SendCertificateChain
+                    ? sessionTemplate.m_instanceCertificateChain
+                    : null,
+                messageContext);
+
+            // create the session object.
+            Session session = sessionTemplate.CloneSession(channel, true);
+
+            try
+            {
+                session.RecreateRenewUserIdentity();
+                // open the session.
+                await session
+                    .OpenAsync(
+                        sessionTemplate.SessionName,
+                        (uint)sessionTemplate.SessionTimeout,
+                        session.Identity,
+                        sessionTemplate.PreferredLocales,
+                        sessionTemplate.m_checkDomain,
+                        ct)
+                    .ConfigureAwait(false);
+
+                await session.RecreateSubscriptionsAsync(sessionTemplate.Subscriptions, ct)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                session.Dispose();
+                ThrowCouldNotRecreateSessionException(e, sessionTemplate.m_sessionName);
+            }
+
+            return session;
+        }
+
+        /// <summary>
+        /// Recreates a session based on a specified template.
+        /// </summary>
+        /// <param name="sessionTemplate">The Session object to use as template</param>
+        /// <param name="connection">The waiting reverse connection.</param>
+        /// <param name="ct">Cancelation token to cancel operation with</param>
+        /// <returns>The new session object.</returns>
+        public static async Task<Session> RecreateAsync(
+            Session sessionTemplate,
+            ITransportWaitingConnection connection,
+            CancellationToken ct = default)
+        {
+            ServiceMessageContext messageContext = sessionTemplate.m_configuration
+                .CreateMessageContext();
+            messageContext.Factory = sessionTemplate.Factory;
+
+            // create the channel object used to connect to the server.
+            ITransportChannel channel = SessionChannel.Create(
+                sessionTemplate.m_configuration,
+                connection,
+                sessionTemplate.m_endpoint.Description,
+                sessionTemplate.m_endpoint.Configuration,
+                sessionTemplate.m_instanceCertificate,
+                sessionTemplate.m_configuration.SecurityConfiguration.SendCertificateChain
+                    ? sessionTemplate.m_instanceCertificateChain
+                    : null,
+                messageContext);
+
+            // create the session object.
+            Session session = sessionTemplate.CloneSession(channel, true);
+
+            try
+            {
+                session.RecreateRenewUserIdentity();
+                // open the session.
+                await session
+                    .OpenAsync(
+                        sessionTemplate.m_sessionName,
+                        (uint)sessionTemplate.m_sessionTimeout,
+                        session.Identity,
+                        sessionTemplate.m_preferredLocales,
+                        sessionTemplate.m_checkDomain,
+                        ct)
+                    .ConfigureAwait(false);
+
+                await session.RecreateSubscriptionsAsync(sessionTemplate.Subscriptions, ct)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                session.Dispose();
+                ThrowCouldNotRecreateSessionException(e, sessionTemplate.m_sessionName);
+            }
+
+            return session;
+        }
+
+        /// <summary>
+        /// Recreates a session based on a specified template using the provided channel.
+        /// </summary>
+        /// <param name="sessionTemplate">The Session object to use as template</param>
+        /// <param name="transportChannel">The waiting reverse connection.</param>
+        /// <param name="ct">Cancellation token to cancel the operation with</param>
+        /// <returns>The new session object.</returns>
+        public static async Task<Session> RecreateAsync(
+            Session sessionTemplate,
+            ITransportChannel transportChannel,
+            CancellationToken ct = default)
+        {
+            if (transportChannel == null)
+            {
+                return await RecreateAsync(sessionTemplate, ct).ConfigureAwait(false);
+            }
+
+            ServiceMessageContext messageContext = sessionTemplate.m_configuration
+                .CreateMessageContext();
+            messageContext.Factory = sessionTemplate.Factory;
+
+            // create the session object.
+            Session session = sessionTemplate.CloneSession(transportChannel, true);
+
+            try
+            {
+                session.RecreateRenewUserIdentity();
+                // open the session.
+                await session
+                    .OpenAsync(
+                        sessionTemplate.m_sessionName,
+                        (uint)sessionTemplate.m_sessionTimeout,
+                        session.Identity,
+                        sessionTemplate.m_preferredLocales,
+                        sessionTemplate.m_checkDomain,
+                        false,
+                        ct)
+                    .ConfigureAwait(false);
+
+                // create the subscriptions.
+                foreach (Subscription subscription in session.Subscriptions)
+                {
+                    await subscription.CreateAsync(ct).ConfigureAwait(false);
+                }
+            }
+            catch (Exception e)
+            {
+                session.Dispose();
+                ThrowCouldNotRecreateSessionException(e, sessionTemplate.m_sessionName);
+            }
+
+            return session;
+        }
+
+        /// <inheritdoc/>
+        public override Task<StatusCode> CloseAsync(CancellationToken ct = default)
+        {
+            return CloseAsync(m_keepAliveInterval, true, ct);
+        }
+
+        /// <inheritdoc/>
+        public Task<StatusCode> CloseAsync(bool closeChannel, CancellationToken ct = default)
+        {
+            return CloseAsync(m_keepAliveInterval, closeChannel, ct);
+        }
+
+        /// <inheritdoc/>
+        public Task<StatusCode> CloseAsync(int timeout, CancellationToken ct = default)
+        {
+            return CloseAsync(timeout, true, ct);
+        }
+
+        /// <inheritdoc/>
+        public virtual async Task<StatusCode> CloseAsync(
+            int timeout,
+            bool closeChannel,
+            CancellationToken ct = default)
         {
             // check if already called.
             if (Disposed)
@@ -3258,50 +3612,53 @@ namespace Technosoftware.UaClient
             bool connected = Connected;
 
             // halt all background threads.
-            if (connected)
+            if (connected && m_SessionClosing != null)
             {
-                if (m_SessionClosing != null)
+                try
                 {
-                    try
-                    {
-                        m_SessionClosing(this, null);
-                    }
-                    catch (Exception e)
-                    {
-                        Utils.LogError(e, "Session: Unexpected error raising SessionClosing event.");
-                    }
+                    m_SessionClosing(this, null);
                 }
-
-                // close the session with the server.
-                if (!KeepAliveStopped)
+                catch (Exception e)
                 {
-                    try
-                    {
-                        // close the session and delete all subscriptions if specified.
-                        var requestHeader = new RequestHeader()
-                        {
-                            TimeoutHint = timeout > 0 ? (uint)timeout : (uint)(this.OperationTimeout > 0 ? this.OperationTimeout : 0),
-                        };
-                        CloseSession(requestHeader, m_deleteSubscriptionsOnClose);
+                    Utils.LogError(e, "Session: Unexpected error raising SessionClosing event.");
+                }
+            }
 
-                        if (closeChannel)
-                        {
-                            CloseChannel();
-                        }
+            // close the session with the server.
+            if (connected && !KeepAliveStopped)
+            {
+                try
+                {
+                    // close the session and delete all subscriptions if specified.
+                    var requestHeader = new RequestHeader
+                    {
+                        TimeoutHint = timeout > 0
+                            ? (uint)timeout
+                            : (uint)(OperationTimeout > 0 ? OperationTimeout : 0)
+                    };
+                    CloseSessionResponse response = await base.CloseSessionAsync(
+                            requestHeader,
+                            DeleteSubscriptionsOnClose,
+                            ct)
+                        .ConfigureAwait(false);
 
-                        // raised notification indicating the session is closed.
-                        SessionCreated(null, null);
-                    }
-                    // don't throw errors on disconnect, but return them
-                    // so the caller can log the error.
-                    catch (ServiceResultException sre)
+                    if (closeChannel)
                     {
-                        result = sre.StatusCode;
+                        await CloseChannelAsync(ct).ConfigureAwait(false);
                     }
-                    catch (Exception)
-                    {
-                        result = StatusCodes.Bad;
-                    }
+
+                    // raised notification indicating the session is closed.
+                    SessionCreated(null, null);
+                }
+                // don't throw errors on disconnect, but return them
+                // so the caller can log the error.
+                catch (ServiceResultException sre)
+                {
+                    result = sre.StatusCode;
+                }
+                catch (Exception)
+                {
+                    result = StatusCodes.Bad;
                 }
             }
 
@@ -3313,14 +3670,252 @@ namespace Technosoftware.UaClient
 
             return result;
         }
-        #endregion
 
-        #region Subscription Methods
+        /// <inheritdoc/>
+        public Task ReconnectAsync(CancellationToken ct)
+        {
+            return ReconnectAsync(null, null, ct);
+        }
+
+        /// <inheritdoc/>
+        public Task ReconnectAsync(ITransportWaitingConnection connection, CancellationToken ct)
+        {
+            return ReconnectAsync(connection, null, ct);
+        }
+
+        /// <inheritdoc/>
+        public Task ReconnectAsync(ITransportChannel channel, CancellationToken ct)
+        {
+            return ReconnectAsync(null, channel, ct);
+        }
+
+        /// <inheritdoc/>
+        public async Task ReloadInstanceCertificateAsync(CancellationToken ct = default)
+        {
+            await m_reconnectLock.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                await LoadInstanceCertificateAsync(null).ConfigureAwait(false);
+            }
+            finally
+            {
+                m_reconnectLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Reconnects to the server after a network failure using a waiting connection.
+        /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
+        private async Task ReconnectAsync(
+            ITransportWaitingConnection connection,
+            ITransportChannel transportChannel,
+            CancellationToken ct)
+        {
+            bool resetReconnect = false;
+            await m_reconnectLock.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                bool reconnecting = m_reconnecting;
+                m_reconnecting = true;
+                resetReconnect = true;
+                m_reconnectLock.Release();
+
+                // check if already connecting.
+                if (reconnecting)
+                {
+                    Utils.LogWarning("Session is already attempting to reconnect.");
+
+                    throw ServiceResultException.Create(
+                        StatusCodes.BadInvalidState,
+                        "Session is already attempting to reconnect.");
+                }
+
+                StopKeepAliveTimer();
+
+                IAsyncResult result = PrepareReconnectBeginActivate(connection, transportChannel);
+
+                const string timeoutMessage = "ACTIVATE SESSION ASYNC timed out. {0}/{1}";
+                if (result is ChannelAsyncOperation<int> operation)
+                {
+                    try
+                    {
+                        _ = await operation.EndAsync(kReconnectTimeout / 2, true, ct)
+                            .ConfigureAwait(false);
+                    }
+                    catch (ServiceResultException sre)
+                    {
+                        if (sre.StatusCode == StatusCodes.BadRequestInterrupted)
+                        {
+                            var error = ServiceResult.Create(
+                                StatusCodes.BadRequestTimeout,
+                                timeoutMessage,
+                                GoodPublishRequestCount,
+                                OutstandingRequestCount);
+                            Utils.LogWarning("WARNING: {0}", error.ToString());
+                            operation.Fault(false, error);
+                        }
+                    }
+                }
+                else if (!result.AsyncWaitHandle.WaitOne(kReconnectTimeout / 2))
+                {
+                    Utils.LogWarning(
+                        timeoutMessage,
+                        GoodPublishRequestCount,
+                        OutstandingRequestCount);
+                }
+
+                // reactivate session.
+
+                EndActivateSession(
+                    result,
+                    out byte[] serverNonce,
+                    out StatusCodeCollection certificateResults,
+                    out DiagnosticInfoCollection certificateDiagnosticInfos);
+
+                Utils.LogInfo("Session RECONNECT {0} completed successfully.", SessionId);
+
+                lock (SyncRoot)
+                {
+                    m_previousServerNonce = m_serverNonce;
+                    m_serverNonce = serverNonce;
+                }
+
+                await m_reconnectLock.WaitAsync(ct).ConfigureAwait(false);
+                m_reconnecting = false;
+                resetReconnect = false;
+                m_reconnectLock.Release();
+
+                StartPublishing(OperationTimeout, true);
+
+                StartKeepAliveTimer();
+
+                IndicateSessionConfigurationChanged();
+            }
+            finally
+            {
+                if (resetReconnect)
+                {
+                    await m_reconnectLock.WaitAsync(ct).ConfigureAwait(false);
+                    m_reconnecting = false;
+                    m_reconnectLock.Release();
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<(bool, ServiceResult)> RepublishAsync(
+            uint subscriptionId,
+            uint sequenceNumber,
+            CancellationToken ct)
+        {
+            // send republish request.
+            var requestHeader = new RequestHeader
+            {
+                TimeoutHint = (uint)OperationTimeout,
+                ReturnDiagnostics = (uint)(int)ReturnDiagnostics,
+                RequestHandle = Utils.IncrementIdentifier(ref m_publishCounter)
+            };
+
+            try
+            {
+                Utils.LogInfo(
+                    "Requesting RepublishAsync for {0}-{1}",
+                    subscriptionId,
+                    sequenceNumber);
+
+                // request republish.
+                RepublishResponse response = await RepublishAsync(
+                    requestHeader,
+                    subscriptionId,
+                    sequenceNumber,
+                    ct)
+                    .ConfigureAwait(false);
+                ResponseHeader responseHeader = response.ResponseHeader;
+                NotificationMessage notificationMessage = response.NotificationMessage;
+
+                Utils.LogInfo(
+                    "Received RepublishAsync for {0}-{1}-{2}",
+                    subscriptionId,
+                    sequenceNumber,
+                    responseHeader.ServiceResult);
+
+                // process response.
+                ProcessPublishResponse(
+                    responseHeader,
+                    subscriptionId,
+                    null,
+                    false,
+                    notificationMessage);
+
+                return (true, ServiceResult.Good);
+            }
+            catch (Exception e)
+            {
+                return ProcessRepublishResponseError(e, subscriptionId, sequenceNumber);
+            }
+        }
+
+        /// <summary>
+        /// Recreate the subscriptions in a reconnected session.
+        /// Uses Transfer service if <see cref="TransferSubscriptionsOnReconnect"/> is set to <c>true</c>.
+        /// </summary>
+        /// <param name="subscriptionsTemplate">The template for the subscriptions.</param>
+        /// <param name="ct">Cancelation token to cancel operation with</param>
+        private async Task RecreateSubscriptionsAsync(
+            IEnumerable<Subscription> subscriptionsTemplate,
+            CancellationToken ct)
+        {
+            bool transferred = false;
+            if (TransferSubscriptionsOnReconnect)
+            {
+                try
+                {
+                    transferred = await TransferSubscriptionsAsync(
+                        [.. subscriptionsTemplate],
+                        false,
+                        ct)
+                        .ConfigureAwait(false);
+                }
+                catch (ServiceResultException sre)
+                {
+                    if (sre.StatusCode == StatusCodes.BadServiceUnsupported)
+                    {
+                        TransferSubscriptionsOnReconnect = false;
+                        Utils.LogWarning(
+                            "Transfer subscription unsupported, TransferSubscriptionsOnReconnect set to false.");
+                    }
+                    else
+                    {
+                        Utils.LogError(sre, "Transfer subscriptions failed.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Utils.LogError(ex, "Unexpected Transfer subscriptions error.");
+                }
+            }
+
+            if (!transferred)
+            {
+                // Create the subscriptions which were not transferred.
+                foreach (Subscription subscription in Subscriptions)
+                {
+                    if (!subscription.Created)
+                    {
+                        await subscription.CreateAsync(ct).ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
         /// <inheritdoc/>
         public bool AddSubscription(Subscription subscription)
         {
             if (subscription == null)
+            {
                 throw new ArgumentNullException(nameof(subscription));
+            }
 
             lock (SyncRoot)
             {
@@ -3339,58 +3934,12 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public bool RemoveSubscription(Subscription subscription)
-        {
-            if (subscription == null)
-                throw new ArgumentNullException(nameof(subscription));
-
-            if (subscription.Created)
-            {
-                subscription.Delete(false);
-            }
-
-            lock (SyncRoot)
-            {
-                if (!m_subscriptions.Remove(subscription))
-                {
-                    return false;
-                }
-
-                subscription.Session = null;
-            }
-
-            m_SubscriptionsChanged?.Invoke(this, null);
-
-            return true;
-        }
-
-        /// <inheritdoc/>
-        public bool RemoveSubscriptions(IEnumerable<Subscription> subscriptions)
-        {
-            if (subscriptions == null)
-                throw new ArgumentNullException(nameof(subscriptions));
-
-            List<Subscription> subscriptionsToDelete = [];
-            bool removed = PrepareSubscriptionsToDelete(subscriptions, subscriptionsToDelete);
-
-            foreach (Subscription subscription in subscriptionsToDelete)
-            {
-                subscription.Delete(true);
-            }
-
-            if (removed)
-            {
-                m_SubscriptionsChanged?.Invoke(this, null);
-            }
-
-            return removed;
-        }
-
-        /// <inheritdoc/>
         public bool RemoveTransferredSubscription(Subscription subscription)
         {
             if (subscription == null)
+            {
                 throw new ArgumentNullException(nameof(subscription));
+            }
 
             if (subscription.Session != this)
             {
@@ -3412,532 +3961,6 @@ namespace Technosoftware.UaClient
             return true;
         }
 
-        /// <inheritdoc/>
-        public bool ReactivateSubscriptions(
-            SubscriptionCollection subscriptions,
-            bool sendInitialValues)
-        {
-            int failedSubscriptions = 0;
-            UInt32Collection subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
-
-            if (subscriptionIds.Count > 0)
-            {
-                try
-                {
-                    m_reconnectLock.Wait();
-                    m_reconnecting = true;
-
-                    for (int ii = 0; ii < subscriptions.Count; ii++)
-                    {
-                        if (!subscriptions[ii].Transfer(this, subscriptionIds[ii], []))
-                        {
-                            Utils.LogError("SubscriptionId {0} failed to reactivate.", subscriptionIds[ii]);
-                            failedSubscriptions++;
-                        }
-                    }
-
-                    if (sendInitialValues)
-                    {
-                        if (!ResendData(subscriptions, out IList<ServiceResult> resendResults))
-                        {
-                            Utils.LogError("Failed to call resend data for subscriptions.");
-                        }
-                        else if (resendResults != null)
-                        {
-                            for (int ii = 0; ii < resendResults.Count; ii++)
-                            {
-                                // no need to try for subscriptions which do not exist
-                                if (StatusCode.IsNotGood(resendResults[ii].StatusCode))
-                                {
-                                    Utils.LogError("SubscriptionId {0} failed to resend data.", subscriptionIds[ii]);
-                                }
-                            }
-                        }
-                    }
-
-                    Utils.LogInfo("Session REACTIVATE of {0} subscriptions completed. {1} failed.", subscriptions.Count, failedSubscriptions);
-                }
-                finally
-                {
-                    m_reconnecting = false;
-                    m_reconnectLock.Release();
-                }
-
-                StartPublishing(OperationTimeout, false);
-            }
-            else
-            {
-                Utils.LogInfo("No subscriptions. TransferSubscription skipped.");
-            }
-
-            return failedSubscriptions == 0;
-        }
-
-        /// <inheritdoc/>
-        public bool TransferSubscriptions(
-            SubscriptionCollection subscriptions,
-            bool sendInitialValues)
-        {
-            int failedSubscriptions = 0;
-            UInt32Collection subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
-
-            if (subscriptionIds.Count > 0)
-            {
-                if (m_reconnecting)
-                {
-                    Utils.LogWarning("Already Reconnecting. Can not transfer subscriptions.");
-                    return false;
-                }
-
-                try
-                {
-                    m_reconnectLock.Wait();
-                    m_reconnecting = true;
-
-                    ResponseHeader responseHeader = base.TransferSubscriptions(null, subscriptionIds, sendInitialValues,
-                        out TransferResultCollection results, out DiagnosticInfoCollection diagnosticInfos);
-                    if (!StatusCode.IsGood(responseHeader.ServiceResult))
-                    {
-                        Utils.LogError("TransferSubscription failed: {0}", responseHeader.ServiceResult);
-                        return false;
-                    }
-                    ClientBase.ValidateResponse(results, subscriptionIds);
-                    ClientBase.ValidateDiagnosticInfos(diagnosticInfos, subscriptionIds);
-
-                    for (int ii = 0; ii < subscriptions.Count; ii++)
-                    {
-                        if (StatusCode.IsGood(results[ii].StatusCode))
-                        {
-                            if (subscriptions[ii].Transfer(this, subscriptionIds[ii], results[ii].AvailableSequenceNumbers))
-                            {
-                                lock (m_acknowledgementsToSendLock)
-                                {
-                                    // create ack for available sequence numbers
-                                    foreach (var sequenceNumber in results[ii].AvailableSequenceNumbers)
-                                    {
-                                        AddAcknowledgementToSend(m_acknowledgementsToSend, subscriptionIds[ii], sequenceNumber);
-                                    }
-                                }
-                            }
-                        }
-                        else if (results[ii].StatusCode == StatusCodes.BadNothingToDo)
-                        {
-                            Utils.LogInfo("SubscriptionId {0} is already member of the session.", subscriptionIds[ii]);
-                            failedSubscriptions++;
-                        }
-                        else
-                        {
-                            Utils.LogError("SubscriptionId {0} failed to transfer, StatusCode={1}", subscriptionIds[ii], results[ii].StatusCode);
-                            failedSubscriptions++;
-                        }
-                    }
-
-                    Utils.LogInfo("Session TRANSFER of {0} subscriptions completed. {1} failed.", subscriptions.Count, failedSubscriptions);
-                }
-                finally
-                {
-                    m_reconnecting = false;
-                    m_reconnectLock.Release();
-                }
-
-                StartPublishing(OperationTimeout, false);
-            }
-            else
-            {
-                Utils.LogInfo("No subscriptions. TransferSubscription skipped.");
-            }
-
-            return failedSubscriptions == 0;
-        }
-        #endregion
-
-        #region Browse Methods
-        /// <inheritdoc/>
-        public virtual ResponseHeader Browse(
-            RequestHeader requestHeader,
-            ViewDescription view,
-            NodeId nodeToBrowse,
-            uint maxResultsToReturn,
-            BrowseDirection browseDirection,
-            NodeId referenceTypeId,
-            bool includeSubtypes,
-            uint nodeClassMask,
-            out byte[] continuationPoint,
-            out ReferenceDescriptionCollection references)
-        {
-            BrowseDescription description = new BrowseDescription();
-
-            description.NodeId = nodeToBrowse;
-            description.BrowseDirection = browseDirection;
-            description.ReferenceTypeId = referenceTypeId;
-            description.IncludeSubtypes = includeSubtypes;
-            description.NodeClassMask = nodeClassMask;
-            description.ResultMask = (uint)BrowseResultMask.All;
-
-            BrowseDescriptionCollection nodesToBrowse = [description];
-
-            BrowseResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            ResponseHeader responseHeader = Browse(
-                requestHeader,
-                view,
-                maxResultsToReturn,
-                nodesToBrowse,
-                out results,
-                out diagnosticInfos);
-
-            ClientBase.ValidateResponse(results, nodesToBrowse);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(new ServiceResult(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable));
-            }
-
-            continuationPoint = results[0].ContinuationPoint;
-            references = results[0].References;
-
-            return responseHeader;
-        }
-
-        /// <inheritdoc/>
-        public virtual ResponseHeader Browse(
-            RequestHeader requestHeader,
-            ViewDescription view,
-            IList<NodeId> nodesToBrowse,
-            uint maxResultsToReturn,
-            BrowseDirection browseDirection,
-            NodeId referenceTypeId,
-            bool includeSubtypes,
-            uint nodeClassMask,
-            out ByteStringCollection continuationPoints,
-            out IList<ReferenceDescriptionCollection> referencesList,
-            out IList<ServiceResult> errors)
-        {
-
-            BrowseDescriptionCollection browseDescriptions = [];
-            foreach (var nodeToBrowse in nodesToBrowse)
-            {
-                BrowseDescription description = new BrowseDescription
-                {
-                    NodeId = nodeToBrowse,
-                    BrowseDirection = browseDirection,
-                    ReferenceTypeId = referenceTypeId,
-                    IncludeSubtypes = includeSubtypes,
-                    NodeClassMask = nodeClassMask,
-                    ResultMask = (uint)BrowseResultMask.All
-                };
-
-                browseDescriptions.Add(description);
-            }
-
-            ResponseHeader responseHeader = Browse(
-                requestHeader,
-                view,
-                maxResultsToReturn,
-                browseDescriptions,
-                out BrowseResultCollection results,
-                out DiagnosticInfoCollection diagnosticInfos);
-
-            ClientBase.ValidateResponse(results, browseDescriptions);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, browseDescriptions);
-
-            int ii = 0;
-            errors = [];
-            continuationPoints = [];
-            referencesList = [];
-            foreach (var result in results)
-            {
-                if (StatusCode.IsBad(result.StatusCode))
-                {
-                    errors.Add(new ServiceResult(result.StatusCode, ii, diagnosticInfos, responseHeader.StringTable));
-                }
-                else
-                {
-                    errors.Add(ServiceResult.Good);
-                }
-                continuationPoints.Add(result.ContinuationPoint);
-                referencesList.Add(result.References);
-                ii++;
-            }
-
-            return responseHeader;
-        }
-
-        /// <inheritdoc/>
-        public IAsyncResult BeginBrowse(
-            RequestHeader requestHeader,
-            ViewDescription view,
-            NodeId nodeToBrowse,
-            uint maxResultsToReturn,
-            BrowseDirection browseDirection,
-            NodeId referenceTypeId,
-            bool includeSubtypes,
-            uint nodeClassMask,
-            AsyncCallback callback,
-            object asyncState)
-        {
-            BrowseDescription description = new BrowseDescription();
-
-            description.NodeId = nodeToBrowse;
-            description.BrowseDirection = browseDirection;
-            description.ReferenceTypeId = referenceTypeId;
-            description.IncludeSubtypes = includeSubtypes;
-            description.NodeClassMask = nodeClassMask;
-            description.ResultMask = (uint)BrowseResultMask.All;
-
-            BrowseDescriptionCollection nodesToBrowse = [description];
-
-            return BeginBrowse(
-                requestHeader,
-                view,
-                maxResultsToReturn,
-                nodesToBrowse,
-                callback,
-                asyncState);
-        }
-
-        /// <inheritdoc/>
-        public ResponseHeader EndBrowse(
-            IAsyncResult result,
-            out byte[] continuationPoint,
-            out ReferenceDescriptionCollection references)
-        {
-            BrowseResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            ResponseHeader responseHeader = EndBrowse(
-                result,
-                out results,
-                out diagnosticInfos);
-
-            if (results == null || results.Count != 1)
-            {
-                throw new ServiceResultException(StatusCodes.BadUnknownResponse);
-            }
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(new ServiceResult(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable));
-            }
-
-            continuationPoint = results[0].ContinuationPoint;
-            references = results[0].References;
-
-            return responseHeader;
-        }
-        #endregion
-
-        #region BrowseNext Methods
-        /// <inheritdoc/>
-        public virtual ResponseHeader BrowseNext(
-            RequestHeader requestHeader,
-            bool releaseContinuationPoint,
-            byte[] continuationPoint,
-            out byte[] revisedContinuationPoint,
-            out ReferenceDescriptionCollection references)
-        {
-            ByteStringCollection continuationPoints = [continuationPoint];
-
-            BrowseResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            ResponseHeader responseHeader = BrowseNext(
-                requestHeader,
-                releaseContinuationPoint,
-                continuationPoints,
-                out results,
-                out diagnosticInfos);
-
-            ClientBase.ValidateResponse(results, continuationPoints);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(new ServiceResult(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable));
-            }
-
-            revisedContinuationPoint = results[0].ContinuationPoint;
-            references = results[0].References;
-
-            return responseHeader;
-        }
-
-        /// <inheritdoc/>
-        public virtual ResponseHeader BrowseNext(
-            RequestHeader requestHeader,
-            bool releaseContinuationPoint,
-            ByteStringCollection continuationPoints,
-            out ByteStringCollection revisedContinuationPoints,
-            out IList<ReferenceDescriptionCollection> referencesList,
-            out IList<ServiceResult> errors)
-        {
-            BrowseResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            ResponseHeader responseHeader = BrowseNext(
-                requestHeader,
-                releaseContinuationPoint,
-                continuationPoints,
-                out results,
-                out diagnosticInfos);
-
-            ClientBase.ValidateResponse(results, continuationPoints);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
-
-            int ii = 0;
-            errors = [];
-            revisedContinuationPoints = [];
-            referencesList = [];
-            foreach (var result in results)
-            {
-                if (StatusCode.IsBad(result.StatusCode))
-                {
-                    errors.Add(new ServiceResult(result.StatusCode, ii, diagnosticInfos, responseHeader.StringTable));
-                }
-                else
-                {
-                    errors.Add(ServiceResult.Good);
-                }
-                revisedContinuationPoints.Add(result.ContinuationPoint);
-                referencesList.Add(result.References);
-                ii++;
-            }
-
-            return responseHeader;
-        }
-
-        /// <inheritdoc/>
-        public IAsyncResult BeginBrowseNext(
-            RequestHeader requestHeader,
-            bool releaseContinuationPoint,
-            byte[] continuationPoint,
-            AsyncCallback callback,
-            object asyncState)
-        {
-            ByteStringCollection continuationPoints = [continuationPoint];
-
-            return BeginBrowseNext(
-                requestHeader,
-                releaseContinuationPoint,
-                continuationPoints,
-                callback,
-                asyncState);
-        }
-
-        /// <inheritdoc/>
-        public ResponseHeader EndBrowseNext(
-            IAsyncResult result,
-            out byte[] revisedContinuationPoint,
-            out ReferenceDescriptionCollection references)
-        {
-            BrowseResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            ResponseHeader responseHeader = EndBrowseNext(
-                result,
-                out results,
-                out diagnosticInfos);
-
-            if (results == null || results.Count != 1)
-            {
-                throw new ServiceResultException(StatusCodes.BadUnknownResponse);
-            }
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(new ServiceResult(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable));
-            }
-
-            revisedContinuationPoint = results[0].ContinuationPoint;
-            references = results[0].References;
-
-            return responseHeader;
-        }
-        #endregion
-
-        #region Combined Browse/BrowseNext
-
-        /// <inheritdoc/>
-        public void ManagedBrowse(
-            RequestHeader requestHeader,
-            ViewDescription view,
-            IList<NodeId> nodesToBrowse,
-            uint maxResultsToReturn,
-            BrowseDirection browseDirection,
-            NodeId referenceTypeId,
-            bool includeSubtypes,
-            uint nodeClassMask,
-            out IList<ReferenceDescriptionCollection> result,
-            out IList<ServiceResult> errors
-            )
-        {
-            (result, errors) = ManagedBrowseAsync(
-                requestHeader,
-                view,
-                nodesToBrowse,
-                maxResultsToReturn,
-                browseDirection,
-                referenceTypeId,
-                includeSubtypes,
-                nodeClassMask
-                ).GetAwaiter().GetResult();
-        }
-
-        #endregion
-
-        #region Call Methods
-        /// <inheritdoc/>
-        public IList<object> Call(NodeId objectId, NodeId methodId, params object[] args)
-        {
-            VariantCollection inputArguments = [];
-
-            if (args != null)
-            {
-                for (int ii = 0; ii < args.Length; ii++)
-                {
-                    inputArguments.Add(new Variant(args[ii]));
-                }
-            }
-
-            CallMethodRequest request = new CallMethodRequest();
-
-            request.ObjectId = objectId;
-            request.MethodId = methodId;
-            request.InputArguments = inputArguments;
-
-            CallMethodRequestCollection requests = [request];
-
-            CallMethodResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            ResponseHeader responseHeader = Call(
-                null,
-                requests,
-                out results,
-                out diagnosticInfos);
-
-            ClientBase.ValidateResponse(results, requests);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, requests);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw ServiceResultException.Create(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable);
-            }
-
-            List<object> outputArguments = [];
-
-            foreach (Variant arg in results[0].OutputArguments)
-            {
-                outputArguments.Add(arg.Value);
-            }
-
-            return outputArguments;
-        }
-        #endregion
-
-        #region Protected Methods
         /// <summary>
         /// Returns the software certificates assigned to the application.
         /// </summary>
@@ -3949,7 +3972,10 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Handles an error when validating the application instance certificate provided by the server.
         /// </summary>
-        protected virtual void OnApplicationCertificateError(byte[] serverCertificate, ServiceResult result)
+        /// <exception cref="ServiceResultException"></exception>
+        protected virtual void OnApplicationCertificateError(
+            byte[] serverCertificate,
+            ServiceResult result)
         {
             throw new ServiceResultException(result);
         }
@@ -3957,7 +3983,10 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Handles an error when validating software certificates provided by the server.
         /// </summary>
-        protected virtual void OnSoftwareCertificateError(SignedSoftwareCertificate signedCertificate, ServiceResult result)
+        /// <exception cref="ServiceResultException"></exception>
+        protected virtual void OnSoftwareCertificateError(
+            SignedSoftwareCertificate signedCertificate,
+            ServiceResult result)
         {
             throw new ServiceResultException(result);
         }
@@ -3965,7 +3994,8 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Inspects the software certificates provided by the server.
         /// </summary>
-        protected virtual void ValidateSoftwareCertificates(List<SoftwareCertificate> softwareCertificates)
+        protected virtual void ValidateSoftwareCertificates(
+            List<SoftwareCertificate> softwareCertificates)
         {
             // always accept valid certificates.
         }
@@ -3979,13 +4009,15 @@ namespace Technosoftware.UaClient
 
             m_lastKeepAliveErrorStatusCode = StatusCodes.Good;
             Interlocked.Exchange(ref m_lastKeepAliveTime, DateTime.UtcNow.Ticks);
-            m_lastKeepAliveTickCount = HiResClock.TickCount;
+            LastKeepAliveTickCount = HiResClock.TickCount;
 
             m_serverState = ServerState.Unknown;
 
-            var nodesToRead = new ReadValueIdCollection() {
+            var nodesToRead = new ReadValueIdCollection
+            {
                 // read the server state.
-                new ReadValueId {
+                new ReadValueId
+                {
                     NodeId = Variables.Server_ServerStatus_State,
                     AttributeId = Attributes.Value,
                     DataEncoding = null,
@@ -3998,20 +4030,16 @@ namespace Technosoftware.UaClient
             {
                 StopKeepAliveTimer();
 
-#if PERIODIC_TIMER
-                // start periodic timer loop
-                var keepAliveTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(keepAliveInterval));
-                _ = Task.Run(() => OnKeepAliveAsync(keepAliveTimer, nodesToRead));
-                m_keepAliveTimer = keepAliveTimer;
-            }
-#else
                 // start timer
-                m_keepAliveTimer = new Timer(OnKeepAlive, nodesToRead, keepAliveInterval, keepAliveInterval);
+                m_keepAliveTimer = new Timer(
+                    OnKeepAlive,
+                    nodesToRead,
+                    keepAliveInterval,
+                    keepAliveInterval);
             }
 
             // send initial keep alive.
             OnKeepAlive(nodesToRead);
-#endif
         }
 
         /// <summary>
@@ -4030,9 +4058,12 @@ namespace Technosoftware.UaClient
         {
             lock (m_outstandingRequests)
             {
-                for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First; ii != null; ii = ii.Next)
+                for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First;
+                    ii != null;
+                    ii = ii.Next)
                 {
-                    if (Object.ReferenceEquals(result, ii.Value.Result) || (requestId == ii.Value.RequestId && typeId == ii.Value.RequestTypeId))
+                    if (ReferenceEquals(result, ii.Value.Result) ||
+                        (requestId == ii.Value.RequestId && typeId == ii.Value.RequestTypeId))
                     {
                         AsyncRequestState state = ii.Value;
                         m_outstandingRequests.Remove(ii);
@@ -4057,13 +4088,14 @@ namespace Technosoftware.UaClient
                 // add a new request.
                 if (state == null)
                 {
-                    state = new AsyncRequestState();
-
-                    state.Defunct = false;
-                    state.RequestId = requestId;
-                    state.RequestTypeId = typeId;
-                    state.Result = result;
-                    state.TickCount = HiResClock.TickCount;
+                    state = new AsyncRequestState
+                    {
+                        Defunct = false,
+                        RequestId = requestId,
+                        RequestTypeId = typeId,
+                        Result = result,
+                        TickCount = HiResClock.TickCount
+                    };
 
                     m_outstandingRequests.AddLast(state);
                 }
@@ -4085,9 +4117,12 @@ namespace Technosoftware.UaClient
                     // mark any old requests as default (i.e. the should have returned before this request).
                     const int maxAge = 1000;
 
-                    for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First; ii != null; ii = ii.Next)
+                    for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First;
+                        ii != null;
+                        ii = ii.Next)
                     {
-                        if (ii.Value.RequestTypeId == typeId && (state.TickCount - ii.Value.TickCount) > maxAge)
+                        if (ii.Value.RequestTypeId == typeId &&
+                            (state.TickCount - ii.Value.TickCount) > maxAge)
                         {
                             ii.Value.Defunct = true;
                         }
@@ -4097,45 +4132,28 @@ namespace Technosoftware.UaClient
                 // add a dummy placeholder since the begin request has not completed yet.
                 if (state == null)
                 {
-                    state = new AsyncRequestState();
-
-                    state.Defunct = true;
-                    state.RequestId = requestId;
-                    state.RequestTypeId = typeId;
-                    state.Result = result;
-                    state.TickCount = HiResClock.TickCount;
+                    state = new AsyncRequestState
+                    {
+                        Defunct = true,
+                        RequestId = requestId,
+                        RequestTypeId = typeId,
+                        Result = result,
+                        TickCount = HiResClock.TickCount
+                    };
 
                     m_outstandingRequests.AddLast(state);
                 }
             }
         }
 
-#if PERIODIC_TIMER
-        /// <summary>
-        /// Sends a keep alive by reading from the server.
-        /// </summary>
-        private async Task OnKeepAliveAsync(PeriodicTimer keepAliveTimer, ReadValueIdCollection nodesToRead)
-        {
-            // trigger first keep alive
-            OnSendKeepAlive(nodesToRead);
-
-            while (await keepAliveTimer.WaitForNextTickAsync().ConfigureAwait(false))
-            {
-                OnSendKeepAlive(nodesToRead);
-            }
-
-            Utils.LogTrace("Session {0}: KeepAlive PeriodicTimer exit.", SessionId);
-        }
-#else
         /// <summary>
         /// Sends a keep alive by reading from the server.
         /// </summary>
         private void OnKeepAlive(object state)
         {
-            ReadValueIdCollection nodesToRead = (ReadValueIdCollection)state;
+            var nodesToRead = (ReadValueIdCollection)state;
             OnSendKeepAlive(nodesToRead);
         }
-#endif
 
         /// <summary>
         /// Sends a keep alive by reading from the server.
@@ -4153,20 +4171,24 @@ namespace Technosoftware.UaClient
                 // check if session has been closed.
                 if (m_reconnecting)
                 {
-                    Utils.LogWarning("Session {0}: KeepAlive ignored while reconnecting.", SessionId);
+                    Utils.LogWarning(
+                        "Session {0}: KeepAlive ignored while reconnecting.",
+                        SessionId);
                     return;
                 }
 
                 // raise error if keep alives are not coming back.
-                if (KeepAliveStopped)
+                if (KeepAliveStopped &&
+                    !OnKeepAliveError(
+                        ServiceResult.Create(
+                            StatusCodes.BadNoCommunication,
+                            "Server not responding to keep alive requests.")
+                    ))
                 {
-                    if (!OnKeepAliveError(ServiceResult.Create(StatusCodes.BadNoCommunication, "Server not responding to keep alive requests.")))
-                    {
-                        return;
-                    }
+                    return;
                 }
 
-                RequestHeader requestHeader = new RequestHeader
+                var requestHeader = new RequestHeader
                 {
                     RequestHandle = Utils.IncrementIdentifier(ref m_keepAliveCounter),
                     TimeoutHint = (uint)(KeepAliveInterval * 2),
@@ -4190,7 +4212,10 @@ namespace Technosoftware.UaClient
             }
             catch (Exception e)
             {
-                Utils.LogError("Could not send keep alive request: {0} {1}", e.GetType().FullName, e.Message);
+                Utils.LogError(
+                    "Could not send keep alive request: {0} {1}",
+                    e.GetType().FullName,
+                    e.Message);
             }
         }
 
@@ -4199,26 +4224,28 @@ namespace Technosoftware.UaClient
         /// </summary>
         private void OnKeepAliveComplete(IAsyncResult result)
         {
-            ReadValueIdCollection nodesToRead = (ReadValueIdCollection)result.AsyncState;
+            var nodesToRead = (ReadValueIdCollection)result.AsyncState;
 
             AsyncRequestCompleted(result, 0, DataTypes.ReadRequest);
 
             try
             {
                 // read the server status.
-                DataValueCollection values = [];
-                DiagnosticInfoCollection diagnosticInfos = [];
+                var values = new DataValueCollection();
+                var diagnosticInfos = new DiagnosticInfoCollection();
 
-                ResponseHeader responseHeader = EndRead(
-                    result,
-                    out values,
-                    out diagnosticInfos);
+                ResponseHeader responseHeader = EndRead(result, out values, out diagnosticInfos);
 
                 ValidateResponse(values, nodesToRead);
                 ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
                 // validate value returned.
-                ServiceResult error = ValidateDataValue(values[0], typeof(int), 0, diagnosticInfos, responseHeader);
+                ServiceResult error = ValidateDataValue(
+                    values[0],
+                    typeof(int),
+                    0,
+                    diagnosticInfos,
+                    responseHeader);
 
                 if (ServiceResult.IsBad(error))
                 {
@@ -4227,8 +4254,6 @@ namespace Technosoftware.UaClient
 
                 // send notification that keep alive completed.
                 OnKeepAlive((ServerState)(int)values[0].Value, responseHeader.Timestamp);
-
-                return;
             }
             catch (ServiceResultException sre)
             {
@@ -4257,11 +4282,13 @@ namespace Technosoftware.UaClient
 
                 m_lastKeepAliveErrorStatusCode = StatusCodes.Good;
                 Interlocked.Exchange(ref m_lastKeepAliveTime, DateTime.UtcNow.Ticks);
-                m_lastKeepAliveTickCount = HiResClock.TickCount;
+                LastKeepAliveTickCount = HiResClock.TickCount;
 
                 lock (m_outstandingRequests)
                 {
-                    for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First; ii != null; ii = ii.Next)
+                    for (LinkedListNode<AsyncRequestState> ii = m_outstandingRequests.First;
+                        ii != null;
+                        ii = ii.Next)
                     {
                         if (ii.Value.RequestTypeId == DataTypes.PublishRequest)
                         {
@@ -4276,19 +4303,19 @@ namespace Technosoftware.UaClient
             {
                 m_lastKeepAliveErrorStatusCode = StatusCodes.Good;
                 Interlocked.Exchange(ref m_lastKeepAliveTime, DateTime.UtcNow.Ticks);
-                m_lastKeepAliveTickCount = HiResClock.TickCount;
+                LastKeepAliveTickCount = HiResClock.TickCount;
             }
 
             // save server state.
             m_serverState = currentState;
 
-            EventHandler<SessionKeepAliveEventArgs> callback = m_KeepAlive;
+            EventHandler<KeepAliveEventArgs> callback = m_KeepAlive;
 
             if (callback != null)
             {
                 try
                 {
-                    callback(this, new SessionKeepAliveEventArgs(null, currentState, currentTime));
+                    callback(this, new KeepAliveEventArgs(null, currentState, currentTime));
                 }
                 catch (Exception e)
                 {
@@ -4302,28 +4329,26 @@ namespace Technosoftware.UaClient
         /// </summary>
         protected virtual bool OnKeepAliveError(ServiceResult result)
         {
-
             m_lastKeepAliveErrorStatusCode = result.StatusCode;
             if (result.StatusCode == StatusCodes.BadNoCommunication)
             {
                 //keep alive read timed out
-                int delta = HiResClock.TickCount - m_lastKeepAliveTickCount;
+                int delta = HiResClock.TickCount - LastKeepAliveTickCount;
                 Utils.LogInfo(
                     "KEEP ALIVE LATE: {0}ms, EndpointUrl={1}, RequestCount={2}/{3}",
                     delta,
-                    this.Endpoint?.EndpointUrl,
-                    this.GoodPublishRequestCount,
-                    this.OutstandingRequestCount);
-
+                    Endpoint?.EndpointUrl,
+                    GoodPublishRequestCount,
+                    OutstandingRequestCount);
             }
 
-            EventHandler<SessionKeepAliveEventArgs> callback = m_KeepAlive;
+            EventHandler<KeepAliveEventArgs> callback = m_KeepAlive;
 
             if (callback != null)
             {
                 try
                 {
-                    SessionKeepAliveEventArgs args = new SessionKeepAliveEventArgs(result, ServerState.Unknown, DateTime.UtcNow);
+                    var args = new KeepAliveEventArgs(result, ServerState.Unknown, DateTime.UtcNow);
                     callback(this, args);
                     return !args.CancelKeepAlive;
                 }
@@ -4339,7 +4364,9 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Prepare a list of subscriptions to delete.
         /// </summary>
-        private bool PrepareSubscriptionsToDelete(IEnumerable<Subscription> subscriptions, List<Subscription> subscriptionsToDelete)
+        private bool PrepareSubscriptionsToDelete(
+            IEnumerable<Subscription> subscriptions,
+            List<Subscription> subscriptionsToDelete)
         {
             bool removed = false;
             lock (SyncRoot)
@@ -4363,24 +4390,24 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Creates a read request with attributes determined by the NodeClass.
         /// </summary>
-        private void CreateNodeClassAttributesReadNodesRequest(
+        private static void CreateNodeClassAttributesReadNodesRequest(
             IList<NodeId> nodeIdCollection,
             NodeClass nodeClass,
             ReadValueIdCollection attributesToRead,
             List<IDictionary<uint, DataValue>> attributesPerNodeId,
-            IList<Node> nodeCollection,
+            NodeCollection nodeCollection,
             bool optionalAttributes)
         {
             for (int ii = 0; ii < nodeIdCollection.Count; ii++)
             {
-                var node = new Node();
-                node.NodeId = nodeIdCollection[ii];
-                node.NodeClass = nodeClass;
+                var node = new Node { NodeId = nodeIdCollection[ii], NodeClass = nodeClass };
 
-                var attributes = CreateAttributes(node.NodeClass, optionalAttributes);
+                Dictionary<uint, DataValue> attributes = CreateAttributes(
+                    node.NodeClass,
+                    optionalAttributes);
                 foreach (uint attributeId in attributes.Keys)
                 {
-                    ReadValueId itemToRead = new ReadValueId
+                    var itemToRead = new ReadValueId
                     {
                         NodeId = node.NodeId,
                         AttributeId = attributeId
@@ -4396,12 +4423,12 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Prepares the list of node ids to read to fetch the namespace table.
         /// </summary>
-        private ReadValueIdCollection PrepareNamespaceTableNodesToRead()
+        private static ReadValueIdCollection PrepareNamespaceTableNodesToRead()
         {
             var nodesToRead = new ReadValueIdCollection();
 
             // request namespace array.
-            ReadValueId valueId = new ReadValueId
+            var valueId = new ReadValueId
             {
                 NodeId = Variables.Server_NamespaceArray,
                 AttributeId = Attributes.Value
@@ -4422,59 +4449,80 @@ namespace Technosoftware.UaClient
         }
 
         /// <summary>
-        /// Updates the NamespaceTable with the result of the <see cref="PrepareNamespaceTableNodesToRead"/> read operation.
+        /// Updates the NamespaceTable with the result of the
+        /// <see cref="PrepareNamespaceTableNodesToRead"/> read operation.
         /// </summary>
-        private void UpdateNamespaceTable(DataValueCollection values, DiagnosticInfoCollection diagnosticInfos, ResponseHeader responseHeader)
+        private void UpdateNamespaceTable(
+            DataValueCollection values,
+            DiagnosticInfoCollection diagnosticInfos,
+            ResponseHeader responseHeader)
         {
             // validate namespace array.
-            ServiceResult result = ValidateDataValue(values[0], typeof(string[]), 0, diagnosticInfos, responseHeader);
+            ServiceResult result = ValidateDataValue(
+                values[0],
+                typeof(string[]),
+                0,
+                diagnosticInfos,
+                responseHeader);
 
             if (ServiceResult.IsBad(result))
             {
-                Utils.LogError("FetchNamespaceTables: Cannot read NamespaceArray node: {0}", result.StatusCode);
+                Utils.LogError(
+                    "FetchNamespaceTables: Cannot read NamespaceArray node: {0}",
+                    result.StatusCode);
             }
             else
             {
-                m_namespaceUris.Update((string[])values[0].Value);
+                NamespaceUris.Update((string[])values[0].Value);
             }
 
             // validate server array.
-            result = ValidateDataValue(values[1], typeof(string[]), 1, diagnosticInfos, responseHeader);
+            result = ValidateDataValue(
+                values[1],
+                typeof(string[]),
+                1,
+                diagnosticInfos,
+                responseHeader);
 
             if (ServiceResult.IsBad(result))
             {
-                Utils.LogError("FetchNamespaceTables: Cannot read ServerArray node: {0} ", result.StatusCode);
+                Utils.LogError(
+                    "FetchNamespaceTables: Cannot read ServerArray node: {0} ",
+                    result.StatusCode);
             }
             else
             {
-                m_serverUris.Update((string[])values[1].Value);
+                ServerUris.Update((string[])values[1].Value);
             }
         }
 
         /// <summary>
         /// Creates a read request with attributes determined by the NodeClass.
         /// </summary>
-        private void CreateAttributesReadNodesRequest(
+        private static void CreateAttributesReadNodesRequest(
             ResponseHeader responseHeader,
             ReadValueIdCollection itemsToRead,
             DataValueCollection nodeClassValues,
             DiagnosticInfoCollection diagnosticInfos,
             ReadValueIdCollection attributesToRead,
             List<IDictionary<uint, DataValue>> attributesPerNodeId,
-            IList<Node> nodeCollection,
-            IList<ServiceResult> errors,
-            bool optionalAttributes
-            )
+            NodeCollection nodeCollection,
+            List<ServiceResult> errors,
+            bool optionalAttributes)
         {
             int? nodeClass;
             for (int ii = 0; ii < itemsToRead.Count; ii++)
             {
-                var node = new Node();
-                node.NodeId = itemsToRead[ii].NodeId;
+                var node = new Node { NodeId = itemsToRead[ii].NodeId };
                 if (!DataValue.IsGood(nodeClassValues[ii]))
                 {
                     nodeCollection.Add(node);
-                    errors.Add(new ServiceResult(nodeClassValues[ii].StatusCode, ii, diagnosticInfos, responseHeader.StringTable));
+                    errors.Add(
+                        new ServiceResult(
+                            nodeClassValues[ii].StatusCode,
+                            ii,
+                            diagnosticInfos,
+                            responseHeader.StringTable));
                     attributesPerNodeId.Add(null);
                     continue;
                 }
@@ -4485,18 +4533,23 @@ namespace Technosoftware.UaClient
                 if (nodeClass == null)
                 {
                     nodeCollection.Add(node);
-                    errors.Add(ServiceResult.Create(StatusCodes.BadUnexpectedError,
-                        "Node does not have a valid value for NodeClass: {0}.", nodeClassValues[ii].Value));
+                    errors.Add(
+                        ServiceResult.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Node does not have a valid value for NodeClass: {0}.",
+                            nodeClassValues[ii].Value));
                     attributesPerNodeId.Add(null);
                     continue;
                 }
 
                 node.NodeClass = (NodeClass)nodeClass;
 
-                var attributes = CreateAttributes(node.NodeClass, optionalAttributes);
+                Dictionary<uint, DataValue> attributes = CreateAttributes(
+                    node.NodeClass,
+                    optionalAttributes);
                 foreach (uint attributeId in attributes.Keys)
                 {
-                    ReadValueId itemToRead = new ReadValueId
+                    var itemToRead = new ReadValueId
                     {
                         NodeId = node.NodeId,
                         AttributeId = attributeId
@@ -4513,39 +4566,47 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Builds the node collection results based on the attribute values of the read response.
         /// </summary>
+        /// <param name="responseHeader">The response header of the read request.</param>
         /// <param name="attributesToRead">The collection of all attributes to read passed in the read request.</param>
         /// <param name="attributesPerNodeId">The attributes requested per NodeId</param>
         /// <param name="values">The attribute values returned by the read request.</param>
         /// <param name="diagnosticInfos">The diagnostic info returned by the read request.</param>
-        /// <param name="responseHeader">The response header of the read request.</param>
         /// <param name="nodeCollection">The node collection which holds the results.</param>
         /// <param name="errors">The service results for each node.</param>
-        private void ProcessAttributesReadNodesResponse(
+        private static void ProcessAttributesReadNodesResponse(
             ResponseHeader responseHeader,
             ReadValueIdCollection attributesToRead,
-            IList<IDictionary<uint, DataValue>> attributesPerNodeId,
+            List<IDictionary<uint, DataValue>> attributesPerNodeId,
             DataValueCollection values,
             DiagnosticInfoCollection diagnosticInfos,
-            IList<Node> nodeCollection,
-            IList<ServiceResult> errors)
+            NodeCollection nodeCollection,
+            List<ServiceResult> errors)
         {
             int readIndex = 0;
             for (int ii = 0; ii < nodeCollection.Count; ii++)
             {
-                var attributes = attributesPerNodeId[ii];
+                IDictionary<uint, DataValue> attributes = attributesPerNodeId[ii];
                 if (attributes == null)
                 {
                     continue;
                 }
 
                 int readCount = attributes.Count;
-                ReadValueIdCollection subRangeAttributes = new ReadValueIdCollection(attributesToRead.GetRange(readIndex, readCount));
-                DataValueCollection subRangeValues = new DataValueCollection(values.GetRange(readIndex, readCount));
-                DiagnosticInfoCollection subRangeDiagnostics = diagnosticInfos.Count > 0 ? new DiagnosticInfoCollection(diagnosticInfos.GetRange(readIndex, readCount)) : diagnosticInfos;
+                var subRangeAttributes = new ReadValueIdCollection(
+                    attributesToRead.GetRange(readIndex, readCount));
+                var subRangeValues = new DataValueCollection(values.GetRange(readIndex, readCount));
+                DiagnosticInfoCollection subRangeDiagnostics =
+                    diagnosticInfos.Count > 0
+                        ? [.. diagnosticInfos.GetRange(readIndex, readCount)]
+                        : diagnosticInfos;
                 try
                 {
-                    nodeCollection[ii] = ProcessReadResponse(responseHeader, attributes,
-                        subRangeAttributes, subRangeValues, subRangeDiagnostics);
+                    nodeCollection[ii] = ProcessReadResponse(
+                        responseHeader,
+                        attributes,
+                        subRangeAttributes,
+                        subRangeValues,
+                        subRangeDiagnostics);
                     errors[ii] = ServiceResult.Good;
                 }
                 catch (ServiceResultException sre)
@@ -4559,7 +4620,8 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Creates a Node based on the read response.
         /// </summary>
-        private Node ProcessReadResponse(
+        /// <exception cref="ServiceResultException"></exception>
+        private static Node ProcessReadResponse(
             ResponseHeader responseHeader,
             IDictionary<uint, DataValue> attributes,
             ReadValueIdCollection itemsToRead,
@@ -4578,7 +4640,11 @@ namespace Technosoftware.UaClient
                 {
                     if (!DataValue.IsGood(values[ii]))
                     {
-                        throw ServiceResultException.Create(values[ii].StatusCode, ii, diagnosticInfos, responseHeader.StringTable);
+                        throw ServiceResultException.Create(
+                            values[ii].StatusCode,
+                            ii,
+                            diagnosticInfos,
+                            responseHeader.StringTable);
                     }
 
                     // check for valid node class.
@@ -4586,43 +4652,46 @@ namespace Technosoftware.UaClient
 
                     if (nodeClass == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Node does not have a valid value for NodeClass: {0}.", values[ii].Value);
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Node does not have a valid value for NodeClass: {0}.",
+                            values[ii].Value);
                     }
                 }
-                else
+                else if (!DataValue.IsGood(values[ii]))
                 {
-                    if (!DataValue.IsGood(values[ii]))
+                    // check for unsupported attributes.
+                    if (values[ii].StatusCode == StatusCodes.BadAttributeIdInvalid)
                     {
-                        // check for unsupported attributes.
-                        if (values[ii].StatusCode == StatusCodes.BadAttributeIdInvalid)
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        // ignore errors on optional attributes
-                        if (StatusCode.IsBad(values[ii].StatusCode))
-                        {
-                            if (attributeId == Attributes.AccessRestrictions ||
-                                attributeId == Attributes.Description ||
-                                attributeId == Attributes.RolePermissions ||
-                                attributeId == Attributes.UserRolePermissions ||
-                                attributeId == Attributes.UserWriteMask ||
-                                attributeId == Attributes.WriteMask ||
-                                attributeId == Attributes.AccessLevelEx ||
-                                attributeId == Attributes.ArrayDimensions ||
-                                attributeId == Attributes.DataTypeDefinition ||
-                                attributeId == Attributes.InverseName ||
-                                attributeId == Attributes.MinimumSamplingInterval)
-                            {
-                                continue;
-                            }
-                        }
+                    // ignore errors on optional attributes
+                    if (StatusCode.IsBad(values[ii].StatusCode) &&
+                        attributeId
+                            is Attributes.AccessRestrictions
+                                or Attributes.Description
+                                or Attributes.RolePermissions
+                                or Attributes.UserRolePermissions
+                                or Attributes.UserWriteMask
+                                or Attributes.WriteMask
+                                or Attributes.AccessLevelEx
+                                or Attributes.ArrayDimensions
+                                or Attributes.DataTypeDefinition
+                                or Attributes.InverseName
+                                or Attributes.MinimumSamplingInterval)
+                    {
+                        continue;
+                    }
 
-                        // all supported attributes must be readable.
-                        if (attributeId != Attributes.Value)
-                        {
-                            throw ServiceResultException.Create(values[ii].StatusCode, ii, diagnosticInfos, responseHeader.StringTable);
-                        }
+                    // all supported attributes must be readable.
+                    if (attributeId != Attributes.Value)
+                    {
+                        throw ServiceResultException.Create(
+                            values[ii].StatusCode,
+                            ii,
+                            diagnosticInfos,
+                            responseHeader.StringTable);
                     }
                 }
 
@@ -4634,52 +4703,51 @@ namespace Technosoftware.UaClient
             switch ((NodeClass)nodeClass.Value)
             {
                 default:
-                {
-                    throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Node does not have a valid value for NodeClass: {0}.", nodeClass.Value);
-                }
-
+                    throw ServiceResultException.Create(
+                        StatusCodes.BadUnexpectedError,
+                        "Node does not have a valid value for NodeClass: {0}.",
+                        nodeClass.Value);
                 case NodeClass.Object:
-                {
-                    ObjectNode objectNode = new ObjectNode();
+                    var objectNode = new ObjectNode();
 
                     value = attributes[Attributes.EventNotifier];
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Object does not support the EventNotifier attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Object does not support the EventNotifier attribute.");
                     }
 
                     objectNode.EventNotifier = value.GetValueOrDefault<byte>();
                     node = objectNode;
                     break;
-                }
-
                 case NodeClass.ObjectType:
-                {
-                    ObjectTypeNode objectTypeNode = new ObjectTypeNode();
+                    var objectTypeNode = new ObjectTypeNode();
 
                     value = attributes[Attributes.IsAbstract];
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "ObjectType does not support the IsAbstract attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "ObjectType does not support the IsAbstract attribute.");
                     }
 
                     objectTypeNode.IsAbstract = value.GetValueOrDefault<bool>();
                     node = objectTypeNode;
                     break;
-                }
-
                 case NodeClass.Variable:
-                {
-                    VariableNode variableNode = new VariableNode();
+                    var variableNode = new VariableNode();
 
                     // DataType Attribute
                     value = attributes[Attributes.DataType];
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Variable does not support the DataType attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Variable does not support the DataType attribute.");
                     }
 
                     variableNode.DataType = (NodeId)value.GetValue(typeof(NodeId));
@@ -4689,7 +4757,9 @@ namespace Technosoftware.UaClient
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Variable does not support the ValueRank attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Variable does not support the ValueRank attribute.");
                     }
 
                     variableNode.ValueRank = value.GetValueOrDefault<int>();
@@ -4714,7 +4784,9 @@ namespace Technosoftware.UaClient
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Variable does not support the AccessLevel attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Variable does not support the AccessLevel attribute.");
                     }
 
                     variableNode.AccessLevel = value.GetValueOrDefault<byte>();
@@ -4724,7 +4796,9 @@ namespace Technosoftware.UaClient
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Variable does not support the UserAccessLevel attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Variable does not support the UserAccessLevel attribute.");
                     }
 
                     variableNode.UserAccessLevel = value.GetValueOrDefault<byte>();
@@ -4734,7 +4808,9 @@ namespace Technosoftware.UaClient
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Variable does not support the Historizing attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Variable does not support the Historizing attribute.");
                     }
 
                     variableNode.Historizing = value.GetValueOrDefault<bool>();
@@ -4744,7 +4820,9 @@ namespace Technosoftware.UaClient
 
                     if (value != null)
                     {
-                        variableNode.MinimumSamplingInterval = Convert.ToDouble(attributes[Attributes.MinimumSamplingInterval].Value, CultureInfo.InvariantCulture);
+                        variableNode.MinimumSamplingInterval = Convert.ToDouble(
+                            attributes[Attributes.MinimumSamplingInterval].Value,
+                            CultureInfo.InvariantCulture);
                     }
 
                     // AccessLevelEx Attribute
@@ -4757,18 +4835,17 @@ namespace Technosoftware.UaClient
 
                     node = variableNode;
                     break;
-                }
-
                 case NodeClass.VariableType:
-                {
-                    VariableTypeNode variableTypeNode = new VariableTypeNode();
+                    var variableTypeNode = new VariableTypeNode();
 
                     // IsAbstract Attribute
                     value = attributes[Attributes.IsAbstract];
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "VariableType does not support the IsAbstract attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "VariableType does not support the IsAbstract attribute.");
                     }
 
                     variableTypeNode.IsAbstract = value.GetValueOrDefault<bool>();
@@ -4778,7 +4855,9 @@ namespace Technosoftware.UaClient
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "VariableType does not support the DataType attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "VariableType does not support the DataType attribute.");
                     }
 
                     variableTypeNode.DataType = (NodeId)value.GetValue(typeof(NodeId));
@@ -4788,7 +4867,9 @@ namespace Technosoftware.UaClient
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "VariableType does not support the ValueRank attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "VariableType does not support the ValueRank attribute.");
                     }
 
                     variableTypeNode.ValueRank = value.GetValueOrDefault<int>();
@@ -4803,18 +4884,17 @@ namespace Technosoftware.UaClient
 
                     node = variableTypeNode;
                     break;
-                }
-
                 case NodeClass.Method:
-                {
-                    MethodNode methodNode = new MethodNode();
+                    var methodNode = new MethodNode();
 
                     // Executable Attribute
                     value = attributes[Attributes.Executable];
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Method does not support the Executable attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Method does not support the Executable attribute.");
                     }
 
                     methodNode.Executable = value.GetValueOrDefault<bool>();
@@ -4824,25 +4904,26 @@ namespace Technosoftware.UaClient
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Method does not support the UserExecutable attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "Method does not support the UserExecutable attribute.");
                     }
 
                     methodNode.UserExecutable = value.GetValueOrDefault<bool>();
 
                     node = methodNode;
                     break;
-                }
-
                 case NodeClass.DataType:
-                {
-                    DataTypeNode dataTypeNode = new DataTypeNode();
+                    var dataTypeNode = new DataTypeNode();
 
                     // IsAbstract Attribute
                     value = attributes[Attributes.IsAbstract];
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "DataType does not support the IsAbstract attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "DataType does not support the IsAbstract attribute.");
                     }
 
                     dataTypeNode.IsAbstract = value.GetValueOrDefault<bool>();
@@ -4857,18 +4938,17 @@ namespace Technosoftware.UaClient
 
                     node = dataTypeNode;
                     break;
-                }
-
                 case NodeClass.ReferenceType:
-                {
-                    ReferenceTypeNode referenceTypeNode = new ReferenceTypeNode();
+                    var referenceTypeNode = new ReferenceTypeNode();
 
                     // IsAbstract Attribute
                     value = attributes[Attributes.IsAbstract];
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "ReferenceType does not support the IsAbstract attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "ReferenceType does not support the IsAbstract attribute.");
                     }
 
                     referenceTypeNode.IsAbstract = value.GetValueOrDefault<bool>();
@@ -4878,7 +4958,9 @@ namespace Technosoftware.UaClient
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "ReferenceType does not support the Symmetric attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "ReferenceType does not support the Symmetric attribute.");
                     }
 
                     referenceTypeNode.Symmetric = value.GetValueOrDefault<bool>();
@@ -4888,23 +4970,23 @@ namespace Technosoftware.UaClient
 
                     if (value != null && value.Value != null)
                     {
-                        referenceTypeNode.InverseName = (LocalizedText)value.GetValue(typeof(LocalizedText));
+                        referenceTypeNode.InverseName = (LocalizedText)value.GetValue(
+                            typeof(LocalizedText));
                     }
 
                     node = referenceTypeNode;
                     break;
-                }
-
                 case NodeClass.View:
-                {
-                    ViewNode viewNode = new ViewNode();
+                    var viewNode = new ViewNode();
 
                     // EventNotifier Attribute
                     value = attributes[Attributes.EventNotifier];
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "View does not support the EventNotifier attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "View does not support the EventNotifier attribute.");
                     }
 
                     viewNode.EventNotifier = value.GetValueOrDefault<byte>();
@@ -4914,14 +4996,15 @@ namespace Technosoftware.UaClient
 
                     if (value == null)
                     {
-                        throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "View does not support the ContainsNoLoops attribute.");
+                        throw ServiceResultException.Create(
+                            StatusCodes.BadUnexpectedError,
+                            "View does not support the ContainsNoLoops attribute.");
                     }
 
                     viewNode.ContainsNoLoops = value.GetValueOrDefault<bool>();
 
                     node = viewNode;
                     break;
-                }
             }
 
             // NodeId Attribute
@@ -4929,7 +5012,9 @@ namespace Technosoftware.UaClient
 
             if (value == null)
             {
-                throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Node does not support the NodeId attribute.");
+                throw ServiceResultException.Create(
+                    StatusCodes.BadUnexpectedError,
+                    "Node does not support the NodeId attribute.");
             }
 
             node.NodeId = (NodeId)value.GetValue(typeof(NodeId));
@@ -4940,7 +5025,9 @@ namespace Technosoftware.UaClient
 
             if (value == null)
             {
-                throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Node does not support the BrowseName attribute.");
+                throw ServiceResultException.Create(
+                    StatusCodes.BadUnexpectedError,
+                    "Node does not support the BrowseName attribute.");
             }
 
             node.BrowseName = (QualifiedName)value.GetValue(typeof(QualifiedName));
@@ -4950,7 +5037,9 @@ namespace Technosoftware.UaClient
 
             if (value == null)
             {
-                throw ServiceResultException.Create(StatusCodes.BadUnexpectedError, "Node does not support the DisplayName attribute.");
+                throw ServiceResultException.Create(
+                    StatusCodes.BadUnexpectedError,
+                    "Node does not support the DisplayName attribute.");
             }
 
             node.DisplayName = (LocalizedText)value.GetValue(typeof(LocalizedText));
@@ -4959,32 +5048,28 @@ namespace Technosoftware.UaClient
 
             // Description Attribute
             if (attributes.TryGetValue(Attributes.Description, out value) &&
-                value != null && value.Value != null)
+                value != null &&
+                value.Value != null)
             {
                 node.Description = (LocalizedText)value.GetValue(typeof(LocalizedText));
             }
 
             // WriteMask Attribute
-            if (attributes.TryGetValue(Attributes.WriteMask, out value) &&
-                value != null)
+            if (attributes.TryGetValue(Attributes.WriteMask, out value) && value != null)
             {
                 node.WriteMask = value.GetValueOrDefault<uint>();
             }
 
             // UserWriteMask Attribute
-            if (attributes.TryGetValue(Attributes.UserWriteMask, out value) &&
-                value != null)
+            if (attributes.TryGetValue(Attributes.UserWriteMask, out value) && value != null)
             {
                 node.UserWriteMask = value.GetValueOrDefault<uint>();
             }
 
             // RolePermissions Attribute
-            if (attributes.TryGetValue(Attributes.RolePermissions, out value) &&
-                value != null)
+            if (attributes.TryGetValue(Attributes.RolePermissions, out value) && value != null)
             {
-                ExtensionObject[] rolePermissions = value.Value as ExtensionObject[];
-
-                if (rolePermissions != null)
+                if (value.Value is ExtensionObject[] rolePermissions)
                 {
                     node.RolePermissions = [];
 
@@ -4996,12 +5081,9 @@ namespace Technosoftware.UaClient
             }
 
             // UserRolePermissions Attribute
-            if (attributes.TryGetValue(Attributes.UserRolePermissions, out value) &&
-                value != null)
+            if (attributes.TryGetValue(Attributes.UserRolePermissions, out value) && value != null)
             {
-                ExtensionObject[] userRolePermissions = value.Value as ExtensionObject[];
-
-                if (userRolePermissions != null)
+                if (value.Value is ExtensionObject[] userRolePermissions)
                 {
                     node.UserRolePermissions = [];
 
@@ -5013,8 +5095,7 @@ namespace Technosoftware.UaClient
             }
 
             // AccessRestrictions Attribute
-            if (attributes.TryGetValue(Attributes.AccessRestrictions, out value) &&
-                value != null)
+            if (attributes.TryGetValue(Attributes.AccessRestrictions, out value) && value != null)
             {
                 node.AccessRestrictions = value.GetValueOrDefault<ushort>();
             }
@@ -5025,14 +5106,17 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Create a dictionary of attributes to read for a nodeclass.
         /// </summary>
-        private Dictionary<uint, DataValue> CreateAttributes(NodeClass nodeclass = NodeClass.Unspecified, bool optionalAttributes = true)
+        private static Dictionary<uint, DataValue> CreateAttributes(
+            NodeClass nodeclass = NodeClass.Unspecified,
+            bool optionalAttributes = true)
         {
             // Attributes to read for all types of nodes
-            var attributes = new Dictionary<uint, DataValue>() {
+            var attributes = new Dictionary<uint, DataValue>(Attributes.MaxAttributes)
+            {
                 { Attributes.NodeId, null },
                 { Attributes.NodeClass, null },
                 { Attributes.BrowseName, null },
-                { Attributes.DisplayName, null },
+                { Attributes.DisplayName, null }
             };
 
             switch (nodeclass)
@@ -5040,7 +5124,6 @@ namespace Technosoftware.UaClient
                 case NodeClass.Object:
                     attributes.Add(Attributes.EventNotifier, null);
                     break;
-
                 case NodeClass.Variable:
                     attributes.Add(Attributes.DataType, null);
                     attributes.Add(Attributes.ValueRank, null);
@@ -5051,42 +5134,36 @@ namespace Technosoftware.UaClient
                     attributes.Add(Attributes.MinimumSamplingInterval, null);
                     attributes.Add(Attributes.AccessLevelEx, null);
                     break;
-
                 case NodeClass.Method:
                     attributes.Add(Attributes.Executable, null);
                     attributes.Add(Attributes.UserExecutable, null);
                     break;
-
                 case NodeClass.ObjectType:
                     attributes.Add(Attributes.IsAbstract, null);
                     break;
-
                 case NodeClass.VariableType:
                     attributes.Add(Attributes.IsAbstract, null);
                     attributes.Add(Attributes.DataType, null);
                     attributes.Add(Attributes.ValueRank, null);
                     attributes.Add(Attributes.ArrayDimensions, null);
                     break;
-
                 case NodeClass.ReferenceType:
                     attributes.Add(Attributes.IsAbstract, null);
                     attributes.Add(Attributes.Symmetric, null);
                     attributes.Add(Attributes.InverseName, null);
                     break;
-
                 case NodeClass.DataType:
                     attributes.Add(Attributes.IsAbstract, null);
                     attributes.Add(Attributes.DataTypeDefinition, null);
                     break;
-
                 case NodeClass.View:
                     attributes.Add(Attributes.EventNotifier, null);
                     attributes.Add(Attributes.ContainsNoLoops, null);
                     break;
-
                 default:
                     // build complete list of attributes.
-                    attributes = new Dictionary<uint, DataValue> {
+                    attributes = new Dictionary<uint, DataValue>(Attributes.MaxAttributes)
+                    {
                         { Attributes.NodeId, null },
                         { Attributes.NodeClass, null },
                         { Attributes.BrowseName, null },
@@ -5129,9 +5206,7 @@ namespace Technosoftware.UaClient
 
             return attributes;
         }
-        #endregion
 
-        #region Publish Methods
         /// <summary>
         /// Sends an additional publish request.
         /// </summary>
@@ -5145,7 +5220,8 @@ namespace Technosoftware.UaClient
             }
 
             // get event handler to modify ack list
-            EventHandler<PublishSequenceNumbersToAcknowledgeEventArgs> callback = m_PublishSequenceNumbersToAcknowledge;
+            EventHandler<PublishSequenceNumbersToAcknowledgeEventArgs> callback
+                = m_PublishSequenceNumbersToAcknowledge;
 
             // collect the current set if acknowledgements.
             SubscriptionAcknowledgementCollection acknowledgementsToSend = null;
@@ -5155,14 +5231,21 @@ namespace Technosoftware.UaClient
                 {
                     try
                     {
-                        var deferredAcknowledgementsToSend = new SubscriptionAcknowledgementCollection();
-                        callback(this, new PublishSequenceNumbersToAcknowledgeEventArgs(m_acknowledgementsToSend, deferredAcknowledgementsToSend));
+                        var deferredAcknowledgementsToSend
+                            = new SubscriptionAcknowledgementCollection();
+                        callback(
+                            this,
+                            new PublishSequenceNumbersToAcknowledgeEventArgs(
+                                m_acknowledgementsToSend,
+                                deferredAcknowledgementsToSend));
                         acknowledgementsToSend = m_acknowledgementsToSend;
                         m_acknowledgementsToSend = deferredAcknowledgementsToSend;
                     }
                     catch (Exception e2)
                     {
-                        Utils.LogError(e2, "Session: Unexpected error invoking PublishSequenceNumbersToAcknowledgeEventArgs.");
+                        Utils.LogError(
+                            e2,
+                            "Session: Unexpected error invoking PublishSequenceNumbersToAcknowledgeEventArgs.");
                     }
                 }
 
@@ -5180,7 +5263,7 @@ namespace Technosoftware.UaClient
 #endif
             }
 
-            uint timeoutHint = (uint)((timeout > 0) ? (uint)timeout : uint.MaxValue);
+            uint timeoutHint = timeout > 0 ? (uint)timeout : uint.MaxValue;
             timeoutHint = Math.Min((uint)(OperationTimeout / 2), timeoutHint);
 
             // send publish request.
@@ -5248,11 +5331,10 @@ namespace Technosoftware.UaClient
         {
             // extract state information.
             object[] state = (object[])result.AsyncState;
-            NodeId sessionId = (NodeId)state[0];
-            SubscriptionAcknowledgementCollection acknowledgementsToSend = (SubscriptionAcknowledgementCollection)state[1];
-            RequestHeader requestHeader = (RequestHeader)state[2];
+            var sessionId = (NodeId)state[0];
+            var acknowledgementsToSend = (SubscriptionAcknowledgementCollection)state[1];
+            var requestHeader = (RequestHeader)state[2];
             uint subscriptionId = 0;
-            bool moreNotifications;
 
             AsyncRequestCompleted(result, requestHeader.RequestHandle, DataTypes.PublishRequest);
 
@@ -5266,26 +5348,26 @@ namespace Technosoftware.UaClient
                 m_reconnectLock.Release();
 
                 // complete publish.
-                UInt32Collection availableSequenceNumbers;
-                NotificationMessage notificationMessage;
-                StatusCodeCollection acknowledgeResults;
-                DiagnosticInfoCollection acknowledgeDiagnosticInfos;
 
                 ResponseHeader responseHeader = EndPublish(
                     result,
                     out subscriptionId,
-                    out availableSequenceNumbers,
-                    out moreNotifications,
-                    out notificationMessage,
-                    out acknowledgeResults,
-                    out acknowledgeDiagnosticInfos);
+                    out UInt32Collection availableSequenceNumbers,
+                    out bool moreNotifications,
+                    out NotificationMessage notificationMessage,
+                    out StatusCodeCollection acknowledgeResults,
+                    out DiagnosticInfoCollection acknowledgeDiagnosticInfos);
 
                 LogLevel logLevel = LogLevel.Warning;
                 foreach (StatusCode code in acknowledgeResults)
                 {
                     if (StatusCode.IsBad(code) && code != StatusCodes.BadSequenceNumberUnknown)
                     {
-                        Utils.Log(logLevel, "Publish Ack Response. ResultCode={0}; SubscriptionId={1}", code.ToString(), subscriptionId);
+                        Utils.Log(
+                            logLevel,
+                            "Publish Ack Response. ResultCode={0}; SubscriptionId={1}",
+                            code.ToString(),
+                            subscriptionId);
                         // only show the first error as warning
                         logLevel = LogLevel.Trace;
                     }
@@ -5294,11 +5376,16 @@ namespace Technosoftware.UaClient
                 // nothing more to do if session changed.
                 if (sessionId != SessionId)
                 {
-                    Utils.LogWarning("Publish response discarded because session id changed: Old {0} != New {1}", sessionId, SessionId);
+                    Utils.LogWarning(
+                        "Publish response discarded because session id changed: Old {0} != New {1}",
+                        sessionId,
+                        SessionId);
                     return;
                 }
 
-                UaClientUtils.EventLog.NotificationReceived((int)subscriptionId, (int)notificationMessage.SequenceNumber);
+                UaClientUtils.EventLog.NotificationReceived(
+                    (int)subscriptionId,
+                    (int)notificationMessage.SequenceNumber);
 
                 // process response.
                 ProcessPublishResponse(
@@ -5320,29 +5407,38 @@ namespace Technosoftware.UaClient
                 if (m_subscriptions.Count == 0)
                 {
                     // Publish responses with error should occur after deleting the last subscription.
-                    Utils.LogError("Publish #{0}, Subscription count = 0, Error: {1}", requestHeader.RequestHandle, e.Message);
+                    Utils.LogError(
+                        "Publish #{0}, Subscription count = 0, Error: {1}",
+                        requestHeader.RequestHandle,
+                        e.Message);
                 }
                 else
                 {
-                    Utils.LogError("Publish #{0}, Reconnecting={1}, Error: {2}", requestHeader.RequestHandle, m_reconnecting, e.Message);
+                    Utils.LogError(
+                        "Publish #{0}, Reconnecting={1}, Error: {2}",
+                        requestHeader.RequestHandle,
+                        m_reconnecting,
+                        e.Message);
                 }
 
                 // raise an error event.
-                ServiceResult error = new ServiceResult(e);
+                var error = new ServiceResult(e);
 
                 if (error.Code != StatusCodes.BadNoSubscription)
                 {
-                    EventHandler<SessionPublishErrorEventArgs> callback = m_PublishError;
+                    EventHandler<PublishErrorEventArgs> callback = m_PublishError;
 
                     if (callback != null)
                     {
                         try
                         {
-                            callback(this, new SessionPublishErrorEventArgs(error, subscriptionId, 0));
+                            callback(this, new PublishErrorEventArgs(error, subscriptionId, 0));
                         }
                         catch (Exception e2)
                         {
-                            Utils.LogError(e2, "Session: Unexpected error invoking PublishErrorCallback.");
+                            Utils.LogError(
+                                e2,
+                                "Session: Unexpected error invoking PublishErrorCallback.");
                         }
                     }
                 }
@@ -5350,14 +5446,19 @@ namespace Technosoftware.UaClient
                 // ignore errors if reconnecting.
                 if (m_reconnecting)
                 {
-                    Utils.LogWarning("Publish abandoned after error due to reconnect: {0}", e.Message);
+                    Utils.LogWarning(
+                        "Publish abandoned after error due to reconnect: {0}",
+                        e.Message);
                     return;
                 }
 
                 // nothing more to do if session changed.
                 if (sessionId != SessionId)
                 {
-                    Utils.LogError("Publish abandoned after error because session id changed: Old {0} != New {1}", sessionId, SessionId);
+                    Utils.LogError(
+                        "Publish abandoned after error because session id changed: Old {0} != New {1}",
+                        sessionId,
+                        SessionId);
                     return;
                 }
 
@@ -5379,24 +5480,23 @@ namespace Technosoftware.UaClient
                         if (BelowPublishRequestLimit(tooManyPublishRequests))
                         {
                             m_tooManyPublishRequests = tooManyPublishRequests;
-                            Utils.LogInfo("PUBLISH - Too many requests, set limit to GoodPublishRequestCount={0}.", m_tooManyPublishRequests);
+                            Utils.LogInfo(
+                                "PUBLISH - Too many requests, set limit to GoodPublishRequestCount={0}.",
+                                m_tooManyPublishRequests);
                         }
                         return;
-
                     case StatusCodes.BadNoSubscription:
                     case StatusCodes.BadSessionClosed:
                     case StatusCodes.BadSecurityChecksFailed:
                     case StatusCodes.BadCertificateInvalid:
                     case StatusCodes.BadServerHalted:
                         return;
-
                     // may require a reconnect or activate to recover
                     case StatusCodes.BadSessionIdInvalid:
                     case StatusCodes.BadSecureChannelIdInvalid:
                     case StatusCodes.BadSecureChannelClosed:
                         OnKeepAliveError(error);
                         return;
-
                     // Servers may return this error when overloaded
                     case StatusCodes.BadTooManyOperations:
                     case StatusCodes.BadTcpServerTooBusy:
@@ -5408,105 +5508,19 @@ namespace Technosoftware.UaClient
                             QueueBeginPublish();
                         });
                         return;
-
                     case StatusCodes.BadTimeout:
                         break;
-
                     default:
-                        Utils.LogError(e, "PUBLISH #{0} - Unhandled error {1} during Publish.", requestHeader.RequestHandle, error.StatusCode);
+                        Utils.LogError(
+                            e,
+                            "PUBLISH #{0} - Unhandled error {1} during Publish.",
+                            requestHeader.RequestHandle,
+                            error.StatusCode);
                         goto case StatusCodes.BadServerTooBusy;
-
                 }
             }
 
             QueueBeginPublish();
-        }
-
-        /// <inheritdoc/>
-        public bool Republish(uint subscriptionId, uint sequenceNumber, out ServiceResult error)
-        {
-            bool result = true;
-            error = ServiceResult.Good;
-
-            // send republish request.
-            RequestHeader requestHeader = new RequestHeader
-            {
-                TimeoutHint = (uint)OperationTimeout,
-                ReturnDiagnostics = (uint)(int)ReturnDiagnostics,
-                RequestHandle = Utils.IncrementIdentifier(ref m_publishCounter)
-            };
-
-            try
-            {
-                Utils.LogInfo("Requesting Republish for {0}-{1}", subscriptionId, sequenceNumber);
-
-                // request republish.
-                NotificationMessage notificationMessage = null;
-
-                ResponseHeader responseHeader = Republish(
-                    requestHeader,
-                    subscriptionId,
-                    sequenceNumber,
-                    out notificationMessage);
-
-                Utils.LogInfo("Received Republish for {0}-{1}-{2}", subscriptionId, sequenceNumber, responseHeader.ServiceResult);
-
-                // process response.
-                ProcessPublishResponse(
-                    responseHeader,
-                    subscriptionId,
-                    null,
-                    false,
-                    notificationMessage);
-            }
-            catch (Exception e)
-            {
-                (result, error) = ProcessRepublishResponseError(e, subscriptionId, sequenceNumber);
-            }
-
-            return result;
-        }
-
-        /// <inheritdoc/>
-        public bool ResendData(IEnumerable<Subscription> subscriptions, out IList<ServiceResult> errors)
-        {
-            CallMethodRequestCollection requests = CreateCallRequestsForResendData(subscriptions);
-
-            errors = new List<ServiceResult>(requests.Count);
-
-            CallMethodResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-            try
-            {
-                ResponseHeader responseHeader = Call(
-                    null,
-                    requests,
-                    out results,
-                    out diagnosticInfos);
-
-                ClientBase.ValidateResponse(results, requests);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, requests);
-
-                int ii = 0;
-                foreach (var value in results)
-                {
-                    ServiceResult result = ServiceResult.Good;
-                    if (StatusCode.IsNotGood(value.StatusCode))
-                    {
-                        result = ClientBase.GetResult(value.StatusCode, ii, diagnosticInfos, responseHeader);
-                    }
-                    errors.Add(result);
-                    ii++;
-                }
-
-                return true;
-            }
-            catch (ServiceResultException sre)
-            {
-                Utils.LogError(sre, "Failed to call ResendData on server.");
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -5516,19 +5530,22 @@ namespace Technosoftware.UaClient
         {
             if (m_RenewUserIdentity != null)
             {
-                RenewUserIdentityEventArgs args = new RenewUserIdentityEventArgs(m_identity);
-                m_identity = m_RenewUserIdentity(this, args);
+                m_identity = m_RenewUserIdentity(this, m_identity);
             }
         }
-        #endregion
 
-        #region Private Methods
         /// <summary>
         /// Helper to throw a recreate session exception.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         private static void ThrowCouldNotRecreateSessionException(Exception e, string sessionName)
         {
-            throw ServiceResultException.Create(StatusCodes.BadCommunicationError, e, "Could not recreate session {0}:{1}", sessionName, e.Message);
+            throw ServiceResultException.Create(
+                StatusCodes.BadCommunicationError,
+                e,
+                "Could not recreate session {0}:{1}",
+                sessionName,
+                e.Message);
         }
 
         /// <summary>
@@ -5546,13 +5563,18 @@ namespace Technosoftware.UaClient
             }
             else
             {
-                Utils.LogDebug("PUBLISH - Did not send another publish request. GoodPublishRequestCount={0}, MinPublishRequestCount={1}", requestCount, minPublishRequestCount);
+                Utils.LogDebug(
+                    "PUBLISH - Did not send another publish request. " +
+                    "GoodPublishRequestCount={0}, MinPublishRequestCount={1}",
+                    requestCount,
+                    minPublishRequestCount);
             }
         }
 
         /// <summary>
         /// Validates  the identity for an open call.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         private void OpenValidateIdentity(
             ref IUserIdentity identity,
             out UserIdentityToken identityToken,
@@ -5565,7 +5587,9 @@ namespace Technosoftware.UaClient
             {
                 if (Connected)
                 {
-                    throw new ServiceResultException(StatusCodes.BadInvalidState, "Already connected to server.");
+                    throw new ServiceResultException(
+                        StatusCodes.BadInvalidState,
+                        "Already connected to server.");
                 }
             }
 
@@ -5580,21 +5604,22 @@ namespace Technosoftware.UaClient
             }
 
             // get the identity token.
-            if (identity == null)
-            {
-                identity = new UserIdentity();
-            }
+            identity ??= new UserIdentity();
 
             // get identity token.
             identityToken = identity.GetIdentityToken();
 
             // check that the user identity is supported by the endpoint.
-            identityPolicy = m_endpoint.Description.FindUserTokenPolicy(identityToken.PolicyId, securityPolicyUri);
+            identityPolicy = m_endpoint.Description
+                .FindUserTokenPolicy(identityToken.PolicyId, securityPolicyUri);
 
             if (identityPolicy == null)
             {
                 // try looking up by TokenType if the policy id was not found.
-                identityPolicy = m_endpoint.Description.FindUserTokenPolicy(identity.TokenType, identity.IssuedTokenType, securityPolicyUri);
+                identityPolicy = m_endpoint.Description.FindUserTokenPolicy(
+                    identity.TokenType,
+                    identity.IssuedTokenType,
+                    securityPolicyUri);
 
                 if (identityPolicy == null)
                 {
@@ -5610,17 +5635,20 @@ namespace Technosoftware.UaClient
 
             if (!requireEncryption)
             {
-                requireEncryption = identityPolicy.SecurityPolicyUri != SecurityPolicies.None &&
+                requireEncryption =
+                    identityPolicy.SecurityPolicyUri != SecurityPolicies.None &&
                     !string.IsNullOrEmpty(identityPolicy.SecurityPolicyUri);
             }
         }
+
+#if UNUSED
         /// <summary>
-        /// Validates the ServerCertificate ApplicationUri to match the ApplicationUri of the Endpoint for an open call (Spec Part 4 5.4.1)
+        /// Validates the ServerCertificate ApplicationUri to match the ApplicationUri of the Endpoint
+        /// for an open call (Spec Part 4 5.4.1)
         /// </summary>
-        private void ValidateServerCertificateApplicationUri(
-            X509Certificate2 serverCertificate)
+        private void ValidateServerCertificateApplicationUri(X509Certificate2 serverCertificate)
         {
-            var applicationUri = m_endpoint?.Description?.Server?.ApplicationUri;
+            string applicationUri = m_endpoint?.Description?.Server?.ApplicationUri;
             //check is only neccessary if the ApplicatioUri is specified for the Endpoint
             if (string.IsNullOrEmpty(applicationUri))
             {
@@ -5636,30 +5664,35 @@ namespace Technosoftware.UaClient
                     "Server did not return a Certificate matching the ApplicationUri specified in the EndpointDescription.");
             }
         }
+#endif
 
-        private void BuildCertificateData(out byte[] clientCertificateData, out byte[] clientCertificateChainData)
+        private void BuildCertificateData(
+            out byte[] clientCertificateData,
+            out byte[] clientCertificateChainData)
         {
             // send the application instance certificate for the client.
-            clientCertificateData = m_instanceCertificate != null ? m_instanceCertificate.RawData : null;
+            clientCertificateData = (m_instanceCertificate?.RawData);
             clientCertificateChainData = null;
 
-            if (m_instanceCertificateChain != null && m_instanceCertificateChain.Count > 0 &&
+            if (m_instanceCertificateChain != null &&
+                m_instanceCertificateChain.Count > 0 &&
                 m_configuration.SecurityConfiguration.SendCertificateChain)
             {
-                List<byte> clientCertificateChain = [];
+                var clientCertificateChain = new List<byte>();
 
                 for (int i = 0; i < m_instanceCertificateChain.Count; i++)
                 {
                     clientCertificateChain.AddRange(m_instanceCertificateChain[i].RawData);
                 }
 
-                clientCertificateChainData = clientCertificateChain.ToArray();
+                clientCertificateChainData = [.. clientCertificateChain];
             }
         }
 
         /// <summary>
         /// Validates the server certificate returned.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         private void ValidateServerCertificateData(byte[] serverCertificateData)
         {
             if (serverCertificateData != null &&
@@ -5669,20 +5702,23 @@ namespace Technosoftware.UaClient
                 try
                 {
                     // verify for certificate chain in endpoint.
-                    X509Certificate2Collection serverCertificateChain = Utils.ParseCertificateChainBlob(m_endpoint.Description.ServerCertificate);
+                    X509Certificate2Collection serverCertificateChain = Utils
+                        .ParseCertificateChainBlob(
+                            m_endpoint.Description.ServerCertificate);
 
-                    if (serverCertificateChain.Count > 0 && !Utils.IsEqual(serverCertificateData, serverCertificateChain[0].RawData))
+                    if (serverCertificateChain.Count > 0 &&
+                        !Utils.IsEqual(serverCertificateData, serverCertificateChain[0].RawData))
                     {
                         throw ServiceResultException.Create(
-                                    StatusCodes.BadCertificateInvalid,
-                                    "Server did not return the certificate used to create the secure channel.");
+                            StatusCodes.BadCertificateInvalid,
+                            "Server did not return the certificate used to create the secure channel.");
                     }
                 }
                 catch (Exception)
                 {
                     throw ServiceResultException.Create(
-                            StatusCodes.BadCertificateInvalid,
-                            "Server did not return the certificate used to create the secure channel.");
+                        StatusCodes.BadCertificateInvalid,
+                        "Server did not return the certificate used to create the secure channel.");
                 }
             }
         }
@@ -5690,8 +5726,13 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Validates the server signature created with the client nonce.
         /// </summary>
-        private void ValidateServerSignature(X509Certificate2 serverCertificate, SignatureData serverSignature,
-            byte[] clientCertificateData, byte[] clientCertificateChainData, byte[] clientNonce)
+        /// <exception cref="ServiceResultException"></exception>
+        private void ValidateServerSignature(
+            X509Certificate2 serverCertificate,
+            SignatureData serverSignature,
+            byte[] clientCertificateData,
+            byte[] clientCertificateChainData,
+            byte[] clientNonce)
         {
             if (serverSignature == null || serverSignature.Signature == null)
             {
@@ -5705,14 +5746,22 @@ namespace Technosoftware.UaClient
             // validate the server's signature.
             byte[] dataToSign = Utils.Append(clientCertificateData, clientNonce);
 
-            if (!SecurityPolicies.Verify(serverCertificate, m_endpoint.Description.SecurityPolicyUri, dataToSign, serverSignature))
+            if (!SecurityPolicies.Verify(
+                    serverCertificate,
+                    m_endpoint.Description.SecurityPolicyUri,
+                    dataToSign,
+                    serverSignature))
             {
                 // validate the signature with complete chain if the check with leaf certificate failed.
                 if (clientCertificateChainData != null)
                 {
                     dataToSign = Utils.Append(clientCertificateChainData, clientNonce);
 
-                    if (!SecurityPolicies.Verify(serverCertificate, m_endpoint.Description.SecurityPolicyUri, dataToSign, serverSignature))
+                    if (!SecurityPolicies.Verify(
+                        serverCertificate,
+                        m_endpoint.Description.SecurityPolicyUri,
+                        dataToSign,
+                        serverSignature))
                     {
                         throw ServiceResultException.Create(
                             StatusCodes.BadApplicationSignatureInvalid,
@@ -5722,8 +5771,8 @@ namespace Technosoftware.UaClient
                 else
                 {
                     throw ServiceResultException.Create(
-                       StatusCodes.BadApplicationSignatureInvalid,
-                       "Server did not provide a correct signature for the nonce data provided by the client.");
+                        StatusCodes.BadApplicationSignatureInvalid,
+                        "Server did not provide a correct signature for the nonce data provided by the client.");
                 }
             }
         }
@@ -5731,15 +5780,16 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Validates the server endpoints returned.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         private void ValidateServerEndpoints(EndpointDescriptionCollection serverEndpoints)
         {
             if (m_discoveryServerEndpoints != null && m_discoveryServerEndpoints.Count > 0)
             {
                 // Compare EndpointDescriptions returned at GetEndpoints with values returned at CreateSession
-                EndpointDescriptionCollection expectedServerEndpoints = null;
-
+                EndpointDescriptionCollection expectedServerEndpoints;
                 if (serverEndpoints != null &&
-                    m_discoveryProfileUris != null && m_discoveryProfileUris.Count > 0)
+                    m_discoveryProfileUris != null &&
+                    m_discoveryProfileUris.Count > 0)
                 {
                     // Select EndpointDescriptions with a transportProfileUri that matches the
                     // profileUris specified in the original GetEndpoints() request.
@@ -5772,8 +5822,10 @@ namespace Technosoftware.UaClient
                     EndpointDescription expectedServerEndpoint = m_discoveryServerEndpoints[ii];
 
                     if (serverEndpoint.SecurityMode != expectedServerEndpoint.SecurityMode ||
-                        serverEndpoint.SecurityPolicyUri != expectedServerEndpoint.SecurityPolicyUri ||
-                        serverEndpoint.TransportProfileUri != expectedServerEndpoint.TransportProfileUri ||
+                        serverEndpoint.SecurityPolicyUri != expectedServerEndpoint
+                            .SecurityPolicyUri ||
+                        serverEndpoint.TransportProfileUri != expectedServerEndpoint
+                            .TransportProfileUri ||
                         serverEndpoint.SecurityLevel != expectedServerEndpoint.SecurityLevel)
                     {
                         throw ServiceResultException.Create(
@@ -5781,7 +5833,9 @@ namespace Technosoftware.UaClient
                             "The list of ServerEndpoints returned at CreateSession does not match the list from GetEndpoints.");
                     }
 
-                    if (serverEndpoint.UserIdentityTokens.Count != expectedServerEndpoint.UserIdentityTokens.Count)
+                    if (serverEndpoint.UserIdentityTokens.Count != expectedServerEndpoint
+                        .UserIdentityTokens
+                        .Count)
                     {
                         throw ServiceResultException.Create(
                             StatusCodes.BadSecurityChecksFailed,
@@ -5790,11 +5844,13 @@ namespace Technosoftware.UaClient
 
                     for (int jj = 0; jj < serverEndpoint.UserIdentityTokens.Count; jj++)
                     {
-                        if (!serverEndpoint.UserIdentityTokens[jj].IsEqual(expectedServerEndpoint.UserIdentityTokens[jj]))
+                        if (!serverEndpoint
+                                .UserIdentityTokens[jj]
+                                .IsEqual(expectedServerEndpoint.UserIdentityTokens[jj]))
                         {
                             throw ServiceResultException.Create(
-                            StatusCodes.BadSecurityChecksFailed,
-                            "The list of ServerEndpoints returned at CreateSession does not match the one from GetEndpoints.");
+                                StatusCodes.BadSecurityChecksFailed,
+                                "The list of ServerEndpoints returned at CreateSession does not match the one from GetEndpoints.");
                         }
                     }
                 }
@@ -5803,7 +5859,10 @@ namespace Technosoftware.UaClient
             // find the matching description (TBD - check domains against certificate).
             bool found = false;
 
-            var foundDescription = FindMatchingDescription(serverEndpoints, m_endpoint.Description, true);
+            EndpointDescription foundDescription = FindMatchingDescription(
+                serverEndpoints,
+                m_endpoint.Description,
+                true);
             if (foundDescription != null)
             {
                 found = true;
@@ -5812,7 +5871,10 @@ namespace Technosoftware.UaClient
             }
             else
             {
-                foundDescription = FindMatchingDescription(serverEndpoints, m_endpoint.Description, false);
+                foundDescription = FindMatchingDescription(
+                    serverEndpoints,
+                    m_endpoint.Description,
+                    false);
                 if (foundDescription != null)
                 {
                     found = true;
@@ -5837,7 +5899,8 @@ namespace Technosoftware.UaClient
         /// <param name="match">The description to match</param>
         /// <param name="matchPort">Match criteria includes port</param>
         /// <returns>Matching description or null if no description is matching</returns>
-        private EndpointDescription FindMatchingDescription(EndpointDescriptionCollection endpointDescriptions,
+        private EndpointDescription FindMatchingDescription(
+            EndpointDescriptionCollection endpointDescriptions,
             EndpointDescription match,
             bool matchPort)
         {
@@ -5849,15 +5912,11 @@ namespace Technosoftware.UaClient
 
                 if (actualUrl != null &&
                     actualUrl.Scheme == expectedUrl.Scheme &&
-                    (matchPort ? actualUrl.Port == expectedUrl.Port : true))
+                    (!matchPort || actualUrl.Port == expectedUrl.Port) &&
+                    serverEndpoint.SecurityPolicyUri == m_endpoint.Description.SecurityPolicyUri &&
+                    serverEndpoint.SecurityMode == m_endpoint.Description.SecurityMode)
                 {
-                    if (serverEndpoint.SecurityPolicyUri == m_endpoint.Description.SecurityPolicyUri)
-                    {
-                        if (serverEndpoint.SecurityMode == m_endpoint.Description.SecurityMode)
-                        {
-                            return serverEndpoint;
-                        }
-                    }
+                    return serverEndpoint;
                 }
             }
 
@@ -5867,9 +5926,9 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Update the target description from the source description
         /// </summary>
-        /// <param name="target"></param>
-        /// <param name="source"></param>
-        private void UpdateDescription(EndpointDescription target, EndpointDescription source)
+        private static void UpdateDescription(
+            EndpointDescription target,
+            EndpointDescription source)
         {
             target.Server.ApplicationName = source.Server.ApplicationName;
             target.Server.ApplicationUri = source.Server.ApplicationUri;
@@ -5883,17 +5942,20 @@ namespace Technosoftware.UaClient
         /// Helper to prepare the reconnect channel
         /// and signature data before activate.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         private IAsyncResult PrepareReconnectBeginActivate(
             ITransportWaitingConnection connection,
-            ITransportChannel transportChannel
-            )
+            ITransportChannel transportChannel)
         {
             Utils.LogInfo("Session RECONNECT {0} starting.", SessionId);
 
             // create the client signature.
-            byte[] dataToSign = Utils.Append(m_serverCertificate != null ? m_serverCertificate.RawData : null, m_serverNonce);
+            byte[] dataToSign = Utils.Append(m_serverCertificate?.RawData, m_serverNonce);
             EndpointDescription endpoint = m_endpoint.Description;
-            SignatureData clientSignature = SecurityPolicies.Sign(m_instanceCertificate, endpoint.SecurityPolicyUri, dataToSign);
+            SignatureData clientSignature = SecurityPolicies.Sign(
+                m_instanceCertificate,
+                endpoint.SecurityPolicyUri,
+                dataToSign);
 
             // check that the user identity is supported by the endpoint.
             UserTokenPolicy identityPolicy = endpoint.FindUserTokenPolicy(
@@ -5903,7 +5965,8 @@ namespace Technosoftware.UaClient
 
             if (identityPolicy == null)
             {
-                Utils.LogError("Reconnect: Endpoint does not support the user identity type provided.");
+                Utils.LogError(
+                    "Reconnect: Endpoint does not support the user identity type provided.");
 
                 throw ServiceResultException.Create(
                     StatusCodes.BadUserAccessDenied,
@@ -5922,8 +5985,7 @@ namespace Technosoftware.UaClient
             // need to refresh the identity (reprompt for password, refresh token).
             if (m_RenewUserIdentity != null)
             {
-                RenewUserIdentityEventArgs args = new RenewUserIdentityEventArgs(m_identity);
-                m_identity = m_RenewUserIdentity(this, args);
+                m_identity = m_RenewUserIdentity(this, m_identity);
             }
 
             // validate server nonce and security parameters for user identity.
@@ -5937,7 +5999,9 @@ namespace Technosoftware.UaClient
             // sign data with user token.
             UserIdentityToken identityToken = m_identity.GetIdentityToken();
             identityToken.PolicyId = identityPolicy.PolicyId;
-            SignatureData userTokenSignature = identityToken.Sign(dataToSign, tokenSecurityPolicyUri);
+            SignatureData userTokenSignature = identityToken.Sign(
+                dataToSign,
+                tokenSecurityPolicyUri);
 
             // encrypt token.
             identityToken.Encrypt(
@@ -5950,7 +6014,8 @@ namespace Technosoftware.UaClient
                 m_endpoint.Description.SecurityMode != MessageSecurityMode.None);
 
             // send the software certificates assigned to the client.
-            SignedSoftwareCertificateCollection clientSoftwareCertificates = GetSoftwareCertificates();
+            SignedSoftwareCertificateCollection clientSoftwareCertificates
+                = GetSoftwareCertificates();
 
             Utils.LogInfo("Session REPLACING channel for {0}.", SessionId);
 
@@ -5959,7 +6024,8 @@ namespace Technosoftware.UaClient
                 ITransportChannel channel = NullableTransportChannel;
 
                 // check if the channel supports reconnect.
-                if (channel != null && (channel.SupportedFeatures & TransportChannelFeatures.Reconnect) != 0)
+                if (channel != null &&
+                    (channel.SupportedFeatures & TransportChannelFeatures.Reconnect) != 0)
                 {
                     channel.Reconnect(connection);
                 }
@@ -5972,7 +6038,9 @@ namespace Technosoftware.UaClient
                         m_endpoint.Description,
                         m_endpoint.Configuration,
                         m_instanceCertificate,
-                        m_configuration.SecurityConfiguration.SendCertificateChain ? m_instanceCertificateChain : null,
+                        m_configuration.SecurityConfiguration.SendCertificateChain
+                            ? m_instanceCertificateChain
+                            : null,
                         MessageContext);
 
                     // disposes the existing channel.
@@ -5988,7 +6056,8 @@ namespace Technosoftware.UaClient
                 ITransportChannel channel = NullableTransportChannel;
 
                 // check if the channel supports reconnect.
-                if (channel != null && (channel.SupportedFeatures & TransportChannelFeatures.Reconnect) != 0)
+                if (channel != null &&
+                    (channel.SupportedFeatures & TransportChannelFeatures.Reconnect) != 0)
                 {
                     channel.Reconnect();
                 }
@@ -6000,7 +6069,9 @@ namespace Technosoftware.UaClient
                         m_endpoint.Description,
                         m_endpoint.Configuration,
                         m_instanceCertificate,
-                        m_configuration.SecurityConfiguration.SendCertificateChain ? m_instanceCertificateChain : null,
+                        m_configuration.SecurityConfiguration.SendCertificateChain
+                            ? m_instanceCertificateChain
+                            : null,
                         MessageContext);
 
                     // disposes the existing channel.
@@ -6010,7 +6081,7 @@ namespace Technosoftware.UaClient
 
             Utils.LogInfo("Session RE-ACTIVATING {0}.", SessionId);
 
-            RequestHeader header = new RequestHeader() { TimeoutHint = kReconnectTimeout };
+            var header = new RequestHeader { TimeoutHint = kReconnectTimeout };
             return BeginActivateSession(
                 header,
                 clientSignature,
@@ -6028,46 +6099,53 @@ namespace Technosoftware.UaClient
         /// <param name="e">The exception that occurred during the republish operation.</param>
         /// <param name="subscriptionId">The subscription Id for which the republish was requested. </param>
         /// <param name="sequenceNumber">The sequencenumber for which the republish was requested.</param>
-        private (bool, ServiceResult) ProcessRepublishResponseError(Exception e, uint subscriptionId, uint sequenceNumber)
+        private (bool, ServiceResult) ProcessRepublishResponseError(
+            Exception e,
+            uint subscriptionId,
+            uint sequenceNumber)
         {
-
-            ServiceResult error = new ServiceResult(e);
+            var error = new ServiceResult(e);
 
             bool result = true;
             switch (error.StatusCode.Code)
             {
                 case StatusCodes.BadSubscriptionIdInvalid:
                 case StatusCodes.BadMessageNotAvailable:
-                    Utils.LogWarning("Message {0}-{1} no longer available.", subscriptionId, sequenceNumber);
+                    Utils.LogWarning(
+                        "Message {0}-{1} no longer available.",
+                        subscriptionId,
+                        sequenceNumber);
                     break;
-
                 // if encoding limits are exceeded, the issue is logged and
                 // the published data is acknowledged to prevent the endless republish loop.
                 case StatusCodes.BadEncodingLimitsExceeded:
-                    Utils.LogError(e, "Message {0}-{1} exceeded size limits, ignored.", subscriptionId, sequenceNumber);
+                    Utils.LogError(
+                        e,
+                        "Message {0}-{1} exceeded size limits, ignored.",
+                        subscriptionId,
+                        sequenceNumber);
                     lock (m_acknowledgementsToSendLock)
                     {
-                        AddAcknowledgementToSend(m_acknowledgementsToSend, subscriptionId, sequenceNumber);
+                        AddAcknowledgementToSend(
+                            m_acknowledgementsToSend,
+                            subscriptionId,
+                            sequenceNumber);
                     }
                     break;
-
                 default:
                     result = false;
                     Utils.LogError(e, "Unexpected error sending republish request.");
                     break;
             }
 
-            EventHandler<SessionPublishErrorEventArgs> callback = m_PublishError;
+            EventHandler<PublishErrorEventArgs> callback = m_PublishError;
 
             // raise an error event.
             if (callback != null)
             {
                 try
                 {
-                    SessionPublishErrorEventArgs args = new SessionPublishErrorEventArgs(
-                        error,
-                        subscriptionId,
-                        sequenceNumber);
+                    var args = new PublishErrorEventArgs(error, subscriptionId, sequenceNumber);
 
                     callback(this, args);
                 }
@@ -6085,29 +6163,28 @@ namespace Technosoftware.UaClient
         /// </summary>
         private byte[] GetCurrentTokenServerNonce()
         {
-            var currentToken = NullableTransportChannel?.CurrentToken;
+            ChannelToken currentToken = NullableTransportChannel?.CurrentToken;
             return currentToken?.ServerNonce;
         }
 
         /// <summary>
         /// Handles the validation of server software certificates and application callback.
         /// </summary>
-        private void HandleSignedSoftwareCertificates(SignedSoftwareCertificateCollection serverSoftwareCertificates)
+        private void HandleSignedSoftwareCertificates(
+            SignedSoftwareCertificateCollection serverSoftwareCertificates)
         {
             // get a validator to check certificates provided by server.
             CertificateValidator validator = m_configuration.CertificateValidator;
 
             // validate software certificates.
-            List<SoftwareCertificate> softwareCertificates = [];
+            var softwareCertificates = new List<SoftwareCertificate>();
 
             foreach (SignedSoftwareCertificate signedCertificate in serverSoftwareCertificates)
             {
-                SoftwareCertificate softwareCertificate = null;
-
                 ServiceResult result = SoftwareCertificate.Validate(
                     validator,
                     signedCertificate.CertificateData,
-                    out softwareCertificate);
+                    out SoftwareCertificate softwareCertificate);
 
                 if (ServiceResult.IsBad(result))
                 {
@@ -6147,8 +6224,13 @@ namespace Technosoftware.UaClient
                 // create an acknowledgement to be sent back to the server.
                 if (notificationMessage.NotificationData.Count > 0)
                 {
-                    AddAcknowledgementToSend(acknowledgementsToSend, subscriptionId, notificationMessage.SequenceNumber);
-                    UpdateLatestSequenceNumberToSend(ref latestSequenceNumberToSend, notificationMessage.SequenceNumber);
+                    AddAcknowledgementToSend(
+                        acknowledgementsToSend,
+                        subscriptionId,
+                        notificationMessage.SequenceNumber);
+                    UpdateLatestSequenceNumberToSend(
+                        ref latestSequenceNumberToSend,
+                        notificationMessage.SequenceNumber);
                     _ = availableSequenceNumbers?.Remove(notificationMessage.SequenceNumber);
                 }
 
@@ -6165,29 +6247,45 @@ namespace Technosoftware.UaClient
                         availableSequenceNumbers.Remove(acknowledgement.SequenceNumber))
                     {
                         acknowledgementsToSend.Add(acknowledgement);
-                        UpdateLatestSequenceNumberToSend(ref latestSequenceNumberToSend, acknowledgement.SequenceNumber);
+                        UpdateLatestSequenceNumberToSend(
+                            ref latestSequenceNumberToSend,
+                            acknowledgement.SequenceNumber);
                     }
                     // a publish response may by processed out of order,
                     // allow for a tolerance until the sequence number is removed.
-                    else if (Math.Abs((int)(acknowledgement.SequenceNumber - latestSequenceNumberToSend)) < kPublishRequestSequenceNumberOutOfOrderThreshold)
+                    else if (Math.Abs(
+                            (int)(acknowledgement.SequenceNumber - latestSequenceNumberToSend)) <
+                        kPublishRequestSequenceNumberOutOfOrderThreshold)
                     {
                         acknowledgementsToSend.Add(acknowledgement);
                     }
                     else
                     {
-                        Utils.LogWarning("SessionId {0}, SubscriptionId {1}, Sequence number={2} was not received in the available sequence numbers.", SessionId, subscriptionId, acknowledgement.SequenceNumber);
+                        Utils.LogWarning(
+                            "SessionId {0}, SubscriptionId {1}, Sequence number={2} was not received in the available sequence numbers.",
+                            SessionId,
+                            subscriptionId,
+                            acknowledgement.SequenceNumber);
                     }
                 }
 
                 // Check for outdated sequence numbers. May have been not acked due to a network glitch.
                 if (latestSequenceNumberToSend != 0 && availableSequenceNumbers?.Count > 0)
                 {
-                    foreach (var sequenceNumber in availableSequenceNumbers)
+                    foreach (uint sequenceNumber in availableSequenceNumbers)
                     {
-                        if ((int)(latestSequenceNumberToSend - sequenceNumber) > kPublishRequestSequenceNumberOutdatedThreshold)
+                        if ((int)(latestSequenceNumberToSend - sequenceNumber) >
+                            kPublishRequestSequenceNumberOutdatedThreshold)
                         {
-                            AddAcknowledgementToSend(acknowledgementsToSend, subscriptionId, sequenceNumber);
-                            Utils.LogWarning("SessionId {0}, SubscriptionId {1}, Sequence number={2} was outdated, acknowledged.", SessionId, subscriptionId, sequenceNumber);
+                            AddAcknowledgementToSend(
+                                acknowledgementsToSend,
+                                subscriptionId,
+                                sequenceNumber);
+                            Utils.LogWarning(
+                                "SessionId {0}, SubscriptionId {1}, Sequence number={2} was outdated, acknowledged.",
+                                SessionId,
+                                subscriptionId,
+                                sequenceNumber);
                         }
                     }
                 }
@@ -6205,13 +6303,19 @@ namespace Technosoftware.UaClient
                         if (m_latestAcknowledgementsSent.ContainsKey(subscriptionId))
                         {
                             lastSentSequenceNumber = m_latestAcknowledgementsSent[subscriptionId];
-                            // If the last sent sequence number is uint.Max do not display the warning; the counter rolled over
-                            // If the last sent sequence number is greater or equal to the available sequence number (returned by the publish),
-                            // a warning must be logged.
-                            if (((lastSentSequenceNumber >= availableSequenceNumber) && (lastSentSequenceNumber != uint.MaxValue)) ||
-                                (lastSentSequenceNumber == availableSequenceNumber) && (lastSentSequenceNumber == uint.MaxValue))
+                            // If the last sent sequence number is uint.Max do not display the warning;
+                            // the counter rolled over
+                            // If the last sent sequence number is greater or equal to the available
+                            // sequence number (returned by the publish), a warning must be logged.
+                            if ((
+                                    (lastSentSequenceNumber >= availableSequenceNumber)
+                                    && (lastSentSequenceNumber != uint.MaxValue))
+                                || (lastSentSequenceNumber == availableSequenceNumber)
+                                    && (lastSentSequenceNumber == uint.MaxValue))
                             {
-                                Utils.LogWarning("Received sequence number which was already acknowledged={0}", availableSequenceNumber);
+                                Utils.LogWarning(
+                                    "Received sequence number which was already acknowledged={0}",
+                                    availableSequenceNumber);
                             }
                         }
                     }
@@ -6221,12 +6325,19 @@ namespace Technosoftware.UaClient
                 {
                     lastSentSequenceNumber = m_latestAcknowledgementsSent[subscriptionId];
 
-                    // If the last sent sequence number is uint.Max do not display the warning; the counter rolled over
-                    // If the last sent sequence number is greater or equal to the notificationMessage's sequence number (returned by the publish),
-                    // a warning must be logged.
-                    if (((lastSentSequenceNumber >= notificationMessage.SequenceNumber) && (lastSentSequenceNumber != uint.MaxValue)) || (lastSentSequenceNumber == notificationMessage.SequenceNumber) && (lastSentSequenceNumber == uint.MaxValue))
+                    // If the last sent sequence number is uint.Max do not display the warning;
+                    // the counter rolled over
+                    // If the last sent sequence number is greater or equal to the notificationMessage's
+                    // sequence number (returned by the publish) a warning must be logged.
+                    if ((
+                            (lastSentSequenceNumber >= notificationMessage.SequenceNumber)
+                            && (lastSentSequenceNumber != uint.MaxValue))
+                        || (lastSentSequenceNumber == notificationMessage.SequenceNumber)
+                            && (lastSentSequenceNumber == uint.MaxValue))
                     {
-                        Utils.LogWarning("Received sequence number which was already acknowledged={0}", notificationMessage.SequenceNumber);
+                        Utils.LogWarning(
+                            "Received sequence number which was already acknowledged={0}",
+                            notificationMessage.SequenceNumber);
                     }
                 }
 #endif
@@ -6235,9 +6346,14 @@ namespace Technosoftware.UaClient
 
                 if (notificationMessage.IsEmpty)
                 {
-                    Utils.LogTrace("Empty notification message received for SessionId {0} with PublishTime {1}", SessionId, notificationMessage.PublishTime.ToLocalTime());
+                    Utils.LogTrace(
+                        "Empty notification message received for SessionId {0} with PublishTime {1}",
+                        SessionId,
+                        notificationMessage.PublishTime.ToLocalTime());
                 }
             }
+
+            bool subscriptionCreationInProgress = false;
 
             lock (SyncRoot)
             {
@@ -6249,6 +6365,11 @@ namespace Technosoftware.UaClient
                         subscription = current;
                         break;
                     }
+                    if (current.Id == default)
+                    {
+                        // Subscription is being created, disable cleanup mechanism
+                        subscriptionCreationInProgress = true;
+                    }
                 }
             }
 
@@ -6257,15 +6378,25 @@ namespace Technosoftware.UaClient
             {
 #if DEBUG
                 // Validate publish time and reject old values.
-                if (notificationMessage.PublishTime.AddMilliseconds(subscription.CurrentPublishingInterval * subscription.CurrentLifetimeCount) < DateTime.UtcNow)
+                if (notificationMessage.PublishTime.AddMilliseconds(
+                        subscription.CurrentPublishingInterval * subscription.CurrentLifetimeCount
+                    ) < DateTime.UtcNow)
                 {
-                    Utils.LogTrace("PublishTime {0} in publish response is too old for SubscriptionId {1}.", notificationMessage.PublishTime.ToLocalTime(), subscription.Id);
+                    Utils.LogTrace(
+                        "PublishTime {0} in publish response is too old for SubscriptionId {1}.",
+                        notificationMessage.PublishTime.ToLocalTime(),
+                        subscription.Id);
                 }
 
                 // Validate publish time and reject old values.
-                if (notificationMessage.PublishTime > DateTime.UtcNow.AddMilliseconds(subscription.CurrentPublishingInterval * subscription.CurrentLifetimeCount))
+                if (notificationMessage.PublishTime >
+                    DateTime.UtcNow.AddMilliseconds(
+                        subscription.CurrentPublishingInterval * subscription.CurrentLifetimeCount))
                 {
-                    Utils.LogTrace("PublishTime {0} in publish response is newer than actual time for SubscriptionId {1}.", notificationMessage.PublishTime.ToLocalTime(), subscription.Id);
+                    Utils.LogTrace(
+                        "PublishTime {0} in publish response is newer than actual time for SubscriptionId {1}.",
+                        notificationMessage.PublishTime.ToLocalTime(),
+                        subscription.Id);
                 }
 #endif
                 // save the information that more notifications are expected
@@ -6278,86 +6409,41 @@ namespace Technosoftware.UaClient
                 subscription.SaveMessageInCache(availableSequenceNumbers, notificationMessage);
 
                 // raise the notification.
-                EventHandler<SessionNotificationEventArgs> publishEventHandler = m_Publish;
+                EventHandler<NotificationEventArgs> publishEventHandler = m_Publish;
                 if (publishEventHandler != null)
                 {
-                    SessionNotificationEventArgs args = new SessionNotificationEventArgs(subscription, notificationMessage, responseHeader.StringTable);
+                    var args = new NotificationEventArgs(
+                        subscription,
+                        notificationMessage,
+                        responseHeader.StringTable);
 
-                    Task.Run(() =>
-                    {
-                        OnRaisePublishNotification(publishEventHandler, args);
-                    });
+                    Task.Run(() => OnRaisePublishNotification(publishEventHandler, args));
                 }
+            }
+            else if (DeleteSubscriptionsOnClose && !m_reconnecting && !subscriptionCreationInProgress)
+            {
+                // Delete abandoned subscription from server.
+                Utils.LogWarning(
+                    "Received Publish Response for Unknown SubscriptionId={0}. Deleting abandoned subscription from server.",
+                    subscriptionId);
+
+                Task.Run(() => DeleteSubscriptionAsync(subscriptionId));
             }
             else
             {
-                if (m_deleteSubscriptionsOnClose && !m_reconnecting)
-                {
-                    // Delete abandoned subscription from server.
-                    Utils.LogWarning("Received Publish Response for Unknown SubscriptionId={0}. Deleting abandoned subscription from server.", subscriptionId);
-
-                    Task.Run(() =>
-                    {
-                        DeleteSubscription(subscriptionId);
-                    });
-                }
-                else
-                {
-                    // Do not delete publish requests of stale subscriptions
-                    Utils.LogWarning("Received Publish Response for Unknown SubscriptionId={0}. Ignored.", subscriptionId);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Recreate the subscriptions in a reconnected session.
-        /// Uses Transfer service if <see cref="TransferSubscriptionsOnReconnect"/> is set to <c>true</c>.
-        /// </summary>
-        /// <param name="subscriptionsTemplate">The template for the subscriptions.</param>
-        private void RecreateSubscriptions(IEnumerable<Subscription> subscriptionsTemplate)
-        {
-            bool transferred = false;
-            if (TransferSubscriptionsOnReconnect)
-            {
-                try
-                {
-                    transferred = TransferSubscriptions(new SubscriptionCollection(subscriptionsTemplate), false);
-                }
-                catch (ServiceResultException sre)
-                {
-                    if (sre.StatusCode == StatusCodes.BadServiceUnsupported)
-                    {
-                        TransferSubscriptionsOnReconnect = false;
-                        Utils.LogWarning("Transfer subscription unsupported, TransferSubscriptionsOnReconnect set to false.");
-                    }
-                    else
-                    {
-                        Utils.LogError(sre, "Transfer subscriptions failed.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Utils.LogError(ex, "Unexpected Transfer subscriptions error.");
-                }
-            }
-
-            if (!transferred)
-            {
-                // Create the subscriptions which were not transferred.
-                foreach (Subscription subscription in Subscriptions)
-                {
-                    if (!subscription.Created)
-                    {
-                        subscription.Create();
-                    }
-                }
+                // Do not delete publish requests of stale subscriptions
+                Utils.LogWarning(
+                    "Received Publish Response for Unknown SubscriptionId={0}. Ignored.",
+                    subscriptionId);
             }
         }
 
         /// <summary>
         /// Raises an event indicating that publish has returned a notification.
         /// </summary>
-        private void OnRaisePublishNotification(EventHandler<SessionNotificationEventArgs> callback, SessionNotificationEventArgs args)
+        private void OnRaisePublishNotification(
+            EventHandler<NotificationEventArgs> callback,
+            NotificationEventArgs args)
         {
             try
             {
@@ -6375,51 +6461,62 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Invokes a DeleteSubscriptions call for the specified subscriptionId.
         /// </summary>
-        private void DeleteSubscription(uint subscriptionId)
+        /// <exception cref="ServiceResultException"></exception>
+        private async ValueTask DeleteSubscriptionAsync(
+            uint subscriptionId,
+            CancellationToken ct = default)
         {
             try
             {
-                Utils.LogInfo("Deleting server subscription for SubscriptionId={0}", subscriptionId);
+                Utils.LogInfo(
+                    "Deleting server subscription for SubscriptionId={0}",
+                    subscriptionId);
 
                 // delete the subscription.
                 UInt32Collection subscriptionIds = new uint[] { subscriptionId };
 
-                StatusCodeCollection results;
-                DiagnosticInfoCollection diagnosticInfos;
-
-                ResponseHeader responseHeader = DeleteSubscriptions(
+                DeleteSubscriptionsResponse response = await DeleteSubscriptionsAsync(
                     null,
                     subscriptionIds,
-                    out results,
-                    out diagnosticInfos);
+                    ct).ConfigureAwait(false);
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                StatusCodeCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 // validate response.
-                ClientBase.ValidateResponse(results, subscriptionIds);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, subscriptionIds);
+                ValidateResponse(results, subscriptionIds);
+                ValidateDiagnosticInfos(diagnosticInfos, subscriptionIds);
 
                 if (StatusCode.IsBad(results[0]))
                 {
-                    throw new ServiceResultException(ClientBase.GetResult(results[0], 0, diagnosticInfos, responseHeader));
+                    throw new ServiceResultException(
+                        GetResult(results[0], 0, diagnosticInfos, responseHeader));
                 }
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Session: Unexpected error while deleting subscription for SubscriptionId={0}.", subscriptionId);
+                Utils.LogError(
+                    e,
+                    "Session: Unexpected error while deleting subscription for SubscriptionId={0}.",
+                    subscriptionId);
             }
         }
 
         /// <summary>
         /// Asynchronously load instance certificate
         /// </summary>
-        /// <param name="clientCertificate"></param>
-        /// <returns></returns>
+        /// <exception cref="ServiceResultException"></exception>
         private async Task LoadInstanceCertificateAsync(X509Certificate2 clientCertificate)
         {
             if (m_endpoint.Description.SecurityPolicyUri != SecurityPolicies.None)
             {
                 if (clientCertificate == null)
                 {
-                    m_instanceCertificate = await LoadCertificateAsync(m_configuration, m_endpoint.Description.SecurityPolicyUri).ConfigureAwait(false);
+                    m_instanceCertificate = await LoadCertificateAsync(
+                            m_configuration,
+                            m_endpoint.Description.SecurityPolicyUri)
+                        .ConfigureAwait(false);
                     if (m_instanceCertificate == null)
                     {
                         throw new ServiceResultException(
@@ -6444,32 +6541,36 @@ namespace Technosoftware.UaClient
                 }
 
                 // load certificate chain.
-                m_instanceCertificateChain = await LoadCertificateChainAsync(m_configuration, m_instanceCertificate).ConfigureAwait(false);
+                m_instanceCertificateChain = await LoadCertificateChainAsync(
+                    m_configuration,
+                    m_instanceCertificate)
+                    .ConfigureAwait(false);
             }
         }
 
         /// <summary>
         /// Load certificate for connection.
         /// </summary>
-        private static async Task<X509Certificate2> LoadCertificateAsync(ApplicationConfiguration configuration, string securityProfile)
+        /// <exception cref="ServiceResultException"></exception>
+        private static async Task<X509Certificate2> LoadCertificateAsync(
+            ApplicationConfiguration configuration,
+            string securityProfile)
         {
-            X509Certificate2 clientCertificate =
-                await configuration.SecurityConfiguration.FindApplicationCertificateAsync(securityProfile, true).ConfigureAwait(false);
-
-            if (clientCertificate == null)
-            {
-                throw ServiceResultException.Create(StatusCodes.BadConfigurationError,
+            return await configuration
+                    .SecurityConfiguration.FindApplicationCertificateAsync(securityProfile, true)
+                    .ConfigureAwait(false)
+                ?? throw ServiceResultException.Create(
+                    StatusCodes.BadConfigurationError,
                     "ApplicationCertificate for the security profile {0} cannot be found.",
                     securityProfile);
-            }
-
-            return clientCertificate;
         }
 
         /// <summary>
         /// Load certificate chain for connection.
         /// </summary>
-        private static async Task<X509Certificate2Collection> LoadCertificateChainAsync(ApplicationConfiguration configuration, X509Certificate2 clientCertificate)
+        private static async Task<X509Certificate2Collection> LoadCertificateChainAsync(
+            ApplicationConfiguration configuration,
+            X509Certificate2 clientCertificate)
         {
             X509Certificate2Collection clientCertificateChain = null;
             // load certificate chain.
@@ -6477,7 +6578,9 @@ namespace Technosoftware.UaClient
             {
                 clientCertificateChain = new X509Certificate2Collection(clientCertificate);
                 List<CertificateIdentifier> issuers = [];
-                await configuration.CertificateValidator.GetIssuers(clientCertificate, issuers).ConfigureAwait(false);
+                await configuration
+                    .CertificateValidator.GetIssuersAsync(clientCertificate, issuers)
+                    .ConfigureAwait(false);
 
                 for (int i = 0; i < issuers.Count; i++)
                 {
@@ -6487,29 +6590,19 @@ namespace Technosoftware.UaClient
             return clientCertificateChain;
         }
 
-        /// <summary>
-        /// Helper to determine if a continuation point needs to be processed.
-        /// </summary>
-        private bool HasAnyContinuationPoint(ByteStringCollection continuationPoints)
-        {
-            foreach (byte[] cp in continuationPoints)
-            {
-                if (cp != null)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private void AddAcknowledgementToSend(SubscriptionAcknowledgementCollection acknowledgementsToSend, uint subscriptionId, uint sequenceNumber)
+        private void AddAcknowledgementToSend(
+            SubscriptionAcknowledgementCollection acknowledgementsToSend,
+            uint subscriptionId,
+            uint sequenceNumber)
         {
             if (acknowledgementsToSend == null)
+            {
                 throw new ArgumentNullException(nameof(acknowledgementsToSend));
+            }
 
             Debug.Assert(Monitor.IsEntered(m_acknowledgementsToSendLock));
 
-            SubscriptionAcknowledgement acknowledgement = new SubscriptionAcknowledgement
+            var acknowledgement = new SubscriptionAcknowledgement
             {
                 SubscriptionId = subscriptionId,
                 SequenceNumber = sequenceNumber
@@ -6526,8 +6619,7 @@ namespace Technosoftware.UaClient
         /// <returns>If the publish request limit was reached.</returns>
         private bool BelowPublishRequestLimit(int requestCount)
         {
-            return (m_tooManyPublishRequests == 0) ||
-                (requestCount < m_tooManyPublishRequests);
+            return (m_tooManyPublishRequests == 0) || (requestCount < m_tooManyPublishRequests);
         }
 
         /// <summary>
@@ -6601,15 +6693,14 @@ namespace Technosoftware.UaClient
         /// Creates resend data call requests for the subscriptions.
         /// </summary>
         /// <param name="subscriptions">The subscriptions to call resend data.</param>
-        private CallMethodRequestCollection CreateCallRequestsForResendData(IEnumerable<Subscription> subscriptions)
+        private static CallMethodRequestCollection CreateCallRequestsForResendData(
+            IEnumerable<Subscription> subscriptions)
         {
-            CallMethodRequestCollection requests = [];
+            var requests = new CallMethodRequestCollection();
 
             foreach (Subscription subscription in subscriptions)
             {
-                VariantCollection inputArguments = [
-                    new Variant(subscription.Id)
-                ];
+                var inputArguments = new VariantCollection { new Variant(subscription.Id) };
 
                 var request = new CallMethodRequest
                 {
@@ -6629,20 +6720,28 @@ namespace Technosoftware.UaClient
         /// <param name="subscriptions">The subscriptions to transfer.</param>
         /// <returns>The subscription ids for the transfer.</returns>
         /// <exception cref="ServiceResultException">Thrown if a subscription is in invalid state.</exception>
-        private UInt32Collection CreateSubscriptionIdsForTransfer(SubscriptionCollection subscriptions)
+        private UInt32Collection CreateSubscriptionIdsForTransfer(
+            SubscriptionCollection subscriptions)
         {
             var subscriptionIds = new UInt32Collection();
             lock (SyncRoot)
             {
-                foreach (var subscription in subscriptions)
+                foreach (Subscription subscription in subscriptions)
                 {
                     if (subscription.Created && SessionId.Equals(subscription.Session.SessionId))
                     {
-                        throw new ServiceResultException(StatusCodes.BadInvalidState, Utils.Format("The subscriptionId {0} is already created.", subscription.Id));
+                        throw new ServiceResultException(
+                            StatusCodes.BadInvalidState,
+                            Utils.Format(
+                                "The subscriptionId {0} is already created.",
+                                subscription.Id));
                     }
                     if (subscription.TransferId == 0)
                     {
-                        throw new ServiceResultException(StatusCodes.BadInvalidState, Utils.Format("A subscription can not be transferred due to missing transfer Id."));
+                        throw new ServiceResultException(
+                            StatusCodes.BadInvalidState,
+                            Utils.Format(
+                                "A subscription can not be transferred due to missing transfer Id."));
                     }
                     subscriptionIds.Add(subscription.TransferId);
                 }
@@ -6661,7 +6760,9 @@ namespace Technosoftware.UaClient
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error calling SessionConfigurationChanged event handler.");
+                Utils.Trace(
+                    e,
+                    "Unexpected error calling SessionConfigurationChanged event handler.");
             }
         }
 
@@ -6669,11 +6770,14 @@ namespace Technosoftware.UaClient
         /// Helper to update the latest sequence number to send.
         /// Handles wrap around of sequence numbers.
         /// </summary>
-        private static void UpdateLatestSequenceNumberToSend(ref uint latestSequenceNumberToSend, uint sequenceNumber)
+        private static void UpdateLatestSequenceNumberToSend(
+            ref uint latestSequenceNumberToSend,
+            uint sequenceNumber)
         {
             // Handle wrap around with subtraction and test result is int.
             // Assume sequence numbers to ack do not differ by more than uint.Max / 2
-            if (latestSequenceNumberToSend == 0 || ((int)(sequenceNumber - latestSequenceNumberToSend)) > 0)
+            if (latestSequenceNumberToSend == 0 ||
+                ((int)(sequenceNumber - latestSequenceNumberToSend)) > 0)
             {
                 latestSequenceNumberToSend = sequenceNumber;
             }
@@ -6683,10 +6787,12 @@ namespace Technosoftware.UaClient
         /// Creates a request header with additional parameters
         /// for the ecc user token security policy, if needed.
         /// </summary>
-        private RequestHeader CreateRequestHeaderPerUserTokenPolicy(string identityTokenSecurityPolicyUri, string endpointSecurityPolicyUri)
+        private RequestHeader CreateRequestHeaderPerUserTokenPolicy(
+            string identityTokenSecurityPolicyUri,
+            string endpointSecurityPolicyUri)
         {
             var requestHeader = new RequestHeader();
-            var userTokenSecurityPolicyUri = identityTokenSecurityPolicyUri;
+            string userTokenSecurityPolicyUri = identityTokenSecurityPolicyUri;
             if (string.IsNullOrEmpty(userTokenSecurityPolicyUri))
             {
                 userTokenSecurityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
@@ -6695,33 +6801,27 @@ namespace Technosoftware.UaClient
 
             if (EccUtils.IsEccPolicy(userTokenSecurityPolicyUri))
             {
-                AdditionalParametersType parameters = new AdditionalParametersType();
-                parameters.Parameters.Add(new Opc.Ua.KeyValuePair()
-                {
-                    Key = "ECDHPolicyUri",
-                    Value = userTokenSecurityPolicyUri
-                });
+                var parameters = new AdditionalParametersType();
+                parameters.Parameters.Add(
+                    new Opc.Ua.KeyValuePair { Key = "ECDHPolicyUri", Value = userTokenSecurityPolicyUri });
                 requestHeader.AdditionalHeader = new ExtensionObject(parameters);
             }
 
             return requestHeader;
         }
-        #endregion
 
-        #region Protected Methods
         /// <summary>
         /// Process the AdditionalHeader field of a ResponseHeader
         /// </summary>
-        /// <param name="responseHeader"></param>
-        /// <param name="serverCertificate"></param>
         /// <exception cref="ServiceResultException"></exception>
-        protected virtual void ProcessResponseAdditionalHeader(ResponseHeader responseHeader, X509Certificate2 serverCertificate)
+        protected virtual void ProcessResponseAdditionalHeader(
+            ResponseHeader responseHeader,
+            X509Certificate2 serverCertificate)
         {
-            AdditionalParametersType parameters = ExtensionObject.ToEncodeable(responseHeader?.AdditionalHeader) as AdditionalParametersType;
-
-            if (parameters != null)
+            if (ExtensionObject.ToEncodeable(
+                responseHeader?.AdditionalHeader) is AdditionalParametersType parameters)
             {
-                foreach (var ii in parameters.Parameters)
+                foreach (Opc.Ua.KeyValuePair ii in parameters.Parameters)
                 {
 #if ECC_SUPPORT
                     if (ii.Key == "ECDHKey")
@@ -6733,29 +6833,34 @@ namespace Technosoftware.UaClient
                                 "Server could not provide an ECDHKey. User authentication not possible.");
                         }
 
-                        var key = ExtensionObject.ToEncodeable(ii.Value.Value as ExtensionObject) as EphemeralKeyType;
-
-                        if (key == null)
+                        if (ExtensionObject.ToEncodeable(
+                            ii.Value.Value as ExtensionObject) is not EphemeralKeyType key)
                         {
                             throw new ServiceResultException(
                                 StatusCodes.BadDecodingError,
                                 "Server did not provide a valid ECDHKey. User authentication not possible.");
                         }
 
-                        if (!EccUtils.Verify(new ArraySegment<byte>(key.PublicKey), key.Signature, serverCertificate, m_userTokenSecurityPolicyUri))
+                        if (!EccUtils.Verify(
+                                new ArraySegment<byte>(key.PublicKey),
+                                key.Signature,
+                                serverCertificate,
+                                m_userTokenSecurityPolicyUri))
                         {
                             throw new ServiceResultException(
                                 StatusCodes.BadDecodingError,
                                 "Could not verify signature on ECDHKey. User authentication not possible.");
                         }
 
-                        m_eccServerEphemeralKey = Nonce.CreateNonce(m_userTokenSecurityPolicyUri, key.PublicKey);
+                        m_eccServerEphemeralKey = Nonce.CreateNonce(
+                            m_userTokenSecurityPolicyUri,
+                            key.PublicKey);
                     }
 #endif
                 }
             }
         }
-        #endregion
+        #endregion Public Methods
 
         #region Protected Fields
         /// <summary>
@@ -6763,9 +6868,6 @@ namespace Technosoftware.UaClient
         /// </summary>
         protected double m_sessionTimeout;
 
-        #endregion
-
-        #region Private Fields
         /// <summary>
         /// The locales that the server should use when returning localized text.
         /// </summary>
@@ -6815,43 +6917,26 @@ namespace Technosoftware.UaClient
         /// Time in milliseconds added to <see cref="m_keepAliveInterval"/> before <see cref="KeepAliveStopped"/> is set to true
         /// </summary>
         protected int m_keepAliveGuardBand = 1000;
-        #endregion
-
-        #region Private Fields
-        private IUaSessionFactory m_sessionFactory;
         private SubscriptionAcknowledgementCollection m_acknowledgementsToSend;
         private object m_acknowledgementsToSendLock;
 #if DEBUG_SEQUENTIALPUBLISHING
         private Dictionary<uint, uint> m_latestAcknowledgementsSent;
 #endif
         private List<Subscription> m_subscriptions;
-        private Dictionary<NodeId, DataDictionary> m_dictionaries;
-        private Subscription m_defaultSubscription;
-        private bool m_deleteSubscriptionsOnClose;
-        private bool m_transferSubscriptionsOnReconnect;
         private uint m_maxRequestMessageSize;
-        private NamespaceTable m_namespaceUris;
-        private StringTable m_serverUris;
-        private IEncodeableFactory m_factory;
         private SystemContext m_systemContext;
         private NodeCache m_nodeCache;
         private List<IUserIdentity> m_identityHistory;
-        private object m_handle;
         private byte[] m_serverNonce;
         private byte[] m_previousServerNonce;
         private X509Certificate2 m_serverCertificate;
         private long m_publishCounter;
         private int m_tooManyPublishRequests;
         private long m_lastKeepAliveTime;
-        private int m_lastKeepAliveTickCount;
         private StatusCode m_lastKeepAliveErrorStatusCode;
         private ServerState m_serverState;
         private int m_keepAliveInterval;
-#if PERIODIC_TIMER
-        private PeriodicTimer m_keepAliveTimer;
-#else
         private Timer m_keepAliveTimer;
-#endif
         private long m_keepAliveCounter;
         private bool m_reconnecting;
         private SemaphoreSlim m_reconnectLock;
@@ -6862,10 +6947,6 @@ namespace Technosoftware.UaClient
         private Nonce m_eccServerEphemeralKey;
         private readonly EndpointDescriptionCollection m_discoveryServerEndpoints;
         private readonly StringCollection m_discoveryProfileUris;
-        private uint m_serverMaxContinuationPointsPerBrowse = 0;
-        private uint m_serverMaxByteStringLength = 0;
-        private ContinuationPointPolicy m_continuationPointPolicy
-            = ContinuationPointPolicy.Default;
 
         private class AsyncRequestState
         {
@@ -6875,15 +6956,46 @@ namespace Technosoftware.UaClient
             public IAsyncResult Result;
             public bool Defunct;
         }
-        private readonly object eventLock_ = new object();
-        private event EventHandler<SessionKeepAliveEventArgs> m_KeepAlive;
-        private event EventHandler<SessionNotificationEventArgs> m_Publish;
-        private event EventHandler<SessionPublishErrorEventArgs> m_PublishError;
+
+        private event EventHandler<KeepAliveEventArgs> m_KeepAlive;
+        private event EventHandler<NotificationEventArgs> m_Publish;
+        private event EventHandler<PublishErrorEventArgs> m_PublishError;
         private event EventHandler<PublishSequenceNumbersToAcknowledgeEventArgs> m_PublishSequenceNumbersToAcknowledge;
         private event EventHandler m_SubscriptionsChanged;
         private event EventHandler m_SessionClosing;
         private event EventHandler m_SessionConfigurationChanged;
-        private event RenewUserIdentity m_RenewUserIdentity;
-        #endregion
+        #endregion Protected Fields
+
+        #region Obsolete Events
+        #pragma warning disable 67
+        /// <inheritdoc/>
+        [Obsolete("Use KeepAlive instead.")]
+        public event EventHandler<KeepAliveEventArgs> SessionKeepAliveEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use Notification instead.")]
+        public event EventHandler<NotificationEventArgs> SessionNotificationEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use PublishError instead.")]
+        public event EventHandler<PublishErrorEventArgs> PublishErrorEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use PublishSequenceNumbersToAcknowledge instead.")]
+        public event EventHandler<PublishSequenceNumbersToAcknowledgeEventArgs> PublishSequenceNumbersToAcknowledgeEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use SubscriptionsChanged instead.")]
+        public event EventHandler SubscriptionsChangedEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use SessionClosing instead.")]
+        public event EventHandler SessionClosingEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use SessionConfigurationChanged instead.")]
+        public event EventHandler SessionConfigurationChangedEvent;
+        #pragma warning restore 67
+        #endregion Events
     }
 }

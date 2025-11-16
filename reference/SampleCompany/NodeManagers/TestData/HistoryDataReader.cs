@@ -11,17 +11,9 @@
 
 #region Using Directives
 using System;
-using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-using System.Text;
-using System.Reflection;
-using System.Threading;
-using System.Globalization;
 using Opc.Ua;
-
 using Technosoftware.UaServer;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
@@ -37,11 +29,11 @@ namespace SampleCompany.NodeManagers.TestData
         /// <param name="source">The source of the history data.</param>
         public HistoryDataReader(NodeId variableId, IHistoryDataSource source)
         {
-            m_id = Guid.NewGuid();
-            m_variableId = variableId;
+            Id = Guid.NewGuid();
+            VariableId = variableId;
             m_source = source;
         }
-        #endregion
+        #endregion Constructors
 
         #region IDisposable Members
         /// <summary>
@@ -50,6 +42,7 @@ namespace SampleCompany.NodeManagers.TestData
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -59,24 +52,18 @@ namespace SampleCompany.NodeManagers.TestData
         {
             // nothing to do.
         }
-        #endregion
+        #endregion IDisposable Members
 
         #region Public Interface
         /// <summary>
         /// A globally unique identifier for the instance.
         /// </summary>
-        public Guid Id
-        {
-            get { return m_id; }
-        }
+        public Guid Id { get; }
 
         /// <summary>
         /// The identifier for the variable being read.
         /// </summary>
-        public NodeId VariableId
-        {
-            get { return m_variableId; }
-        }
+        public NodeId VariableId { get; }
 
         /// <summary>
         /// Starts reading raw values.
@@ -110,12 +97,14 @@ namespace SampleCompany.NodeManagers.TestData
             m_isForward = m_startTime < m_endTime;
             m_position = -1;
 
-            DataValue value = null;
-
             // get first bound.
             if (m_request.ReturnBounds)
             {
-                value = m_source.FirstRaw(m_startTime, !m_isForward, m_request.IsReadModified, out m_position);
+                DataValue value = m_source.FirstRaw(
+                    m_startTime,
+                    !m_isForward,
+                    m_request.IsReadModified,
+                    out m_position);
 
                 if (value != null)
                 {
@@ -140,8 +129,7 @@ namespace SampleCompany.NodeManagers.TestData
             QualifiedName dataEncoding,
             DataValueCollection values)
         {
-            DataValue value = null;
-
+            DataValue value;
             do
             {
                 // check for limit.
@@ -150,7 +138,11 @@ namespace SampleCompany.NodeManagers.TestData
                     return false;
                 }
 
-                value = m_source.NextRaw(m_lastTime, m_isForward, m_request.IsReadModified, ref m_position);
+                value = m_source.NextRaw(
+                    m_lastTime,
+                    m_isForward,
+                    m_request.IsReadModified,
+                    ref m_position);
 
                 // no more data.
                 if (value == null)
@@ -159,7 +151,8 @@ namespace SampleCompany.NodeManagers.TestData
                 }
 
                 // check for bound.
-                if ((m_isForward && value.ServerTimestamp >= m_endTime) || (!m_isForward && value.ServerTimestamp <= m_endTime))
+                if ((m_isForward && value.ServerTimestamp >= m_endTime) ||
+                    (!m_isForward && value.ServerTimestamp <= m_endTime))
                 {
                     if (m_request.ReturnBounds)
                     {
@@ -170,12 +163,11 @@ namespace SampleCompany.NodeManagers.TestData
 
                 // add value.
                 AddValue(timestampsToReturn, indexRange, dataEncoding, values, value);
-            }
-            while (value != null);
+            } while (value != null);
 
             return true;
         }
-        #endregion
+        #endregion Public Interface
 
         #region Private Methods
         /// <summary>
@@ -200,7 +192,7 @@ namespace SampleCompany.NodeManagers.TestData
             // check if the index range or data encoding can be applied.
             if (StatusCode.IsGood(value.StatusCode))
             {
-                var valueToReturn = value.Value;
+                object valueToReturn = value.Value;
 
                 // apply the index range.
                 if (indexRange != NumericRange.Empty)
@@ -227,12 +219,12 @@ namespace SampleCompany.NodeManagers.TestData
             }
 
             // apply the timestamps filter.
-            if (timestampsToReturn == TimestampsToReturn.Neither || timestampsToReturn == TimestampsToReturn.Server)
+            if (timestampsToReturn is TimestampsToReturn.Neither or TimestampsToReturn.Server)
             {
                 value.SourceTimestamp = DateTime.MinValue;
             }
 
-            if (timestampsToReturn == TimestampsToReturn.Neither || timestampsToReturn == TimestampsToReturn.Source)
+            if (timestampsToReturn is TimestampsToReturn.Neither or TimestampsToReturn.Source)
             {
                 value.ServerTimestamp = DateTime.MinValue;
             }
@@ -240,18 +232,16 @@ namespace SampleCompany.NodeManagers.TestData
             // add result.
             values.Add(value);
         }
-        #endregion
+        #endregion Private Methods
 
         #region Private Fields
-        private Guid m_id;
-        private NodeId m_variableId;
-        private IHistoryDataSource m_source;
+        private readonly IHistoryDataSource m_source;
         private ReadRawModifiedDetails m_request;
         private DateTime m_startTime;
         private DateTime m_endTime;
         private bool m_isForward;
         private int m_position;
         private DateTime m_lastTime;
-        #endregion
+        #endregion Private Fields
     }
 }

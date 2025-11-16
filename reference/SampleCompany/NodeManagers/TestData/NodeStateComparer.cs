@@ -11,9 +11,8 @@
 
 #region Using Directives
 using System.Collections.Generic;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
@@ -30,28 +29,23 @@ namespace SampleCompany.NodeManagers.TestData
                 return true;
             }
 
-            if (ReferenceEquals(x, null) || ReferenceEquals(y, null))
+            if (x is null || y is null)
             {
                 return false;
             }
 
-            if (x.NodeId == y.NodeId)
-            {
-                return true;
-            }
-
-            return false;
+            return x.NodeId == y.NodeId;
         }
 
         /// <inheritdoc/>
-        public int GetHashCode(NodeState node)
+        public int GetHashCode(NodeState obj)
         {
-            if (ReferenceEquals(node, null))
+            if (obj is null)
             {
                 return 0;
             }
 
-            return node.NodeId.GetHashCode();
+            return obj.NodeId.GetHashCode();
         }
     }
 }

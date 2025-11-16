@@ -19,7 +19,7 @@ using System;
 
 #endregion
 
-namespace Technosoftware.UaServer.Sessions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     ///     A class which provides the event arguments for session related event.

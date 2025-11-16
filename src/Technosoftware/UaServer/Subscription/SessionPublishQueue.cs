@@ -14,44 +14,34 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Threading;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Manages the publish queues for a session.
     /// </summary>
     public class SessionPublishQueue : IDisposable
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Creates a new queue.
         /// </summary>
-        public SessionPublishQueue(IUaServerData server, Sessions.Session session, int maxPublishRequests)
+        public SessionPublishQueue(IUaServerData server, IUaSession session, int maxPublishRequests)
         {
-            if (server == null)
-                throw new ArgumentNullException(nameof(server));
-            if (session == null)
-                throw new ArgumentNullException(nameof(session));
-
-            m_server = server;
-            m_session = session;
+            m_server = server ?? throw new ArgumentNullException(nameof(server));
+            m_session = session ?? throw new ArgumentNullException(nameof(session));
             m_publishEvent = new ManualResetEvent(false);
             m_queuedRequests = new LinkedList<QueuedRequest>();
             m_queuedSubscriptions = [];
             m_maxPublishRequests = maxPublishRequests;
         }
-        #endregion
 
-        #region IDisposable Members
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
@@ -82,7 +72,7 @@ namespace Technosoftware.UaServer.Subscriptions
                             request.Error = StatusCodes.BadServerHalted;
                             request.Dispose();
                         }
-                        catch (Exception)
+                        catch
                         {
                             // ignore errors.
                         }
@@ -93,14 +83,12 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
             }
         }
-        #endregion
 
-        #region Public Methods
         /// <summary>
         /// Clears the queues because the session is closing.
         /// </summary>
         /// <returns>The list of subscriptions in the queue.</returns>
-        public IList<Subscription> Close()
+        public IList<IUaSubscription> Close()
         {
             lock (m_lock)
             {
@@ -118,7 +106,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
 
                 // tell the subscriptions that the session is closed.
-                Subscription[] subscriptions = new Subscription[m_queuedSubscriptions.Count];
+                var subscriptions = new IUaSubscription[m_queuedSubscriptions.Count];
 
                 for (int ii = 0; ii < m_queuedSubscriptions.Count; ii++)
                 {
@@ -136,39 +124,46 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Adds a subscription from the publish queue.
         /// </summary>
-        public void Add(Subscription subscription)
+        /// <exception cref="ArgumentNullException"><paramref name="subscription"/> is <c>null</c>.</exception>
+        public void Add(IUaSubscription subscription)
         {
             if (subscription == null)
+            {
                 throw new ArgumentNullException(nameof(subscription));
+            }
 
             lock (m_lock)
             {
-                QueuedSubscription queuedSubscription = new QueuedSubscription();
-
-                queuedSubscription.ReadyToPublish = false;
-                queuedSubscription.Timestamp = DateTime.UtcNow;
-                queuedSubscription.Subscription = subscription;
+                var queuedSubscription = new QueuedSubscription
+                {
+                    ReadyToPublish = false,
+                    Timestamp = DateTime.UtcNow,
+                    Subscription = subscription
+                };
 
                 m_queuedSubscriptions.Add(queuedSubscription);
 
-                // TraceState("SUBSCRIPTION QUEUED");          
+                // TraceState("SUBSCRIPTION QUEUED");
             }
         }
 
         /// <summary>
         /// Removes a subscription from the publish queue.
         /// </summary>
-        public void Remove(Subscription subscription, bool removeQueuedRequests)
+        /// <exception cref="ArgumentNullException"><paramref name="subscription"/> is <c>null</c>.</exception>
+        public void Remove(IUaSubscription subscription, bool removeQueuedRequests)
         {
             if (subscription == null)
+            {
                 throw new ArgumentNullException(nameof(subscription));
+            }
 
             lock (m_lock)
             {
                 // remove the subscription from the queue.
                 for (int ii = 0; ii < m_queuedSubscriptions.Count; ii++)
                 {
-                    if (Object.ReferenceEquals(m_queuedSubscriptions[ii].Subscription, subscription))
+                    if (ReferenceEquals(m_queuedSubscriptions[ii].Subscription, subscription))
                     {
                         m_queuedSubscriptions.RemoveAt(ii);
                         break;
@@ -185,7 +180,7 @@ namespace Technosoftware.UaServer.Subscriptions
         }
 
         /// <summary>
-        /// Removes outstanding requests if no 
+        /// Removes outstanding requests if no
         /// </summary>
         public void RemoveQueuedRequests()
         {
@@ -229,6 +224,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Processes acknowledgements for previously published messages.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public void Acknowledge(
             UaServerOperationContext context,
             SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
@@ -236,15 +232,21 @@ namespace Technosoftware.UaServer.Subscriptions
             out DiagnosticInfoCollection acknowledgeDiagnosticInfos)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
+
             if (subscriptionAcknowledgements == null)
+            {
                 throw new ArgumentNullException(nameof(subscriptionAcknowledgements));
+            }
 
             lock (m_lock)
             {
                 bool diagnosticsExist = false;
                 acknowledgeResults = new StatusCodeCollection(subscriptionAcknowledgements.Count);
-                acknowledgeDiagnosticInfos = new DiagnosticInfoCollection(subscriptionAcknowledgements.Count);
+                acknowledgeDiagnosticInfos = new DiagnosticInfoCollection(
+                    subscriptionAcknowledgements.Count);
 
                 for (int ii = 0; ii < subscriptionAcknowledgements.Count; ii++)
                 {
@@ -258,7 +260,9 @@ namespace Technosoftware.UaServer.Subscriptions
 
                         if (subscription.Subscription.Id == acknowledgement.SubscriptionId)
                         {
-                            ServiceResult result = subscription.Subscription.Acknowledge(context, acknowledgement.SequenceNumber);
+                            ServiceResult result = subscription.Subscription.Acknowledge(
+                                context,
+                                acknowledgement.SequenceNumber);
 
                             if (ServiceResult.IsGood(result))
                             {
@@ -275,7 +279,11 @@ namespace Technosoftware.UaServer.Subscriptions
 
                                 if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                                 {
-                                    DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, result);
+                                    DiagnosticInfo diagnosticInfo = UaServerUtils
+                                        .CreateDiagnosticInfo(
+                                            m_server,
+                                            context,
+                                            result);
                                     acknowledgeDiagnosticInfos.Add(diagnosticInfo);
                                     diagnosticsExist = true;
                                 }
@@ -288,12 +296,15 @@ namespace Technosoftware.UaServer.Subscriptions
 
                     if (!found)
                     {
-                        ServiceResult result = new ServiceResult(StatusCodes.BadSubscriptionIdInvalid);
+                        var result = new ServiceResult(StatusCodes.BadSubscriptionIdInvalid);
                         acknowledgeResults.Add(result.Code);
 
                         if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                         {
-                            DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(m_server, context, result);
+                            DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(
+                                m_server,
+                                context,
+                                result);
                             acknowledgeDiagnosticInfos.Add(diagnosticInfo);
                             diagnosticsExist = true;
                         }
@@ -310,7 +321,12 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Returns a subscription that is ready to publish.
         /// </summary>
-        public Subscription Publish(uint clientHandle, DateTime deadline, bool requeue, AsyncPublishOperation operation)
+        /// <exception cref="ServiceResultException"></exception>
+        public IUaSubscription Publish(
+            uint clientHandle,
+            DateTime deadline,
+            bool requeue,
+            AsyncPublishOperation operation)
         {
             QueuedRequest request = null;
 
@@ -391,11 +407,11 @@ namespace Technosoftware.UaServer.Subscriptions
                         StatusCode requestStatus = StatusCodes.Good;
 
                         // check if expired.
-                        if (queuedRequest.Deadline < DateTime.MaxValue && queuedRequest.Deadline.AddMilliseconds(500) < DateTime.UtcNow)
+                        if (queuedRequest.Deadline < DateTime.MaxValue &&
+                            queuedRequest.Deadline.AddMilliseconds(500) < DateTime.UtcNow)
                         {
                             requestStatus = StatusCodes.BadTimeout;
                         }
-
                         // check secure channel.
                         else if (!m_session.IsSecureChannelValid(queuedRequest.SecureChannelId))
                         {
@@ -414,7 +430,8 @@ namespace Technosoftware.UaServer.Subscriptions
                     }
 
                     // clear excess requests - keep the newest ones.
-                    while (m_maxPublishRequests > 0 && m_queuedRequests.Count >= m_maxPublishRequests)
+                    while (m_maxPublishRequests > 0 &&
+                        m_queuedRequests.Count >= m_maxPublishRequests)
                     {
                         request = m_queuedRequests.First.Value;
                         request.Error = StatusCodes.BadTooManyPublishRequests;
@@ -422,12 +439,13 @@ namespace Technosoftware.UaServer.Subscriptions
                         m_queuedRequests.RemoveFirst();
                     }
 
-                    request = new QueuedRequest();
-
-                    request.SecureChannelId = SecureChannelContext.Current.SecureChannelId;
-                    request.Deadline = deadline;
-                    request.Subscription = null;
-                    request.Error = StatusCodes.Good;
+                    request = new QueuedRequest
+                    {
+                        SecureChannelId = SecureChannelContext.Current.SecureChannelId,
+                        Deadline = deadline,
+                        Subscription = null,
+                        Error = StatusCodes.Good
+                    };
 
                     if (operation == null)
                     {
@@ -462,12 +480,9 @@ namespace Technosoftware.UaServer.Subscriptions
             ServiceResult error = request.Wait(Timeout.Infinite);
 
             // check for error.
-            if (ServiceResult.IsGood(error))
+            if (ServiceResult.IsGood(error) && StatusCode.IsBad(request.Error))
             {
-                if (StatusCode.IsBad(request.Error))
-                {
-                    error = request.Error;
-                }
+                _ = request.Error;
             }
 
             // must reassign subscription on error.
@@ -517,15 +532,15 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <param name="requeue">if set to <c>true</c> the request must be requeued.</param>
         /// <param name="operation">The asynchronous operation.</param>
         /// <param name="calldata">The calldata.</param>
-        /// <returns></returns>
-        public Subscription CompletePublish(
+        /// <exception cref="ServiceResultException"></exception>
+        public IUaSubscription CompletePublish(
             bool requeue,
             AsyncPublishOperation operation,
             object calldata)
         {
             Utils.LogTrace("PUBLISH: #{0} Completing", operation.RequestHandle, requeue);
 
-            QueuedRequest request = (QueuedRequest)calldata;
+            var request = (QueuedRequest)calldata;
 
             // check if need to requeue.
             lock (m_lock)
@@ -542,7 +557,10 @@ namespace Technosoftware.UaServer.Subscriptions
             // must reassign subscription on error.
             if (ServiceResult.IsBad(request.Error))
             {
-                Utils.LogTrace("PUBLISH: #{0} Reassigned ERROR({1})", operation.RequestHandle, request.Error);
+                Utils.LogTrace(
+                    "PUBLISH: #{0} Reassigned ERROR({1})",
+                    operation.RequestHandle,
+                    request.Error);
 
                 if (request.Subscription != null)
                 {
@@ -570,13 +588,13 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Adds a subscription back into the queue because it has more notifications to publish.
         /// </summary>
-        public void PublishCompleted(Subscription subscription, bool moreNotifications)
+        public void PublishCompleted(IUaSubscription subscription, bool moreNotifications)
         {
             lock (m_lock)
             {
                 for (int ii = 0; ii < m_queuedSubscriptions.Count; ii++)
                 {
-                    if (Object.ReferenceEquals(m_queuedSubscriptions[ii].Subscription, subscription))
+                    if (ReferenceEquals(m_queuedSubscriptions[ii].Subscription, subscription))
                     {
                         m_queuedSubscriptions[ii].Publishing = false;
 
@@ -601,11 +619,11 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         public void PublishTimerExpired()
         {
-            List<Subscription> subscriptionsToDelete = [];
+            var subscriptionsToDelete = new List<IUaSubscription>();
 
             lock (m_lock)
             {
-                List<QueuedSubscription> liveSubscriptions = new List<QueuedSubscription>(m_queuedSubscriptions.Count);
+                var liveSubscriptions = new List<QueuedSubscription>(m_queuedSubscriptions.Count);
 
                 // check each available subscription.
                 for (int ii = 0; ii < m_queuedSubscriptions.Count; ii++)
@@ -618,7 +636,8 @@ namespace Technosoftware.UaServer.Subscriptions
                     if (state == UaPublishingState.Expired)
                     {
                         subscriptionsToDelete.Add(subscription.Subscription);
-                        ((SubscriptionManager)m_server.SubscriptionManager).SubscriptionExpired(subscription.Subscription);
+                        ((SubscriptionManager)m_server.SubscriptionManager).SubscriptionExpired(
+                            subscription.Subscription);
                         continue;
                     }
 
@@ -667,18 +686,20 @@ namespace Technosoftware.UaServer.Subscriptions
         private void AssignSubscriptionToRequest(QueuedSubscription subscription)
         {
             // find a request.
-            for (LinkedListNode<QueuedRequest> node = m_queuedRequests.First; node != null; node = node.Next)
+            for (LinkedListNode<QueuedRequest> node = m_queuedRequests.First;
+                node != null;
+                node = node.Next)
             {
                 QueuedRequest request = node.Value;
 
                 StatusCode error = StatusCodes.Good;
 
                 // check if expired.
-                if (request.Deadline < DateTime.MaxValue && request.Deadline.AddMilliseconds(500) < DateTime.UtcNow)
+                if (request.Deadline < DateTime.MaxValue &&
+                    request.Deadline.AddMilliseconds(500) < DateTime.UtcNow)
                 {
                     error = StatusCodes.BadTimeout;
                 }
-
                 // check secure channel.
                 else if (!m_session.IsSecureChannelValid(request.SecureChannelId))
                 {
@@ -708,7 +729,9 @@ namespace Technosoftware.UaServer.Subscriptions
                 // remove request.
                 m_queuedRequests.Remove(node);
 
-                Utils.LogTrace("PUBLISH: #000 Assigned To Subscription({0}).", subscription.Subscription.Id);
+                Utils.LogTrace(
+                    "PUBLISH: #000 Assigned To Subscription({0}).",
+                    subscription.Subscription.Id);
 
                 request.Error = StatusCodes.Good;
                 request.Subscription = subscription;
@@ -721,9 +744,7 @@ namespace Technosoftware.UaServer.Subscriptions
             subscription.ReadyToPublish = true;
             subscription.Timestamp = DateTime.UtcNow;
         }
-        #endregion
 
-        #region QueuedRequest Class
         /// <summary>
         /// A request queued while waiting for a subscription.
         /// </summary>
@@ -736,7 +757,6 @@ namespace Technosoftware.UaServer.Subscriptions
             public QueuedSubscription Subscription;
             public string SecureChannelId;
 
-            #region IDisposable Members
             /// <summary>
             /// Frees any unmanaged resources.
             /// </summary>
@@ -752,29 +772,28 @@ namespace Technosoftware.UaServer.Subscriptions
             {
                 if (disposing)
                 {
-                    this.Error = StatusCodes.BadServerHalted;
+                    Error = StatusCodes.BadServerHalted;
 
-                    if (this.Operation != null)
+                    if (Operation != null)
                     {
-                        this.Operation.Dispose();
-                        this.Operation = null;
+                        Operation.Dispose();
+                        Operation = null;
                     }
 
-                    if (this.Event != null)
+                    if (Event != null)
                     {
                         try
                         {
-                            this.Event.Set();
-                            this.Event.Dispose();
+                            Event.Set();
+                            Event.Dispose();
                         }
-                        catch (Exception)
+                        catch
                         {
                             // ignore errors.
                         }
                     }
                 }
             }
-            #endregion
 
             /// <summary>
             /// Waits for the request to be processed.
@@ -798,7 +817,10 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
                 catch (Exception e)
                 {
-                    return ServiceResult.Create(e, StatusCodes.BadTimeout, "Unexpected error waiting for subscription.");
+                    return ServiceResult.Create(
+                        e,
+                        StatusCodes.BadTimeout,
+                        "Unexpected error waiting for subscription.");
                 }
                 finally
                 {
@@ -806,9 +828,9 @@ namespace Technosoftware.UaServer.Subscriptions
                     {
                         Event.Dispose();
                     }
-                    catch (Exception)
+                    catch
                     {
-                        // ignore errors on close.                       
+                        // ignore errors on close.
                     }
                 }
             }
@@ -834,22 +856,18 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
             }
         }
-        #endregion
 
-        #region QueuedSubscription Class
         /// <summary>
         /// Stores a subscription that has notifications ready to be sent back to the client.
         /// </summary>
         private class QueuedSubscription
         {
-            public Subscription Subscription;
+            public IUaSubscription Subscription;
             public DateTime Timestamp;
             public bool ReadyToPublish;
             public bool Publishing;
         }
-        #endregion
 
-        #region Private Members
         /// <summary>
         /// Dumps the current state of the session queue.
         /// </summary>
@@ -861,20 +879,26 @@ namespace Technosoftware.UaServer.Subscriptions
                 return;
             }
 
-            StringBuilder buffer = new StringBuilder();
+            var buffer = new StringBuilder();
 
             lock (m_lock)
             {
-                buffer.Append("PublishQueue ");
-                buffer.AppendFormat(CultureInfo.InvariantCulture, context, args);
+                buffer.Append("PublishQueue ")
+                    .AppendFormat(CultureInfo.InvariantCulture, context, args);
 
                 if (m_session != null)
                 {
-                    buffer.AppendFormat(CultureInfo.InvariantCulture, ", SessionId={0}", m_session.Id);
+                    buffer.AppendFormat(
+                        CultureInfo.InvariantCulture,
+                        ", SessionId={0}",
+                        m_session.Id);
                 }
 
-                buffer.AppendFormat(CultureInfo.InvariantCulture, ", SubscriptionCount={0}, RequestCount={1}",
-                    m_queuedSubscriptions.Count, m_queuedRequests.Count);
+                buffer.AppendFormat(
+                    CultureInfo.InvariantCulture,
+                    ", SubscriptionCount={0}, RequestCount={1}",
+                    m_queuedSubscriptions.Count,
+                    m_queuedRequests.Count);
 
                 int readyToPublish = 0;
 
@@ -886,11 +910,16 @@ namespace Technosoftware.UaServer.Subscriptions
                     }
                 }
 
-                buffer.AppendFormat(CultureInfo.InvariantCulture, ", ReadyToPublishCount={0}", readyToPublish);
+                buffer.AppendFormat(
+                    CultureInfo.InvariantCulture,
+                    ", ReadyToPublishCount={0}",
+                    readyToPublish);
 
                 int expiredRequests = 0;
 
-                for (LinkedListNode<QueuedRequest> ii = m_queuedRequests.First; ii != null; ii = ii.Next)
+                for (LinkedListNode<QueuedRequest> ii = m_queuedRequests.First;
+                    ii != null;
+                    ii = ii.Next)
                 {
                     if (ii.Value.Deadline < DateTime.UtcNow)
                     {
@@ -898,22 +927,22 @@ namespace Technosoftware.UaServer.Subscriptions
                     }
                 }
 
-                buffer.AppendFormat(CultureInfo.InvariantCulture, ", ExpiredCount={0}", expiredRequests);
+                buffer.AppendFormat(
+                    CultureInfo.InvariantCulture,
+                    ", ExpiredCount={0}",
+                    expiredRequests);
             }
 
             Utils.LogTrace(buffer.ToString());
         }
-        #endregion
 
-        #region Private Fields
-        private readonly object m_lock = new object();
-        private IUaServerData m_server;
-        private Sessions.Session m_session;
-        private ManualResetEvent m_publishEvent;
-        private LinkedList<QueuedRequest> m_queuedRequests;
+        private readonly Lock m_lock = new();
+        private readonly IUaServerData m_server;
+        private readonly IUaSession m_session;
+        private readonly ManualResetEvent m_publishEvent;
+        private readonly LinkedList<QueuedRequest> m_queuedRequests;
         private List<QueuedSubscription> m_queuedSubscriptions;
-        private int m_maxPublishRequests;
+        private readonly int m_maxPublishRequests;
         private bool m_subscriptionsWaiting;
-        #endregion
     }
 }

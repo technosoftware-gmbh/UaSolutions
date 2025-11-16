@@ -13,11 +13,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography.X509Certificates;
-
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
-
 using Opc.Ua;
 using Opc.Ua.Bindings;
 using Opc.Ua.Security.Certificates;
@@ -37,28 +34,43 @@ namespace Technosoftware.UaClient.Tests
     /// <summary>
     /// Create a collection of test assets.
     /// </summary>
-    public class AssetCollection<T> : List<T> where T : IAsset, new()
+    /// <typeparam name="T"></typeparam>
+    public class AssetCollection<T> : List<T>
+        where T : IAsset, new()
     {
-        public AssetCollection() { }
-        public AssetCollection(IEnumerable<T> collection) : base(collection) { }
-        public AssetCollection(int capacity) : base(capacity) { }
-        public static AssetCollection<T> ToAssetCollection(T[] values)
+        public AssetCollection()
         {
-            return values != null ? new AssetCollection<T>(values) : [];
         }
 
-        public AssetCollection(IEnumerable<string> filelist)
+        public AssetCollection(IEnumerable<T> collection)
+            : base(collection)
+    {
+        }
+
+        public AssetCollection(int capacity)
+            : base(capacity)
         {
-            foreach (var file in filelist)
+        }
+
+        public static AssetCollection<T> ToAssetCollection(T[] values)
+        {
+            return values != null ? [.. values] : [];
+        }
+
+        public static AssetCollection<T> CreateFromFiles(IEnumerable<string> filelist)
+        {
+            var result = new AssetCollection<T>();
+            foreach (string file in filelist)
             {
-                Add(file);
+                result.Add(file);
             }
+            return result;
         }
 
         public void Add(string path)
         {
             byte[] blob = File.ReadAllBytes(path);
-            T asset = new T();
+            var asset = new T();
             asset.Initialize(blob, path);
             Add(asset);
         }
@@ -73,17 +85,18 @@ namespace Technosoftware.UaClient.Tests
     {
         public static string[] EnumerateTestAssets(string searchPattern)
         {
-            var assetsPath = Utils.GetAbsoluteDirectoryPath("Assets", true, false, false);
+            string assetsPath = Utils.GetAbsoluteDirectoryPath("Assets", true, false, false);
             if (assetsPath != null)
             {
-                return Directory.EnumerateFiles(assetsPath, searchPattern).ToArray();
+                return [.. Directory.EnumerateFiles(assetsPath, searchPattern)];
             }
-            return Array.Empty<string>();
+            return [];
         }
 
         public static void ValidateSelSignedBasicConstraints(X509Certificate2 certificate)
         {
-            var basicConstraintsExtension = X509Extensions.FindExtension<X509BasicConstraintsExtension>(certificate.Extensions);
+            X509BasicConstraintsExtension basicConstraintsExtension =
+                certificate.Extensions.FindExtension<X509BasicConstraintsExtension>();
             Assert.NotNull(basicConstraintsExtension);
             Assert.False(basicConstraintsExtension.CertificateAuthority);
             Assert.True(basicConstraintsExtension.Critical);

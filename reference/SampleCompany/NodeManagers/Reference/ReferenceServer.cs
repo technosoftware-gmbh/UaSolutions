@@ -13,13 +13,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua;
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Configuration;
-using Technosoftware.UaServer.NodeManager;
-using Technosoftware.UaServer.Subscriptions;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Reference
@@ -28,17 +24,27 @@ namespace SampleCompany.NodeManagers.Reference
     /// Implements a basic OPC UA Server.
     /// </summary>
     /// <remarks>
-    /// Each server instance must have one instance of a StandardServer object which is
+    /// <para>
+    /// Each server instance must have one instance of a UaStandardServer object which is
     /// responsible for reading the configuration file, creating the endpoints and dispatching
     /// incoming requests to the appropriate handler.
-    ///
+    /// </para>
+    /// <para>
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the SimulationServerNodeManager which provides access to the data exposed by the Server.
+    /// </para>
     /// </remarks>
     public class ReferenceServer : UaStandardServer
     {
         #region Properties
         public ITokenValidator TokenValidator { get; set; }
+
+        /// <summary>
+        /// If true the ReferenceNodeManager is set to work with a sampling group mechanism
+        /// for managing monitored items instead of a Monitored Node mechanism
+        /// </summary>
+        public bool UseSamplingGroupsInReferenceNodeManager { get; set; }
+
         #endregion Properties
 
         #region Overridden Methods
@@ -63,7 +69,8 @@ namespace SampleCompany.NodeManagers.Reference
             // create the custom node manager.
                 new ReferenceServerNodeManager(
                     server,
-                    configuration)
+                    configuration,
+                    UseSamplingGroupsInReferenceNodeManager)
             ];
 
             foreach (IUaNodeManagerFactory nodeManagerFactory in NodeManagerFactories)
@@ -129,7 +136,7 @@ namespace SampleCompany.NodeManagers.Reference
             IUaServerData server,
             ApplicationConfiguration configuration)
         {
-            var resourceManager = new ResourceManager(server, configuration);
+            var resourceManager = new ResourceManager(configuration);
 
             foreach (
                 System.Reflection.FieldInfo field in typeof(StatusCodes).GetFields(
@@ -172,20 +179,18 @@ namespace SampleCompany.NodeManagers.Reference
             base.OnServerStarted(server);
 
             // request notifications when the user identity is changed. all valid users are accepted by default.
-            server.SessionManager.ImpersonateUserEvent
+            server.SessionManager.ImpersonateUser
                 += OnImpersonateUser;
 
             try
             {
-                lock (server.Status.Lock)
-                {
-                    // allow a faster sampling interval for CurrentTime node.
-                    server.Status.Variable.CurrentTime.MinimumSamplingInterval = 250;
-                }
+                ServerData.UpdateServerStatus(
+                    status =>
+                        // allow a faster sampling interval for CurrentTime node.
+                        status.Variable.CurrentTime.MinimumSamplingInterval = 250);
             }
             catch
             {
-                // ignored
             }
         }
 
@@ -259,7 +264,7 @@ namespace SampleCompany.NodeManagers.Reference
         /// Called when a client tries to change its user identity.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        private void OnImpersonateUser(object sender, UaImpersonateUserEventArgs args)
+        private void OnImpersonateUser(object sender, ImpersonateUserEventArgs args)
         {
             // check for a user name token.
 

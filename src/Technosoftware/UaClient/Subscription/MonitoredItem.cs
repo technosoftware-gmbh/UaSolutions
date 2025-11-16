@@ -1,13 +1,13 @@
 #region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
+// Web: https://technosoftware.com
 //
-// The Software is subject to the Technosoftware GmbH Software License 
+// The Software is subject to the Technosoftware GmbH Software License
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Foundation MIT License. 
+// The Software is based on the OPC Foundation MIT License.
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
@@ -17,9 +17,10 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -34,7 +35,6 @@ namespace Technosoftware.UaClient
     {
         private static readonly TimeSpan s_time_epsilon = TimeSpan.FromMilliseconds(500);
 
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initializes a new instance of the <see cref="MonitoredItem"/> class.
         /// </summary>
@@ -50,14 +50,15 @@ namespace Technosoftware.UaClient
         public MonitoredItem(uint clientHandle)
         {
             Initialize();
-            m_clientHandle = clientHandle;
+            ClientHandle = clientHandle;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MonitoredItem"/> class.
         /// </summary>
         /// <param name="template">The template used to specify the monitoring parameters.</param>
-        public MonitoredItem(MonitoredItem template) : this(template, false)
+        public MonitoredItem(MonitoredItem template)
+            : this(template, false)
         {
         }
 
@@ -66,7 +67,8 @@ namespace Technosoftware.UaClient
         /// </summary>
         /// <param name="template">The template used to specify the monitoring parameters.</param>
         /// <param name="copyEventHandlers">if set to <c>true</c> the event handlers are copied.</param>
-        public MonitoredItem(MonitoredItem template, bool copyEventHandlers) : this(template, copyEventHandlers, false)
+        public MonitoredItem(MonitoredItem template, bool copyEventHandlers)
+            : this(template, copyEventHandlers, false)
         {
         }
 
@@ -93,7 +95,7 @@ namespace Technosoftware.UaClient
                     {
                         try
                         {
-                            displayName = displayName.Substring(0, index);
+                            displayName = displayName[..index];
                         }
                         catch
                         {
@@ -102,19 +104,19 @@ namespace Technosoftware.UaClient
                     }
                 }
 
-                m_handle = template.m_handle;
-                m_displayName = Utils.Format("{0} {1}", displayName, m_clientHandle);
-                m_startNodeId = template.m_startNodeId;
+                Handle = template.Handle;
+                DisplayName = Utils.Format("{0} {1}", displayName, ClientHandle);
+                StartNodeId = template.StartNodeId;
                 m_relativePath = template.m_relativePath;
-                m_attributeId = template.m_attributeId;
-                m_indexRange = template.m_indexRange;
-                m_encoding = template.m_encoding;
-                m_monitoringMode = template.m_monitoringMode;
+                AttributeId = template.AttributeId;
+                IndexRange = template.IndexRange;
+                Encoding = template.Encoding;
+                MonitoringMode = template.MonitoringMode;
                 m_samplingInterval = template.m_samplingInterval;
-                m_filter = (MonitoringFilter)Utils.Clone(template.m_filter);
+                m_filter = Utils.Clone(template.m_filter);
                 m_queueSize = template.m_queueSize;
                 m_discardOldest = template.m_discardOldest;
-                m_attributesModified = true;
+                AttributesModified = true;
 
                 if (copyEventHandlers)
                 {
@@ -123,7 +125,7 @@ namespace Technosoftware.UaClient
 
                 if (copyClientHandle)
                 {
-                    m_clientHandle = template.m_clientHandle;
+                    ClientHandle = template.ClientHandle;
                 }
 
                 // this ensures the state is consistent with the node class.
@@ -138,7 +140,7 @@ namespace Technosoftware.UaClient
         protected void Initialize(StreamingContext context)
         {
             // object initializers are not called during deserialization.
-            m_cache = new object();
+            m_cache = new Lock();
 
             Initialize();
         }
@@ -148,48 +150,38 @@ namespace Technosoftware.UaClient
         /// </summary>
         private void Initialize()
         {
-            m_startNodeId = null;
+            StartNodeId = null;
             m_relativePath = null;
-            m_clientHandle = 0;
-            m_attributeId = Attributes.Value;
-            m_indexRange = null;
-            m_encoding = null;
-            m_monitoringMode = MonitoringMode.Reporting;
+            ClientHandle = 0;
+            AttributeId = Attributes.Value;
+            IndexRange = null;
+            Encoding = null;
+            MonitoringMode = MonitoringMode.Reporting;
             m_samplingInterval = -1;
             m_filter = null;
             m_queueSize = 0;
             m_discardOldest = true;
-            m_attributesModified = true;
-            m_status = new MonitoredItemStatus();
+            AttributesModified = true;
+            Status = new MonitoredItemStatus();
 
             // this ensures the state is consistent with the node class.
             NodeClass = NodeClass.Variable;
 
             // assign a unique handle.
-            m_clientHandle = Utils.IncrementIdentifier(ref s_globalClientHandle);
+            ClientHandle = Utils.IncrementIdentifier(ref s_globalClientHandle);
         }
-        #endregion
 
-        #region Persistent Properties
         /// <summary>
         /// A display name for the monitored item.
         /// </summary>
         [DataMember(Order = 1)]
-        public string DisplayName
-        {
-            get { return m_displayName; }
-            set { m_displayName = value; }
-        }
+        public string DisplayName { get; set; }
 
         /// <summary>
         /// The start node for the browse path that identifies the node to monitor.
         /// </summary>
         [DataMember(Order = 2)]
-        public NodeId StartNodeId
-        {
-            get { return m_startNodeId; }
-            set { m_startNodeId = value; }
-        }
+        public NodeId StartNodeId { get; set; }
 
         /// <summary>
         /// The relative path from the browse path to the node to monitor.
@@ -200,8 +192,7 @@ namespace Technosoftware.UaClient
         [DataMember(Order = 3)]
         public string RelativePath
         {
-            get { return m_relativePath; }
-
+            get => m_relativePath;
             set
             {
                 // clear resolved path if relative path has changed.
@@ -220,16 +211,15 @@ namespace Technosoftware.UaClient
         [DataMember(Order = 4)]
         public NodeClass NodeClass
         {
-            get { return m_nodeClass; }
-
+            get => m_nodeClass;
             set
             {
                 if (m_nodeClass != value)
                 {
-                    if ((value & (NodeClass.Object | NodeClass.View)) != 0)
+                    if (((int)value & ((int)NodeClass.Object | (int)NodeClass.View)) != 0)
                     {
                         // ensure a valid event filter.
-                        if (!(m_filter is EventFilter))
+                        if (m_filter is not EventFilter)
                         {
                             UseDefaultEventFilter();
                         }
@@ -240,7 +230,7 @@ namespace Technosoftware.UaClient
                             QueueSize = int.MaxValue;
                         }
 
-                        m_attributeId = Attributes.EventNotifier;
+                        AttributeId = Attributes.EventNotifier;
                     }
                     else
                     {
@@ -256,7 +246,7 @@ namespace Technosoftware.UaClient
                             QueueSize = 1;
                         }
 
-                        m_attributeId = Attributes.Value;
+                        AttributeId = Attributes.Value;
                     }
 
                     m_dataCache = null;
@@ -271,41 +261,25 @@ namespace Technosoftware.UaClient
         /// The attribute to monitor.
         /// </summary>
         [DataMember(Order = 5)]
-        public uint AttributeId
-        {
-            get { return m_attributeId; }
-            set { m_attributeId = value; }
-        }
+        public uint AttributeId { get; set; }
 
         /// <summary>
         /// The range of array indexes to monitor.
         /// </summary>
         [DataMember(Order = 6)]
-        public string IndexRange
-        {
-            get { return m_indexRange; }
-            set { m_indexRange = value; }
-        }
+        public string IndexRange { get; set; }
 
         /// <summary>
         /// The encoding to use when returning notifications.
         /// </summary>
         [DataMember(Order = 7)]
-        public QualifiedName Encoding
-        {
-            get { return m_encoding; }
-            set { m_encoding = value; }
-        }
+        public QualifiedName Encoding { get; set; }
 
         /// <summary>
         /// The monitoring mode.
         /// </summary>
         [DataMember(Order = 8)]
-        public MonitoringMode MonitoringMode
-        {
-            get { return m_monitoringMode; }
-            set { m_monitoringMode = value; }
-        }
+        public MonitoringMode MonitoringMode { get; set; }
 
         /// <summary>
         /// The sampling interval.
@@ -313,13 +287,12 @@ namespace Technosoftware.UaClient
         [DataMember(Order = 9)]
         public int SamplingInterval
         {
-            get { return m_samplingInterval; }
-
+            get => m_samplingInterval;
             set
             {
                 if (m_samplingInterval != value)
                 {
-                    m_attributesModified = true;
+                    AttributesModified = true;
                 }
 
                 m_samplingInterval = value;
@@ -332,14 +305,13 @@ namespace Technosoftware.UaClient
         [DataMember(Order = 10)]
         public MonitoringFilter Filter
         {
-            get { return m_filter; }
-
+            get => m_filter;
             set
             {
                 // validate filter against node class.
                 ValidateFilter(m_nodeClass, value);
 
-                m_attributesModified = true;
+                AttributesModified = true;
                 m_filter = value;
             }
         }
@@ -350,13 +322,12 @@ namespace Technosoftware.UaClient
         [DataMember(Order = 11)]
         public uint QueueSize
         {
-            get { return m_queueSize; }
-
+            get => m_queueSize;
             set
             {
                 if (m_queueSize != value)
                 {
-                    m_attributesModified = true;
+                    AttributesModified = true;
                 }
 
                 m_queueSize = value;
@@ -369,13 +340,12 @@ namespace Technosoftware.UaClient
         [DataMember(Order = 12)]
         public bool DiscardOldest
         {
-            get { return m_discardOldest; }
-
+            get => m_discardOldest;
             set
             {
                 if (m_discardOldest != value)
                 {
-                    m_attributesModified = true;
+                    AttributesModified = true;
                 }
 
                 m_discardOldest = value;
@@ -388,39 +358,29 @@ namespace Technosoftware.UaClient
         [DataMember(Order = 13)]
         public uint ServerId
         {
-            get { return m_status.Id; }
-            set { m_status.Id = value; }
+            get => Status.Id;
+            set => Status.Id = value;
         }
-        #endregion
 
-        #region Dynamic Properties
         /// <summary>
         /// The subscription that owns the monitored item.
         /// </summary>
-        public Subscription Subscription
-        {
-            get { return m_subscription; }
-            internal set { m_subscription = value; }
-        }
+        public Subscription Subscription { get; internal set; }
 
         /// <summary>
         /// A local handle assigned to the monitored item.
         /// </summary>
-        public object Handle
-        {
-            get { return m_handle; }
-            set { m_handle = value; }
-        }
+        public object Handle { get; set; }
 
         /// <summary>
         /// Whether the item has been created on the server.
         /// </summary>
-        public bool Created => m_status.Created;
+        public bool Created => Status.Created;
 
         /// <summary>
         /// The identifier assigned by the client.
         /// </summary>
-        public uint ClientHandle => m_clientHandle;
+        public uint ClientHandle { get; private set; }
 
         /// <summary>
         /// The node id to monitor after applying any relative path.
@@ -432,27 +392,24 @@ namespace Technosoftware.UaClient
                 // just return the start id if relative path is empty.
                 if (string.IsNullOrEmpty(m_relativePath))
                 {
-                    return m_startNodeId;
+                    return StartNodeId;
                 }
 
                 return m_resolvedNodeId;
             }
-
-            internal set { m_resolvedNodeId = value; }
+            internal set => m_resolvedNodeId = value;
         }
 
         /// <summary>
         /// Whether the monitoring attributes have been modified since the item was created.
         /// </summary>
-        public bool AttributesModified => m_attributesModified;
+        public bool AttributesModified { get; private set; }
 
         /// <summary>
         /// The status associated with the monitored item.
         /// </summary>
-        public MonitoredItemStatus Status => m_status;
-        #endregion
+        public MonitoredItemStatus Status { get; private set; }
 
-        #region Cache Related Functions
         /// <summary>
         /// Returns the queue size used by the cache.
         /// </summary>
@@ -475,22 +432,15 @@ namespace Technosoftware.UaClient
                     return 0;
                 }
             }
-
             set
             {
                 lock (m_cache)
                 {
                     EnsureCacheIsInitialized();
 
-                    if (m_dataCache != null)
-                    {
-                        m_dataCache.SetQueueSize(value);
-                    }
+                    m_dataCache?.SetQueueSize(value);
 
-                    if (m_eventCache != null)
-                    {
-                        m_eventCache.SetQueueSize(value);
-                    }
+                    m_eventCache?.SetQueueSize(value);
                 }
             }
         }
@@ -565,10 +515,18 @@ namespace Technosoftware.UaClient
             }
         }
 
+#pragma warning disable 67
         /// <summary>
         /// Raised when a new notification arrives.
         /// </summary>
-        public event EventHandler<MonitoredItemNotificationEventArgs> MonitoredItemNotificationEvent
+        [Obsolete("Use Notification instead.")]
+        public event EventHandler<MonitoredItemNotificationEventArgs> MonitoredItemNotificationEvent;
+#pragma warning restore 67
+
+        /// <summary>
+        /// Raised when a new notification arrives.
+        /// </summary>
+        public event EventHandler<MonitoredItemNotificationEventArgs> Notification
         {
             add
             {
@@ -577,7 +535,6 @@ namespace Technosoftware.UaClient
                     m_Notification += value;
                 }
             }
-
             remove
             {
                 lock (m_cache)
@@ -612,60 +569,59 @@ namespace Technosoftware.UaClient
 
                 m_lastNotification = newValue;
 
-                if (m_dataCache != null)
+                if (m_dataCache != null && newValue is MonitoredItemNotification datachange)
                 {
-                    if (newValue is MonitoredItemNotification datachange)
+                    if (datachange.Value != null)
                     {
-                        if (datachange.Value != null)
+                        if (validateTimestamp)
                         {
-                            if (validateTimestamp)
+                            DateTime now = DateTime.UtcNow.Add(s_time_epsilon);
+
+                            // validate the ServerTimestamp of the notification.
+                            if (datachange.Value.ServerTimestamp > now)
                             {
-                                var now = DateTime.UtcNow.Add(s_time_epsilon);
-
-                                // validate the ServerTimestamp of the notification.
-                                if (datachange.Value.ServerTimestamp > now)
-                                {
-                                    Utils.LogWarning("Received ServerTimestamp {0} is in the future for MonitoredItemId {1}",
-                                        datachange.Value.ServerTimestamp.ToLocalTime(), ClientHandle);
-                                }
-
-                                // validate SourceTimestamp of the notification.
-                                if (datachange.Value.SourceTimestamp > now)
-                                {
-                                    Utils.LogWarning("Received SourceTimestamp {0} is in the future for MonitoredItemId {1}",
-                                        datachange.Value.SourceTimestamp.ToLocalTime(), ClientHandle);
-                                }
+                                Utils.LogWarning(
+                                    "Received ServerTimestamp {0} is in the future for MonitoredItemId {1}",
+                                    datachange.Value.ServerTimestamp.ToLocalTime(),
+                                    ClientHandle);
                             }
 
-                            if (datachange.Value.StatusCode.Overflow)
+                            // validate SourceTimestamp of the notification.
+                            if (datachange.Value.SourceTimestamp > now)
                             {
-                                Utils.LogWarning("Overflow bit set for data change with ServerTimestamp {0} and value {1} for MonitoredItemId {2}",
-                                    datachange.Value.ServerTimestamp.ToLocalTime(), datachange.Value.Value, ClientHandle);
+                                Utils.LogWarning(
+                                    "Received SourceTimestamp {0} is in the future for MonitoredItemId {1}",
+                                    datachange.Value.SourceTimestamp.ToLocalTime(),
+                                    ClientHandle);
                             }
                         }
 
-                        m_dataCache.OnNotification(datachange);
+                        if (datachange.Value.StatusCode.Overflow)
+                        {
+                            Utils.LogWarning(
+                                "Overflow bit set for data change with ServerTimestamp {0} and value {1} for MonitoredItemId {2}",
+                                datachange.Value.ServerTimestamp.ToLocalTime(),
+                                datachange.Value.Value,
+                                ClientHandle);
+                        }
                     }
+
+                    m_dataCache.OnNotification(datachange);
                 }
 
-                if (m_eventCache != null)
+                if (m_eventCache != null && newValue is EventFieldList eventchange)
                 {
-                    if (newValue is EventFieldList eventchange)
-                    {
-                        m_eventCache?.OnNotification(eventchange);
-                    }
+                    m_eventCache?.OnNotification(eventchange);
                 }
 
                 m_Notification?.Invoke(this, new MonitoredItemNotificationEventArgs(newValue));
             }
         }
-        #endregion
 
-        #region ICloneable Members
         /// <inheritdoc/>
         public virtual object Clone()
         {
-            return this.MemberwiseClone();
+            return MemberwiseClone();
         }
 
         /// <summary>
@@ -680,19 +636,19 @@ namespace Technosoftware.UaClient
         /// Clones a monitored item or the subclass with an option to copy event handlers.
         /// </summary>
         /// <returns>A cloned instance of the monitored item or a subclass.</returns>
-        public virtual MonitoredItem CloneMonitoredItem(bool copyEventHandlers, bool copyClientHandle)
+        public virtual MonitoredItem CloneMonitoredItem(
+            bool copyEventHandlers,
+            bool copyClientHandle)
         {
             return new MonitoredItem(this, copyEventHandlers, copyClientHandle);
         }
-        #endregion
 
-        #region Public Methods
         /// <summary>
         /// Sets the error status for the monitored item.
         /// </summary>
         public void SetError(ServiceResult error)
         {
-            m_status.SetError(error);
+            Status.SetError(error);
         }
 
         /// <summary>
@@ -708,7 +664,11 @@ namespace Technosoftware.UaClient
 
             if (StatusCode.IsBad(result.StatusCode))
             {
-                error = ClientBase.GetResult(result.StatusCode, index, diagnosticInfos, responseHeader);
+                error = ClientBase.GetResult(
+                    result.StatusCode,
+                    index,
+                    diagnosticInfos,
+                    responseHeader);
             }
             else
             {
@@ -717,11 +677,13 @@ namespace Technosoftware.UaClient
                 // update the node id.
                 if (result.Targets.Count > 0)
                 {
-                    ResolvedNodeId = ExpandedNodeId.ToNodeId(result.Targets[0].TargetId, m_subscription.Session.NamespaceUris);
+                    ResolvedNodeId = ExpandedNodeId.ToNodeId(
+                        result.Targets[0].TargetId,
+                        Subscription.Session.NamespaceUris);
                 }
             }
 
-            m_status.SetResolvePathResult(result, error);
+            Status.SetResolvePathResult(error);
         }
 
         /// <summary>
@@ -738,11 +700,15 @@ namespace Technosoftware.UaClient
 
             if (StatusCode.IsBad(result.StatusCode))
             {
-                error = ClientBase.GetResult(result.StatusCode, index, diagnosticInfos, responseHeader);
+                error = ClientBase.GetResult(
+                    result.StatusCode,
+                    index,
+                    diagnosticInfos,
+                    responseHeader);
             }
 
-            m_status.SetCreateResult(request, result, error);
-            m_attributesModified = false;
+            Status.SetCreateResult(request, result, error);
+            AttributesModified = false;
         }
 
         /// <summary>
@@ -759,11 +725,15 @@ namespace Technosoftware.UaClient
 
             if (StatusCode.IsBad(result.StatusCode))
             {
-                error = ClientBase.GetResult(result.StatusCode, index, diagnosticInfos, responseHeader);
+                error = ClientBase.GetResult(
+                    result.StatusCode,
+                    index,
+                    diagnosticInfos,
+                    responseHeader);
             }
 
-            m_status.SetModifyResult(request, result, error);
-            m_attributesModified = false;
+            Status.SetModifyResult(request, result, error);
+            AttributesModified = false;
         }
 
         /// <summary>
@@ -773,9 +743,9 @@ namespace Technosoftware.UaClient
         {
             // ensure the global counter is not duplicating future handle ids
             Utils.LowerLimitIdentifier(ref s_globalClientHandle, clientHandle);
-            m_clientHandle = clientHandle;
-            m_status.SetTransferResult(this);
-            m_attributesModified = false;
+            ClientHandle = clientHandle;
+            Status.SetTransferResult(this);
+            AttributesModified = false;
         }
 
         /// <summary>
@@ -794,7 +764,7 @@ namespace Technosoftware.UaClient
                 error = ClientBase.GetResult(result, index, diagnosticInfos, responseHeader);
             }
 
-            m_status.SetDeleteResult(error);
+            Status.SetDeleteResult(error);
         }
 
         /// <summary>
@@ -802,9 +772,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         public string GetFieldName(int index)
         {
-            EventFilter filter = m_filter as EventFilter;
-
-            if (filter == null)
+            if (m_filter is not EventFilter filter)
             {
                 return null;
             }
@@ -814,7 +782,9 @@ namespace Technosoftware.UaClient
                 return null;
             }
 
-            return Utils.Format("{0}", SimpleAttributeOperand.Format(filter.SelectClauses[index].BrowsePath));
+            return Utils.Format(
+                "{0}",
+                SimpleAttributeOperand.Format(filter.SelectClauses[index].BrowsePath));
         }
 
         /// <summary>
@@ -838,7 +808,7 @@ namespace Technosoftware.UaClient
             NodeId eventTypeId,
             QualifiedName browseName)
         {
-            QualifiedNameCollection browsePath = [browseName];
+            var browsePath = new QualifiedNameCollection { browseName };
             return GetFieldValue(eventFields, eventTypeId, browsePath, Attributes.Value);
         }
 
@@ -856,9 +826,7 @@ namespace Technosoftware.UaClient
                 return null;
             }
 
-            EventFilter filter = m_filter as EventFilter;
-
-            if (filter == null)
+            if (m_filter is not EventFilter filter)
             {
                 return null;
             }
@@ -934,14 +902,23 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Returns value of the field name containing the event type.
         /// </summary>
-        public INode GetEventType(EventFieldList eventFields)
+        public async ValueTask<INode> GetEventTypeAsync(
+            EventFieldList eventFields,
+            CancellationToken ct = default)
         {
             // get event type.
-            NodeId eventTypeId = GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.EventType) as NodeId;
+            var eventTypeId = GetFieldValue(
+                eventFields,
+                ObjectTypes.BaseEventType,
+                BrowseNames.EventType) as NodeId;
 
-            if (eventTypeId != null && m_subscription != null && m_subscription.Session != null)
+            if (eventTypeId != null &&
+                Subscription != null &&
+                Subscription.Session != null)
             {
-                return m_subscription.Session.NodeCache.Find(eventTypeId);
+                return await Subscription.Session.NodeCache.FindAsync(
+                    eventTypeId,
+                    ct).ConfigureAwait(false);
             }
 
             // no event type in event field list.
@@ -954,7 +931,10 @@ namespace Technosoftware.UaClient
         public DateTime GetEventTime(EventFieldList eventFields)
         {
             // get event time.
-            DateTime? eventTime = GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Time) as DateTime?;
+            var eventTime = GetFieldValue(
+                eventFields,
+                ObjectTypes.BaseEventType,
+                BrowseNames.Time) as DateTime?;
 
             if (eventTime != null)
             {
@@ -970,9 +950,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         public static ServiceResult GetServiceResult(IEncodeable notification)
         {
-            MonitoredItemNotification datachange = notification as MonitoredItemNotification;
-
-            if (datachange == null)
+            if (notification is not MonitoredItemNotification datachange)
             {
                 return null;
             }
@@ -984,7 +962,10 @@ namespace Technosoftware.UaClient
                 return null;
             }
 
-            return new ServiceResult(datachange.Value.StatusCode, datachange.DiagnosticInfo, message.StringTable);
+            return new ServiceResult(
+                datachange.Value.StatusCode,
+                datachange.DiagnosticInfo,
+                message.StringTable);
         }
 
         /// <summary>
@@ -992,9 +973,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         public static ServiceResult GetServiceResult(IEncodeable notification, int index)
         {
-            EventFieldList eventFields = notification as EventFieldList;
-
-            if (eventFields == null)
+            if (notification is not EventFieldList eventFields)
             {
                 return null;
             }
@@ -1011,28 +990,26 @@ namespace Technosoftware.UaClient
                 return null;
             }
 
-            StatusResult status = ExtensionObject.ToEncodeable(eventFields.EventFields[index].Value as ExtensionObject) as StatusResult;
-
-            if (status == null)
+            if (ExtensionObject.ToEncodeable(
+                    eventFields.EventFields[index].Value as ExtensionObject)
+                is not StatusResult status)
             {
                 return null;
             }
 
             return new ServiceResult(status.StatusCode, status.DiagnosticInfo, message.StringTable);
         }
-        #endregion
 
-        #region Private Methods
         /// <summary>
         /// To save memory the cache is by default not initialized
         /// until <see cref="SaveValueInCache(IEncodeable)"/> is called.
-        /// 
+        ///
         /// </summary>
         private void EnsureCacheIsInitialized()
         {
             if (m_dataCache == null && m_eventCache == null)
             {
-                if ((m_nodeClass & (NodeClass.Object | NodeClass.View)) != 0)
+                if (((int)m_nodeClass & ((int)NodeClass.Object | (int)NodeClass.View)) != 0)
                 {
                     m_eventCache = new MonitoredItemEventCache(100);
                 }
@@ -1044,8 +1021,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <summary>
-        /// Throws an exception if the filter cannot be used with the node class.
+        /// Throws an exception if the flter cannot be used with the node class.
         /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
         private void ValidateFilter(NodeClass nodeClass, MonitoringFilter filter)
         {
             if (filter == null)
@@ -1057,30 +1035,25 @@ namespace Technosoftware.UaClient
             {
                 case NodeClass.Variable:
                 case NodeClass.VariableType:
-                {
                     if (!typeof(DataChangeFilter).IsInstanceOfType(filter))
                     {
                         m_nodeClass = NodeClass.Variable;
                     }
 
                     break;
-                }
-
                 case NodeClass.Object:
                 case NodeClass.View:
-                {
                     if (!typeof(EventFilter).IsInstanceOfType(filter))
                     {
                         m_nodeClass = NodeClass.Object;
                     }
 
                     break;
-                }
-
                 default:
-                {
-                    throw ServiceResultException.Create(StatusCodes.BadFilterNotAllowed, "Filters may not be specified for nodes of class '{0}'.", nodeClass);
-                }
+                    throw ServiceResultException.Create(
+                        StatusCodes.BadFilterNotAllowed,
+                        "Filters may not be specified for nodes of class '{0}'.",
+                        nodeClass);
             }
         }
 
@@ -1089,48 +1062,245 @@ namespace Technosoftware.UaClient
         /// </summary>
         private void UseDefaultEventFilter()
         {
-            EventFilter filter = filter = new EventFilter();
+            EventFilter filter = _ = new EventFilter();
 
-            filter.AddSelectClause(ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.EventId);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.EventType);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.SourceNode);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.SourceName);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Time);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.ReceiveTime);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.LocalTime);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Message);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Severity);
+            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.EventId);
+            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.EventType);
+            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.SourceNode);
+            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.SourceName);
+            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Time);
+            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.ReceiveTime);
+            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.LocalTime);
+            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Message);
+            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Severity);
 
             m_filter = filter;
         }
-        #endregion
 
-        #region Private Fields
-        private Subscription m_subscription;
-        private object m_handle;
-        private string m_displayName;
-        private NodeId m_startNodeId;
         private string m_relativePath;
         private NodeId m_resolvedNodeId;
         private NodeClass m_nodeClass;
-        private uint m_attributeId;
-        private string m_indexRange;
-        private QualifiedName m_encoding;
-        private MonitoringMode m_monitoringMode;
         private int m_samplingInterval;
         private MonitoringFilter m_filter;
         private uint m_queueSize;
         private bool m_discardOldest;
-        private uint m_clientHandle;
-        private MonitoredItemStatus m_status;
-        private bool m_attributesModified;
         private static long s_globalClientHandle;
 
-        private object m_cache = new object();
+        private Lock m_cache = new();
         private MonitoredItemDataCache m_dataCache;
         private MonitoredItemEventCache m_eventCache;
         private IEncodeable m_lastNotification;
         private event EventHandler<MonitoredItemNotificationEventArgs> m_Notification;
-        #endregion
+    }
+
+    /// <summary>
+    /// The event arguments provided when a new notification message arrives.
+    /// </summary>
+    public class MonitoredItemNotificationEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Creates a new instance.
+        /// </summary>
+        internal MonitoredItemNotificationEventArgs(IEncodeable notificationValue)
+        {
+            NotificationValue = notificationValue;
+        }
+
+        /// <summary>
+        /// The new notification.
+        /// </summary>
+        public IEncodeable NotificationValue { get; }
+    }
+
+    /// <summary>
+    /// The delegate used to receive monitored item value notifications.
+    /// </summary>
+    public delegate void MonitoredItemNotificationEventHandler(
+        MonitoredItem monitoredItem,
+        MonitoredItemNotificationEventArgs e);
+
+    /// <summary>
+    /// A client cache which can hold the last monitored items in a queue.
+    /// By default (1) only the last value is cached.
+    /// </summary>
+    public class MonitoredItemDataCache
+    {
+        private const int kDefaultMaxCapacity = 100;
+
+        /// <summary>
+        /// Constructs a cache for a monitored item.
+        /// </summary>
+        public MonitoredItemDataCache(int queueSize = 1)
+        {
+            QueueSize = queueSize;
+            if (queueSize > 1)
+            {
+                m_values = new Queue<DataValue>(Math.Min(queueSize + 1, kDefaultMaxCapacity));
+            }
+            else
+            {
+                QueueSize = 1;
+            }
+        }
+
+        /// <summary>
+        /// The size of the queue to maintain.
+        /// </summary>
+        public int QueueSize { get; private set; }
+
+        /// <summary>
+        /// The last value received from the server.
+        /// </summary>
+        public DataValue LastValue { get; private set; }
+
+        /// <summary>
+        /// Returns all values in the queue.
+        /// </summary>
+        public IList<DataValue> Publish()
+        {
+            DataValue[] values;
+            if (m_values != null)
+            {
+                values = new DataValue[m_values.Count];
+                for (int ii = 0; ii < values.Length; ii++)
+                {
+                    values[ii] = m_values.Dequeue();
+                }
+            }
+            else
+            {
+                values = new DataValue[1];
+                values[0] = LastValue;
+            }
+            return values;
+        }
+
+        /// <summary>
+        /// Saves a notification in the cache.
+        /// </summary>
+        public void OnNotification(MonitoredItemNotification notification)
+        {
+            LastValue = notification.Value;
+            UaClientUtils.EventLog
+                .NotificationValue(notification.ClientHandle, LastValue.WrappedValue);
+
+            if (m_values != null)
+            {
+                m_values.Enqueue(notification.Value);
+                while (m_values.Count > QueueSize)
+                {
+                    m_values.Dequeue();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Changes the queue size.
+        /// </summary>
+        public void SetQueueSize(int queueSize)
+        {
+            if (queueSize == QueueSize)
+            {
+                return;
+            }
+
+            if (queueSize <= 1)
+            {
+                queueSize = 1;
+                m_values = null;
+            }
+            else
+            {
+                m_values ??= new Queue<DataValue>(Math.Min(queueSize + 1, kDefaultMaxCapacity));
+            }
+
+            QueueSize = queueSize;
+
+            while (m_values.Count > QueueSize)
+            {
+                m_values.Dequeue();
+            }
+        }
+
+        private Queue<DataValue> m_values;
+    }
+
+    /// <summary>
+    /// Saves the events received from the server.
+    /// </summary>
+    public class MonitoredItemEventCache
+    {
+        /// <summary>
+        /// Constructs a cache for a monitored item.
+        /// </summary>
+        public MonitoredItemEventCache(int queueSize)
+        {
+            QueueSize = queueSize;
+            m_events = new Queue<EventFieldList>();
+        }
+
+        /// <summary>
+        /// The size of the queue to maintain.
+        /// </summary>
+        public int QueueSize { get; private set; }
+
+        /// <summary>
+        /// The last event received.
+        /// </summary>
+        public EventFieldList LastEvent { get; private set; }
+
+        /// <summary>
+        /// Returns all events in the queue.
+        /// </summary>
+        public IList<EventFieldList> Publish()
+        {
+            var events = new EventFieldList[m_events.Count];
+
+            for (int ii = 0; ii < events.Length; ii++)
+            {
+                events[ii] = m_events.Dequeue();
+            }
+
+            return events;
+        }
+
+        /// <summary>
+        /// Saves a notification in the cache.
+        /// </summary>
+        public void OnNotification(EventFieldList notification)
+        {
+            m_events.Enqueue(notification);
+            LastEvent = notification;
+
+            while (m_events.Count > QueueSize)
+            {
+                m_events.Dequeue();
+            }
+        }
+
+        /// <summary>
+        /// Changes the queue size.
+        /// </summary>
+        public void SetQueueSize(int queueSize)
+        {
+            if (queueSize == QueueSize)
+            {
+                return;
+            }
+
+            if (queueSize < 1)
+            {
+                queueSize = 1;
+            }
+
+            QueueSize = queueSize;
+
+            while (m_events.Count > QueueSize)
+            {
+                m_events.Dequeue();
+            }
+        }
+
+        private readonly Queue<EventFieldList> m_events;
     }
 }

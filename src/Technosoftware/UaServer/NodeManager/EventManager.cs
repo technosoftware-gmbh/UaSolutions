@@ -16,44 +16,35 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
-using System.Security.Principal;
 using Opc.Ua;
-using Technosoftware.UaServer.Subscriptions;
+#endregion Using Directives
 
-#endregion
-
-namespace Technosoftware.UaServer.NodeManager
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// An object that manages all events raised within the server.
     /// </summary>
     public class EventManager : IDisposable
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Creates a new instance of a sampling group.
         /// </summary>
         public EventManager(IUaServerData server, uint maxQueueSize, uint maxDurableQueueSize)
         {
-            if (server == null)
-                throw new ArgumentNullException(nameof(server));
-
-            m_server = server;
+            m_server = server ?? throw new ArgumentNullException(nameof(server));
             m_monitoredItems = [];
             m_maxEventQueueSize = maxQueueSize;
             m_maxDurableEventQueueSize = maxDurableQueueSize;
         }
-        #endregion
 
-        #region IDisposable Members
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -67,7 +58,7 @@ namespace Technosoftware.UaServer.NodeManager
 
                 lock (m_lock)
                 {
-                    monitoredItems = new List<IUaEventMonitoredItem>(m_monitoredItems.Values);
+                    monitoredItems = [.. m_monitoredItems.Values];
                     m_monitoredItems.Clear();
                 }
 
@@ -77,16 +68,17 @@ namespace Technosoftware.UaServer.NodeManager
                 }
             }
         }
-        #endregion
 
-        #region Public Methods
         /// <summary>
         /// Reports an event.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="e"/> is <c>null</c>.</exception>
         public static void ReportEvent(IFilterTarget e, IList<IUaEventMonitoredItem> monitoredItems)
         {
             if (e == null)
+            {
                 throw new ArgumentNullException(nameof(e));
+            }
 
             foreach (IUaEventMonitoredItem monitoredItem in monitoredItems)
             {
@@ -97,7 +89,7 @@ namespace Technosoftware.UaServer.NodeManager
         /// <summary>
         /// Creates a set of monitored items.
         /// </summary>
-        public UaMonitoredItem CreateMonitoredItem(
+        public IUaEventMonitoredItem CreateMonitoredItem(
             UaServerOperationContext context,
             IUaNodeManager nodeManager,
             object handle,
@@ -120,10 +112,12 @@ namespace Technosoftware.UaServer.NodeManager
                 }
 
                 // limit the queue size.
-                uint revisedQueueSize = CalculateRevisedQueueSize(createDurable, itemToCreate.RequestedParameters.QueueSize);
+                uint revisedQueueSize = CalculateRevisedQueueSize(
+                    createDurable,
+                    itemToCreate.RequestedParameters.QueueSize);
 
                 // create the monitored item.
-                UaMonitoredItem monitoredItem = new UaMonitoredItem(
+                IUaEventMonitoredItem monitoredItem = new UaMonitoredItem(
                     m_server,
                     nodeManager,
                     handle,
@@ -149,10 +143,11 @@ namespace Technosoftware.UaServer.NodeManager
                 return monitoredItem;
             }
         }
+
         /// <summary>
-        /// Restore a MonitoredItem after a restart
+        /// Restore a UaMonitoredItem after a restart
         /// </summary>
-        public UaMonitoredItem RestoreMonitoredItem(
+        public IUaEventMonitoredItem RestoreMonitoredItem(
             IUaNodeManager nodeManager,
             object handle,
             IUaStoredMonitoredItem storedMonitoredItem)
@@ -160,10 +155,12 @@ namespace Technosoftware.UaServer.NodeManager
             lock (m_lock)
             {
                 // limit the queue size.
-                storedMonitoredItem.QueueSize = CalculateRevisedQueueSize(storedMonitoredItem.IsDurable, storedMonitoredItem.QueueSize);
+                storedMonitoredItem.QueueSize = CalculateRevisedQueueSize(
+                    storedMonitoredItem.IsDurable,
+                    storedMonitoredItem.QueueSize);
 
                 // create the monitored item.
-                UaMonitoredItem monitoredItem = new UaMonitoredItem(
+                var monitoredItem = new UaMonitoredItem(
                     m_server,
                     nodeManager,
                     handle,
@@ -176,7 +173,9 @@ namespace Technosoftware.UaServer.NodeManager
             }
         }
 
-        //calculates a revised queue size based on the application confiugration limits
+        /// <summary>
+        /// calculates a revised queue size based on the application confiugration limits
+        /// </summary>
         private uint CalculateRevisedQueueSize(bool isDurable, uint queueSize)
         {
             if (queueSize > m_maxEventQueueSize && !isDurable)
@@ -211,7 +210,9 @@ namespace Technosoftware.UaServer.NodeManager
                 }
 
                 // limit the queue size.
-                uint revisedQueueSize = CalculateRevisedQueueSize(monitoredItem.IsDurable, itemToModify.RequestedParameters.QueueSize);
+                uint revisedQueueSize = CalculateRevisedQueueSize(
+                    monitoredItem.IsDurable,
+                    itemToModify.RequestedParameters.QueueSize);
 
                 // modify the attributes.
                 monitoredItem.ModifyAttributes(
@@ -245,17 +246,14 @@ namespace Technosoftware.UaServer.NodeManager
         {
             lock (m_lock)
             {
-                return new List<IUaEventMonitoredItem>(m_monitoredItems.Values);
+                return [.. m_monitoredItems.Values];
             }
         }
-        #endregion
 
-        #region Private Fields
-        private readonly object m_lock = new object();
-        private IUaServerData m_server;
-        private Dictionary<uint, IUaEventMonitoredItem> m_monitoredItems;
-        private uint m_maxEventQueueSize;
-        private uint m_maxDurableEventQueueSize;
-        #endregion
+        private readonly Lock m_lock = new();
+        private readonly IUaServerData m_server;
+        private readonly Dictionary<uint, IUaEventMonitoredItem> m_monitoredItems;
+        private readonly uint m_maxEventQueueSize;
+        private readonly uint m_maxDurableEventQueueSize;
     }
 }
