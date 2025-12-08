@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Legacy/">
+    <Project Path="tutorials/SampleCompany/Simple/SampleClient/SampleCompany.SimpleClient.csproj" />
+    <Project Path="tutorials/SampleCompany/Simple/SampleServer/SampleCompany.SimpleServer.csproj" />
+  </Folder>
+  <Folder Name="/NodeManagers/">
+    <Project Path="tutorials/SampleCompany/NodeManagers/SampleCompany.NodeManagers.csproj" />
+  </Folder>
+  <Project Path="tutorials/SampleCompany/SampleClient/SampleCompany.SampleClient.csproj" />
+  <Project Path="tutorials/SampleCompany/SampleServer/SampleCompany.SampleServer.csproj" />
+</Solution>

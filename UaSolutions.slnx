@@ -1,0 +1,37 @@
+<Solution>
+  <Folder Name="/documentation/">
+    <File Path="documentation/index.md" />
+    <File Path="documentation/Installation.md" />
+  </Folder>
+  <Folder Name="/Libraries/">
+    <Project Path="src/Technosoftware/UaBaseServer/Technosoftware.UaBaseServer.csproj" />
+    <Project Path="src/Technosoftware/UaClient/Technosoftware.UaClient.csproj" />
+    <Project Path="src/Technosoftware/UaServer/Technosoftware.UaServer.csproj" />
+  </Folder>
+  <Folder Name="/nuget/">
+    <File Path="nuget/Technosoftware.UaSolutions.UaBaseServer.nuspec" />
+    <File Path="nuget/Technosoftware.UaSolutions.UaClient.nuspec" />
+    <File Path="nuget/Technosoftware.UaSolutions.UaConfiguration.nuspec" />
+    <File Path="nuget/Technosoftware.UaSolutions.UaPubSub.nuspec" />
+    <File Path="nuget/Technosoftware.UaSolutions.UaServer.nuspec" />
+    <File Path="nuget/Technosoftware.UaSolutions.UaStandardServer.nuspec" />
+  </Folder>
+  <Folder Name="/Reference Applications/">
+    <Project Path="reference/SampleCompany/NodeManagers/SampleCompany.NodeManagers.csproj" />
+    <Project Path="reference/SampleCompany/ReferenceClient/SampleCompany.ReferenceClient.csproj" />
+    <Project Path="reference/SampleCompany/ReferenceServer/SampleCompany.ReferenceServer.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="common.props" />
+    <File Path="Directory.Build.props" />
+    <File Path="README.md" />
+    <File Path="targets.props" />
+    <File Path="version.json" />
+    <File Path="version.props" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Technosoftware.UaClient.Tests/Technosoftware.UaClient.Tests.csproj" />
+    <Project Path="Tests/Technosoftware.UaServer.Tests/Technosoftware.UaServer.Tests.csproj" />
+  </Folder>
+</Solution>
