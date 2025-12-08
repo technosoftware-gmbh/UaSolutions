@@ -1,7 +1,8 @@
 <Project>
   <!-- 
     Supported frameworks (included in NuGet packages):
-       .NET Core 9 until 12-MAY-2026
+       .NET Core 10 until 14-NOV-2028 (coming with version 5.0.0)
+       .NET Core 9 until 10-NOV-2026
        .NET Core 8 until 10-NOV-2026
        .NET 4.8
        .NET 4.7.2
@@ -21,32 +22,126 @@
        .NET 4.6.1 is end of life since 26-APR-2022. No support possible anymore.
        .NET Core 7 until 14-MAY-2024. No support possible anymore.
   -->
+  <!-- Suppress warnings for testing only. Rather use supported libraries only. -->
+  <!--
+  <PropertyGroup>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+  </PropertyGroup>
+  -->
+  <!--
+  A custom target can be used to test a future or legacy target.
+  A build with all custom targets which are not part of a regular build
+  is scheduled once a week in the DevOps build pipeline.
+  Uncomment the following lines to test a custom test target
+  supported values: netstandard2.0, netstandard2.1, net472, net48, net8.0, net9.0, net10.0
+   -->
+  <!--
+  <PropertyGroup>
+    <CustomTestTarget>netstandard2.1</CustomTestTarget>
+  </PropertyGroup>
+  -->
   <Choose>
-    <!-- Visual Studio 2022 -->
-    <When  Condition="'$(VisualStudioVersion)' == '17.0'">
+    <!-- Note: to test targets which support deprecated platforms,
+         set the CustomTestTarget environment variable accordingly -->
+    <When Condition="'$(CustomTestTarget)' == 'net472'">
       <PropertyGroup>
         <AnalysisLevel>preview</AnalysisLevel>
         <AnalysisMode>all</AnalysisMode>
         <AnalysisModeStyle>default</AnalysisModeStyle>
-        <AppTargetFrameworks>net9.0;net8.0;net48</AppTargetFrameworks>
-        <AppTargetFramework>net9.0</AppTargetFramework>
-        <TestsTargetFrameworks>net48;net9.0</TestsTargetFrameworks>
-        <LibTargetFrameworks>net472;net48;net8.0;net9.0</LibTargetFrameworks>
-        <LibCoreTargetFrameworks>net472;net48;net8.0;net9.0</LibCoreTargetFrameworks>
-        <LibxTargetFrameworks>net472;net48;net8.0;net9.0</LibxTargetFrameworks>
-        <HttpsTargetFrameworks>net472;net48;net8.0;net9.0</HttpsTargetFrameworks>
+        <AppTargetFrameworks>net472</AppTargetFrameworks>
+        <AppTargetFramework>net472</AppTargetFramework>
+        <TestsTargetFrameworks>net472</TestsTargetFrameworks>
+        <LibTargetFrameworks>net472</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net472</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net472</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net472</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net472</HttpsTargetFrameworks>
       </PropertyGroup>
     </When>
-    <!-- Visual Studio 2017 and earlier, support only .NET Framework 4.8 because .NET Core 2.x is end of life. -->
-    <Otherwise>
+    <When Condition="'$(CustomTestTarget)' == 'netstandard2.0'">
+      <PropertyGroup>
+        <NetStandardTests>true</NetStandardTests>
+        <AppTargetFrameworks>net48</AppTargetFrameworks>
+        <AppTargetFramework>net48</AppTargetFramework>
+        <TestsTargetFrameworks>net48</TestsTargetFrameworks>
+        <LibTargetFrameworks>net48</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net48</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>netstandard2.0</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net48</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net48</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(CustomTestTarget)' == 'netstandard2.1'">
+      <PropertyGroup>
+        <NetStandardTests>true</NetStandardTests>
+        <AppTargetFrameworks>net8.0</AppTargetFrameworks>
+        <AppTargetFramework>net8.0</AppTargetFramework>
+        <TestsTargetFrameworks>net8.0</TestsTargetFrameworks>
+        <LibTargetFrameworks>netstandard2.1</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>netstandard2.1</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>netstandard2.1</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>netstandard2.1</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>netstandard2.1</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(CustomTestTarget)' == 'net48'">
       <PropertyGroup>
         <AppTargetFrameworks>net48</AppTargetFrameworks>
         <AppTargetFramework>net48</AppTargetFramework>
         <TestsTargetFrameworks>net48</TestsTargetFrameworks>
         <LibTargetFrameworks>net48</LibTargetFrameworks>
         <LibCoreTargetFrameworks>net48</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net48</LibTypesTargetFrameworks>
         <LibxTargetFrameworks>net48</LibxTargetFrameworks>
         <HttpsTargetFrameworks>net48</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(CustomTestTarget)' == 'net8.0'">
+      <PropertyGroup>
+        <AppTargetFrameworks>net8.0</AppTargetFrameworks>
+        <AppTargetFramework>net8.0</AppTargetFramework>
+        <TestsTargetFrameworks>net8.0</TestsTargetFrameworks>
+        <LibTargetFrameworks>net8.0</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net8.0</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net8.0</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net8.0</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net8.0</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(CustomTestTarget)' == 'net9.0'">
+      <PropertyGroup>
+        <AppTargetFrameworks>net9.0</AppTargetFrameworks>
+        <AppTargetFramework>net9.0</AppTargetFramework>
+        <TestsTargetFrameworks>net9.0</TestsTargetFrameworks>
+        <LibTargetFrameworks>net9.0</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net9.0</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net9.0</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net9.0</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net9.0</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(CustomTestTarget)' == 'net10.0'">
+      <PropertyGroup>
+        <AppTargetFrameworks>net10.0</AppTargetFrameworks>
+        <AppTargetFramework>net10.0</AppTargetFramework>
+        <TestsTargetFrameworks>net10.0</TestsTargetFrameworks>
+        <LibTargetFrameworks>net10.0</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net10.0</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net10.0</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net10.0</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net10.0</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <AppTargetFrameworks>net9.0;net8.0</AppTargetFrameworks>
+        <AppTargetFramework>net9.0</AppTargetFramework>
+        <TestsTargetFrameworks>net8.0;net9.0</TestsTargetFrameworks>
+        <LibTargetFrameworks>net8.0;net9.0</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net8.0;net9.0</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net8.0;net9.0</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net8.0;net9.0</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net8.0;net9.0</HttpsTargetFrameworks>
       </PropertyGroup>
     </Otherwise>
   </Choose>
