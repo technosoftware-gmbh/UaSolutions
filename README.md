@@ -12,12 +12,23 @@ The OPC UA Server NET offers a fast and easy access to the OPC Unified Architect
  
 ## Supported Frameworks
 
+### V5.0 Develeopment Version (DEV)
+ * .NET 10.0, .NET 9.0, .NET 8.0
+
+### V4.2 Mainline Version (ML)
+ * .NET 9.0, .NET 8.0
+ * .NET 4.8,.NET 4.7.2
+ 
+### V3.4 Long Term Support (LTS)
  * .NET 9.0, .NET 8.0
  * .NET 4.8,.NET 4.7.2
 
 # Getting Started / Online Help
+ 
+We provide an online help for the following versions: 
 
-We provide an online help for the current version: [OPC UA Solutions NET Online Help](https://technosoftware.com/help/UaSolutions/42/)
+ * [V4.2 Mainline Version (ML)](https://technosoftware.com/help/UaSolutions/42/)
+ * [V3.4 Long Term Support (LTS)](https://technosoftware.com/help/UaSolutions/34/)
 
 ## Workshop
 
@@ -36,14 +47,12 @@ The evaluation allows a smooth and efficient development of OPC UA Client and OP
 
 Without an evaluation license the run-time of an application using the solutions provided here is restricted to 5 miniutes. 
 
-An evaluation license is available from:
-
- * [UA Solutions Evaluation](https://technosoftware.com/product/ua-solutions/)
+You can request an evaluation license by sending an email to [info@technosoftware.com](mailto:info@technosoftware.com).
 
 Included in the evaluation are:
 
- * includes .NET 9.0, .NET 8.0, .NET 4.8, .NET 4.7.2 support.
- * Evaluation is bound to a specific version, e.g. 4.0.4 and can be used for 90 days. The run-time is restricted to 2 hours per application start.
+ * includes the license for the Mainline Version
+ * Evaluation is bound to a specific version, e.g. 4.2.0 and can be used for 90 days. The run-time is restricted to 2 hours per application start.
  * Questions, Change Requests and Issues can be submitted [here](https://github.com/technosoftware-gmbh/UaSolutions/issues) free of charge.
 
 ### Support Subscriptions
@@ -52,7 +61,7 @@ Ideal for a corporation and a user of Technosoftware GmbH’s solutions on produ
 
 Included in the support subscription:
 
- * includes .NET 9.0, .NET 8.0, .NET 4.8, .NET 4.7.2 support.
+ * includes support for the the Mainline Version.
  * Any application developed with the solutions can be delivered to an unlimited number of customers (no royalties)
  * The license is bound to a specific main version, e.g. 4.
  * All Updates and fixes during the support subscription period are delivered here free of charge, if/when they are made available. Also updates to new main versions, e.g. 5.
@@ -63,7 +72,7 @@ Included in the support subscription:
 
 By purchasing support, you agree to our [Support Services Agreement](https://technosoftware.com/documents/Support_Services_Agreement.pdf).
 
-The Support Subscription is available [here](https://technosoftware.com/product/opc-ua-support-subscription/).
+Please check our [price list](https://technosoftware.com/documents/TechnosoftwareGmbH_PriceList.pdf) for further details.
 
 # Product Lifecycle
 
@@ -75,7 +84,7 @@ Version 3.4 entered the long term support phase on 12-SEP-2025. Therefore all ve
 
 The Mainline is the most current version of a product. It’s the version we actively develop, enhance, and maintain. All new features, improvements, and components are added here. As a new customer, you’ll always receive the latest mainline version. Ordering of one of the following products/services is always for the latest mainline version:
 
- * [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/)
+ * [Price list](https://technosoftware.com/documents/TechnosoftwareGmbH_PriceList.pdf)
 
 ## Long Term Support (LTS)
 
@@ -87,16 +96,16 @@ During the LTS phase:
  * Bug fixes are provided if needed
  * The standard LTS period lasts one year (365 days) starting from the release of the next mainline version
 	
-This gives customers with a valid [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/) at least one year of transition time to update your application.
+This gives customers with a valid OPC UA Support Subscription at least one year of transition time to update your application.
 
-Customers with a valid [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/) at the time a version enters the LTS phase can request support and/or bug fixes for the LTS version. All other customers needs to upgrade to the MLS first. 
-New purchases of a [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/) are always for the MLS.
+Customers with a valid OPC UA Support Subscription at the time a version enters the LTS phase can request support and/or bug fixes for the LTS version. All other customers needs to upgrade to the MLS first. 
+New purchases of a OPC UA Support Subscription are always for the MLS.
 
 ## End of Life (EOL)
 
 When a product’s LTS period ends, it enters End of Life (EOL). From that point on, no further updates, fixes, or support are provided.
 
-If your application relies on a version that is nearing EOL, we strongly recommend upgrading to the latest mainline release. If upgrading is not possible, you may choose the source code edition of the [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/) product, which allows you to maintain and fix it yourself.
+If your application relies on a version that is nearing EOL, we strongly recommend upgrading to the latest mainline release. If upgrading is not possible, you may choose the source code edition of the OPC UA Support Subscription product, which allows you to maintain and fix it yourself.
 
 ## Build Status
 

@@ -8,7 +8,7 @@
   "publicReleaseRefSpec": [
     "^refs/heads/main$",
     "^refs/heads/master$",
-    "^refs/heads/develop/",
+    "^refs/heads/dev/",
     "^refs/heads/release/\\d+\\.\\d+\\.\\d+"
   ],
   "cloudBuild": {
