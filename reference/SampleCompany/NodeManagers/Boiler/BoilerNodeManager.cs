@@ -1,0 +1,275 @@
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using Opc.Ua;
+using SampleCompany.NodeManagers.SampleNodeManager;
+using Technosoftware.UaServer;
+#endregion Using Directives
+
+namespace SampleCompany.NodeManagers.Boiler
+{
+    /// <summary>
+    /// The factory class to create the boiler node manager.
+    /// </summary>
+    public class BoilerNodeManagerFactory : IUaNodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public IUaNodeManager Create(IUaServerData server, ApplicationConfiguration configuration)
+        {
+            return new BoilerNodeManager(server, configuration, [.. NamespacesUris]);
+        }
+
+        /// <inheritdoc/>
+        public StringCollection NamespacesUris
+            => [Namespaces.Boiler, Namespaces.Boiler + "Instance"];
+    }
+
+    /// <summary>
+    /// A node manager for the boiler exposed by the server.
+    /// </summary>
+    public class BoilerNodeManager : SampleCompany.NodeManagers.SampleNodeManager.SampleNodeManager
+    {
+        /// <summary>
+        /// Initializes the node manager.
+        /// </summary>
+        public BoilerNodeManager(
+            IUaServerData server,
+            ApplicationConfiguration configuration,
+            string[] namespaceUris)
+            : base(server)
+        {
+            NamespaceUris = namespaceUris;
+
+            Server.NamespaceUris.GetIndexOrAppend(namespaceUris[0]);
+            m_namespaceIndex = Server.NamespaceUris.GetIndexOrAppend(namespaceUris[1]);
+
+            AddEncodeableNodeManagerTypes(
+                typeof(BoilerNodeManager).Assembly,
+                typeof(BoilerNodeManager).Namespace);
+
+            m_lastUsedId = 0;
+            m_boilers = [];
+        }
+
+        /// <summary>
+        /// Creates the NodeId for the specified node.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="node">The node.</param>
+        /// <returns>The new NodeId.</returns>
+        public override NodeId Create(ISystemContext context, NodeState node)
+        {
+            uint id = Utils.IncrementIdentifier(ref m_lastUsedId);
+            return new NodeId(id, m_namespaceIndex);
+        }
+
+        /// <summary>
+        /// Does any initialization required before the address space can be used.
+        /// </summary>
+        /// <remarks>
+        /// The externalReferences is an out parameter that allows the node manager to link to nodes
+        /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
+        /// should have a reference to the root folder node(s) exposed by this node manager.
+        /// </remarks>
+        public override void CreateAddressSpace(
+            IDictionary<NodeId, IList<IReference>> externalReferences)
+        {
+            lock (Lock)
+            {
+                base.CreateAddressSpace(externalReferences);
+                CreateBoiler(SystemContext, 2);
+            }
+        }
+
+        /// <summary>
+        /// Creates a boiler and adds it to the address space.
+        /// </summary>
+        /// <param name="context">The context to use.</param>
+        /// <param name="unitNumber">The unit number for the boiler.</param>
+        private void CreateBoiler(ISystemContext context, int unitNumber)
+        {
+            var boiler = new BoilerState(null);
+
+            string name = Utils.Format("Boiler #{0}", unitNumber);
+
+            boiler.Create(context, null, new QualifiedName(name, m_namespaceIndex), null, true);
+
+            NodeState folder = FindPredefinedNode(
+                ExpandedNodeId.ToNodeId(ObjectIds.Boilers, Server.NamespaceUris),
+                typeof(NodeState));
+
+            folder.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, false, boiler.NodeId);
+            boiler.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, folder.NodeId);
+
+            string unitLabel = Utils.Format("{0}0", unitNumber);
+
+            UpdateDisplayName(boiler.InputPipe, unitLabel);
+            UpdateDisplayName(boiler.Drum, unitLabel);
+            UpdateDisplayName(boiler.OutputPipe, unitLabel);
+            UpdateDisplayName(boiler.LevelController, unitLabel);
+            UpdateDisplayName(boiler.FlowController, unitLabel);
+            UpdateDisplayName(boiler.CustomController, unitLabel);
+
+            m_boilers.Add(boiler);
+
+            AddPredefinedNode(context, boiler);
+
+            // Autostart boiler simulation state machine
+            MethodState start = boiler.Simulation.Start;
+            IList<Variant> inputArguments = [];
+            IList<Variant> outputArguments = [];
+            var errors = new List<ServiceResult>();
+            start.Call(context, boiler.NodeId, inputArguments, errors, outputArguments);
+        }
+
+        /// <summary>
+        /// Updates the display name for an instance with the unit label name.
+        /// </summary>
+        /// <param name="instance">The instance to update.</param>
+        /// <param name="unitLabel">The label to apply.</param>
+        /// <remarks>This method assumes the DisplayName has the form NameX001 where X0 is the unit label placeholder.</remarks>
+        private static void UpdateDisplayName(BaseInstanceState instance, string unitLabel)
+        {
+            LocalizedText displayName = instance.DisplayName;
+
+            if (displayName != null)
+            {
+                string text = displayName.Text;
+
+                if (text != null)
+                {
+                    text = text.Replace("X0", unitLabel, StringComparison.Ordinal);
+                }
+
+                displayName = new LocalizedText(displayName.Locale, text);
+            }
+
+            instance.DisplayName = displayName;
+        }
+
+        /// <summary>
+        /// Loads a node set from a file or resource and adds them to the set of predefined nodes.
+        /// </summary>
+        protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
+        {
+            var predefinedNodes = new NodeStateCollection();
+            predefinedNodes.LoadFromBinaryResource(
+                context,
+                "SampleCompany.NodeManagers.Boiler.Generated.SampleCompany.NodeManagers.Boiler.PredefinedNodes.uanodes",
+                GetType().GetTypeInfo().Assembly,
+                true);
+            return predefinedNodes;
+        }
+
+        /// <summary>
+        /// Replaces the generic node with a node specific to the model.
+        /// </summary>
+        protected override NodeState AddBehaviourToPredefinedNode(
+            ISystemContext context,
+            NodeState predefinedNode)
+        {
+            if (predefinedNode is not BaseObjectState passiveNode)
+            {
+                return predefinedNode;
+            }
+
+            NodeId typeId = passiveNode.TypeDefinitionId;
+
+            if (!IsNodeIdInNamespace(typeId) || typeId.IdType != IdType.Numeric)
+            {
+                return predefinedNode;
+            }
+
+            switch ((uint)typeId.Identifier)
+            {
+                case ObjectTypes.BoilerType:
+                    if (passiveNode is BoilerState)
+                    {
+                        break;
+                    }
+
+                    var activeNode = new BoilerState(passiveNode.Parent);
+                    activeNode.Create(context, passiveNode);
+
+                    // replace the node in the parent.
+                    passiveNode.Parent?.ReplaceChild(context, activeNode);
+
+                    // Autostart boiler simulation state machine
+                    MethodState start = activeNode.Simulation.Start;
+                    IList<Variant> inputArguments = [];
+                    IList<Variant> outputArguments = [];
+                    var errors = new List<ServiceResult>();
+                    start.Call(context, activeNode.NodeId, inputArguments, errors, outputArguments);
+
+                    return activeNode;
+            }
+
+            return predefinedNode;
+        }
+
+        /// <summary>
+        /// Does any processing after a monitored item is created.
+        /// </summary>
+        protected override void OnCreateMonitoredItem(
+            ISystemContext systemContext,
+            MonitoredItemCreateRequest itemToCreate,
+            MonitoredNode monitoredNode,
+            DataChangeMonitoredItem monitoredItem)
+        {
+            // TBD
+        }
+
+        /// <summary>
+        /// Does any processing after a monitored item is created.
+        /// </summary>
+        protected override void OnModifyMonitoredItem(
+            ISystemContext systemContext,
+            MonitoredItemModifyRequest itemToModify,
+            MonitoredNode monitoredNode,
+            DataChangeMonitoredItem monitoredItem,
+            double previousSamplingInterval)
+        {
+            // TBD
+        }
+
+        /// <summary>
+        /// Does any processing after a monitored item is deleted.
+        /// </summary>
+        protected override void OnDeleteMonitoredItem(
+            ISystemContext systemContext,
+            MonitoredNode monitoredNode,
+            DataChangeMonitoredItem monitoredItem)
+        {
+            // TBD
+        }
+
+        /// <summary>
+        /// Does any processing after a monitored item is created.
+        /// </summary>
+        protected override void OnSetMonitoringMode(
+            ISystemContext systemContext,
+            MonitoredNode monitoredNode,
+            DataChangeMonitoredItem monitoredItem,
+            MonitoringMode previousMode,
+            MonitoringMode currentMode)
+        {
+            // TBD
+        }
+
+        private readonly ushort m_namespaceIndex;
+        private uint m_lastUsedId;
+        private readonly List<BoilerState> m_boilers;
+    }
+}
