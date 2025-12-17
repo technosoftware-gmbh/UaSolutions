@@ -38,7 +38,7 @@ jobs:
       DOTNET_VERSION: ${{ matrix.dotnet-version }}
       CONFIGURATION:  ${{ matrix.configuration }}
       CSPROJ: ${{ matrix.csproj }}
-      CSPROJECT: "./Tests/Technosoftware.${{ matrix.csproj }}.Tests/Technosoftware.${{ matrix.csproj }}.Tests.csproj"
+      CSPROJECT: "./Tests/Technosoftware/${{ matrix.csproj }}.Tests/Technosoftware.${{ matrix.csproj }}.Tests.csproj"
       TESTRESULTS: "TestResults-${{matrix.csproj}}-${{matrix.os}}-${{matrix.framework}}-${{matrix.configuration}}"
       
     steps:
