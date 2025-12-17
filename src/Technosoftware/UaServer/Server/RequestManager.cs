@@ -1,52 +1,56 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Threading;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 
-using Technosoftware.UaServer.Diagnostics;
-#endregion
-
-namespace Technosoftware.UaServer.Server
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// An object that manages requests from within the server.
     /// </summary>
     public class RequestManager : IDisposable
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initilizes the manager.
         /// </summary>
-        /// <param name="server"></param>
         public RequestManager(IUaServerData server)
         {
-            if (server == null)
-                throw new ArgumentNullException(nameof(server));
-
-            m_server = server;
+            m_server = server ?? throw new ArgumentNullException(nameof(server));
+            m_logger = server.Telemetry.CreateLogger<RequestManager>();
             m_requests = [];
             m_requestTimer = null;
         }
-        #endregion
 
-        #region IDisposable Members
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
@@ -59,7 +63,6 @@ namespace Technosoftware.UaServer.Server
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", MessageId = "m_requestTimer")]
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -68,7 +71,7 @@ namespace Technosoftware.UaServer.Server
 
                 lock (m_requestsLock)
                 {
-                    operations = new List<UaServerOperationContext>(m_requests.Values);
+                    operations = [.. m_requests.Values];
                     m_requests.Clear();
                 }
 
@@ -81,13 +84,11 @@ namespace Technosoftware.UaServer.Server
                 m_requestTimer = null;
             }
         }
-        #endregion
 
-        #region Public Members
         /// <summary>
         /// Raised when the status of an outstanding request changes.
         /// </summary>
-        public event EventHandler<RequestCancelledEventArgs> RequestCancelledEvent
+        public event RequestCancelledEventHandler RequestCancelled
         {
             add
             {
@@ -96,7 +97,6 @@ namespace Technosoftware.UaServer.Server
                     m_RequestCancelled += value;
                 }
             }
-
             remove
             {
                 lock (m_lock)
@@ -109,11 +109,13 @@ namespace Technosoftware.UaServer.Server
         /// <summary>
         /// Called when a new request arrives.
         /// </summary>
-        /// <param name="context"></param>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public void RequestReceived(UaServerOperationContext context)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
 
             lock (m_requestsLock)
             {
@@ -129,10 +131,13 @@ namespace Technosoftware.UaServer.Server
         /// <summary>
         /// Called when a request completes (normally or abnormally).
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public void RequestCompleted(UaServerOperationContext context)
         {
             if (context == null)
+            {
                 throw new ArgumentNullException(nameof(context));
+            }
 
             lock (m_requestsLock)
             {
@@ -159,7 +164,11 @@ namespace Technosoftware.UaServer.Server
                         cancelledRequests.Add(request.RequestId);
 
                         // report the AuditCancelEventType
-                        m_server.ReportAuditCancelEvent(request.Session.Id, requestHandle, StatusCodes.Good);
+                        m_server.ReportAuditCancelEvent(
+                            request.Session.Id,
+                            requestHandle,
+                            StatusCodes.Good,
+                            m_logger);
                     }
                 }
             }
@@ -176,27 +185,26 @@ namespace Technosoftware.UaServer.Server
                     {
                         try
                         {
-                            m_RequestCancelled(this,
-                                new RequestCancelledEventArgs(cancelledRequests[ii],
-                                    StatusCodes.BadRequestCancelledByRequest));
+                            m_RequestCancelled(
+                                this,
+                                cancelledRequests[ii],
+                                StatusCodes.BadRequestCancelledByRequest);
                         }
                         catch (Exception e)
                         {
-                            Utils.LogError(e, "Unexpected error reporting RequestCancelled event.");
+                            m_logger.LogError(e, "Unexpected error reporting RequestCancelled event.");
                         }
                     }
                 }
             }
         }
-        #endregion
 
-        #region Private Methods
         /// <summary>
         /// Checks for any expired requests and changes their status.
         /// </summary>
         private void OnTimerExpired(object state)
         {
-            List<uint> expiredRequests = [];
+            var expiredRequests = new List<uint>();
 
             // flag requests as expired.
             lock (m_requestsLock)
@@ -234,27 +242,31 @@ namespace Technosoftware.UaServer.Server
                     {
                         try
                         {
-                            m_RequestCancelled(this,
-                                new RequestCancelledEventArgs(expiredRequests[ii], StatusCodes.BadTimeout));
+                            m_RequestCancelled(this, expiredRequests[ii], StatusCodes.BadTimeout);
                         }
                         catch (Exception e)
                         {
-                            Utils.LogError(e, "Unexpected error reporting RequestCancelled event.");
+                            m_logger.LogError(e, "Unexpected error reporting RequestCancelled event.");
                         }
                     }
                 }
             }
         }
-        #endregion
 
-        #region Private Fields
-        private readonly object m_lock = new object();
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
-        private IUaServerData m_server;
-        private Dictionary<uint, UaServerOperationContext> m_requests;
-        private readonly object m_requestsLock = new object();
+        private readonly Lock m_lock = new();
+        private readonly ILogger m_logger;
+        private readonly IUaServerData m_server;
+        private readonly Dictionary<uint, UaServerOperationContext> m_requests;
+        private readonly Lock m_requestsLock = new();
         private Timer m_requestTimer;
-        private event EventHandler<RequestCancelledEventArgs> m_RequestCancelled;
-        #endregion
+        private event RequestCancelledEventHandler m_RequestCancelled;
     }
+
+    /// <summary>
+    /// Called when a request is cancelled.
+    /// </summary>
+    public delegate void RequestCancelledEventHandler(
+        RequestManager source,
+        uint requestId,
+        StatusCode statusCode);
 }

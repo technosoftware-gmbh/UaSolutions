@@ -20,48 +20,61 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-using Technosoftware.UaServer.Configuration;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Diagnostics
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// A node manager the diagnostic information exposed by the server.
     /// </summary>
     public class DiagnosticsNodeManager : UaStandardNodeManager
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initializes the node manager.
         /// </summary>
         public DiagnosticsNodeManager(
             IUaServerData server,
             ApplicationConfiguration configuration)
-        :
-            base(server, configuration)
+            : this(
+                  server,
+                  configuration,
+                  server.Telemetry.CreateLogger<DiagnosticsNodeManager>())
         {
-            this.AliasRoot = "Core";
+        }
 
-            var namespaceUris = new string[2];
-            namespaceUris[0] = Opc.Ua.Namespaces.OpcUa;
-            namespaceUris[1] = Opc.Ua.Namespaces.OpcUa + "Diagnostics";
+        /// <summary>
+        /// Initializes the node manager.
+        /// </summary>
+        public DiagnosticsNodeManager(
+            IUaServerData server,
+            ApplicationConfiguration configuration,
+            ILogger logger)
+            : base(server, configuration, logger)
+        {
+            AliasRoot = "Core";
+
+            string[] namespaceUris =
+            [
+                Opc.Ua.Namespaces.OpcUa,
+                Opc.Ua.Namespaces.OpcUa + "Diagnostics"
+            ];
             SetNamespaces(namespaceUris);
 
             m_namespaceIndex = ServerData.NamespaceUris.GetIndexOrAppend(namespaceUris[1]);
-            m_lastUsedId = (long)(DateTime.UtcNow.Ticks & 0x7FFFFFFF);
+            m_lastUsedId = (uint)DateTime.UtcNow.Ticks & 0x7FFFFFFF;
             m_sessions = [];
             m_subscriptions = [];
-            m_diagnosticsEnabled = true;
+            DiagnosticsEnabled = true;
             m_doScanBusy = false;
             m_sampledItems = [];
             m_minimumSamplingInterval = 100;
-            m_durableSubscriptionsEnabled = configuration.ServerConfiguration?.DurableSubscriptionsEnabled ?? false;
+            m_durableSubscriptionsEnabled = configuration.ServerConfiguration?
+                .DurableSubscriptionsEnabled ??
+                false;
         }
-        #endregion
 
-        #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
@@ -81,9 +94,7 @@ namespace Technosoftware.UaServer.Diagnostics
 
             base.Dispose(disposing);
         }
-        #endregion
 
-        #region INodeIdFactory Members
         /// <summary>
         /// Creates the NodeId for the specified node.
         /// </summary>
@@ -95,25 +106,24 @@ namespace Technosoftware.UaServer.Diagnostics
             uint id = Utils.IncrementIdentifier(ref m_lastUsedId);
             return new NodeId(id, m_namespaceIndex);
         }
-        #endregion
 
-        #region IUaNodeManager Members
         /// <summary>
         /// Does any initialization required before the address space can be used.
         /// </summary>
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        public override void CreateAddressSpace(
+            IDictionary<NodeId, IList<IReference>> externalReferences)
         {
             lock (Lock)
             {
                 base.CreateAddressSpace(externalReferences);
 
                 // sampling interval diagnostics not supported by the server.
-                ServerDiagnosticsState serverDiagnosticsNode = (ServerDiagnosticsState)FindPredefinedNode(
+                var serverDiagnosticsNode = (ServerDiagnosticsState)FindPredefinedNode(
                     ObjectIds.Server_ServerDiagnostics,
                     typeof(ServerDiagnosticsState));
 
@@ -125,7 +135,9 @@ namespace Technosoftware.UaServer.Diagnostics
 
                     if (samplingDiagnosticsArrayNode != null)
                     {
-                        DeleteNode(SystemContext, VariableIds.Server_ServerDiagnostics_SamplingIntervalDiagnosticsArray);
+                        DeleteNode(
+                            SystemContext,
+                            VariableIds.Server_ServerDiagnostics_SamplingIntervalDiagnosticsArray);
                         serverDiagnosticsNode.SamplingIntervalDiagnosticsArray = null;
                     }
                 }
@@ -136,7 +148,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 ServerData.CoreNodeManager.ImportNodes(SystemContext, PredefinedNodes.Values, true);
 
                 // hook up the server GetMonitoredItems method.
-                GetMonitoredItemsMethodState getMonitoredItems = (GetMonitoredItemsMethodState)FindPredefinedNode(
+                var getMonitoredItems = (GetMonitoredItemsMethodState)FindPredefinedNode(
                     MethodIds.Server_GetMonitoredItems,
                     typeof(GetMonitoredItemsMethodState));
 
@@ -146,13 +158,13 @@ namespace Technosoftware.UaServer.Diagnostics
                 }
 
                 // set ArrayDimensions for GetMonitoredItems.OutputArguments.Value.
-                PropertyState getMonitoredItemsOutputArguments = (PropertyState)FindPredefinedNode(
+                var getMonitoredItemsOutputArguments = (PropertyState)FindPredefinedNode(
                     VariableIds.Server_GetMonitoredItems_OutputArguments,
                     typeof(PropertyState));
 
                 if (getMonitoredItemsOutputArguments != null)
                 {
-                    Argument[] outputArgumentsValue = (Argument[])getMonitoredItemsOutputArguments.Value;
+                    var outputArgumentsValue = (Argument[])getMonitoredItemsOutputArguments.Value;
 
                     if (outputArgumentsValue != null)
                     {
@@ -168,7 +180,8 @@ namespace Technosoftware.UaServer.Diagnostics
                 if (m_durableSubscriptionsEnabled)
                 {
                     // hook up the server SetSubscriptionDurable method.
-                    SetSubscriptionDurableMethodState setSubscriptionDurable = (SetSubscriptionDurableMethodState)FindPredefinedNode(
+                    var setSubscriptionDurable
+                        = (SetSubscriptionDurableMethodState)FindPredefinedNode(
                         MethodIds.Server_SetSubscriptionDurable,
                         typeof(SetSubscriptionDurableMethodState));
 
@@ -180,7 +193,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 else
                 {
                     // Subscription Durable mode not supported by the server.
-                    ServerObjectState serverObject = (ServerObjectState)FindPredefinedNode(
+                    var serverObject = (ServerObjectState)FindPredefinedNode(
                         ObjectIds.Server,
                         typeof(ServerObjectState));
 
@@ -199,7 +212,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 }
                 // hookup server ResendData method.
 
-                ResendDataMethodState resendData = (ResendDataMethodState)FindPredefinedNode(
+                var resendData = (ResendDataMethodState)FindPredefinedNode(
                     MethodIds.Server_ResendData,
                     typeof(ResendDataMethodState));
 
@@ -213,7 +226,6 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <summary>
         /// Called when a client sets a subscription as durable.
         /// </summary>
-
         public ServiceResult OnSetSubscriptionDurable(
             ISystemContext context,
             MethodState method,
@@ -222,7 +234,11 @@ namespace Technosoftware.UaServer.Diagnostics
             uint lifetimeInHours,
             ref uint revisedLifetimeInHours)
         {
-            return ServerData.SubscriptionManager.SetSubscriptionDurable(context, subscriptionId, lifetimeInHours, out revisedLifetimeInHours);
+            return ServerData.SubscriptionManager.SetSubscriptionDurable(
+                context,
+                subscriptionId,
+                lifetimeInHours,
+                out revisedLifetimeInHours);
         }
 
         /// <summary>
@@ -246,20 +262,20 @@ namespace Technosoftware.UaServer.Diagnostics
                 return StatusCodes.BadInvalidArgument;
             }
 
-            uint[] serverHandles = null;
-            uint[] clientHandles = null;
-
-            foreach (Subscriptions.Subscription subscription in ServerData.SubscriptionManager.GetSubscriptions())
+            foreach (IUaSubscription subscription in ServerData.SubscriptionManager.GetSubscriptions())
             {
                 if (subscription.Id == subscriptionId)
                 {
-                    if (subscription.SessionId != context.SessionId)
+                    if (context is ISessionSystemContext session &&
+                        subscription.SessionId != session.SessionId)
                     {
                         // user tries to access subscription of different session
                         return StatusCodes.BadUserAccessDenied;
                     }
 
-                    subscription.GetMonitoredItems(out serverHandles, out clientHandles);
+                    subscription.GetMonitoredItems(
+                        out uint[] serverHandles,
+                        out uint[] clientHandles);
 
                     outputArguments[0] = serverHandles;
                     outputArguments[1] = clientHandles;
@@ -292,17 +308,18 @@ namespace Technosoftware.UaServer.Diagnostics
                 return StatusCodes.BadInvalidArgument;
             }
 
-            foreach (Subscriptions.Subscription subscription in ServerData.SubscriptionManager.GetSubscriptions())
+            foreach (IUaSubscription subscription in ServerData.SubscriptionManager.GetSubscriptions())
             {
                 if (subscription.Id == subscriptionId)
                 {
-                    if (subscription.SessionId != context.SessionId)
+                    if (context is not UaServerContext session ||
+                        subscription.SessionId != session.SessionId)
                     {
                         // user tries to access subscription of different session
                         return StatusCodes.BadUserAccessDenied;
                     }
 
-                    subscription.ResendData((UaServerOperationContext)((SystemContext)context)?.OperationContext);
+                    subscription.ResendData(session.OperationContext);
 
                     return ServiceResult.Good;
                 }
@@ -320,14 +337,11 @@ namespace Technosoftware.UaServer.Diagnostics
             IList<object> inputArguments,
             IList<object> outputArguments)
         {
-            UaServerContext systemContext = context as UaServerContext;
+            var systemContext = context as UaServerContext;
 
-            if (m_serverLockHolder != null)
+            if (m_serverLockHolder != null && m_serverLockHolder != systemContext.SessionId)
             {
-                if (m_serverLockHolder != systemContext.SessionId)
-                {
-                    return StatusCodes.BadSessionIdInvalid;
-                }
+                return StatusCodes.BadSessionIdInvalid;
             }
 
             m_serverLockHolder = systemContext.SessionId;
@@ -344,14 +358,11 @@ namespace Technosoftware.UaServer.Diagnostics
             IList<object> inputArguments,
             IList<object> outputArguments)
         {
-            UaServerContext systemContext = context as UaServerContext;
+            var systemContext = context as UaServerContext;
 
-            if (m_serverLockHolder != null)
+            if (m_serverLockHolder != null && m_serverLockHolder != systemContext.SessionId)
             {
-                if (m_serverLockHolder != systemContext.SessionId)
-                {
-                    return StatusCodes.BadSessionIdInvalid;
-                }
+                return StatusCodes.BadSessionIdInvalid;
             }
 
             m_serverLockHolder = null;
@@ -364,23 +375,26 @@ namespace Technosoftware.UaServer.Diagnostics
         /// </summary>
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
-            NodeStateCollection predefinedNodes = [];
-            var assembly = typeof(ArgumentCollection).GetTypeInfo().Assembly;
-            predefinedNodes.LoadFromBinaryResource(context, "Opc.Ua.Stack.Generated.Opc.Ua.PredefinedNodes.uanodes", assembly, true);
+            var predefinedNodes = new NodeStateCollection();
+            Assembly assembly = typeof(ReadRequest).GetTypeInfo().Assembly;
+            predefinedNodes.LoadFromBinaryResource(
+                context,
+                "Opc.Ua.Stack.Generated.Opc.Ua.PredefinedNodes.uanodes",
+                assembly,
+                true);
             return predefinedNodes;
         }
 
         /// <summary>
         /// Replaces the generic node with a node specific to the model.
         /// </summary>
-        protected override NodeState AddBehaviourToPredefinedNode(ISystemContext context, NodeState predefinedNode)
+        protected override NodeState AddBehaviourToPredefinedNode(
+            ISystemContext context,
+            NodeState predefinedNode)
         {
-            BaseObjectState passiveNode = predefinedNode as BaseObjectState;
-
-            if (passiveNode == null)
+            if (predefinedNode is not BaseObjectState passiveNode)
             {
-                BaseVariableState passiveVariable = predefinedNode as BaseVariableState;
-                if (passiveVariable != null)
+                if (predefinedNode is BaseVariableState passiveVariable)
                 {
                     if (passiveVariable.NodeId == VariableIds.ServerStatusType_BuildInfo)
                     {
@@ -389,36 +403,29 @@ namespace Technosoftware.UaServer.Diagnostics
                             return predefinedNode;
                         }
 
-                        BuildInfoVariableState activeNode = new BuildInfoVariableState(passiveVariable.Parent);
+                        var activeNode = new BuildInfoVariableState(passiveVariable.Parent);
                         activeNode.Create(context, passiveVariable);
 
                         // replace the node in the parent.
-                        if (passiveVariable.Parent != null)
-                        {
-                            passiveVariable.Parent.ReplaceChild(context, activeNode);
-                        }
+                        passiveVariable.Parent?.ReplaceChild(context, activeNode);
 
                         return activeNode;
                     }
                     return predefinedNode;
                 }
 
-                MethodState passiveMethod = predefinedNode as MethodState;
-                if (passiveMethod == null)
+                if (predefinedNode is not MethodState passiveMethod)
                 {
                     return predefinedNode;
                 }
 
                 if (passiveMethod.NodeId == MethodIds.ConditionType_ConditionRefresh)
                 {
-                    ConditionRefreshMethodState activeNode = new ConditionRefreshMethodState(passiveMethod.Parent);
+                    var activeNode = new ConditionRefreshMethodState(passiveMethod.Parent);
                     activeNode.Create(context, passiveMethod);
 
                     // replace the node in the parent.
-                    if (passiveMethod.Parent != null)
-                    {
-                        passiveMethod.Parent.ReplaceChild(context, activeNode);
-                    }
+                    passiveMethod.Parent?.ReplaceChild(context, activeNode);
 
                     activeNode.OnCall = OnConditionRefresh;
 
@@ -426,14 +433,11 @@ namespace Technosoftware.UaServer.Diagnostics
                 }
                 else if (passiveMethod.NodeId == MethodIds.ConditionType_ConditionRefresh2)
                 {
-                    ConditionRefresh2MethodState activeNode = new ConditionRefresh2MethodState(passiveMethod.Parent);
+                    var activeNode = new ConditionRefresh2MethodState(passiveMethod.Parent);
                     activeNode.Create(context, passiveMethod);
 
                     // replace the node in the parent.
-                    if (passiveMethod.Parent != null)
-                    {
-                        passiveMethod.Parent.ReplaceChild(context, activeNode);
-                    }
+                    passiveMethod.Parent?.ReplaceChild(context, activeNode);
 
                     activeNode.OnCall = OnConditionRefresh2;
 
@@ -459,21 +463,17 @@ namespace Technosoftware.UaServer.Diagnostics
                         break;
                     }
 
-                    ServerObjectState activeNode = new ServerObjectState(passiveNode.Parent);
+                    var activeNode = new ServerObjectState(passiveNode.Parent);
                     activeNode.Create(context, passiveNode);
 
                     // add the server object as the root notifier.
                     AddRootNotifier(activeNode);
 
                     // replace the node in the parent.
-                    if (passiveNode.Parent != null)
-                    {
-                        passiveNode.Parent.ReplaceChild(context, activeNode);
-                    }
+                    passiveNode.Parent?.ReplaceChild(context, activeNode);
 
                     return activeNode;
                 }
-
                 case ObjectTypes.HistoryServerCapabilitiesType:
                 {
                     if (passiveNode is HistoryServerCapabilitiesState)
@@ -481,14 +481,11 @@ namespace Technosoftware.UaServer.Diagnostics
                         break;
                     }
 
-                    HistoryServerCapabilitiesState activeNode = new HistoryServerCapabilitiesState(passiveNode.Parent);
+                    var activeNode = new HistoryServerCapabilitiesState(passiveNode.Parent);
                     activeNode.Create(context, passiveNode);
 
                     // replace the node in the parent.
-                    if (passiveNode.Parent != null)
-                    {
-                        passiveNode.Parent.ReplaceChild(context, activeNode);
-                    }
+                    passiveNode.Parent?.ReplaceChild(context, activeNode);
 
                     return activeNode;
                 }
@@ -508,11 +505,6 @@ namespace Technosoftware.UaServer.Diagnostics
         {
             UaServerContext systemContext = context as UaServerContext ?? SystemContext;
 
-            if (systemContext == null)
-            {
-                systemContext = this.SystemContext;
-            }
-
             ServerData.ConditionRefresh(systemContext.OperationContext, subscriptionId);
 
             return ServiceResult.Good;
@@ -530,12 +522,10 @@ namespace Technosoftware.UaServer.Diagnostics
         {
             UaServerContext systemContext = context as UaServerContext ?? SystemContext;
 
-            if (systemContext == null)
-            {
-                systemContext = this.SystemContext;
-            }
-
-            ServerData.ConditionRefresh2(systemContext.OperationContext, subscriptionId, monitoredItemId);
+            ServerData.ConditionRefresh2(
+                systemContext.OperationContext,
+                subscriptionId,
+                monitoredItemId);
 
             return ServiceResult.Good;
         }
@@ -543,7 +533,7 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <summary>
         /// Returns true of the node is a diagnostics node.
         /// </summary>
-        private bool IsDiagnosticsNode(NodeState node)
+        private static bool IsDiagnosticsNode(NodeState node)
         {
             if (node == null)
             {
@@ -552,9 +542,7 @@ namespace Technosoftware.UaServer.Diagnostics
 
             if (!IsDiagnosticsStructureNode(node))
             {
-                BaseInstanceState instance = node as BaseInstanceState;
-
-                if (instance == null)
+                if (node is not BaseInstanceState instance)
                 {
                     return false;
                 }
@@ -568,11 +556,9 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <summary>
         /// Returns true of the node is a diagnostics node.
         /// </summary>
-        private bool IsDiagnosticsStructureNode(NodeState node)
+        private static bool IsDiagnosticsStructureNode(NodeState node)
         {
-            BaseInstanceState instance = node as BaseInstanceState;
-
-            if (instance == null)
+            if (node is not BaseInstanceState instance)
             {
                 return false;
             }
@@ -595,12 +581,10 @@ namespace Technosoftware.UaServer.Diagnostics
                 case VariableTypes.SubscriptionDiagnosticsType:
                 case VariableTypes.SubscriptionDiagnosticsArrayType:
                 case VariableTypes.SamplingIntervalDiagnosticsArrayType:
-                {
                     return true;
-                }
+                default:
+                    return false;
             }
-
-            return false;
         }
 
         /// <summary>
@@ -614,23 +598,23 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <summary>
         /// True if diagnostics are currently enabled.
         /// </summary>
-        public bool DiagnosticsEnabled => m_diagnosticsEnabled;
+        public bool DiagnosticsEnabled { get; private set; }
 
         /// <summary>
         /// Sets the flag controlling whether diagnostics is enabled for the server.
         /// </summary>
         public void SetDiagnosticsEnabled(UaServerContext context, bool enabled)
         {
-            List<NodeState> nodesToDelete = [];
+            var nodesToDelete = new List<NodeState>();
 
             lock (Lock)
             {
-                if (enabled == m_diagnosticsEnabled)
+                if (enabled == DiagnosticsEnabled)
                 {
                     return;
                 }
 
-                m_diagnosticsEnabled = enabled;
+                DiagnosticsEnabled = enabled;
 
                 if (!enabled)
                 {
@@ -672,7 +656,7 @@ namespace Technosoftware.UaServer.Diagnostics
                     }
 
                     // get the node.
-                    ServerDiagnosticsState diagnosticsNode = (ServerDiagnosticsState)FindPredefinedNode(
+                    var diagnosticsNode = (ServerDiagnosticsState)FindPredefinedNode(
                         ObjectIds.Server_ServerDiagnostics,
                         typeof(ServerDiagnosticsState));
 
@@ -682,29 +666,46 @@ namespace Technosoftware.UaServer.Diagnostics
                         if (diagnosticsNode.SamplingIntervalDiagnosticsArray != null)
                         {
                             diagnosticsNode.SamplingIntervalDiagnosticsArray.Value = null;
-                            diagnosticsNode.SamplingIntervalDiagnosticsArray.StatusCode = StatusCodes.BadWaitingForInitialData;
-                            diagnosticsNode.SamplingIntervalDiagnosticsArray.Timestamp = DateTime.UtcNow;
+                            diagnosticsNode.SamplingIntervalDiagnosticsArray.StatusCode =
+                                StatusCodes.BadWaitingForInitialData;
+                            diagnosticsNode.SamplingIntervalDiagnosticsArray.Timestamp = DateTime
+                                .UtcNow;
                         }
 
                         if (diagnosticsNode.SubscriptionDiagnosticsArray != null)
                         {
                             diagnosticsNode.SubscriptionDiagnosticsArray.Value = null;
-                            diagnosticsNode.SubscriptionDiagnosticsArray.StatusCode = StatusCodes.BadWaitingForInitialData;
-                            diagnosticsNode.SubscriptionDiagnosticsArray.Timestamp = DateTime.UtcNow;
+                            diagnosticsNode.SubscriptionDiagnosticsArray.StatusCode =
+                                StatusCodes.BadWaitingForInitialData;
+                            diagnosticsNode.SubscriptionDiagnosticsArray.Timestamp = DateTime
+                                .UtcNow;
                         }
 
                         if (diagnosticsNode.SessionsDiagnosticsSummary != null)
                         {
-                            diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray.Value = null;
-                            diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray.StatusCode = StatusCodes.BadWaitingForInitialData;
-                            diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray.Timestamp = DateTime.UtcNow;
+                            diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray.Value
+                                = null;
+                            diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray
+                                .StatusCode =
+                                StatusCodes.BadWaitingForInitialData;
+                            diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray
+                                .Timestamp =
+                                DateTime.UtcNow;
                         }
 
                         if (diagnosticsNode.SessionsDiagnosticsSummary != null)
                         {
-                            diagnosticsNode.SessionsDiagnosticsSummary.SessionSecurityDiagnosticsArray.Value = null;
-                            diagnosticsNode.SessionsDiagnosticsSummary.SessionSecurityDiagnosticsArray.StatusCode = StatusCodes.BadWaitingForInitialData;
-                            diagnosticsNode.SessionsDiagnosticsSummary.SessionSecurityDiagnosticsArray.Timestamp = DateTime.UtcNow;
+                            diagnosticsNode.SessionsDiagnosticsSummary
+                                .SessionSecurityDiagnosticsArray
+                                .Value = null;
+                            diagnosticsNode.SessionsDiagnosticsSummary
+                                .SessionSecurityDiagnosticsArray
+                                .StatusCode =
+                                StatusCodes.BadWaitingForInitialData;
+                            diagnosticsNode.SessionsDiagnosticsSummary
+                                .SessionSecurityDiagnosticsArray
+                                .Timestamp =
+                                DateTime.UtcNow;
                         }
                     }
 
@@ -729,21 +730,22 @@ namespace Technosoftware.UaServer.Diagnostics
             lock (Lock)
             {
                 // get the node.
-                ServerDiagnosticsSummaryState diagnosticsNode = (ServerDiagnosticsSummaryState)FindPredefinedNode(
+                var diagnosticsNode = (ServerDiagnosticsSummaryState)FindPredefinedNode(
                     VariableIds.Server_ServerDiagnostics_ServerDiagnosticsSummary,
                     typeof(ServerDiagnosticsSummaryState));
 
                 // wrap diagnostics in a thread safe object.
-                ServerDiagnosticsSummaryValue diagnosticsValue = new ServerDiagnosticsSummaryValue(
+                var diagnosticsValue = new ServerDiagnosticsSummaryValue(
                     diagnosticsNode,
                     diagnostics,
-                    Lock);
-
-                // must ensure the first update gets sent.
-                diagnosticsValue.Value = null;
-                diagnosticsValue.Error = StatusCodes.BadWaitingForInitialData;
-                diagnosticsValue.CopyPolicy = Opc.Ua.VariableCopyPolicy.Never;
-                diagnosticsValue.OnBeforeRead = OnBeforeReadDiagnostics;
+                    Lock)
+                {
+                    // must ensure the first update gets sent.
+                    Value = null,
+                    Error = StatusCodes.BadWaitingForInitialData,
+                    CopyPolicy = VariableCopyPolicy.Never,
+                    OnBeforeRead = OnBeforeReadDiagnostics
+                };
                 // Hook the OnReadUserRolePermissions callback to control which user roles can access the services on this node
                 diagnosticsNode.OnReadUserRolePermissions = OnReadUserRolePermissions;
 
@@ -751,7 +753,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 m_serverDiagnosticsCallback = updateCallback;
 
                 // set up handler for session diagnostics array.
-                SessionDiagnosticsArrayState array1 = (SessionDiagnosticsArrayState)FindPredefinedNode(
+                var array1 = (SessionDiagnosticsArrayState)FindPredefinedNode(
                     VariableIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionDiagnosticsArray,
                     typeof(SessionDiagnosticsArrayState));
 
@@ -763,7 +765,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 }
 
                 // set up handler for session security diagnostics array.
-                SessionSecurityDiagnosticsArrayState array2 = (SessionSecurityDiagnosticsArrayState)FindPredefinedNode(
+                var array2 = (SessionSecurityDiagnosticsArrayState)FindPredefinedNode(
                     VariableIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionSecurityDiagnosticsArray,
                     typeof(SessionSecurityDiagnosticsArrayState));
 
@@ -775,7 +777,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 }
 
                 // set up handler for subscription security diagnostics array.
-                SubscriptionDiagnosticsArrayState array3 = (SubscriptionDiagnosticsArrayState)FindPredefinedNode(
+                var array3 = (SubscriptionDiagnosticsArrayState)FindPredefinedNode(
                     VariableIds.Server_ServerDiagnostics_SubscriptionDiagnosticsArray,
                     typeof(SubscriptionDiagnosticsArrayState));
 
@@ -805,7 +807,7 @@ namespace Technosoftware.UaServer.Diagnostics
 
             lock (Lock)
             {
-                SessionDiagnosticsObjectState sessionNode = new SessionDiagnosticsObjectState(null);
+                var sessionNode = new SessionDiagnosticsObjectState(null);
 
                 // create a new instance and assign ids.
                 nodeId = CreateNode(
@@ -819,7 +821,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 securityDiagnostics.SessionId = nodeId;
 
                 // check if diagnostics have been enabled.
-                if (!m_diagnosticsEnabled)
+                if (!DiagnosticsEnabled)
                 {
                     return nodeId;
                 }
@@ -831,54 +833,55 @@ namespace Technosoftware.UaServer.Diagnostics
                     ObjectIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary);
 
                 // add reference from session summary object.
-                SessionsDiagnosticsSummaryState summary = (SessionsDiagnosticsSummaryState)FindPredefinedNode(
+                var summary = (SessionsDiagnosticsSummaryState)FindPredefinedNode(
                     ObjectIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary,
                     typeof(SessionsDiagnosticsSummaryState));
 
-                if (summary != null)
-                {
-                    summary.AddReference(ReferenceTypeIds.HasComponent, false, sessionNode.NodeId);
-                }
+                summary?.AddReference(ReferenceTypeIds.HasComponent, false, sessionNode.NodeId);
 
                 // Hook the OnReadUserRolePermissions callback to control which user roles can access the services on this node
                 sessionNode.OnReadUserRolePermissions = OnReadUserRolePermissions;
 
                 // initialize diagnostics node.
-                SessionDiagnosticsVariableState diagnosticsNode = sessionNode.CreateChild(
-                   systemContext,
-                   BrowseNames.SessionDiagnostics) as SessionDiagnosticsVariableState;
+                var diagnosticsNode =
+                    sessionNode.CreateChild(systemContext, BrowseNames.SessionDiagnostics) as
+                    SessionDiagnosticsVariableState;
 
                 // wrap diagnostics in a thread safe object.
-                SessionDiagnosticsVariableValue diagnosticsValue = new SessionDiagnosticsVariableValue(
+                var diagnosticsValue = new SessionDiagnosticsVariableValue(
                     diagnosticsNode,
                     diagnostics,
-                    Lock);
-
-                // must ensure the first update gets sent.
-                diagnosticsValue.Value = null;
-                diagnosticsValue.Error = StatusCodes.BadWaitingForInitialData;
-                diagnosticsValue.CopyPolicy = Opc.Ua.VariableCopyPolicy.Never;
-                diagnosticsValue.OnBeforeRead = OnBeforeReadDiagnostics;
+                    Lock)
+                {
+                    // must ensure the first update gets sent.
+                    Value = null,
+                    Error = StatusCodes.BadWaitingForInitialData,
+                    CopyPolicy = VariableCopyPolicy.Never,
+                    OnBeforeRead = OnBeforeReadDiagnostics
+                };
 
                 // initialize security diagnostics node.
-                SessionSecurityDiagnosticsState securityDiagnosticsNode = sessionNode.CreateChild(
-                   systemContext,
-                   BrowseNames.SessionSecurityDiagnostics) as SessionSecurityDiagnosticsState;
+                var securityDiagnosticsNode =
+                    sessionNode.CreateChild(
+                        systemContext,
+                        BrowseNames.SessionSecurityDiagnostics) as
+                    SessionSecurityDiagnosticsState;
 
                 // wrap diagnostics in a thread safe object.
-                SessionSecurityDiagnosticsValue securityDiagnosticsValue = new SessionSecurityDiagnosticsValue(
+                var securityDiagnosticsValue = new SessionSecurityDiagnosticsValue(
                     securityDiagnosticsNode,
                     securityDiagnostics,
-                    Lock);
-
-                // must ensure the first update gets sent.
-                securityDiagnosticsValue.Value = null;
-                securityDiagnosticsValue.Error = StatusCodes.BadWaitingForInitialData;
-                securityDiagnosticsValue.CopyPolicy = Opc.Ua.VariableCopyPolicy.Never;
-                securityDiagnosticsValue.OnBeforeRead = OnBeforeReadDiagnostics;
+                    Lock)
+                {
+                    // must ensure the first update gets sent.
+                    Value = null,
+                    Error = StatusCodes.BadWaitingForInitialData,
+                    CopyPolicy = VariableCopyPolicy.Never,
+                    OnBeforeRead = OnBeforeReadDiagnostics
+                };
 
                 // save the session.
-                SessionDiagnosticsData sessionData = new SessionDiagnosticsData(
+                var sessionData = new SessionDiagnosticsData(
                     sessionNode,
                     diagnosticsValue,
                     updateCallback,
@@ -897,9 +900,7 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <summary>
         /// Delete the diagnostics node for a session.
         /// </summary>
-        public void DeleteSessionDiagnostics(
-            UaServerContext systemContext,
-            NodeId nodeId)
+        public void DeleteSessionDiagnostics(UaServerContext systemContext, NodeId nodeId)
         {
             lock (Lock)
             {
@@ -937,19 +938,20 @@ namespace Technosoftware.UaServer.Diagnostics
             lock (Lock)
             {
                 // check if diagnostics have been enabled.
-                if (!m_diagnosticsEnabled)
+                if (!DiagnosticsEnabled)
                 {
                     return null;
                 }
 
-                SubscriptionDiagnosticsState diagnosticsNode = new SubscriptionDiagnosticsState(null);
+                var diagnosticsNode = new SubscriptionDiagnosticsState(null);
 
                 // create a new instance and assign ids.
                 nodeId = CreateNode(
                     systemContext,
                     null,
                     ReferenceTypeIds.HasComponent,
-                    new QualifiedName(diagnostics.SubscriptionId.ToString(CultureInfo.InvariantCulture)),
+                    new QualifiedName(
+                        diagnostics.SubscriptionId.ToString(CultureInfo.InvariantCulture)),
                     diagnosticsNode);
 
                 // add reference to subscription array.
@@ -959,25 +961,28 @@ namespace Technosoftware.UaServer.Diagnostics
                     VariableIds.Server_ServerDiagnostics_SubscriptionDiagnosticsArray);
 
                 // wrap diagnostics in a thread safe object.
-                SubscriptionDiagnosticsValue diagnosticsValue = new SubscriptionDiagnosticsValue(diagnosticsNode, diagnostics, Lock);
-                diagnosticsValue.CopyPolicy = Opc.Ua.VariableCopyPolicy.Never;
-                diagnosticsValue.OnBeforeRead = OnBeforeReadDiagnostics;
+                var diagnosticsValue = new SubscriptionDiagnosticsValue(
+                    diagnosticsNode,
+                    diagnostics,
+                    Lock)
+                {
+                    CopyPolicy = VariableCopyPolicy.Never,
+                    OnBeforeRead = OnBeforeReadDiagnostics,
 
-                // must ensure the first update gets sent.
-                diagnosticsValue.Value = null;
-                diagnosticsValue.Error = StatusCodes.BadWaitingForInitialData;
+                    // must ensure the first update gets sent.
+                    Value = null,
+                    Error = StatusCodes.BadWaitingForInitialData
+                };
 
-                m_subscriptions.Add(new SubscriptionDiagnosticsData(diagnosticsValue, updateCallback));
+                m_subscriptions.Add(
+                    new SubscriptionDiagnosticsData(diagnosticsValue, updateCallback));
 
                 // add reference from subscription array.
-                SubscriptionDiagnosticsArrayState array = (SubscriptionDiagnosticsArrayState)FindPredefinedNode(
+                var array = (SubscriptionDiagnosticsArrayState)FindPredefinedNode(
                     VariableIds.Server_ServerDiagnostics_SubscriptionDiagnosticsArray,
                     typeof(SubscriptionDiagnosticsArrayState));
 
-                if (array != null)
-                {
-                    array.AddReference(ReferenceTypeIds.HasComponent, false, diagnosticsNode.NodeId);
-                }
+                array?.AddReference(ReferenceTypeIds.HasComponent, false, diagnosticsNode.NodeId);
 
                 if (diagnostics.SessionId != null)
                 {
@@ -989,21 +994,22 @@ namespace Technosoftware.UaServer.Diagnostics
                 }
 
                 // add reference from session subscription array.
-                SessionDiagnosticsObjectState sessionNode = (SessionDiagnosticsObjectState)FindPredefinedNode(
+                var sessionNode = (SessionDiagnosticsObjectState)FindPredefinedNode(
                     diagnostics.SessionId,
                     typeof(SessionDiagnosticsObjectState));
 
                 if (sessionNode != null)
                 {
                     // add reference from subscription array.
-                    array = (SubscriptionDiagnosticsArrayState)sessionNode.CreateChild(
-                        systemContext,
-                        BrowseNames.SubscriptionDiagnosticsArray);
+                    array = (SubscriptionDiagnosticsArrayState)
+                        sessionNode.CreateChild(
+                            systemContext,
+                            BrowseNames.SubscriptionDiagnosticsArray);
 
-                    if (array != null)
-                    {
-                        array.AddReference(ReferenceTypeIds.HasComponent, false, diagnosticsNode.NodeId);
-                    }
+                    array?.AddReference(
+                        ReferenceTypeIds.HasComponent,
+                        false,
+                        diagnosticsNode.NodeId);
                 }
 
                 // send initial update.
@@ -1016,9 +1022,7 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <summary>
         /// Delete the diagnostics node for a subscription.
         /// </summary>
-        public void DeleteSubscriptionDiagnostics(
-            UaServerContext systemContext,
-            NodeId nodeId)
+        public void DeleteSubscriptionDiagnostics(UaServerContext systemContext, NodeId nodeId)
         {
             lock (Lock)
             {
@@ -1050,7 +1054,8 @@ namespace Technosoftware.UaServer.Diagnostics
                 }
 
                 // search the Node in PredefinedNodes.
-                HistoryServerCapabilitiesState historyServerCapabilitiesNode = (HistoryServerCapabilitiesState)FindPredefinedNode(
+                var historyServerCapabilitiesNode
+                    = (HistoryServerCapabilitiesState)FindPredefinedNode(
                     ObjectIds.HistoryServerCapabilities,
                     typeof(HistoryServerCapabilitiesState));
 
@@ -1081,12 +1086,20 @@ namespace Technosoftware.UaServer.Diagnostics
                     historyServerCapabilitiesNode.DeleteAtTimeCapability.Value = false;
                     historyServerCapabilitiesNode.ServerTimestampSupported.Value = false;
 
-                    NodeState parent = FindPredefinedNode(ObjectIds.Server_ServerCapabilities, typeof(ServerCapabilitiesState));
+                    NodeState parent = FindPredefinedNode(
+                        ObjectIds.Server_ServerCapabilities,
+                        typeof(ServerCapabilitiesState));
 
                     if (parent != null)
                     {
-                        parent.AddReference(ReferenceTypes.HasComponent, false, historyServerCapabilitiesNode.NodeId);
-                        historyServerCapabilitiesNode.AddReference(ReferenceTypes.HasComponent, true, parent.NodeId);
+                        parent.AddReference(
+                            ReferenceTypes.HasComponent,
+                            false,
+                            historyServerCapabilitiesNode.NodeId);
+                        historyServerCapabilitiesNode.AddReference(
+                            ReferenceTypes.HasComponent,
+                            true,
+                            parent.NodeId);
                     }
 
                     AddPredefinedNode(SystemContext, historyServerCapabilitiesNode);
@@ -1098,25 +1111,86 @@ namespace Technosoftware.UaServer.Diagnostics
         }
 
         /// <summary>
-        /// Adds an aggregate function to the server capabilities object.
+        /// Updates the Server object EventNotifier based on history capabilities.
         /// </summary>
-        public void AddAggregateFunction(NodeId aggregateId, string aggregateName, bool isHistorical)
+        /// <remarks>
+        /// This method can be overridden to customize the Server EventNotifier based on
+        /// history capabilities settings.
+        /// </remarks>
+        public virtual void UpdateServerEventNotifier()
         {
             lock (Lock)
             {
-                FolderState state = new FolderState(null);
+                // Get or create the history capabilities
+                HistoryServerCapabilitiesState historyCapabilities = GetDefaultHistoryCapabilities();
 
-                state.SymbolicName = aggregateName;
-                state.ReferenceTypeId = ReferenceTypes.HasComponent;
-                state.TypeDefinitionId = ObjectTypeIds.AggregateFunctionType;
-                state.NodeId = aggregateId;
-                state.BrowseName = new QualifiedName(aggregateName, aggregateId.NamespaceIndex);
+                // Find the Server object
+                var serverObject = (ServerObjectState)FindPredefinedNode(
+                    ObjectIds.Server,
+                    typeof(ServerObjectState));
+
+                if (serverObject != null && historyCapabilities != null)
+                {
+                    // Update EventNotifier based on history capabilities
+                    byte eventNotifier = serverObject.EventNotifier;
+
+                    // Set HistoryRead bit if history events or data capabilities are enabled
+                    if (historyCapabilities.AccessHistoryEventsCapability?.Value == true ||
+                        historyCapabilities.AccessHistoryDataCapability?.Value == true)
+                    {
+                        eventNotifier |= EventNotifiers.HistoryRead;
+                    }
+                    else
+                    {
+                        eventNotifier = (byte)(eventNotifier & ~EventNotifiers.HistoryRead);
+                    }
+
+                    // Set HistoryWrite bit if history update capabilities are enabled
+                    if (historyCapabilities.InsertEventCapability?.Value == true ||
+                        historyCapabilities.ReplaceEventCapability?.Value == true ||
+                        historyCapabilities.UpdateEventCapability?.Value == true ||
+                        historyCapabilities.InsertDataCapability?.Value == true ||
+                        historyCapabilities.UpdateDataCapability?.Value == true ||
+                        historyCapabilities.ReplaceDataCapability?.Value == true)
+                    {
+                        eventNotifier |= EventNotifiers.HistoryWrite;
+                    }
+                    else
+                    {
+                        eventNotifier = (byte)(eventNotifier & ~EventNotifiers.HistoryWrite);
+                    }
+
+                    serverObject.EventNotifier = eventNotifier;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds an aggregate function to the server capabilities object.
+        /// </summary>
+        public void AddAggregateFunction(
+            NodeId aggregateId,
+            string aggregateName,
+            bool isHistorical)
+        {
+            lock (Lock)
+            {
+                var state = new FolderState(null)
+                {
+                    SymbolicName = aggregateName,
+                    ReferenceTypeId = ReferenceTypes.HasComponent,
+                    TypeDefinitionId = ObjectTypeIds.AggregateFunctionType,
+                    NodeId = aggregateId,
+                    BrowseName = new QualifiedName(aggregateName, aggregateId.NamespaceIndex)
+                };
                 state.DisplayName = state.BrowseName.Name;
                 state.WriteMask = AttributeWriteMask.None;
                 state.UserWriteMask = AttributeWriteMask.None;
                 state.EventNotifier = EventNotifiers.None;
 
-                NodeState folder = FindPredefinedNode(ObjectIds.Server_ServerCapabilities_AggregateFunctions, typeof(BaseObjectState));
+                NodeState folder = FindPredefinedNode(
+                    ObjectIds.Server_ServerCapabilities_AggregateFunctions,
+                    typeof(BaseObjectState));
 
                 if (folder != null)
                 {
@@ -1126,13 +1200,51 @@ namespace Technosoftware.UaServer.Diagnostics
 
                 if (isHistorical)
                 {
-                    folder = FindPredefinedNode(ObjectIds.HistoryServerCapabilities_AggregateFunctions, typeof(BaseObjectState));
+                    folder = FindPredefinedNode(
+                        ObjectIds.HistoryServerCapabilities_AggregateFunctions,
+                        typeof(BaseObjectState));
 
                     if (folder != null)
                     {
                         folder.AddReference(ReferenceTypes.Organizes, false, state.NodeId);
                         state.AddReference(ReferenceTypes.Organizes, true, folder.NodeId);
                     }
+                }
+
+                AddPredefinedNode(SystemContext, state);
+            }
+        }
+
+        /// <summary>
+        /// Adds a modelling rule to the server capabilities object.
+        /// </summary>
+        public void AddModellingRule(
+            NodeId modellingRuleId,
+            string modellingRuleName)
+        {
+            lock (Lock)
+            {
+                var state = new FolderState(null)
+                {
+                    SymbolicName = modellingRuleName,
+                    ReferenceTypeId = ReferenceTypes.HasComponent,
+                    TypeDefinitionId = ObjectTypeIds.ModellingRuleType,
+                    NodeId = modellingRuleId,
+                    BrowseName = new QualifiedName(modellingRuleName, modellingRuleId.NamespaceIndex)
+                };
+                state.DisplayName = state.BrowseName.Name;
+                state.WriteMask = AttributeWriteMask.None;
+                state.UserWriteMask = AttributeWriteMask.None;
+                state.EventNotifier = EventNotifiers.None;
+
+                NodeState folder = FindPredefinedNode(
+                    ObjectIds.Server_ServerCapabilities_ModellingRules,
+                    typeof(BaseObjectState));
+
+                if (folder != null)
+                {
+                    folder.AddReference(ReferenceTypes.Organizes, false, state.NodeId);
+                    state.AddReference(ReferenceTypes.Organizes, true, folder.NodeId);
                 }
 
                 AddPredefinedNode(SystemContext, state);
@@ -1152,7 +1264,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 m_serverDiagnostics.Variable,
                 ref value);
 
-            ServerDiagnosticsSummaryDataType newValue = value as ServerDiagnosticsSummaryDataType;
+            var newValue = value as ServerDiagnosticsSummaryDataType;
 
             // check for changes.
             if (Utils.IsEqual(newValue, m_serverDiagnostics.Value))
@@ -1202,7 +1314,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 diagnostics.Value.Variable,
                 ref value);
 
-            SessionDiagnosticsDataType newValue = value as SessionDiagnosticsDataType;
+            var newValue = value as SessionDiagnosticsDataType;
 
             sessionArray[index] = newValue;
 
@@ -1259,7 +1371,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 diagnostics.SecurityValue.Variable,
                 ref value);
 
-            SessionSecurityDiagnosticsDataType newValue = value as SessionSecurityDiagnosticsDataType;
+            var newValue = value as SessionSecurityDiagnosticsDataType;
 
             sessionArray[index] = newValue;
 
@@ -1316,7 +1428,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 diagnostics.Value.Variable,
                 ref value);
 
-            SubscriptionDiagnosticsDataType newValue = value as SubscriptionDiagnosticsDataType;
+            var newValue = value as SubscriptionDiagnosticsDataType;
 
             subscriptionArray[index] = newValue;
 
@@ -1361,14 +1473,14 @@ namespace Technosoftware.UaServer.Diagnostics
         /// Current user is allowed to read its data, together with users which have permissions
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="list"></param>
-        /// <param name="sessionId"></param>
-        /// <param name="context"></param>
-        /// <param name="index"></param>
-        private void FilterOutUnAuthorized<T>(IList<T> list, NodeId sessionId, ISystemContext context, int index)
+        private static void FilterOutUnAuthorized<T>(
+            IList<T> list,
+            NodeId sessionId,
+            ISystemContext context,
+            int index)
         {
-            if ((sessionId != context.SessionId) &&
-                    !HasApplicationSecureAdminAccess(context))
+            if ((sessionId != (context as ISessionSystemContext)?.SessionId) &&
+                !HasApplicationSecureAdminAccess(context))
             {
                 list[index] = default;
             }
@@ -1377,10 +1489,6 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <summary>
         /// Set custom role permissions for desired node
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="node"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
         private ServiceResult OnReadUserRolePermissions(
             ISystemContext context,
             NodeState node,
@@ -1389,38 +1497,43 @@ namespace Technosoftware.UaServer.Diagnostics
             bool adminUser;
 
             if ((node.NodeId == VariableIds.Server_ServerDiagnostics_ServerDiagnosticsSummary) ||
-                 (node.NodeId == VariableIds.Server_ServerDiagnostics_SubscriptionDiagnosticsArray))
+                (node.NodeId == VariableIds.Server_ServerDiagnostics_SubscriptionDiagnosticsArray))
             {
                 adminUser = HasApplicationSecureAdminAccess(context);
             }
             else
             {
-                adminUser = (node.NodeId == context.SessionId) ||
-                            HasApplicationSecureAdminAccess(context);
+                adminUser = (node.NodeId == (context as ISessionSystemContext)?.SessionId) ||
+                    HasApplicationSecureAdminAccess(context);
             }
 
             if (adminUser)
             {
-                var rolePermissionTypes = from roleId in m_kWellKnownRoles
-                                          select new RolePermissionType()
-                                          {
-                                              RoleId = roleId,
-                                              Permissions = (uint)(PermissionType.Browse | PermissionType.Read | PermissionType.ReadRolePermissions | PermissionType.Write)
-                                          };
+                IEnumerable<RolePermissionType> rolePermissionTypes =
+                    from roleId in s_kWellKnownRoles
+                    select new RolePermissionType
+                    {
+                        RoleId = roleId,
+                        Permissions = (uint)(
+                            PermissionType.Browse |
+                            PermissionType.Read |
+                            PermissionType.ReadRolePermissions |
+                            PermissionType.Write)
+                    };
 
-                value = new RolePermissionTypeCollection(rolePermissionTypes);
+                value = [.. rolePermissionTypes];
             }
             else
             {
-                var rolePermissionTypes = from roleId in m_kWellKnownRoles
-                                          select new RolePermissionType()
-                                          {
-                                              RoleId = roleId,
-                                              Permissions = (uint)PermissionType.None
-                                          };
+                IEnumerable<RolePermissionType> rolePermissionTypes =
+                    from roleId in s_kWellKnownRoles
+                    select new RolePermissionType
+                    {
+                        RoleId = roleId,
+                        Permissions = (uint)PermissionType.None
+                    };
 
-                value = new RolePermissionTypeCollection(rolePermissionTypes);
-
+                value = [.. rolePermissionTypes];
             }
             return ServiceResult.Good;
         }
@@ -1435,7 +1548,7 @@ namespace Technosoftware.UaServer.Diagnostics
         {
             lock (Lock)
             {
-                if (!m_diagnosticsEnabled)
+                if (!DiagnosticsEnabled)
                 {
                     return;
                 }
@@ -1459,7 +1572,7 @@ namespace Technosoftware.UaServer.Diagnostics
         {
             lock (Lock)
             {
-                if (!m_diagnosticsEnabled)
+                if (!DiagnosticsEnabled)
                 {
                     return StatusCodes.BadOutOfService;
                 }
@@ -1470,43 +1583,57 @@ namespace Technosoftware.UaServer.Diagnostics
                     return ServiceResult.Good;
                 }
 
-                if (node.NodeId == VariableIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionDiagnosticsArray)
+                if (node.NodeId ==
+                    VariableIds
+                        .Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionDiagnosticsArray)
                 {
                     // read session diagnostics.
-                    SessionDiagnosticsDataType[] sessionArray = new SessionDiagnosticsDataType[m_sessions.Count];
+                    var sessionArray = new SessionDiagnosticsDataType[m_sessions.Count];
 
                     for (int ii = 0; ii < m_sessions.Count; ii++)
                     {
                         SessionDiagnosticsData diagnostics = m_sessions[ii];
                         UpdateSessionDiagnostics(context, diagnostics, sessionArray, ii);
                     }
-                    sessionArray = sessionArray.Where(s => s != null).ToArray();
+                    sessionArray = [.. sessionArray.Where(s => s != null)];
 
                     value = sessionArray;
                 }
-                else if (node.NodeId == VariableIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionSecurityDiagnosticsArray)
+                else if (node.NodeId ==
+                    VariableIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionSecurityDiagnosticsArray)
                 {
                     // read session security diagnostics.
-                    SessionSecurityDiagnosticsDataType[] sessionSecurityArray = new SessionSecurityDiagnosticsDataType[m_sessions.Count];
+                    var sessionSecurityArray = new SessionSecurityDiagnosticsDataType[m_sessions
+                        .Count];
 
                     for (int ii = 0; ii < m_sessions.Count; ii++)
                     {
-                        UpdateSessionSecurityDiagnostics(context, m_sessions[ii], sessionSecurityArray, ii);
+                        UpdateSessionSecurityDiagnostics(
+                            context,
+                            m_sessions[ii],
+                            sessionSecurityArray,
+                            ii);
                     }
-                    sessionSecurityArray = sessionSecurityArray.Where(s => s != null).ToArray();
+                    sessionSecurityArray = [.. sessionSecurityArray.Where(s => s != null)];
 
                     value = sessionSecurityArray;
                 }
-                else if (node.NodeId == VariableIds.Server_ServerDiagnostics_SubscriptionDiagnosticsArray)
+                else if (node.NodeId == VariableIds
+                    .Server_ServerDiagnostics_SubscriptionDiagnosticsArray)
                 {
                     // read subscription diagnostics.
-                    SubscriptionDiagnosticsDataType[] subscriptionArray = new SubscriptionDiagnosticsDataType[m_subscriptions.Count];
+                    var subscriptionArray = new SubscriptionDiagnosticsDataType[m_subscriptions
+                        .Count];
 
                     for (int ii = 0; ii < m_subscriptions.Count; ii++)
                     {
-                        UpdateSubscriptionDiagnostics(context, m_subscriptions[ii], subscriptionArray, ii);
+                        UpdateSubscriptionDiagnostics(
+                            context,
+                            m_subscriptions[ii],
+                            subscriptionArray,
+                            ii);
                     }
-                    subscriptionArray = subscriptionArray.Where(s => s != null).ToArray();
+                    subscriptionArray = [.. subscriptionArray.Where(s => s != null)];
 
                     value = subscriptionArray;
                 }
@@ -1518,29 +1645,22 @@ namespace Technosoftware.UaServer.Diagnostics
         /// <summary>
         /// Determine if the impersonated user has admin access.
         /// </summary>
-        /// <param name="context"></param>
         /// <exception cref="ServiceResultException"/>
-        /// <seealso cref="StatusCodes.BadUserAccessDenied"/>
-        private bool HasApplicationSecureAdminAccess(ISystemContext context)
+        private static bool HasApplicationSecureAdminAccess(ISystemContext context)
         {
-            UaServerOperationContext operationContext = (context as SystemContext)?.OperationContext as UaServerOperationContext;
-            if (operationContext != null)
+            if (context is SessionSystemContext { OperationContext: UaServerOperationContext operationContext } session)
             {
-                if (operationContext.ChannelContext?.EndpointDescription?.SecurityMode != MessageSecurityMode.SignAndEncrypt)
+                if (operationContext.ChannelContext?.EndpointDescription?.SecurityMode !=
+                    MessageSecurityMode.SignAndEncrypt)
                 {
                     return false;
                 }
 
-                IUserIdentity user = context.UserIdentity as RoleBasedIdentity;
+                IUserIdentity user = session.UserIdentity as RoleBasedIdentity;
 
-                if (user == null ||
-                    user.TokenType == UserTokenType.Anonymous ||
-                    !user.GrantedRoleIds.Contains(ObjectIds.WellKnownRole_SecurityAdmin))
-                {
-                    return false;
-                }
-
-                return true;
+                return user != null &&
+                    user.TokenType != UserTokenType.Anonymous &&
+                    user.GrantedRoleIds.Contains(ObjectIds.WellKnownRole_SecurityAdmin);
             }
             return false;
         }
@@ -1554,7 +1674,7 @@ namespace Technosoftware.UaServer.Diagnostics
             {
                 lock (Lock)
                 {
-                    if (!m_diagnosticsEnabled || m_doScanBusy)
+                    if (!DiagnosticsEnabled || m_doScanBusy)
                     {
                         return;
                     }
@@ -1570,7 +1690,7 @@ namespace Technosoftware.UaServer.Diagnostics
 
                         // update session diagnostics.
                         bool sessionsChanged = alwaysUpdateArrays != null;
-                        SessionDiagnosticsDataType[] sessionArray = new SessionDiagnosticsDataType[m_sessions.Count];
+                        var sessionArray = new SessionDiagnosticsDataType[m_sessions.Count];
 
                         for (int ii = 0; ii < m_sessions.Count; ii++)
                         {
@@ -1583,59 +1703,84 @@ namespace Technosoftware.UaServer.Diagnostics
                         }
 
                         // check of the session diagnostics array node needs to be updated.
-                        SessionDiagnosticsArrayState sessionsNode = (SessionDiagnosticsArrayState)FindPredefinedNode(
+                        var sessionsNode = (SessionDiagnosticsArrayState)FindPredefinedNode(
                             VariableIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionDiagnosticsArray,
                             typeof(SessionDiagnosticsArrayState));
 
-                        if (sessionsNode != null && (sessionsNode.Value == null || StatusCode.IsBad(sessionsNode.StatusCode) || sessionsChanged))
+                        if (sessionsNode != null &&
+                            (
+                                sessionsNode.Value == null ||
+                                StatusCode.IsBad(sessionsNode.StatusCode) ||
+                                sessionsChanged))
                         {
                             sessionsNode.Value = sessionArray;
                             sessionsNode.ClearChangeMasks(SystemContext, false);
                         }
 
                         bool sessionsSecurityChanged = alwaysUpdateArrays != null;
-                        SessionSecurityDiagnosticsDataType[] sessionSecurityArray = new SessionSecurityDiagnosticsDataType[m_sessions.Count];
+                        var sessionSecurityArray = new SessionSecurityDiagnosticsDataType[m_sessions
+                            .Count];
 
                         for (int ii = 0; ii < m_sessions.Count; ii++)
                         {
                             SessionDiagnosticsData diagnostics = m_sessions[ii];
 
-                            if (UpdateSessionSecurityDiagnostics(null, diagnostics, sessionSecurityArray, ii))
+                            if (UpdateSessionSecurityDiagnostics(
+                                null,
+                                diagnostics,
+                                sessionSecurityArray,
+                                ii))
                             {
                                 sessionsSecurityChanged = true;
                             }
                         }
 
                         // check of the array node needs to be updated.
-                        SessionSecurityDiagnosticsArrayState sessionsSecurityNode = (SessionSecurityDiagnosticsArrayState)FindPredefinedNode(
-                            VariableIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionSecurityDiagnosticsArray,
+                        var sessionsSecurityNode
+                            = (SessionSecurityDiagnosticsArrayState)FindPredefinedNode(
+                            VariableIds
+                                .Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionSecurityDiagnosticsArray,
                             typeof(SessionSecurityDiagnosticsArrayState));
 
-                        if (sessionsSecurityNode != null && (sessionsSecurityNode.Value == null || StatusCode.IsBad(sessionsSecurityNode.StatusCode) || sessionsSecurityChanged))
+                        if (sessionsSecurityNode != null &&
+                            (
+                                sessionsSecurityNode.Value == null ||
+                                StatusCode.IsBad(sessionsSecurityNode.StatusCode) ||
+                                sessionsSecurityChanged))
                         {
                             sessionsSecurityNode.Value = sessionSecurityArray;
                             sessionsSecurityNode.ClearChangeMasks(SystemContext, false);
                         }
 
                         bool subscriptionsChanged = alwaysUpdateArrays != null;
-                        SubscriptionDiagnosticsDataType[] subscriptionArray = new SubscriptionDiagnosticsDataType[m_subscriptions.Count];
+                        var subscriptionArray = new SubscriptionDiagnosticsDataType[m_subscriptions
+                            .Count];
 
                         for (int ii = 0; ii < m_subscriptions.Count; ii++)
                         {
                             SubscriptionDiagnosticsData diagnostics = m_subscriptions[ii];
 
-                            if (UpdateSubscriptionDiagnostics(null, diagnostics, subscriptionArray, ii))
+                            if (UpdateSubscriptionDiagnostics(
+                                null,
+                                diagnostics,
+                                subscriptionArray,
+                                ii))
                             {
                                 subscriptionsChanged = true;
                             }
                         }
 
                         // check of the subscription node needs to be updated.
-                        SubscriptionDiagnosticsArrayState subscriptionsNode = (SubscriptionDiagnosticsArrayState)FindPredefinedNode(
+                        var subscriptionsNode
+                            = (SubscriptionDiagnosticsArrayState)FindPredefinedNode(
                             VariableIds.Server_ServerDiagnostics_SubscriptionDiagnosticsArray,
                             typeof(SubscriptionDiagnosticsArrayState));
 
-                        if (subscriptionsNode != null && (subscriptionsNode.Value == null || StatusCode.IsBad(subscriptionsNode.StatusCode) || subscriptionsChanged))
+                        if (subscriptionsNode != null &&
+                            (
+                                subscriptionsNode.Value == null ||
+                                StatusCode.IsBad(subscriptionsNode.StatusCode) ||
+                                subscriptionsChanged))
                         {
                             subscriptionsNode.Value = subscriptionArray;
                             subscriptionsNode.ClearChangeMasks(SystemContext, false);
@@ -1644,13 +1789,15 @@ namespace Technosoftware.UaServer.Diagnostics
                         for (int ii = 0; ii < m_sessions.Count; ii++)
                         {
                             SessionDiagnosticsData diagnostics = m_sessions[ii];
-                            List<SubscriptionDiagnosticsDataType> subscriptionDiagnosticsArray = [];
+                            var subscriptionDiagnosticsArray
+                                = new List<SubscriptionDiagnosticsDataType>();
 
                             NodeId sessionId = diagnostics.Summary.NodeId;
 
                             for (int jj = 0; jj < m_subscriptions.Count; jj++)
                             {
-                                SubscriptionDiagnosticsData subscriptionDiagnostics = m_subscriptions[jj];
+                                SubscriptionDiagnosticsData subscriptionDiagnostics
+                                    = m_subscriptions[jj];
 
                                 if (subscriptionDiagnostics.Value.Value == null)
                                 {
@@ -1662,17 +1809,23 @@ namespace Technosoftware.UaServer.Diagnostics
                                     continue;
                                 }
 
-                                subscriptionDiagnosticsArray.Add(subscriptionDiagnostics.Value.Value);
+                                subscriptionDiagnosticsArray.Add(
+                                    subscriptionDiagnostics.Value.Value);
                             }
 
                             // update session subscription array.
-                            subscriptionsNode = (SubscriptionDiagnosticsArrayState)diagnostics.Summary.CreateChild(
-                                SystemContext,
-                                BrowseNames.SubscriptionDiagnosticsArray);
+                            subscriptionsNode = (SubscriptionDiagnosticsArrayState)
+                                diagnostics.Summary.CreateChild(
+                                    SystemContext,
+                                    BrowseNames.SubscriptionDiagnosticsArray);
 
-                            if (subscriptionsNode != null && (subscriptionsNode.Value == null || StatusCode.IsBad(subscriptionsNode.StatusCode) || subscriptionsChanged))
+                            if (subscriptionsNode != null &&
+                                (
+                                    subscriptionsNode.Value == null ||
+                                    StatusCode.IsBad(subscriptionsNode.StatusCode) ||
+                                    subscriptionsChanged))
                             {
-                                subscriptionsNode.Value = subscriptionDiagnosticsArray.ToArray();
+                                subscriptionsNode.Value = [.. subscriptionDiagnosticsArray];
                                 subscriptionsNode.ClearChangeMasks(SystemContext, false);
                             }
                         }
@@ -1685,14 +1838,16 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Unexpected error during diagnostics scan.");
+                m_logger.LogError(e, "Unexpected error during diagnostics scan.");
             }
         }
 
         /// <summary>
         /// Validates the view description passed to a browse request (throws on error).
         /// </summary>
-        protected override void ValidateViewDescription(UaServerContext context, ViewDescription view)
+        protected override void ValidateViewDescription(
+            UaServerContext context,
+            ViewDescription view)
         {
             // always accept all views so the root nodes appear in the view.
         }
@@ -1706,17 +1861,14 @@ namespace Technosoftware.UaServer.Diagnostics
         protected override void OnMonitoredItemCreated(
             UaServerContext context,
             UaNodeHandle handle,
-            UaMonitoredItem monitoredItem)
+            IUaSampledDataChangeMonitoredItem monitoredItem)
         {
             // check if the variable needs to be sampled.
-            if (monitoredItem.AttributeId == Attributes.Value)
+            if (monitoredItem.AttributeId == Attributes.Value &&
+                handle.Node is BaseVariableState variable &&
+                variable.MinimumSamplingInterval > 0)
             {
-                BaseVariableState variable = handle.Node as BaseVariableState;
-
-                if (variable != null && variable.MinimumSamplingInterval > 0)
-                {
-                    CreateSampledItem(monitoredItem.SamplingInterval, monitoredItem);
-                }
+                CreateSampledItem(monitoredItem.SamplingInterval, monitoredItem);
             }
 
             // check if diagnostics collection needs to be turned one.
@@ -1728,10 +1880,7 @@ namespace Technosoftware.UaServer.Diagnostics
                 {
                     m_diagnosticsMonitoringCount++;
 
-                    if (m_diagnosticsScanTimer == null)
-                    {
-                        m_diagnosticsScanTimer = new Timer(DoScan, null, 1000, 1000);
-                    }
+                    m_diagnosticsScanTimer ??= new Timer(DoScan, null, 1000, 1000);
 
                     DoScan(true);
                 }
@@ -1747,37 +1896,32 @@ namespace Technosoftware.UaServer.Diagnostics
         protected override void OnMonitoredItemDeleted(
             UaServerContext context,
             UaNodeHandle handle,
-            UaMonitoredItem monitoredItem)
+            IUaSampledDataChangeMonitoredItem monitoredItem)
         {
             // check if diagnostics collection needs to be turned off.
-            if (IsDiagnosticsNode(handle.Node))
+            if (IsDiagnosticsNode(handle.Node) &&
+                monitoredItem.MonitoringMode != MonitoringMode.Disabled)
             {
-                if (monitoredItem.MonitoringMode != MonitoringMode.Disabled)
+                m_diagnosticsMonitoringCount--;
+
+                if (m_diagnosticsMonitoringCount == 0 && m_diagnosticsScanTimer != null)
                 {
-                    m_diagnosticsMonitoringCount--;
+                    m_diagnosticsScanTimer.Dispose();
+                    m_diagnosticsScanTimer = null;
+                }
 
-                    if (m_diagnosticsMonitoringCount == 0 && m_diagnosticsScanTimer != null)
-                    {
-                        m_diagnosticsScanTimer.Dispose();
-                        m_diagnosticsScanTimer = null;
-                    }
-
-                    if (m_diagnosticsScanTimer != null)
-                    {
-                        DoScan(true);
-                    }
+                if (m_diagnosticsScanTimer != null)
+                {
+                    DoScan(true);
                 }
             }
 
             // check if sampling needs to be turned off.
-            if (monitoredItem.AttributeId == Attributes.Value)
+            if (monitoredItem.AttributeId == Attributes.Value &&
+                handle.Node is BaseVariableState variable &&
+                variable.MinimumSamplingInterval > 0)
             {
-                BaseVariableState variable = handle.Node as BaseVariableState;
-
-                if (variable != null && variable.MinimumSamplingInterval > 0)
-                {
-                    DeleteSampledItem(monitoredItem);
-                }
+                DeleteSampledItem(monitoredItem);
             }
         }
 
@@ -1792,7 +1936,7 @@ namespace Technosoftware.UaServer.Diagnostics
         protected override void OnMonitoringModeChanged(
             UaServerContext context,
             UaNodeHandle handle,
-            UaMonitoredItem monitoredItem,
+            IUaSampledDataChangeMonitoredItem monitoredItem,
             MonitoringMode previousMode,
             MonitoringMode monitoringMode)
         {
@@ -1808,26 +1952,149 @@ namespace Technosoftware.UaServer.Diagnostics
 
             if (m_diagnosticsMonitoringCount == 0 && m_diagnosticsScanTimer != null)
             {
-                if (m_diagnosticsScanTimer != null)
-                {
-                    m_diagnosticsScanTimer.Dispose();
-                    m_diagnosticsScanTimer = null;
-                }
+                m_diagnosticsScanTimer.Dispose();
+                m_diagnosticsScanTimer = null;
             }
-            else
+            else if (m_diagnosticsScanTimer != null)
             {
-                if (m_diagnosticsScanTimer != null)
-                {
-                    m_diagnosticsScanTimer = new Timer(DoScan, null, 1000, 1000);
-                }
+                m_diagnosticsScanTimer = new Timer(DoScan, null, 1000, 1000);
             }
         }
-        #endregion
 
-        #region Node Access Functions
-        #endregion
+#if V1_Methods
+        /// <summary>
+        /// Returns an index for the NamespaceURI (Adds it to the server namespace table if it does not already exist).
+        /// </summary>
+        /// <remarks>
+        /// Returns the server's default index (1) if the namespaceUri is empty or null.
+        /// </remarks>
+        public ushort GetNamespaceIndex(string namespaceUri)
+        {
+            int namespaceIndex = 1;
 
-        #region SessionDiagnosticsData Class
+            if (!String.IsNullOrEmpty(namespaceUri))
+            {
+                namespaceIndex = Server.NamespaceUris.GetIndex(namespaceUri);
+
+                if (namespaceIndex == -1)
+                {
+                    namespaceIndex = Server.NamespaceUris.Append(namespaceUri);
+                }
+            }
+
+            return (ushort)namespaceIndex;
+        }
+
+        public NodeId FindTargetId(NodeId sourceId, NodeId referenceTypeId, bool isInverse, QualifiedName browseName)
+        {
+            return null;
+        }
+
+        public ILocalNode GetLocalNode(NodeId nodeId)
+        {
+            return null;
+        }
+
+        public ILocalNode GetTargetNode(
+            NodeId sourceId,
+            NodeId referenceTypeId,
+            bool isInverse,
+            bool includeSubtypes,
+            QualifiedName browseName)
+        {
+            return null;
+        }
+
+        private ILocalNode GetTargetNode(
+            ILocalNode source,
+            NodeId referenceTypeId,
+            bool isInverse,
+            bool includeSubtypes,
+            QualifiedName browseName)
+        {
+            return null;
+        }
+
+        public void AttachNode(ILocalNode node) { }
+
+        public void ReplaceNode(ILocalNode existingNode, ILocalNode newNode) { }
+
+        public void DeleteNode(NodeId nodeId, bool deleteChildren, bool silent) { }
+
+        public ILocalNode ReferenceSharedNode(
+            ILocalNode source,
+            NodeId referenceTypeId,
+            bool isInverse,
+            QualifiedName browseName)
+        {
+            return null;
+        }
+
+        public ILocalNode UnreferenceSharedNode(
+            ILocalNode source,
+            NodeId referenceTypeId,
+            bool isInverse,
+            QualifiedName browseName)
+        {
+            return null;
+        }
+
+        public NodeId CreateUniqueNodeId()
+        {
+            return null;
+        }
+
+        public NodeId CreateObject(
+            NodeId parentId,
+            NodeId referenceTypeId,
+            NodeId nodeId,
+            QualifiedName browseName,
+            ObjectAttributes attributes,
+            ExpandedNodeId typeDefinitionId)
+        {
+            return null;
+        }
+
+        public NodeId CreateObjectType(
+            NodeId parentId,
+            NodeId nodeId,
+            QualifiedName browseName,
+            ObjectTypeAttributes attributes)
+        {
+            return null;
+        }
+
+        public NodeId CreateVariable(
+            NodeId parentId,
+            NodeId referenceTypeId,
+            NodeId nodeId,
+            QualifiedName browseName,
+            VariableAttributes attributes,
+            ExpandedNodeId typeDefinitionId)
+        {
+            return null;
+        }
+
+        public NodeId CreateVariableType(
+            NodeId parentId,
+            NodeId nodeId,
+            QualifiedName browseName,
+            VariableTypeAttributes attributes)
+        {
+            return null;
+        }
+
+        public NodeId CreateMethod(
+            NodeId parentId,
+            NodeId referenceTypeId,
+            NodeId nodeId,
+            QualifiedName browseName,
+            MethodAttributes attributes)
+        {
+            return null;
+        }
+#endif
+
         /// <summary>
         /// Stores the callback information for a session diagnostics structures.
         /// </summary>
@@ -1853,9 +2120,7 @@ namespace Technosoftware.UaServer.Diagnostics
             public SessionSecurityDiagnosticsValue SecurityValue;
             public NodeValueSimpleEventHandler SecurityUpdateCallback;
         }
-        #endregion
 
-        #region SubscriptionDiagnosticsData Class
         /// <summary>
         /// Stores the callback information for a subscription diagnostics structure.
         /// </summary>
@@ -1872,48 +2137,46 @@ namespace Technosoftware.UaServer.Diagnostics
             public SubscriptionDiagnosticsValue Value;
             public NodeValueSimpleEventHandler UpdateCallback;
         }
-        #endregion
 
-        #region Private Methods
         /// <summary>
         /// Creates a new sampled item.
         /// </summary>
-        private void CreateSampledItem(double samplingInterval, UaMonitoredItem monitoredItem)
+        private void CreateSampledItem(
+            double samplingInterval,
+            IUaSampledDataChangeMonitoredItem monitoredItem)
         {
             m_sampledItems.Add(monitoredItem);
 
-            if (m_samplingTimer == null)
-            {
-                m_samplingTimer = new Timer(DoSample, null, (int)m_minimumSamplingInterval, (int)m_minimumSamplingInterval);
-            }
+            m_samplingTimer ??= new Timer(
+                DoSample,
+                null,
+                (int)m_minimumSamplingInterval,
+                (int)m_minimumSamplingInterval);
         }
 
         /// <summary>
         /// Deletes a sampled item.
         /// </summary>
-        private void DeleteSampledItem(UaMonitoredItem monitoredItem)
+        private void DeleteSampledItem(IUaSampledDataChangeMonitoredItem monitoredItem)
         {
             for (int ii = 0; ii < m_sampledItems.Count; ii++)
             {
-                if (Object.ReferenceEquals(monitoredItem, m_sampledItems[ii]))
+                if (ReferenceEquals(monitoredItem, m_sampledItems[ii]))
                 {
                     m_sampledItems.RemoveAt(ii);
                     break;
                 }
             }
 
-            if (m_sampledItems.Count == 0)
+            if (m_sampledItems.Count == 0 && m_samplingTimer != null)
             {
-                if (m_samplingTimer != null)
-                {
-                    m_samplingTimer.Dispose();
-                    m_samplingTimer = null;
-                }
+                m_samplingTimer.Dispose();
+                m_samplingTimer = null;
             }
         }
 
         /// <summary>
-        /// Polls each monitored item which requires sample. 
+        /// Polls each monitored item which requires sample.
         /// </summary>
         private void DoSample(object state)
         {
@@ -1923,12 +2186,10 @@ namespace Technosoftware.UaServer.Diagnostics
                 {
                     for (int ii = 0; ii < m_sampledItems.Count; ii++)
                     {
-                        UaMonitoredItem monitoredItem = m_sampledItems[ii];
+                        IUaSampledDataChangeMonitoredItem monitoredItem = m_sampledItems[ii];
 
                         // get the handle.
-                        UaNodeHandle handle = monitoredItem.ManagerHandle as UaNodeHandle;
-
-                        if (handle == null)
+                        if (monitoredItem.ManagerHandle is not UaNodeHandle handle)
                         {
                             continue;
                         }
@@ -1940,7 +2201,7 @@ namespace Technosoftware.UaServer.Diagnostics
                         }
 
                         // read the value.
-                        DataValue value = new DataValue();
+                        var value = new DataValue();
 
                         ServiceResult error = handle.Node.ReadAttribute(
                             SystemContext,
@@ -1963,33 +2224,29 @@ namespace Technosoftware.UaServer.Diagnostics
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Unexpected error during diagnostics scan.");
+                m_logger.LogError(e, "Unexpected error during diagnostics scan.");
             }
         }
-        #endregion
 
-        #region Private Fields
-        private ushort m_namespaceIndex;
-        private long m_lastUsedId;
+        private readonly ushort m_namespaceIndex;
+        private uint m_lastUsedId;
         private Timer m_diagnosticsScanTimer;
         private int m_diagnosticsMonitoringCount;
-        private bool m_diagnosticsEnabled;
         private bool m_doScanBusy;
-        private bool m_durableSubscriptionsEnabled;
+        private readonly bool m_durableSubscriptionsEnabled;
         private DateTime m_lastDiagnosticsScanTime;
         private ServerDiagnosticsSummaryValue m_serverDiagnostics;
         private NodeValueSimpleEventHandler m_serverDiagnosticsCallback;
-        private List<SessionDiagnosticsData> m_sessions;
-        private List<SubscriptionDiagnosticsData> m_subscriptions;
+        private readonly List<SessionDiagnosticsData> m_sessions;
+        private readonly List<SubscriptionDiagnosticsData> m_subscriptions;
         private NodeId m_serverLockHolder;
         private Timer m_samplingTimer;
-        private List<UaMonitoredItem> m_sampledItems;
-        private double m_minimumSamplingInterval;
+        private readonly List<IUaSampledDataChangeMonitoredItem> m_sampledItems;
+        private readonly double m_minimumSamplingInterval;
         private HistoryServerCapabilitiesState m_historyCapabilities;
-        #endregion
 
-        #region Private Readonly Fields
-        private static readonly NodeId[] m_kWellKnownRoles = [
+        private static readonly NodeId[] s_kWellKnownRoles =
+        [
             ObjectIds.WellKnownRole_Anonymous,
             ObjectIds.WellKnownRole_AuthenticatedUser,
             ObjectIds.WellKnownRole_ConfigureAdmin,
@@ -1997,7 +2254,7 @@ namespace Technosoftware.UaServer.Diagnostics
             ObjectIds.WellKnownRole_Observer,
             ObjectIds.WellKnownRole_Operator,
             ObjectIds.WellKnownRole_SecurityAdmin,
-            ObjectIds.WellKnownRole_Supervisor ];
-        #endregion
+            ObjectIds.WellKnownRole_Supervisor
+        ];
     }
 }

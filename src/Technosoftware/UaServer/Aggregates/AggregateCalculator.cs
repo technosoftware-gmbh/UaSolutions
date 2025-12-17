@@ -16,41 +16,21 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Text;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Aggregates
+namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Calculates the value of an aggregate. 
+    /// Calculates the value of an aggregate.
     /// </summary>
     public class AggregateCalculator : IUaAggregateCalculator
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
-        /// Creates a default aggregator.
+        /// Create calculator
         /// </summary>
-        protected AggregateCalculator(NodeId aggregateId)
-        {
-            AggregateConfiguration configuration = new AggregateConfiguration();
-            configuration.TreatUncertainAsBad = false;
-            configuration.PercentDataBad = 100;
-            configuration.PercentDataGood = 100;
-            configuration.UseSlopedExtrapolation = false;
-            Initialize(aggregateId, DateTime.UtcNow, DateTime.MaxValue, 1000, false, configuration);
-        }
-
-        /// <summary>
-        /// Initializes the calculation stream.
-        /// </summary>
-        /// <param name="aggregateId">The aggregate function to apply.</param>
-        /// <param name="startTime">The start time.</param>
-        /// <param name="endTime">The end time.</param>
-        /// <param name="processingInterval">The processing interval.</param>
-        /// <param name="stepped">Whether to use stepped interpolation.</param>
-        /// <param name="configuration">The aggregate configuration.</param>
+        [Obsolete("Use constructor with ITelemetryContext")]
         public AggregateCalculator(
             NodeId aggregateId,
             DateTime startTime,
@@ -58,8 +38,8 @@ namespace Technosoftware.UaServer.Aggregates
             double processingInterval,
             bool stepped,
             AggregateConfiguration configuration)
+            : this(aggregateId, startTime, endTime, processingInterval, stepped, configuration, null)
         {
-            Initialize(aggregateId, startTime, endTime, processingInterval, stepped, configuration);
         }
 
         /// <summary>
@@ -71,27 +51,32 @@ namespace Technosoftware.UaServer.Aggregates
         /// <param name="processingInterval">The processing interval.</param>
         /// <param name="stepped">Whether to use stepped interpolation.</param>
         /// <param name="configuration">The aggregate configuration.</param>
-        protected void Initialize(
+        /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
+        public AggregateCalculator(
             NodeId aggregateId,
             DateTime startTime,
             DateTime endTime,
             double processingInterval,
             bool stepped,
-            AggregateConfiguration configuration)
+            AggregateConfiguration configuration,
+            ITelemetryContext telemetry)
         {
+            m_logger = telemetry.CreateLogger<AggregateCalculator>();
             AggregateId = aggregateId;
             StartTime = startTime;
             EndTime = endTime;
             ProcessingInterval = processingInterval;
             Stepped = stepped;
             Configuration = configuration;
-            TimeFlowsBackward = (endTime < startTime);
+            TimeFlowsBackward = endTime < startTime;
 
             if (processingInterval == 0)
             {
                 if (endTime == DateTime.MinValue || startTime == DateTime.MinValue)
                 {
-                    throw new ArgumentException("Non-zero processingInterval required.", nameof(processingInterval));
+                    throw new ArgumentException(
+                        "Non-zero processingInterval required.",
+                        nameof(processingInterval));
                 }
 
                 ProcessingInterval = Math.Abs((endTime - startTime).TotalMilliseconds);
@@ -99,13 +84,11 @@ namespace Technosoftware.UaServer.Aggregates
 
             m_values = new LinkedList<DataValue>();
         }
-        #endregion
 
-        #region IUaAggregateCalculator Members
         /// <summary>
         /// The aggregate function applied by the calculator.
         /// </summary>
-        public NodeId AggregateId { get; private set; }
+        public NodeId AggregateId { get; }
 
         /// <summary>
         /// Queues a raw value for processing.
@@ -143,12 +126,9 @@ namespace Technosoftware.UaServer.Aggregates
                     return false;
                 }
             }
-            else
+            else if (m_values.Last != null && CompareTimestamps(value, m_values.Last) < 0)
             {
-                if (m_values.Last != null && CompareTimestamps(value, m_values.Last) < 0)
-                {
-                    return false;
-                }
+                return false;
             }
 
             // ensure value list is always ordered from past to future.
@@ -197,12 +177,13 @@ namespace Technosoftware.UaServer.Aggregates
             DateTime earlyTime = CurrentSlice.StartTime;
             DateTime lateTime = CurrentSlice.EndTime;
 
-            if (CompareTimestamps(lateTime, m_values.First) < 0 || CompareTimestamps(earlyTime, m_values.Last) > 0)
+            if (CompareTimestamps(lateTime, m_values.First) < 0 ||
+                CompareTimestamps(earlyTime, m_values.Last) > 0)
             {
                 CurrentSlice.OutOfDataRange = true;
             }
 
-            Utils.LogTrace("Computing Aggregate {0:HH:mm:ss.fff}", CurrentSlice.StartTime);
+            m_logger.LogTrace("Computing Aggregate {StartTime:HH:mm:ss.fff}", CurrentSlice.StartTime);
 
             // compute the value.
             DataValue value = ComputeValue(CurrentSlice);
@@ -212,15 +193,17 @@ namespace Technosoftware.UaServer.Aggregates
             {
                 if (m_startOfData > earlyTime && m_startOfData < lateTime)
                 {
-                    value.StatusCode = value.StatusCode.SetAggregateBits(value.StatusCode.AggregateBits | AggregateBits.Partial);
+                    value.StatusCode = value.StatusCode.SetAggregateBits(
+                        value.StatusCode.AggregateBits | AggregateBits.Partial);
                 }
 
-                if (!UsingExtrapolation && !TimeFlowsBackward)
+                if (!UsingExtrapolation &&
+                    !TimeFlowsBackward &&
+                    m_endOfData >= earlyTime &&
+                    m_endOfData < lateTime)
                 {
-                    if (m_endOfData >= earlyTime && m_endOfData < lateTime)
-                    {
-                        value.StatusCode = value.StatusCode.SetAggregateBits(value.StatusCode.AggregateBits | AggregateBits.Partial);
-                    }
+                    value.StatusCode = value.StatusCode.SetAggregateBits(
+                        value.StatusCode.AggregateBits | AggregateBits.Partial);
                 }
             }
 
@@ -245,38 +228,39 @@ namespace Technosoftware.UaServer.Aggregates
                     }
                 }
             }
-            else
+            else if (CurrentSlice.EarlyBound != null)
             {
-                if (CurrentSlice.EarlyBound != null)
+                LinkedListNode<DataValue> ii = CurrentSlice.EarlyBound.Previous;
+
+                if (CurrentSlice.SecondEarlyBound != null)
                 {
-                    LinkedListNode<DataValue> ii = CurrentSlice.EarlyBound.Previous;
+                    ii = CurrentSlice.SecondEarlyBound.Previous;
+                }
 
-                    if (CurrentSlice.SecondEarlyBound != null)
-                    {
-                        ii = CurrentSlice.SecondEarlyBound.Previous;
-                    }
-
-                    while (ii != null)
-                    {
-                        LinkedListNode<DataValue> next = ii.Previous;
-                        m_values.Remove(ii);
-                        ii = next;
-                    }
+                while (ii != null)
+                {
+                    LinkedListNode<DataValue> next = ii.Previous;
+                    m_values.Remove(ii);
+                    ii = next;
                 }
             }
 
             // check if more to be done.
-            Complete = ((!TimeFlowsBackward && CurrentSlice.EndTime >= EndTime) || (TimeFlowsBackward && CurrentSlice.StartTime <= EndTime));
+            Complete =
+                (!TimeFlowsBackward && CurrentSlice.EndTime >= EndTime) ||
+                (TimeFlowsBackward && CurrentSlice.StartTime <= EndTime);
 
             if (Complete)
             {
                 // check if overlapping the end of data.
-                if (SetPartialBit && !UsingExtrapolation && !TimeFlowsBackward)
+                if (SetPartialBit &&
+                    !UsingExtrapolation &&
+                    !TimeFlowsBackward &&
+                    m_endOfData >= earlyTime &&
+                    m_endOfData < lateTime)
                 {
-                    if (m_endOfData >= earlyTime && m_endOfData < lateTime)
-                    {
-                        value.StatusCode = value.StatusCode.SetAggregateBits(value.StatusCode.AggregateBits | AggregateBits.Partial);
-                    }
+                    value.StatusCode = value.StatusCode.SetAggregateBits(
+                        value.StatusCode.AggregateBits | AggregateBits.Partial);
                 }
             }
             else
@@ -306,43 +290,41 @@ namespace Technosoftware.UaServer.Aggregates
 
             return CurrentSlice.EndTime <= currentTime;
         }
-        #endregion
-
-        #region Protected Methods
-        /// <summary>
-        /// The start time for the request. 
-        /// </summary>
-        protected DateTime StartTime { get; private set; }
 
         /// <summary>
-        /// The end time for the request. 
+        /// The start time for the request.
         /// </summary>
-        protected DateTime EndTime { get; private set; }
+        protected DateTime StartTime { get; }
+
+        /// <summary>
+        /// The end time for the request.
+        /// </summary>
+        protected DateTime EndTime { get; }
 
         /// <summary>
         /// The processing interval for the request.
         /// </summary>
-        protected double ProcessingInterval { get; private set; }
+        protected double ProcessingInterval { get; }
 
         /// <summary>
         /// True if the data series requires stepped interpolation.
         /// </summary>
-        protected bool Stepped { get; private set; }
+        protected bool Stepped { get; }
 
         /// <summary>
         /// The configuration to use when processing.
         /// </summary>
-        protected AggregateConfiguration Configuration { get; private set; }
+        protected AggregateConfiguration Configuration { get; }
 
         /// <summary>
         /// Whether to use the server timestamp for all processing.
         /// </summary>
-        protected bool UseServerTimestamp { get; private set; }
+        protected bool UseServerTimestamp { get; }
 
         /// <summary>
         /// True if data is being processed in reverse order.
         /// </summary>
-        protected bool TimeFlowsBackward { get; private set; }
+        protected bool TimeFlowsBackward { get; }
 
         /// <summary>
         /// Whether to use the server timestamp for all processing.
@@ -374,7 +356,7 @@ namespace Technosoftware.UaServer.Aggregates
         {
             if (value1 == null)
             {
-                return (value2 == null) ? 0 : -1;
+                return value2 == null ? 0 : -1;
             }
 
             if (value2 == null)
@@ -416,7 +398,7 @@ namespace Technosoftware.UaServer.Aggregates
         {
             if (value2 == null)
             {
-                return (value1 == null) ? 0 : +1;
+                return value1 == null ? 0 : +1;
             }
 
             return CompareTimestamps(value1, value2.Value);
@@ -428,11 +410,13 @@ namespace Technosoftware.UaServer.Aggregates
         /// <param name="value1">The first value to compare.</param>
         /// <param name="value2">The second value to compare.</param>
         /// <returns>Less than 0 if value1 is earlier than value2; 0 if they are equal; Greater than zero otherwise.</returns>
-        protected int CompareTimestamps(LinkedListNode<DataValue> value1, LinkedListNode<DataValue> value2)
+        protected int CompareTimestamps(
+            LinkedListNode<DataValue> value1,
+            LinkedListNode<DataValue> value2)
         {
             if (value1 == null)
             {
-                return (value2 == null) ? 0 : -1;
+                return value2 == null ? 0 : -1;
             }
 
             if (value2 == null)
@@ -460,10 +444,8 @@ namespace Technosoftware.UaServer.Aggregates
             {
                 return value1.CompareTo(value2.Value.ServerTimestamp);
             }
-            else
-            {
-                return value1.CompareTo(value2.Value.SourceTimestamp);
-            }
+
+            return value1.CompareTo(value2.Value.SourceTimestamp);
         }
 
         /// <summary>
@@ -485,12 +467,9 @@ namespace Technosoftware.UaServer.Aggregates
                     return false;
                 }
             }
-            else
+            else if (StatusCode.IsBad(value.StatusCode))
             {
-                if (StatusCode.IsBad(value.StatusCode))
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
@@ -502,12 +481,12 @@ namespace Technosoftware.UaServer.Aggregates
         protected class TimeSlice
         {
             /// <summary>
-            /// The start time for the slice. 
+            /// The start time for the slice.
             /// </summary>
             public DateTime StartTime { get; set; }
 
             /// <summary>
-            /// The end time for the slice. 
+            /// The end time for the slice.
             /// </summary>
             public DateTime EndTime { get; set; }
 
@@ -564,7 +543,7 @@ namespace Technosoftware.UaServer.Aggregates
         /// <returns>The new time slice.</returns>
         protected TimeSlice CreateSlice(TimeSlice previousSlice)
         {
-            TimeSlice slice = new TimeSlice();
+            var slice = new TimeSlice();
 
             // ensure slice is oriented from past to future even if request is going backwards.
             if (TimeFlowsBackward)
@@ -670,10 +649,7 @@ namespace Technosoftware.UaServer.Aggregates
                     }
 
                     // save first value in the slice.
-                    if (slice.End == null)
-                    {
-                        slice.End = ii;
-                    }
+                    slice.End ??= ii;
 
                     // save end of slice.
                     if (slice.Begin == null)
@@ -711,10 +687,7 @@ namespace Technosoftware.UaServer.Aggregates
                     }
 
                     // save first value in the slice.
-                    if (slice.Begin == null)
-                    {
-                        slice.Begin = ii;
-                    }
+                    slice.Begin ??= ii;
 
                     // save end of slice.
                     slice.End = ii;
@@ -723,8 +696,7 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // check if no more data needs to be collected.
-            LinkedListNode<DataValue> requiredBound = null;
-
+            LinkedListNode<DataValue> requiredBound;
             if (TimeFlowsBackward)
             {
                 // only need second early bound if using sloped extrapolation and there is no late bound.
@@ -770,10 +742,8 @@ namespace Technosoftware.UaServer.Aggregates
             {
                 return Interpolate(slice.EndTime, slice);
             }
-            else
-            {
-                return Interpolate(slice.StartTime, slice);
-            }
+
+            return Interpolate(slice.StartTime, slice);
         }
 
         /// <summary>
@@ -785,10 +755,8 @@ namespace Technosoftware.UaServer.Aggregates
             {
                 return GetNoDataValue(slice.EndTime);
             }
-            else
-            {
-                return GetNoDataValue(slice.StartTime);
-            }
+
+            return GetNoDataValue(slice.StartTime);
         }
 
         /// <summary>
@@ -800,10 +768,8 @@ namespace Technosoftware.UaServer.Aggregates
             {
                 return slice.EndTime;
             }
-            else
-            {
-                return slice.StartTime;
-            }
+
+            return slice.StartTime;
         }
 
         /// <summary>
@@ -822,34 +788,33 @@ namespace Technosoftware.UaServer.Aggregates
         /// <returns>The interpolated value.</returns>
         protected DataValue Interpolate(DateTime timestamp, TimeSlice reference)
         {
-            TimeSlice slice = new TimeSlice();
-            slice.StartTime = timestamp;
-            slice.EndTime = timestamp;
+            var slice = new TimeSlice { StartTime = timestamp, EndTime = timestamp };
             UpdateSlice(slice);
 
             // check for value at the timestamp.
-            if (slice.Begin != null)
+            if (slice.Begin != null && IsGood(slice.Begin.Value))
             {
-                if (IsGood(slice.Begin.Value))
-                {
-                    return slice.Begin.Value;
-                }
+                return slice.Begin.Value;
             }
 
-            DataValue dataValue = null;
             bool stepped = Stepped;
 
+            DataValue dataValue;
             // check if the required bounds are available.
             if (!Stepped)
             {
                 // check if sloped interpolation is possible.
                 if (slice.EarlyBound != null && slice.LateBound != null)
                 {
-                    dataValue = SlopedInterpolate(timestamp, slice.EarlyBound.Value, slice.LateBound.Value);
+                    dataValue = SlopedInterpolate(
+                        timestamp,
+                        slice.EarlyBound.Value,
+                        slice.LateBound.Value);
 
-                    if (!Object.ReferenceEquals(slice.EarlyBound.Next, slice.LateBound))
+                    if (!ReferenceEquals(slice.EarlyBound.Next, slice.LateBound))
                     {
-                        dataValue.StatusCode = dataValue.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        dataValue.StatusCode = dataValue.StatusCode
+                            .SetCodeBits(StatusCodes.UncertainDataSubNormal);
                     }
 
                     return dataValue;
@@ -858,15 +823,17 @@ namespace Technosoftware.UaServer.Aggregates
                 // check if extrapolation is possible.
                 if (slice.EarlyBound != null)
                 {
-                    if (Configuration.UseSlopedExtrapolation)
+                    if (Configuration.UseSlopedExtrapolation &&
+                        slice.SecondEarlyBound != null)
                     {
-                        if (slice.EarlyBound != null && slice.SecondEarlyBound != null)
-                        {
-                            UsingExtrapolation = true;
-                            dataValue = SlopedInterpolate(timestamp, slice.SecondEarlyBound.Value, slice.EarlyBound.Value);
-                            dataValue.StatusCode = dataValue.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
-                            return dataValue;
-                        }
+                        UsingExtrapolation = true;
+                        dataValue = SlopedInterpolate(
+                            timestamp,
+                            slice.SecondEarlyBound.Value,
+                            slice.EarlyBound.Value);
+                        dataValue.StatusCode = dataValue.StatusCode
+                            .SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        return dataValue;
                     }
 
                     // do stepped extrapolation.
@@ -875,20 +842,19 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // do stepped interpolation.
-            if (stepped)
+            if (stepped && slice.EarlyBound != null)
             {
-                if (slice.EarlyBound != null)
+                dataValue = SteppedInterpolate(timestamp, slice.EarlyBound.Value);
+
+                if (slice.EarlyBound.Next == null ||
+                    CompareTimestamps(timestamp, slice.EarlyBound.Next) > 0)
                 {
-                    dataValue = SteppedInterpolate(timestamp, slice.EarlyBound.Value);
-
-                    if (slice.EarlyBound.Next == null || CompareTimestamps(timestamp, slice.EarlyBound.Next) > 0)
-                    {
-                        UsingExtrapolation = true;
-                        dataValue.StatusCode = dataValue.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
-                    }
-
-                    return dataValue;
+                    UsingExtrapolation = true;
+                    dataValue.StatusCode = dataValue.StatusCode
+                        .SetCodeBits(StatusCodes.UncertainDataSubNormal);
                 }
+
+                return dataValue;
             }
 
             // no data found.
@@ -906,11 +872,13 @@ namespace Technosoftware.UaServer.Aggregates
                 return new DataValue(Variant.Null, StatusCodes.BadNoData, timestamp, timestamp);
             }
 
-            DataValue dataValue = new DataValue();
-            dataValue.WrappedValue = earlyBound.WrappedValue;
-            dataValue.SourceTimestamp = timestamp;
-            dataValue.ServerTimestamp = timestamp;
-            dataValue.StatusCode = StatusCodes.Good;
+            var dataValue = new DataValue
+            {
+                WrappedValue = earlyBound.WrappedValue,
+                SourceTimestamp = timestamp,
+                ServerTimestamp = timestamp,
+                StatusCode = StatusCodes.Good
+            };
 
             // update status code.
             if (StatusCode.IsBad(earlyBound.StatusCode))
@@ -924,14 +892,18 @@ namespace Technosoftware.UaServer.Aggregates
                 dataValue.StatusCode = StatusCodes.UncertainDataSubNormal;
             }
 
-            dataValue.StatusCode = dataValue.StatusCode.SetAggregateBits(AggregateBits.Interpolated);
+            dataValue.StatusCode = dataValue.StatusCode
+                .SetAggregateBits(AggregateBits.Interpolated);
             return dataValue;
         }
 
         /// <summary>
         /// Calculate the value at the timestamp using slopped interpolation.
         /// </summary>
-        public static DataValue SlopedInterpolate(DateTime timestamp, DataValue earlyBound, DataValue lateBound)
+        public static DataValue SlopedInterpolate(
+            DateTime timestamp,
+            DataValue earlyBound,
+            DataValue lateBound)
         {
             try
             {
@@ -948,7 +920,8 @@ namespace Technosoftware.UaServer.Aggregates
 
                     if (StatusCode.IsNotBad(dataValue2.StatusCode))
                     {
-                        dataValue2.StatusCode = dataValue2.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        dataValue2.StatusCode = dataValue2.StatusCode
+                            .SetCodeBits(StatusCodes.UncertainDataSubNormal);
                     }
 
                     return dataValue2;
@@ -959,32 +932,42 @@ namespace Technosoftware.UaServer.Aggregates
                 double lateValue = CastToDouble(lateBound);
 
                 // do interpolation.
-                double range = (lateBound.SourceTimestamp - earlyBound.SourceTimestamp).TotalMilliseconds;
+                double range = (lateBound.SourceTimestamp - earlyBound.SourceTimestamp)
+                    .TotalMilliseconds;
                 double slope = (lateValue - earlyValue) / range;
-                double calculatedValue = slope * (timestamp - earlyBound.SourceTimestamp).TotalMilliseconds + earlyValue;
+                double calculatedValue =
+                    (slope * (timestamp - earlyBound.SourceTimestamp).TotalMilliseconds) +
+                    earlyValue;
 
                 // convert back to original type.
-                DataValue dataValue = new DataValue();
-                dataValue.WrappedValue = CastToOriginalType(calculatedValue, earlyBound);
-                dataValue.SourceTimestamp = timestamp;
-                dataValue.ServerTimestamp = timestamp;
-                dataValue.StatusCode = StatusCodes.Good;
+                var dataValue = new DataValue
+                {
+                    WrappedValue = CastToOriginalType(calculatedValue, earlyBound),
+                    SourceTimestamp = timestamp,
+                    ServerTimestamp = timestamp,
+                    StatusCode = StatusCodes.Good
+                };
 
                 // update status code.
-                if (StatusCode.IsNotGood(earlyBound.StatusCode) || StatusCode.IsNotGood(lateBound.StatusCode))
+                if (StatusCode.IsNotGood(earlyBound.StatusCode) ||
+                    StatusCode.IsNotGood(lateBound.StatusCode))
                 {
                     dataValue.StatusCode = StatusCodes.UncertainDataSubNormal;
                 }
 
-                dataValue.StatusCode = dataValue.StatusCode.SetAggregateBits(AggregateBits.Interpolated);
+                dataValue.StatusCode = dataValue.StatusCode
+                    .SetAggregateBits(AggregateBits.Interpolated);
 
                 return dataValue;
             }
-
             // exception occurs on data conversion errors.
             catch (Exception)
             {
-                return new DataValue(Variant.Null, StatusCodes.BadTypeMismatch, timestamp, timestamp);
+                return new DataValue(
+                    Variant.Null,
+                    StatusCodes.BadTypeMismatch,
+                    timestamp,
+                    timestamp);
             }
         }
 
@@ -993,7 +976,10 @@ namespace Technosoftware.UaServer.Aggregates
         /// </summary>
         protected static double CastToDouble(DataValue value)
         {
-            return (double)TypeInfo.Cast(value.Value, value.WrappedValue.TypeInfo, BuiltInType.Double);
+            return (double)TypeInfo.Cast(
+                value.Value,
+                value.WrappedValue.TypeInfo,
+                BuiltInType.Double);
         }
 
         /// <summary>
@@ -1001,7 +987,10 @@ namespace Technosoftware.UaServer.Aggregates
         /// </summary>
         protected static Variant CastToOriginalType(double value, DataValue original)
         {
-            object castValue = TypeInfo.Cast(value, TypeInfo.Scalars.Double, original.WrappedValue.TypeInfo.BuiltInType);
+            object castValue = TypeInfo.Cast(
+                value,
+                TypeInfo.Scalars.Double,
+                original.WrappedValue.TypeInfo.BuiltInType);
             return new Variant(castValue, original.WrappedValue.TypeInfo);
         }
 
@@ -1010,13 +999,8 @@ namespace Technosoftware.UaServer.Aggregates
         /// </summary>
         protected DataValue GetSimpleBound(DateTime timestamp, TimeSlice slice)
         {
-            // choose the start point 
-            LinkedListNode<DataValue> start = slice.EarlyBound;
-
-            if (start == null)
-            {
-                start = m_values.First;
-            }
+            // choose the start point
+            LinkedListNode<DataValue> start = slice.EarlyBound ?? m_values.First;
 
             // look for a raw value at or immediately before the timestamp.
             LinkedListNode<DataValue> startBound = start;
@@ -1096,12 +1080,13 @@ namespace Technosoftware.UaServer.Aggregates
         protected List<DataValue> GetValuesWithSimpleBounds(TimeSlice slice)
         {
             // check if slice is beyond end of available data.
-            if (CompareTimestamps(slice.StartTime, m_values.Last) > 0 || CompareTimestamps(slice.EndTime, m_values.First) < 0)
+            if (CompareTimestamps(slice.StartTime, m_values.Last) > 0 ||
+                CompareTimestamps(slice.EndTime, m_values.First) < 0)
             {
                 return null;
             }
 
-            List<DataValue> values = [];
+            var values = new List<DataValue>();
 
             // add the start point.
             DataValue startBound = GetSimpleBound(slice.StartTime, slice);
@@ -1142,12 +1127,13 @@ namespace Technosoftware.UaServer.Aggregates
         protected List<DataValue> GetValues(TimeSlice slice)
         {
             // check if slice is beyond end of available data.
-            if (CompareTimestamps(slice.StartTime, m_values.Last) > 0 || CompareTimestamps(slice.EndTime, m_values.First) < 0)
+            if (CompareTimestamps(slice.StartTime, m_values.Last) > 0 ||
+                CompareTimestamps(slice.EndTime, m_values.First) < 0)
             {
                 return null;
             }
 
-            List<DataValue> values = [];
+            var values = new List<DataValue>();
 
             // initialize slice from value list.
             for (LinkedListNode<DataValue> ii = slice.Begin; ii != null; ii = ii.Next)
@@ -1192,7 +1178,7 @@ namespace Technosoftware.UaServer.Aggregates
                 return null;
             }
 
-            List<DataValue> values = [];
+            var values = new List<DataValue>();
 
             // add the start point.
             DataValue startBound = Interpolate(slice.StartTime, slice);
@@ -1266,7 +1252,10 @@ namespace Technosoftware.UaServer.Aggregates
         /// <summary>
         /// Returns the values in the list with simple bounds.
         /// </summary>
-        protected List<SubRegion> GetRegionsInValueSet(List<DataValue> values, bool ignoreBadData, bool useSteppedCalculations)
+        protected List<SubRegion> GetRegionsInValueSet(
+            List<DataValue> values,
+            bool ignoreBadData,
+            bool useSteppedCalculations)
         {
             // nothing to do if no data.
             if (values == null)
@@ -1275,7 +1264,7 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             SubRegion currentRegion = null;
-            List<SubRegion> regions = [];
+            var regions = new List<SubRegion>();
 
             for (int ii = 0; ii < values.Count; ii++)
             {
@@ -1324,12 +1313,10 @@ namespace Technosoftware.UaServer.Aggregates
                                 continue;
                             }
                         }
-                        else
+                        else if (!useSteppedCalculations &&
+                            StatusCode.IsNotGood(values[ii].StatusCode))
                         {
-                            if (!useSteppedCalculations && StatusCode.IsNotGood(values[ii].StatusCode))
-                            {
-                                currentRegion.StatusCode = StatusCodes.UncertainDataSubNormal;
-                            }
+                            currentRegion.StatusCode = StatusCodes.UncertainDataSubNormal;
                         }
                     }
                 }
@@ -1341,41 +1328,40 @@ namespace Technosoftware.UaServer.Aggregates
                     {
                         currentRegion.EndValue = currentRegion.StartValue;
                     }
-
                     // using interpolated calculations means the end affects the status of the current region.
+                    else if (IsGood(values[ii]))
+                    {
+                        // handle case with uncertain end point.
+                        if (StatusCode.IsNotGood(values[ii].StatusCode) &&
+                            StatusCode.IsNotBad(currentRegion.StatusCode))
+                        {
+                            currentRegion.StatusCode = StatusCodes.UncertainDataSubNormal;
+                        }
+
+                        currentRegion.EndValue = currentValue;
+                    }
                     else
                     {
-                        if (IsGood(values[ii]))
+                        if (StatusCode.IsNotBad(currentRegion.StatusCode))
                         {
-                            // handle case with uncertain end point.
-                            if (StatusCode.IsNotGood(values[ii].StatusCode) && StatusCode.IsNotBad(currentRegion.StatusCode))
-                            {
-                                currentRegion.StatusCode = StatusCodes.UncertainDataSubNormal;
-                            }
-
-                            currentRegion.EndValue = currentValue;
+                            currentRegion.StatusCode = StatusCodes.UncertainDataSubNormal;
                         }
-                        else
-                        {
-                            if (StatusCode.IsNotBad(currentRegion.StatusCode))
-                            {
-                                currentRegion.StatusCode = StatusCodes.UncertainDataSubNormal;
-                            }
 
-                            if (ignoreBadData && StatusCode.IsNotBad(currentStatus))
-                            {
-                                currentRegion.EndValue = currentValue;
-                            }
+                        if (ignoreBadData && StatusCode.IsNotBad(currentStatus))
+                        {
+                            currentRegion.EndValue = currentValue;
                         }
                     }
 
                     // if at end of data then duration is 1 tick.
                     // must be end of data if start of region is good yet end bound is bad.
-                    if (!ignoreBadData && currentRegion != null && IsGood(currentRegion.DataPoint) && currentStatus == StatusCodes.BadNoData && ii == values.Count - 1)
+                    if (!ignoreBadData &&
+                        IsGood(currentRegion.DataPoint) &&
+                        currentStatus == StatusCodes.BadNoData &&
+                        ii == values.Count - 1)
                     {
                         currentRegion.Duration = 1;
                     }
-
                     // calculate region span.
                     else
                     {
@@ -1385,28 +1371,34 @@ namespace Technosoftware.UaServer.Aggregates
                             currentStatus = StatusCodes.BadNoData;
                         }
 
-                        currentRegion.Duration = (currentTime - currentRegion.StartTime).TotalMilliseconds;
+                        currentRegion.Duration = (currentTime - currentRegion.StartTime)
+                            .TotalMilliseconds;
                     }
 
                     regions.Add(currentRegion);
                 }
 
                 // start a new region.
-                currentRegion = new SubRegion();
-                currentRegion.StartValue = currentValue;
-                currentRegion.EndValue = currentValue;
-                currentRegion.StartTime = currentTime;
-                currentRegion.StatusCode = currentStatus;
-                currentRegion.DataPoint = values[ii];
+                currentRegion = new SubRegion
+                {
+                    StartValue = currentValue,
+                    EndValue = currentValue,
+                    StartTime = currentTime,
+                    StatusCode = currentStatus,
+                    DataPoint = values[ii]
+                };
             }
 
             return regions;
         }
 
         /// <summary>
-        /// Calculates the value based status code for the slice 
+        /// Calculates the value based status code for the slice
         /// </summary>
-        protected StatusCode GetValueBasedStatusCode(TimeSlice slice, List<DataValue> values, StatusCode statusCode)
+        protected StatusCode GetValueBasedStatusCode(
+            TimeSlice slice,
+            List<DataValue> values,
+            StatusCode statusCode)
         {
             // compute the total good/bad/uncertain.
             double badCount = 0;
@@ -1429,12 +1421,12 @@ namespace Technosoftware.UaServer.Aggregates
                 }
             }
 
-            if (totalCount == 0 || (goodCount / totalCount) * 100 >= Configuration.PercentDataGood)
+            if (totalCount == 0 || goodCount / totalCount * 100 >= Configuration.PercentDataGood)
             {
                 // good if the good count is greater than or equal to the configured threshold.
                 statusCode = statusCode.SetCodeBits(StatusCodes.Good);
             }
-            else if ((badCount / totalCount) * 100 >= Configuration.PercentDataBad)
+            else if (badCount / totalCount * 100 >= Configuration.PercentDataBad)
             {
                 // bad if the bad count is greater than or equal to the configured threshold.
                 statusCode = StatusCodes.Bad;
@@ -1449,9 +1441,12 @@ namespace Technosoftware.UaServer.Aggregates
         }
 
         /// <summary>
-        /// Calculates the status code for the slice 
+        /// Calculates the status code for the slice
         /// </summary>
-        protected StatusCode GetTimeBasedStatusCode(TimeSlice slice, List<DataValue> values, StatusCode defaultCode)
+        protected StatusCode GetTimeBasedStatusCode(
+            TimeSlice slice,
+            List<DataValue> values,
+            StatusCode defaultCode)
         {
             // get the regions in the slice.
             List<SubRegion> regions = GetRegionsInValueSet(values, false, Stepped);
@@ -1465,7 +1460,7 @@ namespace Technosoftware.UaServer.Aggregates
         }
 
         /// <summary>
-        /// Calculates the status code for the slice 
+        /// Calculates the status code for the slice
         /// </summary>
         protected StatusCode GetTimeBasedStatusCode(List<SubRegion> regions, StatusCode statusCode)
         {
@@ -1491,19 +1486,21 @@ namespace Technosoftware.UaServer.Aggregates
                 }
 
                 // Take into account the Uncertain status code
-                if (StatusCode.IsGood(region.StatusCode)
-                    || (!Configuration.TreatUncertainAsBad && StatusCode.IsUncertain(region.StatusCode)))
+                if (StatusCode.IsGood(region.StatusCode) ||
+                    (!Configuration.TreatUncertainAsBad &&
+                        StatusCode.IsUncertain(region.StatusCode)))
                 {
                     goodDuration += region.Duration;
                 }
             }
 
-            if (totalDuration == 0 || (goodDuration / totalDuration) * 100 >= Configuration.PercentDataGood)
+            if (totalDuration == 0 ||
+                goodDuration / totalDuration * 100 >= Configuration.PercentDataGood)
             {
                 // good if the good duration is greater than or equal to the configured threshold.
                 statusCode = statusCode.SetCodeBits(StatusCodes.Good);
             }
-            else if ((badDuration / totalDuration) * 100 >= Configuration.PercentDataBad)
+            else if (badDuration / totalDuration * 100 >= Configuration.PercentDataBad)
             {
                 // bad if the bad duration is greater than or equal to the configured threshold.
                 statusCode = StatusCodes.Bad;
@@ -1517,12 +1514,10 @@ namespace Technosoftware.UaServer.Aggregates
             // always calculated.
             return statusCode;
         }
-        #endregion
 
-        #region Private Fields
-        private LinkedList<DataValue> m_values;
+        private readonly ILogger m_logger;
+        private readonly LinkedList<DataValue> m_values;
         private DateTime m_startOfData;
         private DateTime m_endOfData;
-        #endregion
     }
 }

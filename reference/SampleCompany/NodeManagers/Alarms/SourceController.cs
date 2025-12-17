@@ -11,9 +11,7 @@
 
 #region Using Directives
 using Opc.Ua;
-#endregion
-
-#pragma warning disable CS1591
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
@@ -25,12 +23,13 @@ namespace SampleCompany.NodeManagers.Alarms
             Source = source;
             Controller = controller;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Properties
         public AlarmController Controller { get; set; }
+
         public BaseDataVariableState Source { get; set; }
-        #endregion
+        #endregion Properties
 
     }
 }

@@ -4,7 +4,6 @@
     <File Path="documentation/Installation.md" />
   </Folder>
   <Folder Name="/Libraries/">
-    <Project Path="src/Technosoftware/UaBaseServer/Technosoftware.UaBaseServer.csproj" />
     <Project Path="src/Technosoftware/UaClient/Technosoftware.UaClient.csproj" />
     <Project Path="src/Technosoftware/UaServer/Technosoftware.UaServer.csproj" />
   </Folder>
@@ -31,7 +30,7 @@
     <File Path="version.props" />
   </Folder>
   <Folder Name="/Tests/">
-    <Project Path="Tests/Technosoftware.UaClient.Tests/Technosoftware.UaClient.Tests.csproj" />
-    <Project Path="Tests/Technosoftware.UaServer.Tests/Technosoftware.UaServer.Tests.csproj" />
+    <Project Path="Tests/Technosoftware/UaClient.Tests/Technosoftware.UaClient.Tests.csproj" />
+    <Project Path="Tests/Technosoftware/UaServer.Tests/Technosoftware.UaServer.Tests.csproj" />
   </Folder>
 </Solution>

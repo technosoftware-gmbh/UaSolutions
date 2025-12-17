@@ -10,30 +10,22 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System;
-using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-using System.Reflection;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
     public partial class TestSystemConditionState
     {
-        #region Initialization
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
         protected override void OnAfterCreate(ISystemContext context, NodeState node)
         {
             base.OnAfterCreate(context, node);
-            this.MonitoredNodeCount.OnSimpleReadValue = OnReadMonitoredNodeCount;
+            MonitoredNodeCount.OnSimpleReadValue = OnReadMonitoredNodeCount;
         }
-        #endregion
 
-        #region Protected Methods
         /// <summary>
         /// Reads the value for the MonitoredNodeCount.
         /// </summary>
@@ -42,9 +34,7 @@ namespace SampleCompany.NodeManagers.TestData
             NodeState node,
             ref object value)
         {
-            var system = context?.SystemHandle as TestDataSystem;
-
-            if (system == null)
+            if (context?.SystemHandle is not TestDataSystem system)
             {
                 return StatusCodes.BadOutOfService;
             }
@@ -52,6 +42,5 @@ namespace SampleCompany.NodeManagers.TestData
             value = system.MonitoredNodeCount;
             return ServiceResult.Good;
         }
-        #endregion
     }
 }

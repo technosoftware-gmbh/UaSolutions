@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using System.Text;
 
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {

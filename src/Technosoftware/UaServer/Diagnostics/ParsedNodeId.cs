@@ -16,9 +16,8 @@
 #region Using Directives
 using System;
 using System.Text;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -29,46 +28,29 @@ namespace Technosoftware.UaServer
     /// The NodeIds used by the samples are strings with an optional path appended.
     /// The RootType identifies the type of Root Node. The RootId is the unique identifier
     /// for the Root Node. The ComponentPath is constructed from the SymbolicNames
-    /// of one or more children of the Root Node. 
+    /// of one or more children of the Root Node.
     /// </remarks>
     public class ParsedNodeId
     {
-        #region Public Interface
         /// <summary>
         /// The namespace index that qualified the NodeId.
         /// </summary>
-        public ushort NamespaceIndex
-        {
-            get { return m_namespaceIndex; }
-            set { m_namespaceIndex = value; }
-        }
+        public ushort NamespaceIndex { get; set; }
 
         /// <summary>
         /// The identifier for the root of the NodeId.
         /// </summary>
-        public string RootId
-        {
-            get { return m_rootId; }
-            set { m_rootId = value; }
-        }
+        public string RootId { get; set; }
 
         /// <summary>
         /// The type of root node.
         /// </summary>
-        public int RootType
-        {
-            get { return m_rootType; }
-            set { m_rootType = value; }
-        }
+        public int RootType { get; set; }
 
         /// <summary>
         /// The relative path to the component identified by the NodeId.
         /// </summary>
-        public string ComponentPath
-        {
-            get { return m_componentPath; }
-            set { m_componentPath = value; }
-        }
+        public string ComponentPath { get; set; }
 
         /// <summary>
         /// Parses the specified node identifier.
@@ -90,11 +72,13 @@ namespace Technosoftware.UaServer
                 return null;
             }
 
-            ParsedNodeId parsedNodeId = new ParsedNodeId();
-            parsedNodeId.NamespaceIndex = nodeId.NamespaceIndex;
+            var parsedNodeId = new ParsedNodeId
+            {
+                NamespaceIndex = nodeId.NamespaceIndex,
 
-            // extract the type of identifier.
-            parsedNodeId.RootType = 0;
+                // extract the type of identifier.
+                RootType = 0
+            };
 
             int start = 0;
 
@@ -116,7 +100,7 @@ namespace Technosoftware.UaServer
             }
 
             // extract any component path.
-            StringBuilder buffer = new StringBuilder();
+            var buffer = new StringBuilder();
 
             int index = start + 1;
             int end = identifier.Length;
@@ -150,7 +134,7 @@ namespace Technosoftware.UaServer
 
             if (end < identifier.Length)
             {
-                parsedNodeId.ComponentPath = identifier.Substring(end);
+                parsedNodeId.ComponentPath = identifier[end..];
             }
 
             return parsedNodeId;
@@ -159,17 +143,22 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Constructs a node identifier from the component pieces.
         /// </summary>
-        public static NodeId Construct(int rootType, string rootId, ushort namespaceIndex, params string[] componentNames)
+        public static NodeId Construct(
+            int rootType,
+            string rootId,
+            ushort namespaceIndex,
+            params string[] componentNames)
         {
-            ParsedNodeId pnd = new ParsedNodeId();
-
-            pnd.RootType = rootType;
-            pnd.RootId = rootId;
-            pnd.NamespaceIndex = namespaceIndex;
+            var pnd = new ParsedNodeId
+            {
+                RootType = rootType,
+                RootId = rootId,
+                NamespaceIndex = namespaceIndex
+            };
 
             if (componentNames != null)
             {
-                StringBuilder path = new StringBuilder();
+                var path = new StringBuilder();
 
                 for (int ii = 0; ii < componentNames.Length; ii++)
                 {
@@ -202,21 +191,21 @@ namespace Technosoftware.UaServer
         /// <returns>The node identifier.</returns>
         public NodeId Construct(string componentName)
         {
-            StringBuilder buffer = new StringBuilder();
+            var buffer = new StringBuilder();
 
             // add the root type.
-            buffer.Append(RootType);
-            buffer.Append(':');
+            buffer.Append(RootType)
+                .Append(':');
 
             // add the root identifier.
-            if (this.RootId != null)
+            if (RootId != null)
             {
-                for (int ii = 0; ii < this.RootId.Length; ii++)
+                for (int ii = 0; ii < RootId.Length; ii++)
                 {
-                    char ch = this.RootId[ii];
+                    char ch = RootId[ii];
 
                     // escape any special characters.
-                    if (ch == '&' || ch == '?')
+                    if (ch is '&' or '?')
                     {
                         buffer.Append('&');
                     }
@@ -226,16 +215,16 @@ namespace Technosoftware.UaServer
             }
 
             // add the component path.
-            if (!string.IsNullOrEmpty(this.ComponentPath))
+            if (!string.IsNullOrEmpty(ComponentPath))
             {
-                buffer.Append('?');
-                buffer.Append(this.ComponentPath);
+                buffer.Append('?')
+                    .Append(ComponentPath);
             }
 
             // add the component name.
             if (!string.IsNullOrEmpty(componentName))
             {
-                if (string.IsNullOrEmpty(this.ComponentPath))
+                if (string.IsNullOrEmpty(ComponentPath))
                 {
                     buffer.Append('?');
                 }
@@ -248,7 +237,7 @@ namespace Technosoftware.UaServer
             }
 
             // construct the node id with the namespace index provided.
-            return new NodeId(buffer.ToString(), this.NamespaceIndex);
+            return new NodeId(buffer.ToString(), NamespaceIndex);
         }
 
         /// <summary>
@@ -262,26 +251,23 @@ namespace Technosoftware.UaServer
             }
 
             // components must be instances with a parent.
-            BaseInstanceState instance = component as BaseInstanceState;
 
-            if (instance == null || instance.Parent == null)
+            if (component is not BaseInstanceState instance || instance.Parent == null)
             {
                 return component.NodeId;
             }
 
             // parent must have a string identifier.
-            string parentId = instance.Parent.NodeId.Identifier as string;
-
-            if (parentId == null)
+            if (instance.Parent.NodeId.Identifier is not string parentId)
             {
                 return null;
             }
 
-            StringBuilder buffer = new StringBuilder();
+            var buffer = new StringBuilder();
             buffer.Append(parentId);
 
             // check if the parent is another component.
-            int index = parentId.IndexOf('?');
+            int index = parentId.IndexOf('?', StringComparison.Ordinal);
 
             if (index < 0)
             {
@@ -297,13 +283,5 @@ namespace Technosoftware.UaServer
             // return the node identifier.
             return new NodeId(buffer.ToString(), namespaceIndex);
         }
-        #endregion
-
-        #region Private Fields
-        private ushort m_namespaceIndex;
-        private string m_rootId;
-        private int m_rootType;
-        private string m_componentPath;
-        #endregion
     }
 }

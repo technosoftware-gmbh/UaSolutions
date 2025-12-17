@@ -16,9 +16,9 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -49,30 +49,26 @@ namespace Technosoftware.UaServer
             public MonitoringMode MonitoringMode;
         }
 
-        private static readonly Queue<Event> events_ = new Queue<Event>();
-        private static bool eventsEnabled_;
+        private static readonly Queue<Event> s_events = new();
+        private static bool s_eventsEnabled;
 
         /// <summary>
         /// Whether event queuing is enabled.
         /// </summary>
         public static bool EventsEnabled
         {
-            get => eventsEnabled_;
-
+            get => s_eventsEnabled;
             set
             {
-                if (eventsEnabled_ != value)
+                if (s_eventsEnabled != value && !value)
                 {
-                    if (!value)
+                    lock (s_events)
                     {
-                        lock (events_)
-                        {
-                            events_.Clear();
-                        }
+                        s_events.Clear();
                     }
                 }
 
-                eventsEnabled_ = value;
+                s_eventsEnabled = value;
             }
         }
 
@@ -81,12 +77,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         public static void ReportWriteValue(NodeId nodeId, DataValue value, StatusCode error)
         {
-            if (!eventsEnabled_)
+            if (!s_eventsEnabled)
             {
                 return;
             }
 
-            lock (events_)
+            lock (s_events)
             {
                 var e = new Event
                 {
@@ -104,7 +100,7 @@ namespace Technosoftware.UaServer
                     e.Value = new DataValue(error) { WrappedValue = value.WrappedValue };
                 }
 
-                events_.Enqueue(e);
+                s_events.Enqueue(e);
             }
         }
 
@@ -113,12 +109,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         public static void ReportQueuedValue(NodeId nodeId, uint serverHandle, DataValue value)
         {
-            if (!eventsEnabled_)
+            if (!s_eventsEnabled)
             {
                 return;
             }
 
-            lock (events_)
+            lock (s_events)
             {
                 var e = new Event
                 {
@@ -130,7 +126,7 @@ namespace Technosoftware.UaServer
                     Parameters = null,
                     MonitoringMode = MonitoringMode.Disabled
                 };
-                events_.Enqueue(e);
+                s_events.Enqueue(e);
             }
         }
 
@@ -139,12 +135,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         public static void ReportFilteredValue(NodeId nodeId, uint serverHandle, DataValue value)
         {
-            if (!eventsEnabled_)
+            if (!s_eventsEnabled)
             {
                 return;
             }
 
-            lock (events_)
+            lock (s_events)
             {
                 var e = new Event
                 {
@@ -156,7 +152,7 @@ namespace Technosoftware.UaServer
                     Parameters = null,
                     MonitoringMode = MonitoringMode.Disabled
                 };
-                events_.Enqueue(e);
+                s_events.Enqueue(e);
             }
         }
 
@@ -165,12 +161,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         public static void ReportDiscardedValue(NodeId nodeId, uint serverHandle, DataValue value)
         {
-            if (!eventsEnabled_)
+            if (!s_eventsEnabled)
             {
                 return;
             }
 
-            lock (events_)
+            lock (s_events)
             {
                 var e = new Event
                 {
@@ -182,7 +178,7 @@ namespace Technosoftware.UaServer
                     Parameters = null,
                     MonitoringMode = MonitoringMode.Disabled
                 };
-                events_.Enqueue(e);
+                s_events.Enqueue(e);
             }
         }
 
@@ -191,12 +187,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         public static void ReportPublishValue(NodeId nodeId, uint serverHandle, DataValue value)
         {
-            if (!eventsEnabled_)
+            if (!s_eventsEnabled)
             {
                 return;
             }
 
-            lock (events_)
+            lock (s_events)
             {
                 var e = new Event
                 {
@@ -208,7 +204,7 @@ namespace Technosoftware.UaServer
                     Parameters = null,
                     MonitoringMode = MonitoringMode.Disabled
                 };
-                events_.Enqueue(e);
+                s_events.Enqueue(e);
             }
         }
 
@@ -224,12 +220,12 @@ namespace Technosoftware.UaServer
             MonitoringFilter filter,
             MonitoringMode monitoringMode)
         {
-            if (!eventsEnabled_)
+            if (!s_eventsEnabled)
             {
                 return;
             }
 
-            lock (events_)
+            lock (s_events)
             {
                 var e = new Event
                 {
@@ -247,7 +243,7 @@ namespace Technosoftware.UaServer
                     },
                     MonitoringMode = monitoringMode
                 };
-                events_.Enqueue(e);
+                s_events.Enqueue(e);
             }
         }
 
@@ -263,12 +259,12 @@ namespace Technosoftware.UaServer
             MonitoringFilter filter,
             MonitoringMode monitoringMode)
         {
-            if (!eventsEnabled_)
+            if (!s_eventsEnabled)
             {
                 return;
             }
 
-            lock (events_)
+            lock (s_events)
             {
                 var e = new Event
                 {
@@ -286,11 +282,10 @@ namespace Technosoftware.UaServer
                     },
                     MonitoringMode = monitoringMode
                 };
-                events_.Enqueue(e);
+                s_events.Enqueue(e);
             }
         }
 
-        #region Error and Diagnostics
         /// <summary>
         /// Fills in the diagnostic information after an error.
         /// </summary>
@@ -298,13 +293,19 @@ namespace Technosoftware.UaServer
             uint code,
             UaServerOperationContext context,
             DiagnosticInfoCollection diagnosticInfos,
-            int index)
+            int index,
+            ILogger logger)
         {
             var error = new ServiceResult(code);
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos[index] = new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable);
+                diagnosticInfos[index] = new DiagnosticInfo(
+                    error,
+                    context.DiagnosticsMask,
+                    false,
+                    context.StringTable,
+                    logger);
             }
 
             return error.Code;
@@ -317,14 +318,16 @@ namespace Technosoftware.UaServer
             uint code,
             StatusCodeCollection results,
             DiagnosticInfoCollection diagnosticInfos,
-            UaServerOperationContext context)
+            UaServerOperationContext context,
+            ILogger logger)
         {
             var error = new ServiceResult(code);
             results.Add(error.Code);
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos.Add(new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable));
+                diagnosticInfos.Add(
+                    new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable, logger));
                 return true;
             }
 
@@ -339,14 +342,20 @@ namespace Technosoftware.UaServer
             StatusCodeCollection results,
             DiagnosticInfoCollection diagnosticInfos,
             int index,
-            UaServerOperationContext context)
+            UaServerOperationContext context,
+            ILogger logger)
         {
             var error = new ServiceResult(code);
             results[index] = error.Code;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos[index] = new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable);
+                diagnosticInfos[index] = new DiagnosticInfo(
+                    error,
+                    context.DiagnosticsMask,
+                    false,
+                    context.StringTable,
+                    logger);
                 return true;
             }
 
@@ -374,7 +383,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         public static DiagnosticInfoCollection CreateDiagnosticInfoCollection(
             UaServerOperationContext context,
-            IList<ServiceResult> errors)
+            IList<ServiceResult> errors,
+            ILogger logger)
         {
             // all done if no diagnostics requested.
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) == 0)
@@ -389,7 +399,12 @@ namespace Technosoftware.UaServer
             {
                 if (ServiceResult.IsBad(error))
                 {
-                    results.Add(new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable));
+                    results.Add(new DiagnosticInfo(
+                        error,
+                        context.DiagnosticsMask,
+                        false,
+                        context.StringTable,
+                        logger));
                 }
                 else
                 {
@@ -406,11 +421,12 @@ namespace Technosoftware.UaServer
         public static StatusCodeCollection CreateStatusCodeCollection(
             UaServerOperationContext context,
             IList<ServiceResult> errors,
-            out DiagnosticInfoCollection diagnosticInfos)
+            out DiagnosticInfoCollection diagnosticInfos,
+            ILogger logger)
         {
             diagnosticInfos = null;
 
-            var noErrors = true;
+            bool noErrors = true;
             var results = new StatusCodeCollection(errors.Count);
 
             foreach (ServiceResult error in errors)
@@ -429,7 +445,7 @@ namespace Technosoftware.UaServer
             // only generate diagnostics if errors exist.
             if (noErrors)
             {
-                diagnosticInfos = CreateDiagnosticInfoCollection(context, errors);
+                diagnosticInfos = CreateDiagnosticInfoCollection(context, errors, logger);
             }
 
             return results;
@@ -438,14 +454,29 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Creates the diagnostic info and translates any strings.
         /// </summary>
-        /// <param name="server">The server.</param>
-        /// <param name="context">The context containing the string stable.</param>
-        /// <param name="error">The error to translate.</param>
-        /// <returns>The diagnostics with references to the strings in the context string table.</returns>
+        [Obsolete("Use CreateDiagnosticInfo with ILogger")]
         public static DiagnosticInfo CreateDiagnosticInfo(
             IUaServerData server,
             UaServerOperationContext context,
             ServiceResult error)
+        {
+            ILogger logger = AmbientMessageContext.Telemetry.CreateLogger("ServerUtils");
+            return CreateDiagnosticInfo(server, context, error, logger);
+        }
+
+        /// <summary>
+        /// Creates the diagnostic info and translates any strings.
+        /// </summary>
+        /// <param name="server">The server.</param>
+        /// <param name="context">The context containing the string stable.</param>
+        /// <param name="error">The error to translate.</param>
+        /// <param name="logger">A contextual logger to log to</param>
+        /// <returns>The diagnostics with references to the strings in the context string table.</returns>
+        public static DiagnosticInfo CreateDiagnosticInfo(
+            IUaServerData server,
+            UaServerOperationContext context,
+            ServiceResult error,
+            ILogger logger)
         {
             if (error == null)
             {
@@ -459,14 +490,12 @@ namespace Technosoftware.UaServer
                 translatedError = server.ResourceManager.Translate(context.PreferredLocales, error);
             }
 
-            var diagnosticInfo = new DiagnosticInfo(
+            return new DiagnosticInfo(
                 translatedError,
                 context.DiagnosticsMask,
                 false,
-                context.StringTable);
-
-            return diagnosticInfo;
+                context.StringTable,
+                logger);
         }
-        #endregion
     }
 }

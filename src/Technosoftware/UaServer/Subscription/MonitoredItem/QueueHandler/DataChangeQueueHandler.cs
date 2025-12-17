@@ -1,31 +1,84 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Mangages a data value queue for a data change monitoredItem
     /// </summary>
-    public class DataChangeQueueHandler : IUaDataChangeQueueHandler
+    public interface IDataChangeQueueHandler : IDisposable
+    {
+        /// <summary>
+        /// Sets the queue size.
+        /// </summary>
+        /// <param name="queueSize">The new queue size.</param>
+        /// <param name="discardOldest">Whether to discard the oldest values if the queue overflows.</param>
+        /// <param name="diagnosticsMasks">Specifies which diagnostics which should be kept in the queue.</param>
+        void SetQueueSize(uint queueSize, bool discardOldest, DiagnosticsMasks diagnosticsMasks);
+
+        /// <summary>
+        /// Set the sampling interval of the queue
+        /// </summary>
+        /// <param name="samplingInterval">the sampling interval</param>
+        void SetSamplingInterval(double samplingInterval);
+
+        /// <summary>
+        /// Number of DataValues in the queue
+        /// </summary>
+        int ItemsInQueue { get; }
+
+        /// <summary>
+        /// Queues a value
+        /// </summary>
+        /// <param name="value">the dataValue</param>
+        /// <param name="error">the error</param>
+        void QueueValue(DataValue value, ServiceResult error);
+
+        /// <summary>
+        /// Dequeues the last item
+        /// </summary>
+        /// <returns>true if an item was dequeued</returns>
+        bool PublishSingleValue(
+            out DataValue value,
+            out ServiceResult error,
+            bool noEventLog = false);
+    }
+
+    /// <summary>
+    /// Mangages a data value queue for a data change monitoredItem
+    /// </summary>
+    public class DataChangeQueueHandler : IDataChangeQueueHandler
     {
         /// <summary>
         /// Creates a new Queue
@@ -33,9 +86,16 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <param name="monitoredItemId">the id of the monitored item</param>
         /// <param name="createDurable">true if a durable queue shall be created</param>
         /// <param name="queueFactory">the factory for <see cref="IUaDataChangeMonitoredItemQueue"/></param>
-        /// <param name="discardedValueHandler"></param>
-        public DataChangeQueueHandler(uint monitoredItemId, bool createDurable, IUaMonitoredItemQueueFactory queueFactory, Action discardedValueHandler = null)
+        /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
+        /// <param name="discardedValueHandler">Handler for discarded values</param>
+        public DataChangeQueueHandler(
+            uint monitoredItemId,
+            bool createDurable,
+            IUaMonitoredItemQueueFactory queueFactory,
+            ITelemetryContext telemetry,
+            Action discardedValueHandler = null)
         {
+            m_logger = telemetry.CreateLogger<DataChangeQueueHandler>();
             m_dataValueQueue = queueFactory.CreateDataChangeQueue(createDurable, monitoredItemId);
 
             m_discardedValueHandler = discardedValueHandler;
@@ -54,8 +114,11 @@ namespace Technosoftware.UaServer.Subscriptions
             IUaDataChangeMonitoredItemQueue dataValueQueue,
             bool discardOldest,
             double samplingInterval,
+            ITelemetryContext telemetry,
             Action discardedValueHandler = null)
         {
+            m_logger = telemetry.CreateLogger<DataChangeQueueHandler>();
+
             m_dataValueQueue = dataValueQueue;
             m_monitoredItemId = dataValueQueue.QueueSize;
             m_discardOldest = discardOldest;
@@ -71,7 +134,10 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <param name="queueSize">The new queue size.</param>
         /// <param name="discardOldest">Whether to discard the oldest values if the queue overflows.</param>
         /// <param name="diagnosticsMasks">Specifies which diagnostics which should be kept in the queue.</param>
-        public void SetQueueSize(uint queueSize, bool discardOldest, DiagnosticsMasks diagnosticsMasks)
+        public void SetQueueSize(
+            uint queueSize,
+            bool discardOldest,
+            DiagnosticsMasks diagnosticsMasks)
         {
             bool queueErrors = (diagnosticsMasks & DiagnosticsMasks.OperationAll) != 0;
 
@@ -106,6 +172,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
             }
         }
+
         /// <summary>
         /// Set the sampling interval of the queue
         /// </summary>
@@ -130,10 +197,12 @@ namespace Technosoftware.UaServer.Subscriptions
                 m_nextSampleTime = 0;
             }
         }
+
         /// <summary>
         /// Number of DataValues in the queue
         /// </summary>
         public int ItemsInQueue => m_dataValueQueue.ItemsInQueue;
+
         /// <summary>
         /// Queues a value
         /// </summary>
@@ -174,10 +243,14 @@ namespace Technosoftware.UaServer.Subscriptions
             // queue next value.
             Enqueue(value, error);
         }
+
         /// <summary>
         /// Deques the last item
         /// </summary>
-        public bool PublishSingleValue(out DataValue value, out ServiceResult error, bool noEventLog = false)
+        public bool PublishSingleValue(
+            out DataValue value,
+            out ServiceResult error,
+            bool noEventLog = false)
         {
             if (m_dataValueQueue.Dequeue(out value, out error))
             {
@@ -187,9 +260,14 @@ namespace Technosoftware.UaServer.Subscriptions
                     m_overflow = null;
                 }
 
-                if (!noEventLog)
+                if (!noEventLog && m_logger.IsEnabled(LogLevel.Trace))
                 {
-                    UaServerUtils.EventLog.DequeueValue(value.WrappedValue, value.StatusCode);
+                    m_logger.LogTrace(
+                        "DEQUEUE VALUE: Value={Value} CODE={Code}<{Code:X8}> OVERFLOW={Overflow}",
+                        value.WrappedValue,
+                        value.StatusCode.Code,
+                        value.StatusCode.Code,
+                        value.StatusCode.Overflow);
                 }
 
                 return true;
@@ -202,7 +280,10 @@ namespace Technosoftware.UaServer.Subscriptions
             // check for empty queue.
             if (m_dataValueQueue.ItemsInQueue == 0)
             {
-                UaServerUtils.EventLog.EnqueueValue(value.WrappedValue);
+                if (m_logger.IsEnabled(LogLevel.Trace))
+                {
+                    m_logger.LogTrace("ENQUEUE VALUE: Value={Value}", value.WrappedValue);
+                }
 
                 m_dataValueQueue.Enqueue(value, error);
 
@@ -210,7 +291,8 @@ namespace Technosoftware.UaServer.Subscriptions
             }
 
             // check if the latest value has initial dummy data
-            if (m_dataValueQueue.PeekLastValue()?.StatusCode == StatusCodes.BadWaitingForInitialData)
+            if (m_dataValueQueue.PeekLastValue()?.StatusCode == StatusCodes
+                .BadWaitingForInitialData)
             {
                 // overwrite the last value
                 m_dataValueQueue.OverwriteLastValue(value, error);
@@ -225,7 +307,10 @@ namespace Technosoftware.UaServer.Subscriptions
 
                 if (!m_discardOldest)
                 {
-                    UaServerUtils.ReportDiscardedValue(null, m_monitoredItemId, m_dataValueQueue.PeekLastValue());
+                    UaServerUtils.ReportDiscardedValue(
+                        null,
+                        m_monitoredItemId,
+                        m_dataValueQueue.PeekLastValue());
 
                     //set overflow bit in newest value
                     m_overflow = value;
@@ -242,14 +327,16 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
                 else
                 {
-                    throw new ServiceResultException(StatusCodes.BadInternalError, "Error queueing DataValue. DataValueQueue was full but it was not possible to discard the oldest value.");
+                    throw new ServiceResultException(
+                        StatusCodes.BadInternalError,
+                        "Error queueing DataValue. DataValueQueue was full but it was not possible to discard the oldest value.");
                 }
                 //set overflow bit in oldest value
                 m_overflow = m_dataValueQueue.PeekOldestValue();
             }
-            else
+            else if (m_logger.IsEnabled(LogLevel.Trace))
             {
-                UaServerUtils.EventLog.EnqueueValue(value.WrappedValue);
+                m_logger.LogTrace("ENQUEUE VALUE: Value={Value}", value.WrappedValue);
             }
 
             m_dataValueQueue.Enqueue(value, error);
@@ -260,7 +347,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         /// <param name="value">The value to update.</param>
         /// <param name="error">The error to update.</param>
-        private void SetOverflowBit(ref DataValue value, ref ServiceResult error)
+        private static void SetOverflowBit(ref DataValue value, ref ServiceResult error)
         {
             if (value != null)
             {
@@ -275,27 +362,35 @@ namespace Technosoftware.UaServer.Subscriptions
                 status.Overflow = true;
 
                 // have to copy before updating because the ServiceResult is invariant.
-                ServiceResult copy = new ServiceResult(
-                    status,
-                    error.SymbolicId,
+                error = new ServiceResult(
                     error.NamespaceUri,
+                    status,
                     error.LocalizedText,
                     error.AdditionalInfo,
                     error.InnerResult);
-
-                error = copy;
             }
         }
-        /// <summary>
-        /// Dispose the queue
-        /// </summary>
+
+        /// <inheritdoc/>
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            Utils.SilentDispose(m_dataValueQueue);
+        /// <summary>
+        /// Overridable method to dispose of resources.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Utils.SilentDispose(m_dataValueQueue);
+            }
         }
 
         private readonly IUaDataChangeMonitoredItemQueue m_dataValueQueue;
+        private readonly ILogger m_logger;
         private readonly uint m_monitoredItemId;
         private bool m_discardOldest;
         private long m_nextSampleTime;
@@ -303,5 +398,4 @@ namespace Technosoftware.UaServer.Subscriptions
         private readonly Action m_discardedValueHandler;
         private DataValue m_overflow;
     }
-
 }

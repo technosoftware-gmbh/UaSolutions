@@ -12,76 +12,47 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using SampleCompany.Common;
 using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Sessions;
-using SampleCompany.Common;
 #endregion Using Directives
 
 namespace SampleCompany.ReferenceServer
 {
-    /// <summary>
-    /// Main class for the Sample UA server
-    /// </summary>
-    /// <typeparam name="T">Any class based on the UaStandardServer class.</typeparam>
     public class MyUaServer<T>
         where T : UaStandardServer, new()
     {
-        #region Public Properties
-        /// <summary>
-        /// Application instance used by the UA server.
-        /// </summary>
         public ApplicationInstance Application { get; private set; }
 
-        /// <summary>
-        /// Application configuration used by the UA server.
-        /// </summary>
         public ApplicationConfiguration Configuration => Application.ApplicationConfiguration;
 
-        /// <summary>
-        /// Specifies whether a certificate is automatically accepted (True) or not (False).
-        /// </summary>
         public bool AutoAccept { get; set; }
 
-        /// <summary>
-        /// In case the private key is protected by a password it is specified by this property.
-        /// </summary>
-        public string Password { get; set; }
+        public char[] Password { get; set; }
 
-        /// <summary>
-        /// The exit code at the time the server stopped.
-        /// </summary>
         public ExitCode ExitCode { get; private set; }
 
-        /// <summary>
-        /// The server object
-        /// </summary>
         public T Server { get; private set; }
-        #endregion Public Properties
 
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Ctor of the server.
         /// </summary>
-        /// <param name="writer">The text output.</param>
-        public MyUaServer(TextWriter writer)
+        /// <param name="telemetry">The telemetry context.</param>
+        public MyUaServer(ITelemetryContext telemetry)
         {
-            m_output = writer;
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<MyUaServer<T>>();
         }
-        #endregion Constructors, Destructor, Initialization
 
-        #region Public Methods
         /// <summary>
         /// Load the application configuration.
         /// </summary>
-        /// <param name="applicationName">The name of the application.</param>
-        /// <param name="configSectionName">The section name within the configuration.</param>
         /// <exception cref="ErrorExitException"></exception>
         public async Task LoadAsync(string applicationName, string configSectionName)
         {
@@ -89,20 +60,18 @@ namespace SampleCompany.ReferenceServer
             {
                 ExitCode = ExitCode.ErrorNotStarted;
 
-                ApplicationInstance.MessageDlg = new ApplicationMessageDlg(m_output);
+                ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
                 var passwordProvider = new CertificatePasswordProvider(Password);
-                Application = new ApplicationInstance
+                Application = new ApplicationInstance(m_telemetry)
                 {
                     ApplicationName = applicationName,
                     ApplicationType = ApplicationType.Server,
                     ConfigSectionName = configSectionName,
-                    CertificatePasswordProvider = passwordProvider,
-                    DisableCertificateAutoCreation = false
+                    CertificatePasswordProvider = passwordProvider
                 };
 
                 // load the application configuration.
                 await Application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
-
             }
             catch (Exception ex)
             {
@@ -113,7 +82,6 @@ namespace SampleCompany.ReferenceServer
         /// <summary>
         /// Load the application configuration.
         /// </summary>
-        /// <param name="renewCertificate">Specifies whether the certificate should be renewed (true) or not (false)</param>
         /// <exception cref="ErrorExitException"></exception>
         public async Task CheckCertificateAsync(bool renewCertificate)
         {
@@ -137,7 +105,7 @@ namespace SampleCompany.ReferenceServer
                 if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
                 {
                     config.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(
-                        OnCertificateValidation
+                        CertificateValidator_CertificateValidation
                     );
                 }
             }
@@ -189,18 +157,18 @@ namespace SampleCompany.ReferenceServer
                 ExitCode = ExitCode.ErrorRunning;
 
                 // print endpoint info
-                foreach (string endpoint in Application.BaseServer.GetEndpoints().Select(e => e.EndpointUrl).Distinct())
+                foreach (string endpoint in Application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct())
                 {
-                    m_output.WriteLine(endpoint);
+                    Console.WriteLine(endpoint);
                 }
 
                 // start the status thread
                 m_status = Task.Run(StatusThreadAsync);
 
                 // print notification on session events
-                Server.CurrentInstance.SessionManager.SessionActivatedEvent += OnEventStatus;
-                Server.CurrentInstance.SessionManager.SessionClosingEvent += OnEventStatus;
-                Server.CurrentInstance.SessionManager.SessionCreatedEvent += OnEventStatus;
+                Server.CurrentInstance.SessionManager.SessionActivated += OnEventStatus;
+                Server.CurrentInstance.SessionManager.SessionClosing += OnEventStatus;
+                Server.CurrentInstance.SessionManager.SessionCreated += OnEventStatus;
             }
             catch (Exception ex)
             {
@@ -224,7 +192,7 @@ namespace SampleCompany.ReferenceServer
                     await m_status.ConfigureAwait(false);
 
                     // Stop server and dispose
-                    server.Stop();
+                    await server.StopAsync().ConfigureAwait(false);
                 }
 
                 ExitCode = ExitCode.Ok;
@@ -234,30 +202,28 @@ namespace SampleCompany.ReferenceServer
                 throw new ErrorExitException(ex.Message, ExitCode.ErrorStopping);
             }
         }
-        #endregion Public Methods
 
-        #region Event Handlers
         /// <summary>
         /// The certificate validator is used
         /// if auto accept is not selected in the configuration.
         /// </summary>
-        private void OnCertificateValidation(
+        private void CertificateValidator_CertificateValidation(
             CertificateValidator validator,
             CertificateValidationEventArgs e
         )
         {
             if (e.Error.StatusCode == StatusCodes.BadCertificateUntrusted && AutoAccept)
             {
-                m_output.WriteLine(
-                    "Accepted Certificate: [{0}] [{1}]",
+                m_logger.LogInformation(
+                    "Accepted Certificate: [{Subject}] [{Thumbprint}]",
                     e.Certificate.Subject,
                     e.Certificate.Thumbprint
                 );
                 e.Accept = true;
                 return;
             }
-            m_output.WriteLine(
-                "Rejected Certificate: {0} [{1}] [{2}]",
+            m_logger.LogInformation(
+                "Rejected Certificate: {Error} [{Subject}] [{Thumbprint}]",
                 e.Error,
                 e.Certificate.Subject,
                 e.Certificate.Thumbprint
@@ -269,48 +235,44 @@ namespace SampleCompany.ReferenceServer
         /// </summary>
         private void OnEventStatus(object sender, SessionEventArgs eventArgs)
         {
-            m_lastEventTime = DateTime.UtcNow;
-            var session = sender as Session;
-            PrintSessionStatus(session, eventArgs.Reason.ToString());
-        }
-        #endregion Event Handlers
+            IUaSession session = (IUaSession)sender;
 
-        #region Helper Methods
+            m_lastEventTime = DateTime.UtcNow;
+            LogSessionStatusFull(session, eventArgs.Reason.ToString());
+        }
+
         /// <summary>
         /// Output the status of a connected session.
         /// </summary>
-        /// <param name="session">The session.</param>
-        /// <param name="reason">The reason</param>
-        /// <param name="lastContact">true if the date/time of the last event should also be in the output; false if not.</param>
-        private void PrintSessionStatus(Session session, string reason, bool lastContact = false)
+        private void LogSessionStatusLastContact(IUaSession session, string reason)
         {
-            var item = new StringBuilder();
             lock (session.DiagnosticsLock)
             {
-                item.AppendFormat(
-                    CultureInfo.InvariantCulture,
-                    "{0,9}:{1,20}:",
+                m_logger.LogInformation(
+                    "{Reason,9}:{Session,20}:Last Event:{LastContactTime:HH:mm:ss}",
                     reason,
-                    session.SessionDiagnostics.SessionName
+                    session.SessionDiagnostics.SessionName,
+                    session.SessionDiagnostics.ClientLastContactTime.ToLocalTime()
                 );
-                if (lastContact)
-                {
-                    item.AppendFormat(
-                        CultureInfo.InvariantCulture,
-                        "Last Event:{0:HH:mm:ss}",
-                        session.SessionDiagnostics.ClientLastContactTime.ToLocalTime()
-                    );
-                }
-                else
-                {
-                    if (session.Identity != null)
-                    {
-                        item.AppendFormat(CultureInfo.InvariantCulture, ":{0,20}", session.Identity.DisplayName);
-                    }
-                    item.AppendFormat(CultureInfo.InvariantCulture, ":{0}", session.Id);
-                }
             }
-            m_output.WriteLine(item.ToString());
+        }
+
+        /// <summary>
+        /// Output the status of a connected session.
+        /// </summary>
+        private void LogSessionStatusFull(IUaSession session, string reason)
+        {
+            lock (session.DiagnosticsLock)
+            {
+                m_logger.LogInformation(
+                    "{Reason,9}:{Session,20}:Last Event:{LastContactTime:HH:mm:ss}:{UserIdentity,20}:{SessionId}",
+                    reason,
+                    session.SessionDiagnostics.SessionName,
+                    session.SessionDiagnostics.ClientLastContactTime.ToLocalTime(),
+                    session.Identity?.DisplayName ?? "Anonymous",
+                    session.Id
+                );
+            }
         }
 
         /// <summary>
@@ -322,23 +284,70 @@ namespace SampleCompany.ReferenceServer
             {
                 if (DateTime.UtcNow - m_lastEventTime > TimeSpan.FromMilliseconds(10000))
                 {
-                    IList<Session> sessions = Server.CurrentInstance.SessionManager.GetSessions();
+                    IList<IUaSession> sessions = Server.CurrentInstance.SessionManager.GetSessions();
                     for (int ii = 0; ii < sessions.Count; ii++)
                     {
-                        Session session = sessions[ii];
-                        PrintSessionStatus(session, "-Status-", true);
+                        IUaSession session = sessions[ii];
+                        LogSessionStatusLastContact(session, "-Status-");
                     }
                     m_lastEventTime = DateTime.UtcNow;
                 }
                 await Task.Delay(1000).ConfigureAwait(false);
             }
         }
-        #endregion Helper Methods
 
-        #region Private Fields
-        private readonly TextWriter m_output;
+        /// <summary>
+        /// A dialog which asks for user input.
+        /// </summary>
+        public class ApplicationMessageDlg : IUaApplicationMessageDlg
+        {
+            private readonly TextWriter m_output;
+            private string m_message = string.Empty;
+            private bool m_ask;
+
+            public ApplicationMessageDlg(TextWriter output = null)
+            {
+                m_output = output ?? Console.Out;
+            }
+
+            public override void Message(string text, bool ask)
+            {
+                m_message = text;
+                m_ask = ask;
+            }
+
+            public override async Task<bool> ShowAsync()
+            {
+                if (m_ask)
+                {
+                    var message = new StringBuilder(m_message);
+                    message.Append(" (y/n, default y): ");
+                    m_output.Write(message.ToString());
+
+                    try
+                    {
+                        ConsoleKeyInfo result = Console.ReadKey();
+                        m_output.WriteLine();
+                        return await Task.FromResult(result.KeyChar is 'y' or 'Y' or '\r')
+                            .ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        // intentionally fall through
+                    }
+                }
+                else
+                {
+                    m_output.WriteLine(m_message);
+                }
+
+                return await Task.FromResult(true).ConfigureAwait(false);
+            }
+        }
+
+        private readonly ITelemetryContext m_telemetry;
+        private readonly ILogger m_logger;
         private Task m_status;
         private DateTime m_lastEventTime;
-        #endregion Private Fields
     }
 }

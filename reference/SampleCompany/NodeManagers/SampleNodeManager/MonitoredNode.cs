@@ -10,14 +10,10 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System;
 using System.Collections.Generic;
-
 using Opc.Ua;
-
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.SampleNodeManager
 {
@@ -26,58 +22,44 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
     /// </summary>
     public class MonitoredNode
     {
-        #region Constructors
         /// <summary>
         /// Initializes the instance with the context for the node being monitored.
         /// </summary>
-        public MonitoredNode(
-            IUaServerData server,
-            IUaNodeManager nodeManager,
-            NodeState node)
+        public MonitoredNode(IUaServerData server, IUaNodeManager nodeManager, NodeState node)
         {
-            server_ = server;
-            nodeManager_ = nodeManager;
-            node_ = node;
+            Server = server;
+            NodeManager = nodeManager;
+            Node = node;
         }
-        #endregion
 
-        #region Public Properties
         /// <summary>
         /// The server that the node belongs to.
         /// </summary>
-        public IUaServerData Server
-        {
-            get { return server_; }
-        }
+        public IUaServerData Server { get; }
 
         /// <summary>
         /// The node manager that the node belongs to.
         /// </summary>
-        public IUaNodeManager NodeManager
-        {
-            get { return nodeManager_; }
-        }
+        public IUaNodeManager NodeManager { get; }
 
         /// <summary>
         /// The node being monitored.
         /// </summary>
-        public NodeState Node
-        {
-            get { return node_; }
-        }
+        public NodeState Node { get; }
 
         /// <summary>
         /// Whether the node has any active monitored items for the specified attribute.
         /// </summary>
         public bool IsMonitoringRequired(uint attributeId)
         {
-            if (monitoredItems_ != null)
+            if (m_monitoredItems != null)
             {
-                for (var ii = 0; ii < monitoredItems_.Count; ii++)
+                for (int ii = 0; ii < m_monitoredItems.Count; ii++)
                 {
-                    DataChangeMonitoredItem monitoredItem = monitoredItems_[ii];
+                    DataChangeMonitoredItem monitoredItem = m_monitoredItems[ii];
 
-                    if (monitoredItem.AttributeId == attributeId && monitoredItem.MonitoringMode != MonitoringMode.Disabled)
+                    if (monitoredItem.AttributeId == attributeId &&
+                        monitoredItem.MonitoringMode != MonitoringMode.Disabled)
                     {
                         return true;
                     }
@@ -86,9 +68,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
 
             return false;
         }
-        #endregion
 
-        #region Public Methods
         /// <summary>
         /// Creates a new data change monitored item.
         /// </summary>
@@ -122,7 +102,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             uint queueSize,
             bool discardOldest,
             DataChangeFilter filter,
-            Opc.Ua.Range range,
+            Range range,
             bool alwaysReportUpdates)
         {
             var monitoredItem = new DataChangeMonitoredItem(
@@ -143,13 +123,13 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                 range,
                 alwaysReportUpdates);
 
-            if (monitoredItems_ == null)
+            if (m_monitoredItems == null)
             {
-                monitoredItems_ = new List<DataChangeMonitoredItem>();
-                node_.OnStateChanged = OnNodeChange;
+                m_monitoredItems = [];
+                Node.OnStateChanged = OnNodeChange;
             }
 
-            monitoredItems_.Add(monitoredItem);
+            m_monitoredItems.Add(monitoredItem);
 
             return monitoredItem;
         }
@@ -207,19 +187,19 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         public DataChangeMonitoredItem RestoreDataChangeItem(
             IUaStoredMonitoredItem storedMonitoredItem)
         {
-            DataChangeMonitoredItem monitoredItem = new DataChangeMonitoredItem(
+            var monitoredItem = new DataChangeMonitoredItem(
                 Server.SubscriptionStore,
                 Server.MonitoredItemQueueFactory,
                 this,
                 storedMonitoredItem);
 
-            if (monitoredItems_ == null)
+            if (m_monitoredItems == null)
             {
-                monitoredItems_ = new List<DataChangeMonitoredItem>();
-                node_.OnStateChanged = OnNodeChange;
+                m_monitoredItems = [];
+                Node.OnStateChanged = OnNodeChange;
             }
 
-            monitoredItems_.Add(monitoredItem);
+            m_monitoredItems.Add(monitoredItem);
 
             return monitoredItem;
         }
@@ -229,13 +209,13 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// </summary>
         public void DeleteItem(IUaMonitoredItem monitoredItem)
         {
-            if (monitoredItems_ != null)
+            if (m_monitoredItems != null)
             {
-                for (var ii = 0; ii < monitoredItems_.Count; ii++)
+                for (int ii = 0; ii < m_monitoredItems.Count; ii++)
                 {
-                    if (ReferenceEquals(monitoredItem, monitoredItems_[ii]))
+                    if (ReferenceEquals(monitoredItem, m_monitoredItems[ii]))
                     {
-                        monitoredItems_.RemoveAt(ii);
+                        m_monitoredItems.RemoveAt(ii);
                         break;
                     }
                 }
@@ -248,13 +228,16 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// <param name="context">The system context.</param>
         /// <param name="state">The node that raised the event.</param>
         /// <param name="masks">What caused the event to be raised</param>
-        public void OnNodeChange(ISystemContext context, NodeState state, NodeStateChangeMasks masks)
+        public void OnNodeChange(
+            ISystemContext context,
+            NodeState state,
+            NodeStateChangeMasks masks)
         {
-            if (monitoredItems_ != null)
+            if (m_monitoredItems != null)
             {
-                for (var ii = 0; ii < monitoredItems_.Count; ii++)
+                for (int ii = 0; ii < m_monitoredItems.Count; ii++)
                 {
-                    DataChangeMonitoredItem monitoredItem = monitoredItems_[ii];
+                    DataChangeMonitoredItem monitoredItem = m_monitoredItems[ii];
 
                     // check if the node has been deleted.
                     if ((masks & NodeStateChangeMasks.Deleted) != 0)
@@ -270,12 +253,9 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                             monitoredItem.ValueChanged(context);
                         }
                     }
-                    else
+                    else if ((masks & NodeStateChangeMasks.NonValue) != 0)
                     {
-                        if ((masks & NodeStateChangeMasks.NonValue) != 0)
-                        {
-                            monitoredItem.ValueChanged(context);
-                        }
+                        monitoredItem.ValueChanged(context);
                     }
                 }
             }
@@ -286,45 +266,44 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// </summary>
         public void SubscribeToEvents(ISystemContext context, IUaEventMonitoredItem eventSubscription)
         {
-            if (eventSubscriptions_ == null)
+            m_eventSubscriptions ??= [];
+
+            if (m_eventSubscriptions.Count == 0)
             {
-                eventSubscriptions_ = new List<IUaEventMonitoredItem>();
+                Node.OnReportEvent = OnReportEvent;
+                Node.SetAreEventsMonitored(context, true, true);
             }
 
-            if (eventSubscriptions_.Count == 0)
+            for (int ii = 0; ii < m_eventSubscriptions.Count; ii++)
             {
-                node_.OnReportEvent = OnReportEvent;
-                node_.SetAreEventsMonitored(context, true, true);
-            }
-
-            for (var ii = 0; ii < eventSubscriptions_.Count; ii++)
-            {
-                if (ReferenceEquals(eventSubscription, eventSubscriptions_[ii]))
+                if (ReferenceEquals(eventSubscription, m_eventSubscriptions[ii]))
                 {
                     return;
                 }
             }
 
-            eventSubscriptions_.Add(eventSubscription);
+            m_eventSubscriptions.Add(eventSubscription);
         }
 
         /// <summary>
         /// Unsubscribes to events produced by the node.
         /// </summary>
-        public void UnsubscribeToEvents(ISystemContext context, IUaEventMonitoredItem eventSubscription)
+        public void UnsubscribeToEvents(
+            ISystemContext context,
+            IUaEventMonitoredItem eventSubscription)
         {
-            if (eventSubscriptions_ != null)
+            if (m_eventSubscriptions != null)
             {
-                for (var ii = 0; ii < eventSubscriptions_.Count; ii++)
+                for (int ii = 0; ii < m_eventSubscriptions.Count; ii++)
                 {
-                    if (ReferenceEquals(eventSubscription, eventSubscriptions_[ii]))
+                    if (ReferenceEquals(eventSubscription, m_eventSubscriptions[ii]))
                     {
-                        eventSubscriptions_.RemoveAt(ii);
+                        m_eventSubscriptions.RemoveAt(ii);
 
-                        if (eventSubscriptions_.Count == 0)
+                        if (m_eventSubscriptions.Count == 0)
                         {
-                            node_.SetAreEventsMonitored(context, false, true);
-                            node_.OnReportEvent = null;
+                            Node.SetAreEventsMonitored(context, false, true);
+                            Node.OnReportEvent = null;
                         }
 
                         break;
@@ -341,11 +320,11 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// <param name="e">The event to report.</param>
         public void OnReportEvent(ISystemContext context, NodeState state, IFilterTarget e)
         {
-            if (eventSubscriptions_ != null)
+            if (m_eventSubscriptions != null)
             {
-                for (var ii = 0; ii < eventSubscriptions_.Count; ii++)
+                for (int ii = 0; ii < m_eventSubscriptions.Count; ii++)
                 {
-                    eventSubscriptions_[ii].QueueEvent(e);
+                    m_eventSubscriptions[ii].QueueEvent(e);
                 }
             }
         }
@@ -355,40 +334,32 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// </summary>
         /// <param name="context">The system context.</param>
         /// <param name="monitoredItem">The item to refresh.</param>
-        public void ConditionRefresh(
-            ISystemContext context,
-            IUaEventMonitoredItem monitoredItem)
+        public void ConditionRefresh(ISystemContext context, IUaEventMonitoredItem monitoredItem)
         {
-            if (eventSubscriptions_ != null)
+            if (m_eventSubscriptions != null)
             {
-                for (var ii = 0; ii < eventSubscriptions_.Count; ii++)
+                for (int ii = 0; ii < m_eventSubscriptions.Count; ii++)
                 {
                     // only process items monitoring this node.
-                    if (!ReferenceEquals(monitoredItem, eventSubscriptions_[ii]))
+                    if (!ReferenceEquals(monitoredItem, m_eventSubscriptions[ii]))
                     {
                         continue;
                     }
 
                     // get the set of condition events for the node and its children.
                     var events = new List<IFilterTarget>();
-                    node_.ConditionRefresh(context, events, true);
+                    Node.ConditionRefresh(context, events, true);
 
                     // report the events to the monitored item.
-                    for (var jj = 0; jj < events.Count; jj++)
+                    for (int jj = 0; jj < events.Count; jj++)
                     {
                         monitoredItem.QueueEvent(events[jj]);
                     }
                 }
             }
         }
-        #endregion
 
-        #region Private Fields
-        private IUaServerData server_;
-        private IUaNodeManager nodeManager_;
-        private NodeState node_;
-        private List<IUaEventMonitoredItem> eventSubscriptions_;
-        private List<DataChangeMonitoredItem> monitoredItems_;
-        #endregion
+        private List<IUaEventMonitoredItem> m_eventSubscriptions;
+        private List<DataChangeMonitoredItem> m_monitoredItems;
     }
 }

@@ -1,0 +1,348 @@
+/* ========================================================================
+ * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
+
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Opc.Ua;
+using SampleCompany.NodeManagers;
+using SampleCompany.NodeManagers.Reference;
+using Technosoftware.Tests;
+using Technosoftware.UaConfiguration;
+
+namespace Technosoftware.UaServer.Tests
+{
+    /// <summary>
+    /// Server fixture for testing.
+    /// </summary>
+    /// <typeparam name="T">A server class T used for testing.</typeparam>
+    public class ServerFixture<T>
+        where T : ServerBase, new()
+    {
+        public ApplicationInstance Application { get; private set; }
+        public ApplicationConfiguration Config { get; private set; }
+        public T Server { get; private set; }
+        public bool AutoAccept { get; set; }
+        public bool OperationLimits { get; set; }
+        public int MaxChannelCount { get; set; } = 10;
+        public int ReverseConnectTimeout { get; set; }
+        public bool AllNodeManagers { get; set; }
+
+        public int TraceMasks { get; set; } =
+            Utils.TraceMasks.Error |
+            Utils.TraceMasks.StackTrace |
+            Utils.TraceMasks.Security |
+            Utils.TraceMasks.Information;
+
+        public bool SecurityNone { get; set; }
+        public string UriScheme { get; set; } = Utils.UriSchemeOpcTcp;
+        public int Port { get; private set; }
+        public bool UseTracing { get; }
+        public bool DurableSubscriptionsEnabled { get; set; }
+        public bool UseSamplingGroupsInReferenceNodeManager { get; set; }
+        public bool ProvisioningMode { get; set; }
+        public ActivityListener ActivityListener { get; private set; }
+
+        public ServerFixture(
+            bool useTracing,
+            bool disableActivityLogging)
+            : this()
+        {
+            UseTracing = useTracing;
+            if (UseTracing)
+            {
+                StartActivityListenerInternal(disableActivityLogging);
+            }
+        }
+
+        public ServerFixture()
+        {
+            m_telemetry = NUnitTelemetryContext.Create(true);
+            m_logger = m_telemetry.CreateLogger<ServerFixture<T>>();
+        }
+
+        public async Task LoadConfigurationAsync(string pkiRoot = null)
+        {
+            Application = new ApplicationInstance(m_telemetry)
+            {
+                ApplicationName = typeof(T).Name,
+                ApplicationType = ApplicationType.Server
+            };
+
+            // create the application configuration. Use temp path for cert stores.
+            pkiRoot ??= Path.GetTempPath() + Path.GetRandomFileName();
+            string endpointUrl = $"{UriScheme}://localhost:0/" + typeof(T).Name;
+            IUaApplicationConfigurationServerSelected serverConfig = Application
+                .CreateApplicationConfigurationManager(
+                    "urn:localhost:UA:" + typeof(T).Name,
+                    "uri:opcfoundation.org:" + typeof(T).Name)
+                .SetMaxByteStringLength(4 * 1024 * 1024)
+                .SetMaxArrayLength(1024 * 1024)
+                .SetChannelLifetime(30000)
+                .AsServer([endpointUrl]);
+
+            if (SecurityNone)
+            {
+                serverConfig.AddUnsecurePolicyNone();
+            }
+            if (Utils.IsUriHttpsScheme(endpointUrl))
+            {
+                serverConfig.AddPolicy(
+                    MessageSecurityMode.SignAndEncrypt,
+                    SecurityPolicies.Basic256Sha256);
+            }
+            else if (endpointUrl.StartsWith(Utils.UriSchemeOpcTcp, StringComparison.Ordinal))
+            {
+                // add deprecated policies for opc.tcp tests
+                serverConfig
+                    .AddPolicy(MessageSecurityMode.Sign, SecurityPolicies.Basic128Rsa15)
+                    .AddPolicy(MessageSecurityMode.Sign, SecurityPolicies.Basic256)
+                    .AddPolicy(MessageSecurityMode.SignAndEncrypt, SecurityPolicies.Basic128Rsa15)
+                    .AddPolicy(MessageSecurityMode.SignAndEncrypt, SecurityPolicies.Basic256)
+                    .AddSignPolicies()
+                    .AddSignAndEncryptPolicies()
+                    .AddEccSignPolicies()
+                    .AddEccSignAndEncryptPolicies();
+            }
+
+            if (OperationLimits)
+            {
+                serverConfig.SetOperationLimits(
+                    new OperationLimits
+                    {
+                        MaxNodesPerBrowse = 2500,
+                        MaxNodesPerRead = 1000,
+                        MaxNodesPerWrite = 1000,
+                        MaxNodesPerMethodCall = 1000,
+                        MaxMonitoredItemsPerCall = 1000,
+                        MaxNodesPerHistoryReadData = 1000,
+                        MaxNodesPerHistoryReadEvents = 1000,
+                        MaxNodesPerHistoryUpdateData = 1000,
+                        MaxNodesPerHistoryUpdateEvents = 1000,
+                        MaxNodesPerNodeManagement = 1000,
+                        MaxNodesPerRegisterNodes = 1000,
+                        MaxNodesPerTranslateBrowsePathsToNodeIds = 1000
+                    });
+            }
+
+            serverConfig
+                .SetMaxChannelCount(MaxChannelCount)
+                .SetMaxMessageQueueSize(20)
+                .SetDiagnosticsEnabled(true)
+                .SetAuditingEnabled(true);
+
+            if (ReverseConnectTimeout != 0)
+            {
+                serverConfig.SetReverseConnect(
+                    new ReverseConnectServerConfiguration
+                    {
+                        ConnectInterval = ReverseConnectTimeout / 4,
+                        ConnectTimeout = ReverseConnectTimeout,
+                        RejectTimeout = ReverseConnectTimeout / 4
+                    });
+            }
+
+            CertificateIdentifierCollection applicationCerts =
+                ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
+                    "CN=" + typeof(T).Name + ", C=US, S=Arizona, O=OPC Foundation, DC=localhost",
+                    CertificateStoreType.Directory,
+                    pkiRoot);
+
+            if (DurableSubscriptionsEnabled)
+            {
+                serverConfig
+                    .SetDurableSubscriptionsEnabled(true)
+                    .SetMaxDurableEventQueueSize(10000)
+                    .SetMaxDurableNotificationQueueSize(1000)
+                    .SetMaxDurableSubscriptionLifetime(3600);
+            }
+
+            Config = await serverConfig
+                .AddSecurityConfiguration(applicationCerts, pkiRoot)
+                .SetAutoAcceptUntrustedCertificates(AutoAccept)
+                .CreateAsync()
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Start server fixture on random or fixed port.
+        /// </summary>
+        public Task<T> StartAsync(int port = 0)
+        {
+            return StartAsync(null, port);
+        }
+
+        /// <summary>
+        /// Start server fixture on random or fixed port with dedicated PKI.
+        /// </summary>
+        public async Task<T> StartAsync(string pkiRoot, int port = 0)
+        {
+            bool retryStartServer = false;
+            int testPort = port;
+            int serverStartRetries = 1;
+
+            if (Application == null)
+            {
+                await LoadConfigurationAsync(pkiRoot).ConfigureAwait(false);
+            }
+
+            if (port <= 0)
+            {
+                testPort = ServerFixtureUtils.GetNextFreeIPPort();
+                serverStartRetries = 25;
+            }
+
+            do
+            {
+                try
+                {
+                    await InternalStartServerAsync(testPort).ConfigureAwait(false);
+                }
+                catch (ServiceResultException sre)
+                    when (serverStartRetries > 0 &&
+                        sre.StatusCode == StatusCodes.BadNoCommunication)
+                {
+                    serverStartRetries--;
+                    testPort = UnsecureRandom.Shared.Next(
+                        ServerFixtureUtils.MinTestPort,
+                        ServerFixtureUtils.MaxTestPort);
+                    retryStartServer = true;
+                }
+                await Task.Delay(UnsecureRandom.Shared.Next(100, 1000)).ConfigureAwait(false);
+            } while (retryStartServer);
+
+            return Server;
+        }
+
+        /// <summary>
+        /// Create the configuration and start the server.
+        /// </summary>
+        private async Task InternalStartServerAsync(int port)
+        {
+            Config.ServerConfiguration.BaseAddresses
+                = [$"{UriScheme}://localhost:{port}/{typeof(T).Name}"];
+
+            // check the application certificate.
+            bool haveAppCertificate = await Application
+                .CheckApplicationInstanceCertificatesAsync(true, CertificateFactory.DefaultLifeTime)
+                .ConfigureAwait(false);
+            if (!haveAppCertificate)
+            {
+                throw new InvalidOperationException("Application instance certificate invalid!");
+            }
+
+            // start the server.
+            var server = new T();
+            if (AllNodeManagers && server is UaStandardServer standardServer)
+            {
+                NodeManagerUtils.AddDefaultNodeManagers(standardServer);
+            }
+            if (UseSamplingGroupsInReferenceNodeManager &&
+                server is ReferenceServer referenceServer)
+            {
+                NodeManagerUtils.UseSamplingGroupsInReferenceNodeManager(referenceServer);
+            }
+            if (ProvisioningMode &&
+                server is ReferenceServer provisioningReferenceServer)
+            {
+                NodeManagerUtils.EnableProvisioningMode(provisioningReferenceServer);
+            }
+            await Application.StartAsync(server).ConfigureAwait(false);
+            Server = server;
+            Port = port;
+        }
+
+        /// <summary>
+        /// Configures Activity Listener and registers with Activity Source.
+        /// </summary>
+        public void StartActivityListenerInternal(bool disableActivityLogging = false)
+        {
+            if (disableActivityLogging)
+            {
+                // Create an instance of ActivityListener without logging
+                ActivityListener = new ActivityListener
+                {
+                    ShouldListenTo = (source) => source.Name == m_telemetry.GetActivitySource().Name,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+                        ActivitySamplingResult.AllDataAndRecorded,
+                    ActivityStarted = _ => { },
+                    ActivityStopped = _ => { }
+                };
+            }
+            else
+            {
+                // Create an instance of ActivityListener and configure its properties with logging
+                ActivityListener = new ActivityListener
+                {
+                    ShouldListenTo = (source) => source.Name == m_telemetry.GetActivitySource().Name,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+                        ActivitySamplingResult.AllDataAndRecorded,
+                    ActivityStarted = activity =>
+                        m_logger.LogInformation(
+                            "Server Started: {OperationName,-15} - TraceId: {TraceId,-32} SpanId: {SpanId,-16} ParentId: {ParentId,-32}",
+                            activity.OperationName,
+                            activity.TraceId,
+                            activity.SpanId,
+                            activity.ParentId
+                        ),
+                    ActivityStopped = activity =>
+                        m_logger.LogInformation(
+                            "Server Stopped: {OperationName,-15} - TraceId: {TraceId,-32} SpanId: {SpanId,-16} ParentId: {ParentId,-32} Duration: {Duration}",
+                            activity.OperationName,
+                            activity.TraceId,
+                            activity.SpanId,
+                            activity.ParentId,
+                            activity.Duration)
+                };
+            }
+            ActivitySource.AddActivityListener(ActivityListener);
+        }
+
+        /// <summary>
+        /// Stop the server.
+        /// </summary>
+        public async Task StopAsync()
+        {
+            if (Server != null)
+            {
+                await Server.StopAsync().ConfigureAwait(false);
+                Server.Dispose();
+                Server = null;
+            }
+            ActivityListener?.Dispose();
+            ActivityListener = null;
+            await Task.Delay(100).ConfigureAwait(false);
+        }
+
+        private readonly ITelemetryContext m_telemetry;
+        private readonly ILogger m_logger;
+    }
+}

@@ -14,11 +14,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription
@@ -37,9 +37,13 @@ namespace SampleCompany.NodeManagers.DurableSubscription
 
         private const string kFilename = "subscriptionsStore.txt";
         private readonly DurableMonitoredItemQueueFactory m_durableMonitoredItemQueueFactory;
+        private readonly ILogger m_logger;
+        private readonly ITelemetryContext m_telemetry;
 
         public SubscriptionStore(IUaServerData server)
         {
+            m_logger = server.Telemetry.CreateLogger<SubscriptionStore>();
+            m_telemetry = server.Telemetry;
             m_durableMonitoredItemQueueFactory = server
                 .MonitoredItemQueueFactory as DurableMonitoredItemQueueFactory;
         }
@@ -48,6 +52,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         {
             try
             {
+                using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
                 string result = JsonConvert.SerializeObject(subscriptions, s_settings);
 
                 if (!Directory.Exists(s_storage_path))
@@ -67,7 +72,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             }
             catch (Exception ex)
             {
-                Opc.Ua.Utils.LogWarning(ex, "Failed to store subscriptions");
+                m_logger.LogWarning(ex, "Failed to store subscriptions");
             }
             return false;
         }
@@ -80,10 +85,9 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 if (File.Exists(filePath))
                 {
                     string json = File.ReadAllText(filePath);
-                    List<IUaStoredSubscription> result = JsonConvert
-                        .DeserializeObject<List<IUaStoredSubscription>>(
-                            json,
-                            s_settings);
+                    using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
+                    List<IUaStoredSubscription> result =
+                        JsonConvert.DeserializeObject<List<IUaStoredSubscription>>(json, s_settings);
 
                     File.Delete(filePath);
 
@@ -92,7 +96,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             }
             catch (Exception ex)
             {
-                Opc.Ua.Utils.LogWarning(ex, "Failed to restore subscriptions");
+                m_logger.LogWarning(ex, "Failed to restore subscriptions");
             }
 
             return new RestoreSubscriptionResult(false, null);
@@ -194,7 +198,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 }
                 catch (Exception ex)
                 {
-                    Opc.Ua.Utils.LogWarning(ex, "Failed to cleanup files for stored subscsription");
+                    m_logger.LogWarning(ex, "Failed to cleanup files for stored subscsription");
                 }
             }
             //remove old batches & queues

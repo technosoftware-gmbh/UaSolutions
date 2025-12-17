@@ -1,43 +1,111 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Mangages an event queue for usage by a MonitoredItem
     /// </summary>
-    public class EventQueueHandler : IUaEventQueueHandler
+    public interface IEventQueueHandler : IDisposable
     {
         /// <summary>
-        /// Creates a new Queue
+        /// Sets the queue size.
+        /// </summary>
+        /// <param name="queueSize">The new queue size.</param>
+        /// <param name="discardOldest">Whether to discard the oldest values if the queue overflows.</param>
+        void SetQueueSize(uint queueSize, bool discardOldest);
+
+        /// <summary>
+        /// The number of Items in the queue
+        /// </summary>
+        int ItemsInQueue { get; }
+
+        /// <summary>
+        /// True if the queue is overflowing
+        /// </summary>
+        bool Overflow { get; }
+
+        /// <summary>
+        /// Checks the last 1k queue entries if the event is already in there
+        /// </summary>
+        bool IsEventContainedInQueue(IFilterTarget instance);
+
+        /// <summary>
+        /// true if queue is already full and discarding is not allowed
+        /// </summary>
+        bool SetQueueOverflowIfFull();
+
+        /// <summary>
+        /// Adds an event to the queue.
+        /// </summary>
+        void QueueEvent(EventFieldList fields);
+
+        /// <summary>
+        /// Publish Events
+        /// </summary>
+        /// <param name="context">Context for the operation</param>
+        /// <param name="notifications">Notifications to publish</param>
+        /// <param name="maxNotificationsPerPublish">the maximum number of notifications to enqueue per call</param>
+        /// <returns>the number of events that were added to the notification queue</returns>
+        uint Publish(
+            UaServerOperationContext context,
+            Queue<EventFieldList> notifications,
+            uint maxNotificationsPerPublish);
+    }
+
+    /// <summary>
+    /// Mangages an event queue for usage by a MonitoredItem
+    /// </summary>
+    public class EventQueueHandler : IEventQueueHandler
+    {
+        /// <summary>
+        /// Creates a new Queue handler
         /// </summary>
         /// <param name="createDurable">create a durable queue</param>
-        /// <param name="queueFactory">the factory for creating the the factory for <see cref="IUaEventMonitoredItemQueue"/></param>
+        /// <param name="queueFactory">the factory for creating the factory for <see cref="IUaEventMonitoredItemQueue"/></param>
         /// <param name="monitoredItemId">the id of the monitoredItem associated with the queue</param>
-        public EventQueueHandler(bool createDurable, IUaMonitoredItemQueueFactory queueFactory, uint monitoredItemId)
+        /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
+        public EventQueueHandler(
+            bool createDurable,
+            IUaMonitoredItemQueueFactory queueFactory,
+            uint monitoredItemId,
+            ITelemetryContext telemetry)
         {
+            m_logger = telemetry.CreateLogger<EventQueueHandler>();
             m_eventQueue = queueFactory.CreateEventQueue(createDurable, monitoredItemId);
             m_discardOldest = false;
-            m_overflow = false;
+            Overflow = false;
         }
 
         /// <summary>
@@ -46,11 +114,13 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         public EventQueueHandler(
             IUaEventMonitoredItemQueue eventQueue,
-            bool discardOldest)
+            bool discardOldest,
+            ITelemetryContext telemetry)
         {
+            m_logger = telemetry.CreateLogger<EventQueueHandler>();
             m_eventQueue = eventQueue;
             m_discardOldest = discardOldest;
-            m_overflow = false;
+            Overflow = false;
         }
 
         /// <summary>
@@ -63,6 +133,7 @@ namespace Technosoftware.UaServer.Subscriptions
             m_discardOldest = discardOldest;
             m_eventQueue.SetQueueSize(queueSize, discardOldest);
         }
+
         /// <summary>
         /// The number of Items in the queue
         /// </summary>
@@ -71,13 +142,11 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// True if the queue is overflowing
         /// </summary>
-        public bool Overflow => m_overflow;
+        public bool Overflow { get; private set; }
 
         /// <summary>
         /// Checks the last 1k queue entries if the event is already in there
         /// </summary>
-        /// <param name="instance"></param>
-        /// <returns></returns>
         public bool IsEventContainedInQueue(IFilterTarget instance)
         {
             return m_eventQueue.IsEventContainedInQueue(instance);
@@ -86,39 +155,48 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// true if queue is already full and discarding is not allowed
         /// </summary>
-        /// <returns></returns>
         public bool SetQueueOverflowIfFull()
         {
-            if (m_eventQueue.ItemsInQueue >= m_eventQueue.QueueSize)
+            if (m_eventQueue.ItemsInQueue >= m_eventQueue.QueueSize && !m_discardOldest)
             {
-                if (!m_discardOldest)
-                {
-                    m_overflow = true;
-                    return true;
-                }
+                Overflow = true;
+                return true;
             }
             return false;
         }
-        /// <summary>
-        /// Dispose the queue
-        /// </summary>
+
+        /// <inheritdoc/>
         public void Dispose()
         {
-            Utils.SilentDispose(m_eventQueue);
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// An overrideable version of the Dispose.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Utils.SilentDispose(m_eventQueue);
+            }
         }
 
         /// <summary>
         /// Adds an event to the queue.
         /// </summary>
+        /// <exception cref="InvalidOperationException"></exception>
         public virtual void QueueEvent(EventFieldList fields)
         {
             // make space in the queue.
             if (m_eventQueue.ItemsInQueue >= m_eventQueue.QueueSize)
             {
-                m_overflow = true;
+                Overflow = true;
                 if (!m_discardOldest)
                 {
-                    throw new InvalidOperationException("Queue is full and no discarding of old values is allowed");
+                    throw new InvalidOperationException(
+                        "Queue is full and no discarding of old values is allowed");
                 }
                 m_eventQueue.Dequeue(out _);
             }
@@ -129,33 +207,43 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Publish Events
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="notifications"></param>
+        /// <param name="context">System context</param>
+        /// <param name="notifications">Notifications</param>
         /// <param name="maxNotificationsPerPublish">the maximum number of notifications to enqueue per call</param>
-        public uint Publish(UaServerOperationContext context, Queue<EventFieldList> notifications, uint maxNotificationsPerPublish)
+        public uint Publish(
+            UaServerOperationContext context,
+            Queue<EventFieldList> notifications,
+            uint maxNotificationsPerPublish)
         {
             uint notificationCount = 0;
-            while (notificationCount < maxNotificationsPerPublish && m_eventQueue.Dequeue(out EventFieldList fields))
+            while (notificationCount < maxNotificationsPerPublish &&
+                m_eventQueue.Dequeue(out EventFieldList fields))
             {
                 foreach (Variant field in fields.EventFields)
                 {
                     if (field.Value is StatusResult statusResult)
                     {
-                        statusResult.ApplyDiagnosticMasks(context.DiagnosticsMask, context.StringTable);
+                        statusResult.ApplyDiagnosticMasks(
+                            context.DiagnosticsMask,
+                            context.StringTable,
+                            m_logger);
                     }
                 }
 
                 notifications.Enqueue(fields);
                 notificationCount++;
             }
-            //if overflow event is placed at the end of the queue only set overflow to false if the overflow event still fits into the publish
-            m_overflow = m_overflow && notificationCount == maxNotificationsPerPublish && !m_discardOldest;
+            // if overflow event is placed at the end of the queue only set overflow to false if the overflow event
+            // still fits into the publish
+            Overflow = Overflow &&
+                notificationCount == maxNotificationsPerPublish &&
+                !m_discardOldest;
 
             return notificationCount;
         }
 
-        private bool m_overflow;
         private bool m_discardOldest;
         private readonly IUaEventMonitoredItemQueue m_eventQueue;
+        private readonly ILogger m_logger;
     }
 }

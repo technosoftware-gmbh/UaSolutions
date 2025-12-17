@@ -1,13 +1,13 @@
 #region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
+// Web: https://technosoftware.com
 //
-// The Software is subject to the Technosoftware GmbH Software License 
+// The Software is subject to the Technosoftware GmbH Software License
 // Agreement, which can be found here:
 // https://technosoftware.com/documents/Source_License_Agreement.pdf
 //
-// The Software is based on the OPC Foundation MIT License. 
+// The Software is based on the OPC Foundation MIT License.
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
@@ -15,239 +15,232 @@
 
 #region Using Directives
 using System;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
     /// <summary>
     /// The current status of monitored item.
     /// </summary>
-    public class MonitoredItemStatus
+    public sealed record class MonitoredItemStatus
     {
-        #region Constructors
-        /// <summary>
-        /// Creates a empty object.
-        /// </summary>
-        internal MonitoredItemStatus()
-        {
-            Initialize();
-        }
-
-        private void Initialize()
-        {
-            m_id = 0;
-            m_nodeId = null;
-            m_attributeId = Attributes.Value;
-            m_indexRange = null;
-            m_encoding = null;
-            m_monitoringMode = MonitoringMode.Disabled;
-            m_clientHandle = 0;
-            m_samplingInterval = 0;
-            m_filter = null;
-            m_filterResult = null;
-            m_queueSize = 0;
-            m_discardOldest = true;
-        }
-        #endregion
-
-        #region Public Properties
         /// <summary>
         /// The identifier assigned by the server.
         /// </summary>
-        public uint Id { get => m_id; set => m_id = value; }
+        public uint Id { get; set; }
 
         /// <summary>
         /// Whether the item has been created on the server.
         /// </summary>
-        public bool Created => m_id != 0;
+        public bool Created => Id != 0;
+
+        /// <summary>
+        /// Whether a create request has been sent to the server but not yet completed.
+        /// This flag is used to prevent duplicate creation requests in multi-threaded scenarios.
+        /// </summary>
+        internal bool Creating { get; set; }
 
         /// <summary>
         /// Any error condition associated with the monitored item.
         /// </summary>
-        public ServiceResult Error => m_error;
+        public ServiceResult? Error { get; private set; }
 
         /// <summary>
         /// The node id being monitored.
         /// </summary>
-        public NodeId NodeId => m_nodeId;
+        public NodeId NodeId { get; private set; } = NodeId.Null;
 
         /// <summary>
         /// The attribute being monitored.
         /// </summary>
-        public uint AttributeId => m_attributeId;
+        public uint AttributeId { get; private set; } = Attributes.Value;
 
         /// <summary>
         /// The range of array indexes to being monitored.
         /// </summary>
-        public string IndexRange => m_indexRange;
+        public string? IndexRange { get; private set; }
 
         /// <summary>
         /// The encoding to use when returning notifications.
         /// </summary>
-        public QualifiedName DataEncoding => m_encoding;
+        public QualifiedName DataEncoding { get; private set; } = QualifiedName.Null;
 
         /// <summary>
         /// The monitoring mode.
         /// </summary>
-        public MonitoringMode MonitoringMode => m_monitoringMode;
+        public MonitoringMode MonitoringMode { get; private set; } = MonitoringMode.Disabled;
 
         /// <summary>
         /// The identifier assigned by the client.
         /// </summary>
-        public uint ClientHandle => m_clientHandle;
+        public uint ClientHandle { get; private set; }
 
         /// <summary>
         /// The sampling interval.
         /// </summary>
-        public double SamplingInterval => m_samplingInterval;
+        public double SamplingInterval { get; private set; }
 
         /// <summary>
         /// The filter to use to select values to return.
         /// </summary>
-        public MonitoringFilter Filter => m_filter;
+        public MonitoringFilter? Filter { get; private set; }
 
         /// <summary>
         /// The result of applying the filter
         /// </summary>
-        public MonitoringFilterResult FilterResult => m_filterResult;
+        public MonitoringFilterResult? FilterResult { get; private set; }
 
         /// <summary>
         /// The length of the queue used to buffer values.
         /// </summary>
-        public uint QueueSize => m_queueSize;
+        public uint QueueSize { get; private set; }
 
         /// <summary>
         /// Whether to discard the oldest entries in the queue when it is full.
         /// </summary>
-        public bool DiscardOldest => m_discardOldest;
-        #endregion
+        public bool DiscardOldest { get; private set; } = true;
 
-        #region Public Methods
         /// <summary>
         /// Updates the monitoring mode.
         /// </summary>
         public void SetMonitoringMode(MonitoringMode monitoringMode)
         {
-            m_monitoringMode = monitoringMode;
+            MonitoringMode = monitoringMode;
         }
 
         /// <summary>
         /// Updates the object with the results of a translate browse paths request.
         /// </summary>
-        internal void SetResolvePathResult(
-            BrowsePathResult result,
-            ServiceResult error)
+        internal void SetResolvePathResult(ServiceResult? error)
         {
-            m_error = error;
+            Error = error;
         }
 
         /// <summary>
         /// Updates the object with the results of a create monitored item request.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="request"/> is <c>null</c>.</exception>
         internal void SetCreateResult(
             MonitoredItemCreateRequest request,
             MonitoredItemCreateResult result,
-            ServiceResult error)
+            ServiceResult? error)
         {
             if (request == null)
+            {
                 throw new ArgumentNullException(nameof(request));
-            if (result == null)
-                throw new ArgumentNullException(nameof(result));
+            }
 
-            m_nodeId = request.ItemToMonitor.NodeId;
-            m_attributeId = request.ItemToMonitor.AttributeId;
-            m_indexRange = request.ItemToMonitor.IndexRange;
-            m_encoding = request.ItemToMonitor.DataEncoding;
-            m_monitoringMode = request.MonitoringMode;
-            m_clientHandle = request.RequestedParameters.ClientHandle;
-            m_samplingInterval = request.RequestedParameters.SamplingInterval;
-            m_queueSize = request.RequestedParameters.QueueSize;
-            m_discardOldest = request.RequestedParameters.DiscardOldest;
-            m_filter = null;
-            m_filterResult = null;
-            m_error = error;
+            if (result == null)
+            {
+                throw new ArgumentNullException(nameof(result));
+            }
+
+            NodeId = request.ItemToMonitor.NodeId;
+            AttributeId = request.ItemToMonitor.AttributeId;
+            IndexRange = request.ItemToMonitor.IndexRange;
+            DataEncoding = request.ItemToMonitor.DataEncoding;
+            MonitoringMode = request.MonitoringMode;
+            ClientHandle = request.RequestedParameters.ClientHandle;
+            SamplingInterval = request.RequestedParameters.SamplingInterval;
+            QueueSize = request.RequestedParameters.QueueSize;
+            DiscardOldest = request.RequestedParameters.DiscardOldest;
+            Filter = null;
+            FilterResult = null;
+            Error = error;
 
             if (request.RequestedParameters.Filter != null)
             {
-                m_filter = Utils.Clone(request.RequestedParameters.Filter.Body) as MonitoringFilter;
+                Filter = Utils.Clone(request.RequestedParameters.Filter.Body) as MonitoringFilter;
             }
 
             if (ServiceResult.IsGood(error))
             {
-                m_id = result.MonitoredItemId;
-                m_samplingInterval = result.RevisedSamplingInterval;
-                m_queueSize = result.RevisedQueueSize;
+                Id = result.MonitoredItemId;
+                SamplingInterval = result.RevisedSamplingInterval;
+                QueueSize = result.RevisedQueueSize;
 
                 if (result.FilterResult != null)
                 {
-                    m_filterResult = Utils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
+                    FilterResult = Utils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
                 }
             }
+
+            // Clear the Creating flag now that the create operation is complete
+            Creating = false;
         }
 
         /// <summary>
         /// Updates the object with the results of a transfer monitored item request.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="monitoredItem"/> is <c>null</c>.</exception>
         internal void SetTransferResult(MonitoredItem monitoredItem)
         {
             if (monitoredItem == null)
+            {
                 throw new ArgumentNullException(nameof(monitoredItem));
+            }
 
-            m_nodeId = monitoredItem.ResolvedNodeId;
-            m_attributeId = monitoredItem.AttributeId;
-            m_indexRange = monitoredItem.IndexRange;
-            m_encoding = monitoredItem.Encoding;
-            m_monitoringMode = monitoredItem.MonitoringMode;
-            m_clientHandle = monitoredItem.ClientHandle;
-            m_samplingInterval = monitoredItem.SamplingInterval;
-            m_queueSize = monitoredItem.QueueSize;
-            m_discardOldest = monitoredItem.DiscardOldest;
-            m_filter = null;
-            m_filterResult = null;
+            NodeId = monitoredItem.ResolvedNodeId;
+            AttributeId = monitoredItem.AttributeId;
+            IndexRange = monitoredItem.IndexRange;
+            DataEncoding = monitoredItem.Encoding;
+            MonitoringMode = monitoredItem.MonitoringMode;
+            ClientHandle = monitoredItem.ClientHandle;
+            SamplingInterval = monitoredItem.SamplingInterval;
+            QueueSize = monitoredItem.QueueSize;
+            DiscardOldest = monitoredItem.DiscardOldest;
+            Filter = null;
+            FilterResult = null;
 
             if (monitoredItem.Filter != null)
             {
-                m_filter = Utils.Clone(monitoredItem.Filter) as MonitoringFilter;
+                Filter = Utils.Clone(monitoredItem.Filter);
             }
         }
 
         /// <summary>
         /// Updates the object with the results of a modify monitored item request.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="request"/> is <c>null</c>.</exception>
         internal void SetModifyResult(
             MonitoredItemModifyRequest request,
             MonitoredItemModifyResult result,
-            ServiceResult error)
+            ServiceResult? error)
         {
             if (request == null)
+            {
                 throw new ArgumentNullException(nameof(request));
-            if (result == null)
-                throw new ArgumentNullException(nameof(result));
+            }
 
-            m_error = error;
+            if (result == null)
+            {
+                throw new ArgumentNullException(nameof(result));
+            }
+
+            Error = error;
 
             if (ServiceResult.IsGood(error))
             {
-                m_clientHandle = request.RequestedParameters.ClientHandle;
-                m_samplingInterval = request.RequestedParameters.SamplingInterval;
-                m_queueSize = request.RequestedParameters.QueueSize;
-                m_discardOldest = request.RequestedParameters.DiscardOldest;
-                m_filter = null;
-                m_filterResult = null;
+                ClientHandle = request.RequestedParameters.ClientHandle;
+                SamplingInterval = request.RequestedParameters.SamplingInterval;
+                QueueSize = request.RequestedParameters.QueueSize;
+                DiscardOldest = request.RequestedParameters.DiscardOldest;
+                Filter = null;
+                FilterResult = null;
 
                 if (request.RequestedParameters.Filter != null)
                 {
-                    m_filter = Utils.Clone(request.RequestedParameters.Filter.Body) as MonitoringFilter;
+                    Filter = Utils.Clone(
+                        request.RequestedParameters.Filter.Body) as MonitoringFilter;
                 }
 
-                m_samplingInterval = result.RevisedSamplingInterval;
-                m_queueSize = result.RevisedQueueSize;
+                SamplingInterval = result.RevisedSamplingInterval;
+                QueueSize = result.RevisedQueueSize;
 
                 if (result.FilterResult != null)
                 {
-                    m_filterResult = Utils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
+                    FilterResult = Utils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
                 }
             }
         }
@@ -255,10 +248,10 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Updates the object with the results of a delete item request.
         /// </summary>
-        internal void SetDeleteResult(ServiceResult error)
+        internal void SetDeleteResult(ServiceResult? error)
         {
-            m_id = 0;
-            m_error = error;
+            Id = 0;
+            Error = error;
         }
 
         /// <summary>
@@ -266,24 +259,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         internal void SetError(ServiceResult error)
         {
-            m_error = error;
+            Error = error;
         }
-        #endregion
-
-        #region Private Fields
-        private uint m_id;
-        private ServiceResult m_error;
-        private NodeId m_nodeId;
-        private uint m_attributeId;
-        private string m_indexRange;
-        private QualifiedName m_encoding;
-        private MonitoringMode m_monitoringMode;
-        private uint m_clientHandle;
-        private double m_samplingInterval;
-        private MonitoringFilter m_filter;
-        private MonitoringFilterResult m_filterResult;
-        private uint m_queueSize;
-        private bool m_discardOldest;
-        #endregion
     }
 }

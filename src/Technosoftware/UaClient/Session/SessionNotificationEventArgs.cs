@@ -1,4 +1,4 @@
-﻿#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
@@ -25,6 +25,7 @@ namespace Technosoftware.UaClient
     /// <summary>
     ///     Represents the event arguments provided when a new notification message arrives.
     /// </summary>
+    [Obsolete("Use NotificationEventArgs")]
     public class SessionNotificationEventArgs : EventArgs
     {
         #region Constructors, Destructor, Initialization

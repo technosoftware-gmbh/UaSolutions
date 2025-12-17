@@ -13,13 +13,10 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
-#endregion
-
 namespace Technosoftware.UaClient
 {
     /// <summary>
-    /// The <b>Technosoftware.Client</b> namespace defines classes which can be used to implement a UA client.
+    /// The <b>Technosoftware.UaClient</b> namespace defines classes which can be used to implement a UA client.
     /// These classes manage client side state information, provide higher level abstractions for UA
     /// tasks such as managing sessions/subscriptions and saving/restoring connection information for
     /// later use.

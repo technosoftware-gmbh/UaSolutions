@@ -16,36 +16,17 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
-
-using Technosoftware.UaServer.Aggregates;
-using Technosoftware.UaServer.Diagnostics;
-using Technosoftware.UaServer.NodeManager;
-using Technosoftware.UaServer.Server;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
     /// <summary>
-    ///     <para>IUaServerData is an interface to a server object that provides the shared components for the UA ServerData.</para>
-    ///     <para>
-    ///         The different manager objects use this interface to access shared tables such as the set of NamespaceUris or
-    ///         the ServerStatus.
-    ///     </para>
-    ///     <para>
-    ///         Any implementation of IUaServerData must be thread safe. The flow of calls must always be one way � from one
-    ///         component of the server to the IUaServerData
-    ///         object. Properties of the IUaServerData may return other objects which will have their own rules regarding to
-    ///         call flow.
-    ///     </para>
+    /// The interface that a server exposes to objects that it contains.
     /// </summary>
-    /// <remarks>
-    ///     The BaseServerData object is the standard implementation of this interface. Developers can extend this class to add
-    ///     additional shared data.
-    /// </remarks>
-    public interface IUaServerData : IAuditEventServer
+    public interface IUaServerData : IUaAuditEventServer, IDisposable
     {
         /// <summary>
         /// The endpoint addresses used by the server.
@@ -89,7 +70,7 @@ namespace Technosoftware.UaServer
         /// <value>The type tree.</value>
         /// <remarks>
         /// The type tree table is a global object that all components of a server have access to.
-        /// Node managers must populate this table with all types that they define. 
+        /// Node managers must populate this table with all types that they define.
         /// This object is thread safe.
         /// </remarks>
         TypeTable TypeTree { get; }
@@ -107,7 +88,7 @@ namespace Technosoftware.UaServer
         CoreNodeManager CoreNodeManager { get; }
 
         /// <summary>
-        ///     Returns the node manager that manages the server diagnostics.
+        /// Returns the node manager that managers the server diagnostics.
         /// </summary>
         /// <value>The diagnostics node manager.</value>
         DiagnosticsNodeManager DiagnosticsNodeManager { get; }
@@ -137,6 +118,12 @@ namespace Technosoftware.UaServer
         AggregateManager AggregateManager { get; }
 
         /// <summary>
+        /// A manager for modelling rules supported by the server.
+        /// </summary>
+        /// <value>The modelling rules manager.</value>
+        ModellingRulesManager ModellingRulesManager { get; }
+
+        /// <summary>
         /// The manager for active sessions.
         /// </summary>
         /// <value>The session manager.</value>
@@ -158,6 +145,11 @@ namespace Technosoftware.UaServer
         IUaSubscriptionStore SubscriptionStore { get; }
 
         /// <summary>
+        /// The server's telemetry context
+        /// </summary>
+        ITelemetryContext Telemetry { get; }
+
+        /// <summary>
         /// Whether the server is currently running.
         /// </summary>
         /// <value>
@@ -170,15 +162,10 @@ namespace Technosoftware.UaServer
         bool IsRunning { get; }
 
         /// <summary>
-        /// Returns the status object for the server. Use Status.DataLock to make it thread safe
+        /// Returns the status object for the server.
         /// </summary>
-        /// <example>
-        /// lock (server.Status.DataLock)
-        /// {
-        ///    server.Status.Variable.CurrentTime.MinimumSamplingInterval = 250;
-        /// }
-        /// </example>
         /// <value>The status.</value>
+        [Obsolete("No longer thread safe. To read the value use CurrentState, to write use UpdateServerStatus.")]
         ServerStatusValue Status { get; }
 
         /// <summary>
@@ -226,6 +213,19 @@ namespace Technosoftware.UaServer
         void CloseSession(UaServerOperationContext context, NodeId sessionId, bool deleteSubscriptions);
 
         /// <summary>
+        /// Closes the specified session.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="sessionId">The session identifier.</param>
+        /// <param name="deleteSubscriptions">if set to <c>true</c> subscriptions are to be deleted.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        ValueTask CloseSessionAsync(
+            UaServerOperationContext context,
+            NodeId sessionId,
+            bool deleteSubscriptions,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Deletes the specified subscription.
         /// </summary>
         /// <param name="subscriptionId">The subscription identifier.</param>
@@ -259,5 +259,60 @@ namespace Technosoftware.UaServer
         /// <param name="monitoredItemId">The monitored item identifier.</param>
         void ConditionRefresh2(UaServerOperationContext context, uint subscriptionId, uint monitoredItemId);
 
+        /// <summary>
+        /// Sets the EventManager, the ResourceManager, the RequestManager and the AggregateManager.
+        /// </summary>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="resourceManager">The resource manager.</param>
+        /// <param name="requestManager">The request manager.</param>
+        void CreateServerObject(
+            EventManager eventManager,
+            ResourceManager resourceManager,
+            RequestManager requestManager);
+
+        /// <summary>
+        /// Stores the MasterNodeManager and the CoreNodeManager
+        /// </summary>
+        /// <param name="nodeManager">The node manager.</param>
+        void SetNodeManager(MasterNodeManager nodeManager);
+
+        /// <summary>
+        /// Stores the SessionManager, the SubscriptionManager in the datastore.
+        /// </summary>
+        /// <param name="sessionManager">The session manager.</param>
+        /// <param name="subscriptionManager">The subscription manager.</param>
+        void SetSessionManager(
+            IUaSessionManager sessionManager,
+            IUaSubscriptionManager subscriptionManager);
+
+        /// <summary>
+        /// Stores the MonitoredItemQueueFactory in the datastore.
+        /// </summary>
+        /// <param name="monitoredItemQueueFactory">The MonitoredItemQueueFactory.</param>
+        void SetMonitoredItemQueueFactory(IUaMonitoredItemQueueFactory monitoredItemQueueFactory);
+
+        /// <summary>
+        /// Stores the Subscriptionstore in the datastore.
+        /// </summary>
+        /// <param name="subscriptionStore">The subscriptionstore.</param>
+        void SetSubscriptionStore(IUaSubscriptionStore subscriptionStore);
+
+        /// <summary>
+        /// Stores the AggregateManager in the datastore.
+        /// </summary>
+        /// <param name="aggregateManager">The AggregateManager.</param>
+        void SetAggregateManager(AggregateManager aggregateManager);
+
+        /// <summary>
+        /// Stores the ModellingRulesManager in the datastore.
+        /// </summary>
+        /// <param name="modellingRulesManager">The ModellingRulesManager.</param>
+        void SetModellingRulesManager(ModellingRulesManager modellingRulesManager);
+
+        /// <summary>
+        /// Updates the server status safely.
+        /// </summary>
+        /// <param name="action">Action to perform on the server status object.</param>
+        void UpdateServerStatus(Action<ServerStatusValue> action);
     }
 }

@@ -12,63 +12,81 @@
 #region Using Directives
 using System;
 using System.Collections;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-
 using Technosoftware.UaClient;
 #endregion Using Directives
 
 namespace SampleCompany.ReferenceClient
 {
-    /// <summary>The UA client sample functionality.</summary>
-    public class MyUaClient : IMyUaClient, IDisposable
+    /// <summary>
+    /// OPC UA Client with examples of basic functionality.
+    /// </summary>
+    public class UAClient : IUAClient, IDisposable
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
-        /// Initializes a new instance of the MyUaClient class.
+        /// Initializes a new instance of the UAClient class.
         /// </summary>
-        public MyUaClient(ApplicationConfiguration configuration, TextWriter writer, Action<IList, IList> validateResponse)
+        public UAClient(
+            ApplicationConfiguration configuration,
+            ITelemetryContext telemetry,
+            Action<IList, IList> validateResponse)
+            : this(
+                configuration,
+                null,
+                telemetry,
+                validateResponse)
         {
-            ValidateResponse = validateResponse;
-            m_output = writer;
-            m_configuration = configuration;
-            m_configuration.CertificateValidator.CertificateValidation += OnCertificateValidation;
-            m_reverseConnectManager = null;
         }
 
         /// <summary>
-        /// Initializes a new instance of the MyUaClient class for reverse connections.
+        /// Initializes a new instance of the UAClient class for reverse connections.
         /// </summary>
-        public MyUaClient(ApplicationConfiguration configuration, ReverseConnectManager reverseConnectManager, TextWriter writer, Action<IList, IList> validateResponse)
+        public UAClient(
+            ApplicationConfiguration configuration,
+            ReverseConnectManager reverseConnectManager,
+            ITelemetryContext telemetry,
+            Action<IList, IList> validateResponse)
         {
             ValidateResponse = validateResponse;
-            m_output = writer;
+            m_logger = telemetry.CreateLogger<UAClient>();
+            m_telemetry = telemetry;
             m_configuration = configuration;
-            m_configuration.CertificateValidator.CertificateValidation += OnCertificateValidation;
+            m_configuration.CertificateValidator.CertificateValidation += CertificateValidation;
             m_reverseConnectManager = reverseConnectManager;
         }
-        #endregion Constructors, Destructor, Initialization
 
-        #region IDisposable
-        /// <summary>
-        /// Dispose objects.
-        /// </summary>
+        /// <inheritdoc/>
         public void Dispose()
         {
-            Utils.SilentDispose(Session);
-            m_configuration.CertificateValidator.CertificateValidation -= OnCertificateValidation;
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
-        #endregion IDisposable
 
-        #region Public Properties
+        /// <summary>
+        /// Overridable Dispose pattern implementation.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (m_disposed)
+            {
+                return;
+            }
+            if (disposing)
+            {
+                Utils.SilentDispose(Session);
+                m_configuration.CertificateValidator.CertificateValidation -= CertificateValidation;
+            }
+            m_disposed = true;
+        }
+
         /// <summary>
         /// Action used
         /// </summary>
-        public Action<IList, IList> ValidateResponse { get; }
+        internal Action<IList, IList> ValidateResponse { get; }
 
         /// <summary>
         /// Gets the client session.
@@ -103,20 +121,58 @@ namespace SampleCompany.ReferenceClient
         /// <summary>
         /// Auto accept untrusted certificates.
         /// </summary>
-        public bool AutoAccept { get; set; } = false;
+        public bool AutoAccept { get; set; }
 
         /// <summary>
         /// The file to use for log output.
         /// </summary>
         public string LogFile { get; set; }
-        #endregion Public Properties
 
-        #region Public Methods
+        /// <summary>
+        /// Do a Durable Subscription Transfer
+        /// </summary>
+        public async Task<bool> DurableSubscriptionTransferAsync(
+            string serverUrl,
+            bool useSecurity = true,
+            CancellationToken ct = default)
+        {
+            bool success = false;
+            SubscriptionCollection subscriptions = [.. Session.Subscriptions];
+            Session = null;
+            if (await ConnectAsync(serverUrl, useSecurity, ct).ConfigureAwait(false) &&
+                subscriptions != null &&
+                Session != null)
+            {
+                Console.WriteLine($"Transferring {subscriptions.Count} subscriptions from old session to new session...");
+                success = await Session.TransferSubscriptionsAsync(
+                    subscriptions,
+                    true,
+                    ct).ConfigureAwait(false);
+                if (success)
+                {
+                    m_logger.LogInformation("Subscriptions transferred.");
+                }
+            }
+
+            return success;
+        }
+
         /// <summary>
         /// Creates a session with the UA server
         /// </summary>
-        public async Task<bool> ConnectAsync(string serverUrl, bool useSecurity = true, CancellationToken ct = default)
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="ArgumentNullException"><paramref name="serverUrl"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
+        public async Task<bool> ConnectAsync(
+            string serverUrl,
+            bool useSecurity = true,
+            CancellationToken ct = default)
         {
+            if (m_disposed)
+            {
+                throw new ObjectDisposedException(nameof(UAClient));
+            }
+
             if (serverUrl == null)
             {
                 throw new ArgumentNullException(nameof(serverUrl));
@@ -126,7 +182,7 @@ namespace SampleCompany.ReferenceClient
             {
                 if (Session != null && Session.Connected)
                 {
-                    m_output.WriteLine("Session already connected!");
+                    Console.WriteLine("Session already connected!");
                 }
                 else
                 {
@@ -134,50 +190,73 @@ namespace SampleCompany.ReferenceClient
                     EndpointDescription endpointDescription = null;
                     if (m_reverseConnectManager != null)
                     {
-                        m_output.WriteLine("Waiting for reverse connection to.... {0}", serverUrl);
+                        Console.WriteLine($"Waiting for reverse connection to.... {serverUrl}");
                         do
                         {
                             using var cts = new CancellationTokenSource(30_000);
-                            using var linkedCTS = CancellationTokenSource.CreateLinkedTokenSource(ct, cts.Token);
-                            connection = await m_reverseConnectManager.WaitForConnectionAsync(new Uri(serverUrl), null, linkedCTS.Token).ConfigureAwait(false);
+                            using var linkedCTS = CancellationTokenSource.CreateLinkedTokenSource(
+                                ct,
+                                cts.Token);
+                            connection = await m_reverseConnectManager
+                                .WaitForConnectionAsync(new Uri(serverUrl), null, linkedCTS.Token)
+                                .ConfigureAwait(false);
                             if (connection == null)
                             {
-                                throw new ServiceResultException(StatusCodes.BadTimeout, "Waiting for a reverse connection timed out.");
+                                throw new ServiceResultException(
+                                    StatusCodes.BadTimeout,
+                                    "Waiting for a reverse connection timed out."
+                                );
                             }
                             if (endpointDescription == null)
                             {
-                                m_output.WriteLine("Discover reverse connection endpoints....");
-                                endpointDescription = Discover.SelectEndpoint(m_configuration, connection, useSecurity);
+                                Console.WriteLine("Discover reverse connection endpoints....");
+                                endpointDescription = await UaClientUtils.SelectEndpointAsync(
+                                    m_configuration,
+                                    connection,
+                                    useSecurity,
+                                    m_telemetry,
+                                    ct
+                                ).ConfigureAwait(false);
                                 connection = null;
                             }
                         } while (connection == null);
                     }
                     else
                     {
-                        m_output.WriteLine("Connecting to... {0}", serverUrl);
-                        endpointDescription = Discover.SelectEndpoint(m_configuration, serverUrl, useSecurity);
+                        Console.WriteLine($"Connecting to... {serverUrl}");
+                        endpointDescription = await UaClientUtils.SelectEndpointAsync(
+                            m_configuration,
+                            serverUrl,
+                            useSecurity,
+                            m_telemetry,
+                            ct).ConfigureAwait(false);
                     }
 
                     // Get the endpoint by connecting to server's discovery endpoint.
                     // Try to find the first endopint with security.
                     var endpointConfiguration = EndpointConfiguration.Create(m_configuration);
-                    var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
+                    var endpoint = new ConfiguredEndpoint(
+                        null,
+                        endpointDescription,
+                        endpointConfiguration);
 
-                    TraceableSessionFactory sessionFactory = TraceableSessionFactory.Instance;
+                    // Create the session factory. - we could take it as parameter or as member
+                    var sessionFactory = new DefaultSessionFactory(m_telemetry);
 
                     // Create the session
-                    IUaSession session = await sessionFactory.CreateAsync(
-                        m_configuration,
-                        connection,
-                        endpoint,
-                        connection == null,
-                        false,
-                        m_configuration.ApplicationName,
-                        SessionLifeTime,
-                        UserIdentity,
-                        null,
-                        ct
-                    ).ConfigureAwait(false);
+                    IUaSession session = await sessionFactory
+                        .CreateAsync(
+                            m_configuration,
+                            connection,
+                            endpoint,
+                            connection == null,
+                            false,
+                            m_configuration.ApplicationName,
+                            SessionLifeTime,
+                            UserIdentity,
+                            null,
+                            ct)
+                        .ConfigureAwait(false);
 
                     // Assign the created session
                     if (session != null && session.Connected)
@@ -192,14 +271,17 @@ namespace SampleCompany.ReferenceClient
                         Session.TransferSubscriptionsOnReconnect = true;
 
                         // set up keep alive callback.
-                        Session.SessionKeepAliveEvent += OnSessionKeepAlive;
+                        Session.KeepAlive += Session_KeepAlive;
 
                         // prepare a reconnect handler
-                        m_reconnectHandler = new SessionReconnectHandler(true, ReconnectPeriodExponentialBackoff);
+                        m_reconnectHandler = new SessionReconnectHandler(
+                            m_telemetry,
+                            true,
+                            ReconnectPeriodExponentialBackoff);
                     }
 
                     // Session created successfully.
-                    m_output.WriteLine("New Session Created with SessionName = {0}", Session.SessionName);
+                    Console.WriteLine($"New Session Created with SessionName = {Session.SessionName}");
                 }
 
                 return true;
@@ -207,7 +289,7 @@ namespace SampleCompany.ReferenceClient
             catch (Exception ex)
             {
                 // Log Error
-                m_output.WriteLine("Create Session Error : {0}", ex.Message);
+                Console.WriteLine($"Create Session Error : {ex.Message}");
                 return false;
             }
         }
@@ -216,58 +298,56 @@ namespace SampleCompany.ReferenceClient
         /// Disconnects the session.
         /// </summary>
         /// <param name="leaveChannelOpen">Leaves the channel open.</param>
-        public void Disconnect(bool leaveChannelOpen = false)
+        public async Task DisconnectAsync(bool leaveChannelOpen = false, CancellationToken ct = default)
         {
             try
             {
                 if (Session != null)
                 {
-                    m_output.WriteLine("Disconnecting...");
+                    Console.WriteLine("Disconnecting...");
 
                     lock (m_lock)
                     {
-                        Session.SessionKeepAliveEvent -= OnSessionKeepAlive;
+                        Session.KeepAlive -= Session_KeepAlive;
                         m_reconnectHandler?.Dispose();
                         m_reconnectHandler = null;
                     }
 
-                    _ = Session.Close(!leaveChannelOpen);
+                    await Session.CloseAsync(!leaveChannelOpen, ct).ConfigureAwait(false);
                     if (leaveChannelOpen)
                     {
-                        // detach the channel, so it doesn't get closed when the session is disposed.
+                        // detach the channel, so it doesn't get
+                        // closed when the session is disposed.
                         Session.DetachChannel();
                     }
                     Session.Dispose();
                     Session = null;
 
                     // Log Session Disconnected event
-                    m_output.WriteLine("Session Disconnected.");
+                    Console.WriteLine("Session Disconnected.");
                 }
                 else
                 {
-                    m_output.WriteLine("Session not created!");
+                    Console.WriteLine("Session not created!");
                 }
             }
             catch (Exception ex)
             {
                 // Log Error
-                m_output.WriteLine($"Disconnect Error : {ex.Message}");
+                m_logger.LogError(ex, "Disconnect Error");
             }
         }
-        #endregion Public Methods
 
-        #region KeepAlive and ReConnect handling
         /// <summary>
         /// Handles a keep alive event from a session and triggers a reconnect if necessary.
         /// </summary>
-        private void OnSessionKeepAlive(object sender, SessionKeepAliveEventArgs e)
+        private void Session_KeepAlive(object sender, KeepAliveEventArgs e)
         {
             try
             {
-                var session = (Session)sender;
-
+                IUaSession session = (IUaSession)sender;
                 // check for events from discarded sessions.
-                if (!Session.Equals(session))
+                if (Session == null || !Session.Equals(session))
                 {
                     return;
                 }
@@ -277,36 +357,50 @@ namespace SampleCompany.ReferenceClient
                 {
                     if (ReconnectPeriod <= 0)
                     {
-                        Utils.LogWarning("KeepAlive status {0}, but reconnect is disabled.", e.Status);
+                        m_logger.LogWarning(
+                            "KeepAlive status {StatusCode}, but reconnect is disabled.",
+                            e.Status);
                         return;
                     }
 
-                    SessionReconnectHandler.ReconnectState state = m_reconnectHandler.BeginReconnect(Session, m_reverseConnectManager, ReconnectPeriod, OnReconnectComplete);
+                    SessionReconnectHandler.ReconnectState state = m_reconnectHandler
+                        .BeginReconnect(
+                            Session,
+                            m_reverseConnectManager,
+                            ReconnectPeriod,
+                            Client_ReconnectComplete
+                            );
                     if (state == SessionReconnectHandler.ReconnectState.Triggered)
                     {
-                        Utils.LogInfo("KeepAlive status {0}, reconnect status {1}, reconnect period {2}ms.", e.Status, state, ReconnectPeriod);
+                        m_logger.LogInformation(
+                            "KeepAlive status {StatusCode}, reconnect status {State}, reconnect period {ReconnectPeriod}ms.",
+                            e.Status,
+                            state,
+                            ReconnectPeriod
+                        );
                     }
                     else
                     {
-                        Utils.LogInfo("KeepAlive status {0}, reconnect status {1}.", e.Status, state);
+                        m_logger.LogInformation(
+                            "KeepAlive status {StatusCode}, reconnect status {State}.",
+                            e.Status,
+                            state);
                     }
 
                     // cancel sending a new keep alive request, because reconnect is triggered.
                     e.CancelKeepAlive = true;
-
-                    return;
                 }
             }
             catch (Exception exception)
             {
-                Utils.LogError(exception, "Error in OnKeepAlive.");
+                m_logger.LogError(exception, "Error in OnKeepAlive.");
             }
         }
 
         /// <summary>
         /// Called when the reconnect attempt was successful.
         /// </summary>
-        private void OnReconnectComplete(object sender, EventArgs e)
+        private void Client_ReconnectComplete(object sender, EventArgs e)
         {
             // ignore callbacks from discarded objects.
             if (!ReferenceEquals(sender, m_reconnectHandler))
@@ -323,30 +417,35 @@ namespace SampleCompany.ReferenceClient
                     // after reactivate, the same session instance may be returned
                     if (!ReferenceEquals(Session, m_reconnectHandler.Session))
                     {
-                        m_output.WriteLine("--- RECONNECTED TO NEW SESSION --- {0}", m_reconnectHandler.Session.SessionId);
+                        m_logger.LogInformation(
+                            "--- RECONNECTED TO NEW SESSION --- {SessionId}",
+                            m_reconnectHandler.Session.SessionId
+                        );
                         IUaSession session = Session;
                         Session = m_reconnectHandler.Session;
                         Utils.SilentDispose(session);
                     }
                     else
                     {
-                        m_output.WriteLine("--- REACTIVATED SESSION --- {0}", m_reconnectHandler.Session.SessionId);
+                        m_logger.LogInformation(
+                            "--- REACTIVATED SESSION --- {SessionId}",
+                            m_reconnectHandler.Session.SessionId);
                     }
                 }
                 else
                 {
-                    m_output.WriteLine("--- RECONNECT KeepAlive recovered ---");
+                    m_logger.LogInformation("--- RECONNECT KeepAlive recovered ---");
                 }
             }
         }
-        #endregion KeepAlive and ReConnect handling
 
-        #region Protected Methods
         /// <summary>
         /// Handles the certificate validation event.
         /// This event is triggered every time an untrusted certificate is received from the server.
         /// </summary>
-        protected virtual void OnCertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
+        protected virtual void CertificateValidation(
+            CertificateValidator sender,
+            CertificateValidationEventArgs e)
         {
             bool certificateAccepted = false;
 
@@ -357,7 +456,7 @@ namespace SampleCompany.ReferenceClient
             // ***
 
             ServiceResult error = e.Error;
-            m_output.WriteLine(error);
+            m_logger.LogInformation("{Error}", error);
             if (error.StatusCode == StatusCodes.BadCertificateUntrusted && AutoAccept)
             {
                 certificateAccepted = true;
@@ -365,22 +464,25 @@ namespace SampleCompany.ReferenceClient
 
             if (certificateAccepted)
             {
-                m_output.WriteLine("Untrusted Certificate accepted. Subject = {0}", e.Certificate.Subject);
+                m_logger.LogInformation(
+                    "Untrusted Certificate accepted. Subject = {Subject}",
+                    e.Certificate.Subject);
                 e.Accept = true;
             }
             else
             {
-                m_output.WriteLine("Untrusted Certificate rejected. Subject = {0}", e.Certificate.Subject);
+                m_logger.LogInformation(
+                    "Untrusted Certificate rejected. Subject = {Subject}",
+                    e.Certificate.Subject);
             }
         }
-        #endregion Protected Methods
 
-        #region Private Fields
-        private readonly object m_lock = new();
+        private readonly Lock m_lock = new();
         private readonly ReverseConnectManager m_reverseConnectManager;
         private readonly ApplicationConfiguration m_configuration;
         private SessionReconnectHandler m_reconnectHandler;
-        private readonly TextWriter m_output;
-        #endregion Private Fields
+        private readonly ILogger m_logger;
+        private readonly ITelemetryContext m_telemetry;
+        private bool m_disposed;
     }
 }

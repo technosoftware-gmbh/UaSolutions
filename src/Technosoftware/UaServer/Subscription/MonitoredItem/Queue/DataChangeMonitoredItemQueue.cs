@@ -1,25 +1,37 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-//-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-// Web: https://technosoftware.com 
-//
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
-// The Software is based on the OPC Foundation MIT License. 
-// The complete license agreement for that can be found here:
-// http://opcfoundation.org/License/MIT/1.00/
-//-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+/* ========================================================================
+ * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
+ *
+ * OPC Foundation MIT License 1.00
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * The complete license agreement can be found here:
+ * http://opcfoundation.org/License/MIT/1.00/
+ * ======================================================================*/
 
-#region Using Directives
 using System;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Provides a queue for data changes.
@@ -29,23 +41,26 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Creates an empty queue.
         /// </summary>
-        public DataChangeMonitoredItemQueue(bool createDurable, uint monitoredItemId)
+        public DataChangeMonitoredItemQueue(bool createDurable, uint monitoredItemId, ITelemetryContext telemetry)
         {
+            m_logger = telemetry.CreateLogger<DataChangeMonitoredItemQueue>();
             if (createDurable)
             {
-                Utils.LogError("DataChangeMonitoredItemQueue does not support durable queues, please provide full implementation of IDurableMonitoredItemQueue using Server.CreateDurableMonitoredItemQueueFactory to supply own factory");
-                throw new ArgumentException("DataChangeMonitoredItemQueue does not support durable Queues", nameof(createDurable));
+                m_logger.LogError(
+                    "DataChangeMonitoredItemQueue does not support durable queues, please provide full implementation of IDurableMonitoredItemQueue using Server.CreateDurableMonitoredItemQueueFactory to supply own factory");
+                throw new ArgumentException(
+                    "DataChangeMonitoredItemQueue does not support durable Queues",
+                    nameof(createDurable));
             }
-            m_monitoredItemId = monitoredItemId;
+            MonitoredItemId = monitoredItemId;
             m_values = null;
             m_errors = null;
             m_start = -1;
             m_end = -1;
         }
 
-        #region Public Methods
         /// <inheritdoc/>
-        public uint MonitoredItemId => m_monitoredItemId;
+        public uint MonitoredItemId { get; }
 
         /// <summary>
         /// Gets the current queue size.
@@ -83,6 +98,7 @@ namespace Technosoftware.UaServer.Subscriptions
                 return m_values.Length - m_start + m_end;
             }
         }
+
         /// <inheritdoc/>
         public virtual bool IsDurable => false;
 
@@ -91,6 +107,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// </summary>
         /// <param name="value">The value to queue.</param>
         /// <param name="error">The error to queue.</param>
+        /// <exception cref="InvalidOperationException"></exception>
         public void Enqueue(DataValue value, ServiceResult error)
         {
             if (m_values == null || m_values.Length == 0)
@@ -138,8 +155,18 @@ namespace Technosoftware.UaServer.Subscriptions
 
             m_end = next + 1;
         }
+
         /// <inheritdoc/>
-        public virtual void Dispose()
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Overridable method to dispose of resources.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
         {
             //only needed for unmanaged resources
         }
@@ -174,7 +201,7 @@ namespace Technosoftware.UaServer.Subscriptions
             int length = (int)queueSize;
 
             // create new queue.
-            DataValue[] values = new DataValue[length];
+            var values = new DataValue[length];
             ServiceResult[] errors = null;
 
             if (queueErrors)
@@ -235,7 +262,6 @@ namespace Technosoftware.UaServer.Subscriptions
                 m_start = -1;
                 m_end = 0;
             }
-
             // check for wrap around.
             else if (m_start >= m_values.Length)
             {
@@ -257,26 +283,29 @@ namespace Technosoftware.UaServer.Subscriptions
             return m_values[m_start];
         }
 
-        #endregion
-
-        #region Private Fields
-        private readonly uint m_monitoredItemId;
         /// <summary>
         /// the stored data values
         /// </summary>
         protected DataValue[] m_values;
+
         /// <summary>
         /// the stored errors
         /// </summary>
         protected ServiceResult[] m_errors;
+
         /// <summary>
         /// the start of the buffer
         /// </summary>
         protected int m_start;
+
         /// <summary>
         /// the end of the buffer
         /// </summary>
         protected int m_end;
-        #endregion
+
+        /// <summary>
+        /// A logger to use
+        /// </summary>
+        protected ILogger m_logger;
     }
 }

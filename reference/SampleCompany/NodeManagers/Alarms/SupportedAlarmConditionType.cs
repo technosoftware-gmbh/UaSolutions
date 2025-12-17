@@ -11,7 +11,7 @@
 
 #region Using Directives
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
@@ -30,26 +30,23 @@ namespace SampleCompany.NodeManagers.Alarms
             ConditionName = conditionName;
             Node = nodeId;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Properties
         /// <summary>
         /// The name of the alarm.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
         /// The name of the condition type.
         /// </summary>
-        public string ConditionName { get; private set; }
+        public string ConditionName { get; }
 
         /// <summary>
         /// The node ID.
         /// </summary>
-        public NodeId Node { get; private set; }
-        #endregion
-
-        #region Private Fields
-        #endregion
+        public NodeId Node { get; }
+        #endregion Properties
     }
 }

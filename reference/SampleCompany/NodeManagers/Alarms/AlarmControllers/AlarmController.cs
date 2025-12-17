@@ -11,80 +11,95 @@
 
 #region Using Directives
 using System;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
     /// <summary>
-    /// 
+    /// Alarm controller
     /// </summary>
     public class AlarmController
     {
-        #region Constants
-        private const int DefaultCycleTime = 180;
-        #endregion
+        private const int kDefaultCycleTime = 180;
+        protected ILogger m_logger;
+        protected BaseDataVariableState m_variable;
+        protected int m_value;
+        protected bool m_increment = true;
+        protected DateTime m_nextTime = DateTime.Now;
+        protected DateTime m_stopTime = DateTime.Now;
+        protected int m_interval;
+        protected bool m_isBoolean;
+        protected bool m_allowChanges;
+        protected bool m_reset;
+        protected DateTime m_lastMaxValue;
+        protected bool m_validLastMaxValue;
+        protected int m_midpoint = AlarmDefines.NORMAL_START_VALUE;
 
-        #region Constructors, Destructor, Initialization
-        public AlarmController(BaseDataVariableState variable, int interval, bool isBoolean)
+        public AlarmController(BaseDataVariableState variable, int interval, bool isBoolean, ITelemetryContext telemetry)
         {
-            variable_ = variable;
-            interval_ = interval;
-            isBoolean_ = isBoolean;
-            increment_ = true;
+            m_logger = telemetry.CreateLogger<AlarmController>();
+            m_variable = variable;
+            m_interval = interval;
+            m_isBoolean = isBoolean;
+            m_increment = true;
 
-            value_ = midpoint_;
-            stopTime_ = stopTime_.AddYears(5);
+            m_value = m_midpoint;
+            m_stopTime = m_stopTime.AddYears(5);
 
-            allowChanges_ = false;
+            m_allowChanges = false;
         }
-        #endregion
 
-        #region Public Methods
         /// <summary>
         /// Start the Alarm cycles for n seconds.
         /// </summary>
-        public virtual void Start(UInt32 seconds = 0)
+        public virtual void Start(uint seconds = 0)
         {
             Stop();
 
-            Utils.LogInfo("Start the Alarms for {0} seconds!", seconds);
+            m_logger.LogInformation("Start the Alarms for {Duration} seconds!", seconds);
 
-            validLastMaxValue_ = false;
+            m_validLastMaxValue = false;
 
-            nextTime_ =
-            stopTime_ = DateTime.Now;
-            stopTime_ = stopTime_.AddSeconds(seconds == 0 ? DefaultCycleTime : seconds);
+            m_nextTime = m_stopTime = DateTime.Now;
+            m_stopTime = m_stopTime.AddSeconds(seconds == 0 ? kDefaultCycleTime : seconds);
 
-            allowChanges_ = true;
+            m_allowChanges = true;
         }
 
         public virtual void Stop()
         {
-            Utils.LogInfo("Stop the Alarms!");
+            m_logger.LogInformation("Stop the Alarms!");
 
-            value_ = midpoint_;
-            increment_ = true;
-            allowChanges_ = false;
+            m_value = m_midpoint;
+            m_increment = true;
+            m_allowChanges = false;
 
-            reset_ = true;
+            m_reset = true;
         }
 
         public virtual bool Update(ISystemContext systemContext)
         {
-            var valueSet = false;
+            bool valueSet = false;
             if (CanSetValue())
             {
-                var value = 0;
-                var boolValue = false;
+                int value = 0;
+                bool boolValue = false;
                 GetValue(ref value, ref boolValue);
 
-                Utils.LogInfo("AlarmController Update Value = {0}", value);
+                m_logger.LogInformation("AlarmController Update Value = {Value}", value);
 
-                variable_.Value = isBoolean_ ? boolValue : (object)value;
-                variable_.Timestamp = DateTime.UtcNow;
-                variable_.ClearChangeMasks(systemContext, false);
+                if (m_isBoolean)
+                {
+                    m_variable.Value = boolValue;
+                }
+                else
+                {
+                    m_variable.Value = value;
+                }
+                m_variable.Timestamp = DateTime.UtcNow;
+                m_variable.ClearChangeMasks(systemContext, false);
 
                 valueSet = true;
             }
@@ -92,49 +107,54 @@ namespace SampleCompany.NodeManagers.Alarms
             return valueSet;
         }
 
+        protected virtual void SetNextInterval()
+        {
+            m_nextTime = DateTime.Now;
+            m_nextTime = m_nextTime.AddMilliseconds(m_interval);
+        }
+
         public void ManualWrite(object value)
         {
             if (value.GetType().Name == "Int32")
             {
                 // Don't let anyone write a value out of range
-                var potentialWrite = (Int32)value;
-                if (potentialWrite >= AlarmConstants.MinValue && potentialWrite <= AlarmConstants.MaxValue)
+                int potentialWrite = (int)value;
+                if (potentialWrite is >= AlarmDefines.MIN_VALUE and <= AlarmDefines.MAX_VALUE)
                 {
-                    value_ = potentialWrite;
+                    m_value = potentialWrite;
                 }
                 else
                 {
-                    Utils.LogError("AlarmController Received out of range manual write of {0}", value);
+                    m_logger.LogError(
+                        "AlarmController Received out of range manual write of {Value}",
+                        value);
                 }
+            }
+            else if ((bool)value)
+            {
+                m_value = 70;
+                m_increment = true;
             }
             else
             {
-                if ((bool)value)
-                {
-                    value_ = 70;
-                    increment_ = true;
-                }
-                else
-                {
-                    value_ = midpoint_;
-                }
+                m_value = m_midpoint;
             }
         }
 
         public virtual bool CanSetValue()
         {
-            var setValue = false;
+            bool setValue = false;
 
-            if (DateTime.Now > stopTime_)
+            if (DateTime.Now > m_stopTime)
             {
                 Stop();
-                stopTime_ = DateTime.MaxValue;
+                m_stopTime = DateTime.MaxValue;
             }
-            else if (allowChanges_ || reset_)
+            else if (m_allowChanges || m_reset)
             {
-                reset_ = false;
+                m_reset = false;
 
-                if (DateTime.Now > nextTime_)
+                if (DateTime.Now > m_nextTime)
                 {
                     SetNextInterval();
                     setValue = true;
@@ -144,21 +164,66 @@ namespace SampleCompany.NodeManagers.Alarms
             return setValue;
         }
 
-        public bool SupportsBranching
+        protected virtual void GetValue(ref int intValue, ref bool boolValue)
         {
-            get => supportsBranching_;
-            set => supportsBranching_ = value;
+            const int maxValue = 100;
+            const int minValue = 0;
+
+            TypicalGetValue(minValue, maxValue, ref intValue, ref boolValue);
         }
+
+        public bool SupportsBranching { get; set; }
 
         public virtual void SetBranchCount(int count)
         {
-            branchCount_ = count;
+        }
+
+        protected void TypicalGetValue(
+            int minValue,
+            int maxValue,
+            ref int intValue,
+            ref bool boolValue)
+        {
+            int incrementValue = 5;
+            if (m_isBoolean)
+            {
+                incrementValue = 10;
+            }
+            if (m_increment)
+            {
+                m_value += incrementValue;
+                if (m_value >= maxValue)
+                {
+                    if (m_validLastMaxValue)
+                    {
+                        m_logger.LogInformation(
+                            "Cycle Time {CycleTime} Interval {Interval}",
+                            DateTime.Now - m_lastMaxValue,
+                            m_interval);
+                    }
+                    m_lastMaxValue = DateTime.Now;
+                    m_validLastMaxValue = true;
+
+                    m_increment = false;
+                }
+            }
+            else
+            {
+                m_value -= incrementValue;
+                if (m_value <= minValue)
+                {
+                    m_increment = true;
+                }
+            }
+
+            intValue = m_value;
+            boolValue = IsBooleanActive();
         }
 
         public bool IsBooleanActive()
         {
-            var isActive = false;
-            if (value_ >= AlarmConstants.BoolHighAlarm || value_ <= AlarmConstants.BoolLowAlarm)
+            bool isActive = false;
+            if (m_value is >= AlarmDefines.BOOL_HIGH_ALARM or <= AlarmDefines.BOOL_LOW_ALARM)
             {
                 isActive = true;
             }
@@ -168,17 +233,17 @@ namespace SampleCompany.NodeManagers.Alarms
 
         public int GetValue()
         {
-            return value_;
+            return m_value;
         }
 
         public int GetSawtooth()
         {
-            return value_;
+            return m_value;
         }
 
         public int GetSine(int minValue, int maxValue)
         {
-            return CalcSine(minValue, maxValue, value_);
+            return CalcSine(minValue, maxValue, m_value);
         }
 
         public int CalcSine(int minValue, int maxValue, int value)
@@ -194,31 +259,37 @@ namespace SampleCompany.NodeManagers.Alarms
              * B - relates to period - This should extend the time period
              * C - Phase Shift
              * D - Vertical Shift
-             * 
+             *
              */
 
-            var twoPi = Math.PI * 2;
+            const double twoPi = Math.PI * 2;
 
             double normalSpan = maxValue - minValue;
-            var amplitude = normalSpan / 2;
-            var median = maxValue - amplitude;
+            double amplitude = normalSpan / 2;
+            double median = maxValue - amplitude;
 
             double offsetValue = value - minValue;
-            var percentageOfRange = offsetValue / normalSpan;
+            double percentageOfRange = offsetValue / normalSpan;
 
-            var reducedPeriod = percentageOfRange / 2;
+            double reducedPeriod = percentageOfRange / 2;
 
-            var period = twoPi; // this would relate to the interval.  Ignore for now.
-            var phase = -0.25; // phaseShift;
-            var verticalShift = median; // amplitude
+            const double period = twoPi; // this would relate to the interval.  Ignore for now.
+            const double phase = -0.25; // phaseShift;
+            double verticalShift = median; // amplitude
 
-            var calculated = (amplitude * Math.Sin(period * (reducedPeriod + phase))) + verticalShift;
+            double calculated = (amplitude * Math.Sin(period * (reducedPeriod + phase))) +
+                verticalShift;
 
-            Utils.LogTrace(
-                " Phase {0:0.00} Value {1} Sine {2:0.00}" +
-                " Offset Value {3:0.00} Span {4:0.00}" +
-                " Percentage of Range {5:0.00}",
-                phase, value, calculated, offsetValue, normalSpan, percentageOfRange);
+            m_logger.LogTrace(
+                " Phase {Phase:0.00} Value {Value} Sine {Sine:0.00}" +
+                " Offset Value {OffsetValue:0.00} Span {NormalSpan:0.00}" +
+                " Percentage of Range {PercentageOfRange:0.00}",
+                phase,
+                value,
+                calculated,
+                offsetValue,
+                normalSpan,
+                percentageOfRange);
 
             return (int)calculated;
         }
@@ -235,91 +306,14 @@ namespace SampleCompany.NodeManagers.Alarms
 
         public virtual void OnAddComment()
         {
-
         }
 
         public virtual void OnAcknowledge()
         {
-
         }
 
         public virtual void OnConfirm()
         {
-
         }
-        #endregion
-
-        #region Protected Methods
-
-
-        protected virtual void SetNextInterval()
-        {
-            nextTime_ = DateTime.Now;
-            nextTime_ = nextTime_.AddMilliseconds(interval_);
-        }
-
-        protected virtual void GetValue(ref int intValue, ref bool boolValue)
-        {
-            var maxValue = 100;
-            var minValue = 0;
-
-            TypicalGetValue(minValue, maxValue, ref intValue, ref boolValue);
-        }
-        protected void TypicalGetValue(int minValue, int maxValue, ref int intValue, ref bool boolValue)
-        {
-            var incrementValue = 5;
-            if (isBoolean_)
-            {
-                incrementValue = 10;
-            }
-            if (increment_)
-            {
-                value_ += incrementValue;
-                if (value_ >= maxValue)
-                {
-                    if (validLastMaxValue_)
-                    {
-                        Utils.LogInfo(
-                            "Cycle Time {0} Interval {1}", DateTime.Now - lastMaxValue_, interval_);
-                    }
-                    lastMaxValue_ = DateTime.Now;
-                    validLastMaxValue_ = true;
-
-                    increment_ = false;
-                }
-            }
-            else
-            {
-                value_ -= incrementValue;
-                if (value_ <= minValue)
-                {
-                    increment_ = true;
-                }
-            }
-
-            intValue = value_;
-            boolValue = IsBooleanActive();
-        }
-        #endregion
-
-        #region Protected Fields
-        protected BaseDataVariableState variable_;
-        protected int value_;
-        protected bool increment_ = true;
-        protected DateTime nextTime_ = DateTime.Now;
-        protected DateTime stopTime_ = DateTime.Now;
-        protected int interval_;
-        protected bool isBoolean_;
-        protected bool allowChanges_;
-        protected bool reset_;
-        protected DateTime lastMaxValue_;
-        protected bool validLastMaxValue_;
-        protected int midpoint_ = AlarmConstants.NormalStartValue;
-        #endregion
-
-        #region Private Fields
-        private int branchCount_;
-        private bool supportsBranching_;
-        #endregion
     }
 }

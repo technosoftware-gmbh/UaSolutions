@@ -11,18 +11,8 @@
 
 #region Using Directives
 using System;
-using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-using System.Text;
-using System.Reflection;
-using System.Threading;
-using System.Globalization;
-
 using Opc.Ua;
-
-using Technosoftware.UaServer;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
@@ -39,7 +29,11 @@ namespace SampleCompany.NodeManagers.TestData
         /// <param name="isReadModified">Whether to return modified data.</param>
         /// <param name="position">A index that must be passed to the NextRaw call. </param>
         /// <returns>The DataValue.</returns>
-        DataValue FirstRaw(DateTime startTime, bool isForward, bool isReadModified, out int position);
+        DataValue FirstRaw(
+            DateTime startTime,
+            bool isForward,
+            bool isReadModified,
+            out int position);
 
         /// <summary>
         /// Returns the next value in the archive.

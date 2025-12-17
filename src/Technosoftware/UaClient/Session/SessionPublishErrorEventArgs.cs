@@ -1,4 +1,4 @@
-﻿#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
@@ -23,6 +23,7 @@ namespace Technosoftware.UaClient
     /// <summary>
     ///     Represents the event arguments provided when a publish error occurs.
     /// </summary>
+    [Obsolete("Use PublishErrorEventArgs")]
     public class SessionPublishErrorEventArgs : EventArgs
     {
         #region Constructors, Destructor, Initialization

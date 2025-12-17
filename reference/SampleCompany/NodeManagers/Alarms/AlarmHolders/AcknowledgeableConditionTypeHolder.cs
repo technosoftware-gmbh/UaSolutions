@@ -12,20 +12,18 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
-
-#pragma warning disable CS1591
-
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
     // Ignore all Optionals for Confirm, as it should be supported.  For this object, that means remove all Optional conditions
 
-    public class AcknowledgeableConditionTypeHolder : ConditionTypeHolder
+    public abstract class AcknowledgeableConditionTypeHolder : ConditionTypeHolder
     {
-        public AcknowledgeableConditionTypeHolder(
+        protected AcknowledgeableConditionTypeHolder(
+            ILogger logger,
             AlarmNodeManager alarmNodeManager,
             FolderState parent,
             SourceController trigger,
@@ -34,8 +32,17 @@ namespace SampleCompany.NodeManagers.Alarms
             Type controllerType,
             int interval,
             bool optional = true,
-            bool create = true) :
-            base(alarmNodeManager, parent, trigger, name, alarmConditionType, controllerType, interval, optional)
+            bool create = true)
+            : base(
+                logger,
+                alarmNodeManager,
+                parent,
+                trigger,
+                name,
+                alarmConditionType,
+                controllerType,
+                interval,
+                optional)
         {
             if (create)
             {
@@ -43,16 +50,11 @@ namespace SampleCompany.NodeManagers.Alarms
             }
         }
 
-        protected new void Initialize(
-            uint alarmTypeIdentifier,
-            string name)
+        protected new void Initialize(uint alarmTypeIdentifier, string name)
         {
             // Create an alarm and trigger name - Create a base method for creating the trigger, just provide the name
 
-            if (alarm_ == null)
-            {
-                alarm_ = new AcknowledgeableConditionState(parent_);
-            }
+            m_alarm ??= new AcknowledgeableConditionState(m_parent);
 
             AcknowledgeableConditionState alarm = GetAlarm();
             InitializeInternal(alarm);
@@ -73,20 +75,15 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             alarm.OnAcknowledge = OnAcknowledge;
 
-            // Create any optional 
-            if (alarm.ConfirmedState == null)
-            {
-                alarm.ConfirmedState = new TwoStateVariableState(alarm);
-            }
+            // Create any optional
+            alarm.ConfirmedState ??= new TwoStateVariableState(alarm);
 
             alarm.Confirm = new AddCommentMethodState(alarm);
         }
 
-        #region Overrides 
-
         public override void SetValue(string message = "")
         {
-            var requiresUpdate = false;
+            bool requiresUpdate = false;
 
             if (ShouldEvent() || message.Length > 0)
             {
@@ -97,7 +94,6 @@ namespace SampleCompany.NodeManagers.Alarms
                     Log("AcknowledgeableConditionTypeHolder", "Setting Acked State to false");
                     alarm.SetAcknowledgedState(SystemContext, acknowledged: false);
                     alarm.Retain.Value = true;
-
                 }
                 else
                 {
@@ -115,29 +111,18 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             AcknowledgeableConditionState alarm = GetAlarm();
 
-            var retainState = true;
-            if (alarm.AckedState.Id.Value)
+            bool retainState = true;
+            if (alarm.AckedState.Id.Value && alarm.ConfirmedState.Id.Value)
             {
-                if (alarm.ConfirmedState.Id.Value)
-                {
-                    retainState = false;
-                }
+                retainState = false;
             }
 
             return retainState;
         }
 
-
-        #endregion
-
-        #region Helpers
-
         private AcknowledgeableConditionState GetAlarm(BaseEventState alarm = null)
         {
-            if (alarm == null)
-            {
-                alarm = alarm_;
-            }
+            alarm ??= m_alarm;
             return (AcknowledgeableConditionState)alarm;
         }
 
@@ -154,22 +139,15 @@ namespace SampleCompany.NodeManagers.Alarms
             return alarmOrBranch;
         }
 
-
-
-
-        #endregion
-
-        #region Methods
-
         private ServiceResult OnAcknowledge(
             ISystemContext context,
             ConditionState condition,
             byte[] eventId,
             LocalizedText comment)
         {
-            var eventIdString = Utils.ToHexString(eventId);
+            string eventIdString = Utils.ToHexString(eventId);
 
-            if (acked_.Contains(eventIdString))
+            if (m_acked.Contains(eventIdString))
             {
                 LogError("OnAcknowledge", EventErrorMessage(eventId) + " already acknowledged");
                 return StatusCodes.BadConditionBranchAlreadyAcked;
@@ -183,7 +161,7 @@ namespace SampleCompany.NodeManagers.Alarms
                 return StatusCodes.BadEventIdUnknown;
             }
 
-            acked_.Add(eventIdString);
+            m_acked.Add(eventIdString);
 
             if (alarm.AckedState.Id.Value)
             {
@@ -191,7 +169,7 @@ namespace SampleCompany.NodeManagers.Alarms
             }
 
             // No Confirming on Acknowledge tests
-            if (alarmNodeManager_.GetUnitFromNodeState(alarm) == "Acknowledge")
+            if (m_alarmNodeManager.GetUnitFromNodeState(alarm) == "Acknowledge")
             {
                 alarm.SetConfirmedState(SystemContext, confirmed: true);
                 Log("OnAcknowledge", "Ignore Confirmed State, setting confirmed to true");
@@ -203,7 +181,7 @@ namespace SampleCompany.NodeManagers.Alarms
                 alarm.SetConfirmedState(SystemContext, confirmed: false);
             }
 
-            alarmController_.OnAcknowledge();
+            m_alarmController.OnAcknowledge();
 
             // TODO This will need to go away
             alarm.Retain.Value = GetRetainState();
@@ -211,19 +189,19 @@ namespace SampleCompany.NodeManagers.Alarms
             return ServiceResult.Good;
         }
 
-
         private ServiceResult OnConfirm(
             ISystemContext context,
             ConditionState condition,
             byte[] eventId,
             LocalizedText comment)
         {
+            string eventIdString = Utils.ToHexString(eventId);
 
-            var eventIdString = Utils.ToHexString(eventId);
+            Log(
+                "OnConfirm",
+                "Called with eventId " + eventIdString + " Comment " + comment?.Text ?? "(empty)");
 
-            Log("OnConfirm", "Called with eventId " + eventIdString + " Comment " + comment?.Text ?? "(empty)");
-
-            if (confirmed_.Contains(eventIdString))
+            if (m_confirmed.Contains(eventIdString))
             {
                 LogError("OnConfirm", EventErrorMessage(eventId) + " already confirmed");
                 return StatusCodes.BadConditionBranchAlreadyConfirmed;
@@ -238,11 +216,11 @@ namespace SampleCompany.NodeManagers.Alarms
                 return StatusCodes.BadEventIdUnknown;
             }
 
-            confirmed_.Add(eventIdString);
+            m_confirmed.Add(eventIdString);
 
             alarm.Message.Value = "User Confirmed Event " + DateTime.Now.ToShortTimeString();
 
-            alarmController_.OnAcknowledge();
+            m_alarmController.OnAcknowledge();
 
             // TODO Go Away?
             alarm.Retain.Value = GetRetainState();
@@ -250,11 +228,7 @@ namespace SampleCompany.NodeManagers.Alarms
             return ServiceResult.Good;
         }
 
-        #endregion
-
-        #region Protected Fields
-        protected HashSet<string> acked_ = new HashSet<string>();
-        protected HashSet<string> confirmed_ = new HashSet<string>();
-        #endregion
+        protected HashSet<string> m_acked = [];
+        protected HashSet<string> m_confirmed = [];
     }
 }

@@ -16,47 +16,46 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Security.Cryptography.X509Certificates;
 using System.Globalization;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Concurrent;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-using Technosoftware.UaServer.Diagnostics;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Sessions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// A generic session manager object for a server.
     /// </summary>
-    public class SessionManager : IUaSessionManager, IDisposable
+    public class SessionManager : IUaSessionManager
     {
         #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initializes the manager with its configuration.
         /// </summary>
-        public SessionManager(
-            IUaServerData server,
-            ApplicationConfiguration configuration)
+        public SessionManager(IUaServerData server, ApplicationConfiguration configuration)
         {
-            if (server == null)
-                throw new ArgumentNullException(nameof(server));
             if (configuration == null)
+            {
                 throw new ArgumentNullException(nameof(configuration));
+            }
 
-            m_server = server;
+            m_server = server ?? throw new ArgumentNullException(nameof(server));
+            m_logger = server.Telemetry.CreateLogger<SessionManager>();
 
             m_minSessionTimeout = configuration.ServerConfiguration.MinSessionTimeout;
             m_maxSessionTimeout = configuration.ServerConfiguration.MaxSessionTimeout;
             m_maxSessionCount = configuration.ServerConfiguration.MaxSessionCount;
             m_maxRequestAge = configuration.ServerConfiguration.MaxRequestAge;
-            m_maxBrowseContinuationPoints = configuration.ServerConfiguration.MaxBrowseContinuationPoints;
-            m_maxHistoryContinuationPoints = configuration.ServerConfiguration.MaxHistoryContinuationPoints;
+            m_maxBrowseContinuationPoints = configuration.ServerConfiguration
+                .MaxBrowseContinuationPoints;
+            m_maxHistoryContinuationPoints = configuration.ServerConfiguration
+                .MaxHistoryContinuationPoints;
 
-            m_sessions = new NodeIdDictionary<Session>(m_maxSessionCount);
-            m_lastSessionId = BitConverter.ToInt64(Nonce.CreateRandomNonceData(sizeof(long)), 0);
+            m_sessions = new NodeIdDictionary<IUaSession>(m_maxSessionCount);
+            m_lastSessionId = BitConverter.ToUInt32(Nonce.CreateRandomNonceData(sizeof(uint)), 0);
 
             // create a event to signal shutdown.
             m_shutdownEvent = new ManualResetEvent(true);
@@ -81,10 +80,10 @@ namespace Technosoftware.UaServer.Sessions
             if (disposing)
             {
                 // create snapshot of all sessions
-                var sessions = m_sessions.ToArray();
+                KeyValuePair<NodeId, IUaSession>[] sessions = [.. m_sessions];
                 m_sessions.Clear();
 
-                foreach (var sessionKeyValue in sessions)
+                foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValue in sessions)
                 {
                     Utils.SilentDispose(sessionKeyValue.Value);
                 }
@@ -98,17 +97,25 @@ namespace Technosoftware.UaServer.Sessions
         /// <summary>
         /// Starts the session manager.
         /// </summary>
-        public virtual void Startup()
+        public virtual async ValueTask StartupAsync(CancellationToken cancellationToken = default)
         {
-            lock (m_lock)
+            await m_semaphoreSlim.WaitAsync(cancellationToken)
+                .ConfigureAwait(false);
+            try
             {
                 // start thread to monitor sessions.
                 m_shutdownEvent.Reset();
 
-                Task.Factory.StartNew(() =>
-                {
-                    MonitorSessions(m_minSessionTimeout);
-                }, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach);
+                // TODO: Await the task completion in shutdown and pass cancellation token
+                _ = Task.Factory.StartNew(
+                    () => MonitorSessionsAsync(m_minSessionTimeout),
+                    default,
+                    TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+                    TaskScheduler.Default);
+            }
+            finally
+            {
+                m_semaphoreSlim.Release();
             }
         }
 
@@ -121,10 +128,10 @@ namespace Technosoftware.UaServer.Sessions
             m_shutdownEvent.Set();
 
             // dispose of session objects using a snapshot.
-            var sessions = m_sessions.ToArray();
+            KeyValuePair<NodeId, IUaSession>[] sessions = [.. m_sessions];
             m_sessions.Clear();
 
-            foreach (var sessionKeyValue in sessions)
+            foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValue in sessions)
             {
                 Utils.SilentDispose(sessionKeyValue.Value);
             }
@@ -133,7 +140,8 @@ namespace Technosoftware.UaServer.Sessions
         /// <summary>
         /// Creates a new session.
         /// </summary>
-        public virtual Session CreateSession(
+        /// <exception cref="ServiceResultException"></exception>
+        public virtual async ValueTask<CreateSessionResult> CreateSessionAsync(
             UaServerOperationContext context,
             X509Certificate2 serverCertificate,
             string sessionName,
@@ -144,18 +152,17 @@ namespace Technosoftware.UaServer.Sessions
             X509Certificate2Collection clientCertificateChain,
             double requestedSessionTimeout,
             uint maxResponseMessageSize,
-            out NodeId sessionId,
-            out NodeId authenticationToken,
-            out byte[] serverNonce,
-            out double revisedSessionTimeout)
+            CancellationToken cancellationToken = default)
         {
-            sessionId = 0;
-            serverNonce = null;
-            revisedSessionTimeout = requestedSessionTimeout;
+            NodeId sessionId = 0;
+            NodeId authenticationToken;
+            byte[] serverNonce;
+            double revisedSessionTimeout = requestedSessionTimeout;
 
-            Session session = null;
+            IUaSession session;
 
-            lock (m_lock)
+            await m_semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
             {
                 // check session count.
                 if (m_maxSessionCount > 0 && m_sessions.Count >= m_maxSessionCount)
@@ -167,7 +174,7 @@ namespace Technosoftware.UaServer.Sessions
                 if (clientNonce != null)
                 {
                     // iterate over key/value pairs in the dictionary with a thread safe iterator
-                    foreach (var sessionKeyValueIterator in m_sessions)
+                    foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValueIterator in m_sessions)
                     {
                         byte[] sessionClientNonce = sessionKeyValueIterator.Value?.ClientNonce;
                         if (Nonce.CompareNonce(sessionClientNonce, clientNonce))
@@ -179,12 +186,12 @@ namespace Technosoftware.UaServer.Sessions
 
                 // can assign a simple identifier if secured.
                 authenticationToken = null;
-                if (!string.IsNullOrEmpty(context.ChannelContext.SecureChannelId))
+                if (!string.IsNullOrEmpty(context.ChannelContext.SecureChannelId) &&
+                    context.ChannelContext.EndpointDescription
+                        .SecurityMode != MessageSecurityMode.None)
                 {
-                    if (context.ChannelContext.EndpointDescription.SecurityMode != MessageSecurityMode.None)
-                    {
-                        authenticationToken = new NodeId(Utils.IncrementIdentifier(ref m_lastSessionId));
-                    }
+                    authenticationToken = new NodeId(
+                        Utils.IncrementIdentifier(ref m_lastSessionId));
                 }
 
                 // must assign a hard-to-guess id if not secured.
@@ -206,7 +213,8 @@ namespace Technosoftware.UaServer.Sessions
                 }
 
                 // create server nonce.
-                var serverNonceObject = Nonce.CreateNonce(context.ChannelContext.EndpointDescription.SecurityPolicyUri);
+                var serverNonceObject = Nonce.CreateNonce(
+                    context.ChannelContext.EndpointDescription.SecurityPolicyUri);
 
                 // assign client name.
                 if (string.IsNullOrEmpty(sessionName))
@@ -242,54 +250,30 @@ namespace Technosoftware.UaServer.Sessions
                     throw new ServiceResultException(StatusCodes.BadTooManySessions);
                 }
             }
+            finally
+            {
+                m_semaphoreSlim.Release();
+            }
 
             // raise session related event.
             RaiseSessionEvent(session, SessionEventReason.Created);
 
             // return session.
-            return session;
-        }
-
-        /// <summary>
-        /// Creates a new session.
-        /// </summary>
-        [Obsolete("Use CreateSession that passes X509Certificate2Collection)")]
-        public virtual Session CreateSession(
-            UaServerOperationContext context,
-            X509Certificate2 serverCertificate,
-            string sessionName,
-            byte[] clientNonce,
-            ApplicationDescription clientDescription,
-            string endpointUrl,
-            X509Certificate2 clientCertificate,
-            double requestedSessionTimeout,
-            uint maxResponseMessageSize,
-            out NodeId sessionId,
-            out NodeId authenticationToken,
-            out byte[] serverNonce,
-            out double revisedSessionTimeout)
-        {
-            return CreateSession(
-              context,
-              serverCertificate,
-              sessionName,
-              clientNonce,
-              clientDescription,
-              endpointUrl,
-              clientCertificate,
-              null,
-              requestedSessionTimeout,
-              maxResponseMessageSize,
-              out sessionId,
-              out authenticationToken,
-              out serverNonce,
-              out revisedSessionTimeout);
+            return new CreateSessionResult
+            {
+                Session = session,
+                SessionId = sessionId,
+                AuthenticationToken = authenticationToken,
+                RevisedSessionTimeout = revisedSessionTimeout,
+                ServerNonce = serverNonce
+            };
         }
 
         /// <summary>
         /// Activates an existing session
         /// </summary>
-        public virtual bool ActivateSession(
+        /// <exception cref="ServiceResultException"></exception>
+        public virtual async ValueTask<(bool IdentityContextChanged, byte[] ServerNonce)> ActivateSessionAsync(
             UaServerOperationContext context,
             NodeId authenticationToken,
             SignatureData clientSignature,
@@ -297,13 +281,13 @@ namespace Technosoftware.UaServer.Sessions
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
             StringCollection localeIds,
-            out byte[] serverNonce)
+            CancellationToken cancellationToken = default)
         {
-            serverNonce = null;
+            byte[] serverNonce = null;
 
             Nonce serverNonceObject = null;
 
-            Session session = null;
+            IUaSession session = null;
             UserIdentityToken newIdentity = null;
             UserTokenPolicy userTokenPolicy = null;
 
@@ -313,7 +297,9 @@ namespace Technosoftware.UaServer.Sessions
                 throw new ServiceResultException(StatusCodes.BadSessionIdInvalid);
             }
 
-            lock (m_lock)
+            await m_semaphoreSlim.WaitAsync(cancellationToken)
+                .ConfigureAwait(false);
+            try
             {
                 // find session.
                 if (!m_sessions.TryGetValue(authenticationToken, out session))
@@ -325,7 +311,7 @@ namespace Technosoftware.UaServer.Sessions
                 if (session.HasExpired)
                 {
                     // raise audit event for session closed because of timeout
-                    m_server.ReportAuditCloseSessionEvent(null, session, "Session/Timeout");
+                    m_server.ReportAuditCloseSessionEvent(null, session, m_logger, "Session/Timeout");
 
                     m_server.CloseSession(null, session.Id, false);
 
@@ -333,7 +319,8 @@ namespace Technosoftware.UaServer.Sessions
                 }
 
                 // create new server nonce.
-                serverNonceObject = Nonce.CreateNonce(context.ChannelContext.EndpointDescription.SecurityPolicyUri);
+                serverNonceObject = Nonce.CreateNonce(
+                    context.ChannelContext.EndpointDescription.SecurityPolicyUri);
 
                 // validate before activation.
                 session.ValidateBeforeActivate(
@@ -347,6 +334,10 @@ namespace Technosoftware.UaServer.Sessions
 
                 serverNonce = serverNonceObject.Data;
             }
+            finally
+            {
+                m_semaphoreSlim.Release();
+            }
             IUserIdentity identity = null;
             IUserIdentity effectiveIdentity = null;
             ServiceResult error = null;
@@ -356,10 +347,13 @@ namespace Technosoftware.UaServer.Sessions
                 // check if the application has a callback which validates the identity tokens.
                 lock (m_eventLock)
                 {
-                    if (m_impersonateUser != null)
+                    if (m_ImpersonateUser != null)
                     {
-                        UaImpersonateUserEventArgs args = new UaImpersonateUserEventArgs(newIdentity, userTokenPolicy, context.ChannelContext.EndpointDescription);
-                        m_impersonateUser(session, args);
+                        var args = new ImpersonateUserEventArgs(
+                            newIdentity,
+                            userTokenPolicy,
+                            context.ChannelContext.EndpointDescription);
+                        m_ImpersonateUser(session, args);
 
                         if (ServiceResult.IsBad(args.IdentityValidationError))
                         {
@@ -374,24 +368,15 @@ namespace Technosoftware.UaServer.Sessions
                 }
 
                 // parse the token manually if the identity is not provided.
-                if (identity == null)
-                {
-                    identity = newIdentity != null ? new UserIdentity(newIdentity) : new UserIdentity();
-                }
+                identity ??= newIdentity != null
+                    ? new UserIdentity(newIdentity)
+                    : new UserIdentity();
 
                 // use the identity as the effectiveIdentity if not provided.
-                if (effectiveIdentity == null)
-                {
-                    effectiveIdentity = identity;
-                }
+                effectiveIdentity ??= identity;
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not ServiceResultException)
             {
-                if (e is ServiceResultException)
-                {
-                    throw;
-                }
-
                 throw ServiceResultException.Create(
                     StatusCodes.BadIdentityTokenInvalid,
                     e,
@@ -423,7 +408,7 @@ namespace Technosoftware.UaServer.Sessions
             }
 
             // indicates that the identity context for the session has changed.
-            return contextChanged;
+            return (contextChanged, serverNonce);
         }
 
         /// <summary>
@@ -434,10 +419,10 @@ namespace Technosoftware.UaServer.Sessions
         /// </remarks>
         public virtual void CloseSession(NodeId sessionId)
         {
-            Session session = null;
+            IUaSession session = null;
 
             // thread safe search for the session.
-            foreach (KeyValuePair<NodeId, Session> current in m_sessions)
+            foreach (KeyValuePair<NodeId, IUaSession> current in m_sessions)
             {
                 if (current.Value.Id == sessionId)
                 {
@@ -472,32 +457,42 @@ namespace Technosoftware.UaServer.Sessions
         /// </summary>
         /// <remarks>
         /// This method verifies that the session id is valid and that it uses secure channel id
-        /// associated with current thread. It also verifies that the timestamp is not too 
+        /// associated with current thread. It also verifies that the timestamp is not too
         /// and that the sequence number is not out of order (update requests only).
         /// </remarks>
-        public virtual UaServerOperationContext ValidateRequest(RequestHeader requestHeader, RequestType requestType)
+        /// <exception cref="ArgumentNullException"><paramref name="requestHeader"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
+        public virtual UaServerOperationContext ValidateRequest(
+            RequestHeader requestHeader,
+            SecureChannelContext secureChannelContext,
+            RequestType requestType)
         {
             if (requestHeader == null)
+            {
                 throw new ArgumentNullException(nameof(requestHeader));
+            }
 
-            Session session = null;
+            IUaSession session = null;
 
             try
             {
                 // check for create session request.
-                if (requestType == RequestType.CreateSession || requestType == RequestType.ActivateSession)
+                if (requestType is RequestType.CreateSession or RequestType.ActivateSession)
                 {
-                    return new UaServerOperationContext(requestHeader, requestType);
+                    return new UaServerOperationContext(requestHeader, secureChannelContext, requestType);
                 }
 
                 // find session.
                 if (!m_sessions.TryGetValue(requestHeader.AuthenticationToken, out session))
                 {
-                    EventHandler<ValidateSessionLessRequestEventArgs> handler = m_validateSessionLessRequest;
+                    EventHandler<ValidateSessionLessRequestEventArgs> handler
+                        = m_ValidateSessionLessRequest;
 
                     if (handler != null)
                     {
-                        var args = new ValidateSessionLessRequestEventArgs(requestHeader.AuthenticationToken, requestType);
+                        var args = new ValidateSessionLessRequestEventArgs(
+                            requestHeader.AuthenticationToken,
+                            requestType);
                         handler(this, args);
 
                         if (ServiceResult.IsBad(args.Error))
@@ -505,31 +500,28 @@ namespace Technosoftware.UaServer.Sessions
                             throw new ServiceResultException(args.Error);
                         }
 
-                        return new UaServerOperationContext(requestHeader, requestType, args.Identity);
+                        return new UaServerOperationContext(requestHeader, secureChannelContext, requestType, args.Identity);
                     }
 
                     throw new ServiceResultException(StatusCodes.BadSessionIdInvalid);
                 }
 
                 // validate request header.
-                session.ValidateRequest(requestHeader, requestType);
+                session.ValidateRequest(requestHeader, secureChannelContext, requestType);
 
                 // validate user has permissions for additional info
                 session.ValidateDiagnosticInfo(requestHeader);
 
                 // return context.
-                return new UaServerOperationContext(requestHeader, requestType, session);
+                return new UaServerOperationContext(requestHeader, secureChannelContext, requestType, session);
             }
             catch (Exception e)
             {
-                ServiceResultException sre = e as ServiceResultException;
-
-                if (sre != null && sre.StatusCode == StatusCodes.BadSessionNotActivated)
+                if (e is ServiceResultException sre &&
+                    sre.StatusCode == StatusCodes.BadSessionNotActivated &&
+                    session != null)
                 {
-                    if (session != null)
-                    {
-                        CloseSession(session.Id);
-                    }
+                    CloseSession(session.Id);
                 }
 
                 throw new ServiceResultException(e, StatusCodes.BadUnexpectedError);
@@ -541,7 +533,7 @@ namespace Technosoftware.UaServer.Sessions
         /// <summary>
         /// Creates a new instance of a session.
         /// </summary>
-        protected virtual Session CreateSession(
+        protected virtual IUaSession CreateSession(
             UaServerOperationContext context,
             IUaServerData server,
             X509Certificate2 serverCertificate,
@@ -558,7 +550,7 @@ namespace Technosoftware.UaServer.Sessions
             int maxRequestAge, // TBD - Remove unused parameter.
             int maxContinuationPoints) // TBD - Remove unused parameter.
         {
-            Session session = new Session(
+            return new Session(
                 context,
                 m_server,
                 serverCertificate,
@@ -571,18 +563,15 @@ namespace Technosoftware.UaServer.Sessions
                 clientCertificate,
                 clientCertificateChain,
                 sessionTimeout,
-                maxResponseMessageSize,
-                m_maxRequestAge,
                 m_maxBrowseContinuationPoints,
                 m_maxHistoryContinuationPoints);
-
-            return session;
         }
 
         /// <summary>
         /// Raises an event related to a session.
         /// </summary>
-        protected virtual void RaiseSessionEvent(Session session, SessionEventReason reason)
+        /// <exception cref="ServiceResultException"></exception>
+        protected virtual void RaiseSessionEvent(IUaSession session, SessionEventReason reason)
         {
             lock (m_eventLock)
             {
@@ -591,13 +580,22 @@ namespace Technosoftware.UaServer.Sessions
                 switch (reason)
                 {
                     case SessionEventReason.Created:
-                    { handler = m_sessionCreated; break; }
+                        handler = m_SessionCreated;
+                        break;
                     case SessionEventReason.Activated:
-                    { handler = m_sessionActivated; break; }
+                        handler = m_SessionActivated;
+                        break;
                     case SessionEventReason.Closing:
-                    { handler = m_sessionClosing; break; }
+                        handler = m_SessionClosing;
+                        break;
                     case SessionEventReason.ChannelKeepAlive:
-                    { handler = m_sessionChannelKeepAlive; break; }
+                        handler = m_SessionChannelKeepAlive;
+                        break;
+                    case SessionEventReason.Impersonating:
+                        break;
+                    default:
+                        throw ServiceResultException.Unexpected(
+                            $"Unexpected SessionEventReason {reason}");
                 }
 
                 if (handler != null)
@@ -608,7 +606,7 @@ namespace Technosoftware.UaServer.Sessions
                     }
                     catch (Exception e)
                     {
-                        Utils.LogTrace(e, "Session event handler raised an exception.");
+                        m_logger.LogTrace(e, "Session event handler raised an exception.");
                     }
                 }
             }
@@ -619,20 +617,20 @@ namespace Technosoftware.UaServer.Sessions
         /// <summary>
         /// Periodically checks if the sessions have timed out.
         /// </summary>
-        private void MonitorSessions(object data)
+        private async ValueTask MonitorSessionsAsync(object data)
         {
             try
             {
-                Utils.LogInfo("Server - Session Monitor Thread Started.");
+                m_logger.LogInformation("Server - Session Monitor Thread Started.");
 
                 int sleepCycle = Convert.ToInt32(data, CultureInfo.InvariantCulture);
 
-                do
+                while (true)
                 {
                     // enumerator is thread safe
-                    foreach (var sessionKeyValue in m_sessions)
+                    foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValue in m_sessions)
                     {
-                        Session session = sessionKeyValue.Value;
+                        IUaSession session = sessionKeyValue.Value;
                         if (session.HasExpired)
                         {
                             // update diagnostics.
@@ -642,12 +640,14 @@ namespace Technosoftware.UaServer.Sessions
                             }
 
                             // raise audit event for session closed because of timeout
-                            m_server.ReportAuditCloseSessionEvent(null, session, "Session/Timeout");
+                            m_server.ReportAuditCloseSessionEvent(null, session, m_logger, "Session/Timeout");
 
-                            m_server.CloseSession(null, session.Id, false);
+                            await m_server.CloseSessionAsync(null, session.Id, false)
+                                .ConfigureAwait(false);
                         }
                         // if a session had no activity for the last m_minSessionTimeout milliseconds, send a keep alive event.
-                        else if (session.ClientLastContactTime.AddMilliseconds(m_minSessionTimeout) < DateTime.UtcNow)
+                        else if (session.ClientLastContactTime
+                            .AddMilliseconds(m_minSessionTimeout) < DateTime.UtcNow)
                         {
                             // signal the channel that the session is still active.
                             RaiseSessionEvent(session, SessionEventReason.ChannelKeepAlive);
@@ -656,178 +656,169 @@ namespace Technosoftware.UaServer.Sessions
 
                     if (m_shutdownEvent.WaitOne(sleepCycle))
                     {
-                        Utils.LogTrace("Server - Session Monitor Thread Exited Normally.");
+                        m_logger.LogTrace("Server - Session Monitor Thread Exited Normally.");
                         break;
                     }
                 }
-                while (true);
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Server - Session Monitor Thread Exited Unexpectedly");
+                m_logger.LogError(e, "Server - Session Monitor Thread Exited Unexpectedly");
             }
         }
         #endregion
 
         #region Private Fields
-        private readonly object m_lock = new object();
-        private IUaServerData m_server;
-        private NodeIdDictionary<Session> m_sessions;
-        private long m_lastSessionId;
-        private ManualResetEvent m_shutdownEvent;
+        private readonly SemaphoreSlim m_semaphoreSlim = new(1, 1);
+        private readonly IUaServerData m_server;
+        private readonly ILogger m_logger;
+        private readonly NodeIdDictionary<IUaSession> m_sessions;
+        private uint m_lastSessionId;
+        private readonly ManualResetEvent m_shutdownEvent;
 
-        private int m_minSessionTimeout;
-        private int m_maxSessionTimeout;
-        private int m_maxSessionCount;
-        private int m_maxRequestAge;
+        private readonly int m_minSessionTimeout;
+        private readonly int m_maxSessionTimeout;
+        private readonly int m_maxSessionCount;
+        private readonly int m_maxRequestAge;
 
-        private int m_maxBrowseContinuationPoints;
-        private int m_maxHistoryContinuationPoints;
+        private readonly int m_maxBrowseContinuationPoints;
+        private readonly int m_maxHistoryContinuationPoints;
 
-        private readonly object m_eventLock = new object();
-        private event EventHandler<SessionEventArgs> m_sessionCreated;
-        private event EventHandler<SessionEventArgs> m_sessionActivated;
-        private event EventHandler<SessionEventArgs> m_sessionClosing;
-        private event EventHandler<SessionEventArgs> m_sessionChannelKeepAlive;
-        private event EventHandler<UaImpersonateUserEventArgs> m_impersonateUser;
-        private event EventHandler<ValidateSessionLessRequestEventArgs> m_validateSessionLessRequest;
+        private readonly Lock m_eventLock = new();
+        private event EventHandler<SessionEventArgs> m_SessionCreated;
+        private event EventHandler<SessionEventArgs> m_SessionActivated;
+        private event EventHandler<SessionEventArgs> m_SessionClosing;
+        private event EventHandler<SessionEventArgs> m_SessionChannelKeepAlive;
+        private event EventHandler<ImpersonateUserEventArgs> m_ImpersonateUser;
+        private event EventHandler<ValidateSessionLessRequestEventArgs> m_ValidateSessionLessRequest;
         #endregion
 
         #region IUaSessionManager Members
         /// <inheritdoc/>
-        public event EventHandler<SessionEventArgs> SessionCreatedEvent
+        public event EventHandler<SessionEventArgs> SessionCreated
         {
             add
             {
                 lock (m_eventLock)
                 {
-                    m_sessionCreated += value;
+                    m_SessionCreated += value;
                 }
             }
-
             remove
             {
                 lock (m_eventLock)
                 {
-                    m_sessionCreated -= value;
+                    m_SessionCreated -= value;
                 }
             }
         }
 
         /// <inheritdoc/>
-        public event EventHandler<SessionEventArgs> SessionActivatedEvent
+        public event EventHandler<SessionEventArgs> SessionActivated
         {
             add
             {
                 lock (m_eventLock)
                 {
-                    m_sessionActivated += value;
+                    m_SessionActivated += value;
                 }
             }
-
             remove
             {
                 lock (m_eventLock)
                 {
-                    m_sessionActivated -= value;
+                    m_SessionActivated -= value;
                 }
             }
         }
 
         /// <inheritdoc/>
-        public event EventHandler<SessionEventArgs> SessionClosingEvent
+        public event EventHandler<SessionEventArgs> SessionClosing
         {
             add
             {
                 lock (m_eventLock)
                 {
-                    m_sessionClosing += value;
+                    m_SessionClosing += value;
                 }
             }
-
             remove
             {
                 lock (m_eventLock)
                 {
-                    m_sessionClosing -= value;
+                    m_SessionClosing -= value;
                 }
             }
         }
 
         /// <inheritdoc/>
-        public event EventHandler<SessionEventArgs> SessionChannelKeepAliveEvent
+        public event EventHandler<SessionEventArgs> SessionChannelKeepAlive
         {
             add
             {
                 lock (m_eventLock)
                 {
-                    m_sessionChannelKeepAlive += value;
+                    m_SessionChannelKeepAlive += value;
                 }
             }
-
             remove
             {
                 lock (m_eventLock)
                 {
-                    m_sessionChannelKeepAlive -= value;
+                    m_SessionChannelKeepAlive -= value;
                 }
             }
         }
 
         /// <inheritdoc/>
-        public event EventHandler<UaImpersonateUserEventArgs> ImpersonateUserEvent
+        public event EventHandler<ImpersonateUserEventArgs> ImpersonateUser
         {
             add
             {
                 lock (m_eventLock)
                 {
-                    m_impersonateUser += value;
+                    m_ImpersonateUser += value;
                 }
             }
-
             remove
             {
                 lock (m_eventLock)
                 {
-                    m_impersonateUser -= value;
+                    m_ImpersonateUser -= value;
                 }
             }
         }
 
         /// <inheritdoc/>
-        public event EventHandler<ValidateSessionLessRequestEventArgs> ValidateSessionLessRequestEvent
+        public event EventHandler<ValidateSessionLessRequestEventArgs> ValidateSessionLessRequest
         {
             add
             {
                 lock (m_eventLock)
                 {
-                    m_validateSessionLessRequest += value;
+                    m_ValidateSessionLessRequest += value;
                 }
             }
-
             remove
             {
                 lock (m_eventLock)
                 {
-                    m_validateSessionLessRequest -= value;
+                    m_ValidateSessionLessRequest -= value;
                 }
             }
         }
 
         /// <inheritdoc/>
-        public IList<Session> GetSessions()
+        public IList<IUaSession> GetSessions()
         {
-            lock (m_lock)
-            {
-                return new List<Session>(m_sessions.Values);
-            }
+            return [.. m_sessions.Values];
         }
 
         /// <inheritdoc/>
-        public Session GetSession(NodeId authenticationToken)
+        public IUaSession GetSession(NodeId authenticationToken)
         {
             // find session.
-            if (m_sessions.TryGetValue(authenticationToken, out Session session))
+            if (m_sessions.TryGetValue(authenticationToken, out IUaSession session))
             {
                 return session;
             }
@@ -835,5 +826,32 @@ namespace Technosoftware.UaServer.Sessions
         }
         #endregion
 
+        #region Obsolete IUaSessionManager Members
+        #pragma warning disable 67
+        /// <inheritdoc/>
+        [Obsolete("Use SessionCreated")]
+        public event EventHandler<SessionEventArgs> SessionCreatedEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use SessionActivated")]
+        public event EventHandler<SessionEventArgs> SessionActivatedEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use SessionClosing")]
+        public event EventHandler<SessionEventArgs> SessionClosingEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use SessionChannelKeepAlive")]
+        public event EventHandler<SessionEventArgs> SessionChannelKeepAliveEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use ImpersonateUser")]
+        public event EventHandler<UaImpersonateUserEventArgs> ImpersonateUserEvent;
+
+        /// <inheritdoc/>
+        [Obsolete("Use ValidateSessionLessRequest")]
+        public event EventHandler<ValidateSessionLessRequestEventArgs> ValidateSessionLessRequestEvent;
+        #pragma warning restore 67
+        #endregion
     }
 }

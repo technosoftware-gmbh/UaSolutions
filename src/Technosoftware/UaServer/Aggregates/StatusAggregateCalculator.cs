@@ -14,18 +14,15 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
 using System;
 using System.Collections.Generic;
-
 using Opc.Ua;
+#endregion Using Directives
 
-#endregion
-
-namespace Technosoftware.UaServer.Aggregates
+namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Calculates the value of an aggregate. 
+    /// Calculates the value of an aggregate.
     /// </summary>
     public class StatusAggregateCalculator : AggregateCalculator
     {
@@ -39,19 +36,20 @@ namespace Technosoftware.UaServer.Aggregates
         /// <param name="processingInterval">The processing interval.</param>
         /// <param name="stepped">Whether to use stepped interpolation.</param>
         /// <param name="configuration">The aggregate configuration.</param>
+        /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
         public StatusAggregateCalculator(
             NodeId aggregateId,
             DateTime startTime,
             DateTime endTime,
             double processingInterval,
             bool stepped,
-            AggregateConfiguration configuration)
-        :
-            base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
+            AggregateConfiguration configuration,
+            ITelemetryContext telemetry)
+            : base(aggregateId, startTime, endTime, processingInterval, stepped, configuration, telemetry)
         {
             SetPartialBit = true;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Overridden Methods
         /// <summary>
@@ -61,47 +59,29 @@ namespace Technosoftware.UaServer.Aggregates
         {
             uint? id = AggregateId.Identifier as uint?;
 
-            if (id != null)
+            if (id == null)
             {
-                switch (id.Value)
-                {
-                    case Objects.AggregateFunction_DurationGood:
-                    {
-                        return ComputeDurationGoodBad(slice, false, false);
-                    }
-
-                    case Objects.AggregateFunction_DurationBad:
-                    {
-                        return ComputeDurationGoodBad(slice, true, false);
-                    }
-
-                    case Objects.AggregateFunction_PercentGood:
-                    {
-                        return ComputeDurationGoodBad(slice, false, true);
-                    }
-
-                    case Objects.AggregateFunction_PercentBad:
-                    {
-                        return ComputeDurationGoodBad(slice, true, true);
-                    }
-
-                    case Objects.AggregateFunction_WorstQuality:
-                    {
-                        return ComputeWorstQuality(slice, false);
-                    }
-
-                    case Objects.AggregateFunction_WorstQuality2:
-                    {
-                        return ComputeWorstQuality(slice, true);
-                    }
-                }
+                return base.ComputeValue(slice);
             }
-
-            return base.ComputeValue(slice);
+            switch (id.Value)
+            {
+                case Objects.AggregateFunction_DurationGood:
+                    return ComputeDurationGoodBad(slice, false, false);
+                case Objects.AggregateFunction_DurationBad:
+                    return ComputeDurationGoodBad(slice, true, false);
+                case Objects.AggregateFunction_PercentGood:
+                    return ComputeDurationGoodBad(slice, false, true);
+                case Objects.AggregateFunction_PercentBad:
+                    return ComputeDurationGoodBad(slice, true, true);
+                case Objects.AggregateFunction_WorstQuality:
+                    return ComputeWorstQuality(slice, false);
+                case Objects.AggregateFunction_WorstQuality2:
+                    return ComputeWorstQuality(slice, true);
+                default:
+                    return base.ComputeValue(slice);
+            }
         }
-        #endregion
 
-        #region Protected Methods
         /// <summary>
         /// Calculates the DurationGood and DurationBad aggregates for the timeslice.
         /// </summary>
@@ -133,25 +113,24 @@ namespace Technosoftware.UaServer.Aggregates
                         duration += regions[ii].Duration;
                     }
                 }
-                else
+                else if (StatusCode.IsGood(regions[ii].StatusCode))
                 {
-                    if (StatusCode.IsGood(regions[ii].StatusCode))
-                    {
-                        duration += regions[ii].Duration;
-                    }
+                    duration += regions[ii].Duration;
                 }
             }
 
             if (usePercent)
             {
-                duration = (duration / total) * 100;
+                duration = duration / total * 100;
             }
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(duration, TypeInfo.Scalars.Double);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(duration, TypeInfo.Scalars.Double),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
             value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
 
             // return result.
@@ -164,8 +143,7 @@ namespace Technosoftware.UaServer.Aggregates
         protected DataValue ComputeWorstQuality(TimeSlice slice, bool includeBounds)
         {
             // get the values in the slice.
-            List<DataValue> values = null;
-
+            List<DataValue> values;
             if (!includeBounds)
             {
                 values = GetValues(slice);
@@ -182,7 +160,7 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // get the regions.
-            List<SubRegion> regions = GetRegionsInValueSet(values, false, true);
+            _ = GetRegionsInValueSet(values, false, true);
 
             StatusCode worstQuality = StatusCodes.Good;
             int badQualityCount = 0;
@@ -212,26 +190,28 @@ namespace Technosoftware.UaServer.Aggregates
                     {
                         worstQuality = quality.CodeBits;
                     }
-
-                    continue;
                 }
             }
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(worstQuality, TypeInfo.Scalars.StatusCode);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(worstQuality, TypeInfo.Scalars.StatusCode),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
             value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
 
-            if ((StatusCode.IsBad(worstQuality) && badQualityCount > 1) || (StatusCode.IsUncertain(worstQuality) && uncertainQualityCount > 1))
+            if ((StatusCode.IsBad(worstQuality) && badQualityCount > 1) ||
+                (StatusCode.IsUncertain(worstQuality) && uncertainQualityCount > 1))
             {
-                value.StatusCode = value.StatusCode.SetAggregateBits(value.StatusCode.AggregateBits | AggregateBits.MultipleValues);
+                value.StatusCode = value.StatusCode.SetAggregateBits(
+                    value.StatusCode.AggregateBits | AggregateBits.MultipleValues);
             }
 
             // return result.
             return value;
         }
-        #endregion
+        #endregion Overridden Methods
     }
 }

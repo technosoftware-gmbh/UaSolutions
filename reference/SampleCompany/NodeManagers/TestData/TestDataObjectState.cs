@@ -12,15 +12,15 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Opc.Ua;
 using Range = Opc.Ua.Range;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
     public partial class TestDataObjectState
     {
-        #region Initialization
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
@@ -30,13 +30,14 @@ namespace SampleCompany.NodeManagers.TestData
 
             GenerateValues.OnCall = OnGenerateValues;
         }
-        #endregion
 
-        #region Protected Methods
         /// <summary>
         /// Initialzies the variable as a counter.
         /// </summary>
-        protected void InitializeVariable(ISystemContext context, BaseVariableState variable, uint numericId)
+        protected void InitializeVariable(
+            ISystemContext context,
+            BaseVariableState variable,
+            uint numericId)
         {
             variable.NumericId = numericId;
 
@@ -47,9 +48,8 @@ namespace SampleCompany.NodeManagers.TestData
             }
 
             // set a valid initial value.
-            var system = context.SystemHandle as TestDataSystem;
 
-            if (system != null)
+            if (context.SystemHandle is TestDataSystem system)
             {
                 GenerateValue(system, variable);
             }
@@ -65,16 +65,17 @@ namespace SampleCompany.NodeManagers.TestData
                 {
                     if (child is BaseVariableState variableChild)
                     {
-                        variableChild.AccessLevel = variableChild.UserAccessLevel = AccessLevels.CurrentReadOrWrite;
+                        variableChild.AccessLevel = variableChild.UserAccessLevel = AccessLevels
+                            .CurrentReadOrWrite;
                     }
                 }
-
             }
 
             // set the EU range.
-            var euRange = variable.FindChild(context, Opc.Ua.BrowseNames.EURange) as BaseVariableState;
 
-            if (euRange != null)
+            if (variable.FindChild(
+                context,
+                Opc.Ua.BrowseNames.EURange) is BaseVariableState euRange)
             {
                 if (context.TypeTable.IsTypeOf(variable.DataType, Opc.Ua.DataTypeIds.UInteger))
                 {
@@ -98,35 +99,32 @@ namespace SampleCompany.NodeManagers.TestData
         {
             try
             {
-
-                var euRange = node.FindChild(context, Opc.Ua.BrowseNames.EURange) as BaseVariableState;
-
-                if (euRange == null)
+                if (node.FindChild(
+                    context,
+                    Opc.Ua.BrowseNames.EURange) is not BaseVariableState euRange)
                 {
                     return ServiceResult.Good;
                 }
 
-                var range = euRange.Value as Range;
-
-                if (range == null)
+                if (euRange.Value is not Range range)
                 {
                     return ServiceResult.Good;
                 }
 
-                var array = value as Array;
-
-                if (array != null)
+                if (value is Array array)
                 {
-                    for (var ii = 0; ii < array.Length; ii++)
+                    for (int ii = 0; ii < array.Length; ii++)
                     {
-                        var element = array.GetValue(ii);
+                        object element = array.GetValue(ii);
 
                         if (typeof(Variant).IsInstanceOfType(element))
                         {
                             element = ((Variant)element).Value;
                         }
 
-                        var elementNumber = Convert.ToDouble(element);
+                        double elementNumber = Convert.ToDouble(
+                            element,
+                            CultureInfo.InvariantCulture);
 
                         if (elementNumber > range.High || elementNumber < range.Low)
                         {
@@ -137,7 +135,7 @@ namespace SampleCompany.NodeManagers.TestData
                     return ServiceResult.Good;
                 }
 
-                var number = Convert.ToDouble(value);
+                double number = Convert.ToDouble(value, CultureInfo.InvariantCulture);
 
                 if (number > range.High || number < range.Low)
                 {
@@ -181,21 +179,13 @@ namespace SampleCompany.NodeManagers.TestData
                     "GenerateValuesEventType",
                     "en-US",
                     "New values generated for test source '{0}'.",
-                    this.DisplayName);
+                    DisplayName);
 
-                e.Initialize(
-                    context,
-                    this,
-                    EventSeverity.MediumLow,
-                    new LocalizedText(message));
+                e.Initialize(context, this, EventSeverity.MediumLow, new LocalizedText(message));
 
-                e.Iterations = new PropertyState<uint>(e) {
-                    Value = count
-                };
+                e.Iterations = new PropertyState<uint>(e) { Value = count };
 
-                e.NewValueCount = new PropertyState<uint>(e) {
-                    Value = 10
-                };
+                e.NewValueCount = new PropertyState<uint>(e) { Value = 10 };
 
                 ReportEvent(context, e);
             }
@@ -219,9 +209,7 @@ namespace SampleCompany.NodeManagers.TestData
             ref StatusCode statusCode,
             ref DateTime timestamp)
         {
-            var variable = node as BaseVariableState;
-
-            if (variable == null)
+            if (node is not BaseVariableState variable)
             {
                 return ServiceResult.Good;
             }
@@ -231,9 +219,7 @@ namespace SampleCompany.NodeManagers.TestData
                 return ServiceResult.Good;
             }
 
-            var system = context.SystemHandle as TestDataSystem;
-
-            if (system == null)
+            if (context.SystemHandle is not TestDataSystem system)
             {
                 return StatusCodes.BadOutOfService;
             }
@@ -263,6 +249,5 @@ namespace SampleCompany.NodeManagers.TestData
                 return new ServiceResult(e);
             }
         }
-        #endregion
     }
 }
