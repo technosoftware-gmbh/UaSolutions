@@ -1,11 +1,20 @@
 <Solution>
-  <Folder Name="/Legacy/">
-    <Project Path="tutorials/SampleCompany/Simple/SampleClient/SampleCompany.SimpleClient.csproj" />
-    <Project Path="tutorials/SampleCompany/Simple/SampleServer/SampleCompany.SimpleServer.csproj" />
+  <Folder Name="/V4/">
+    <Project Path="tutorials/SampleCompany/v4/SampleClient/SampleCompany.SampleClient.csproj" />
+    <Project Path="tutorials/SampleCompany/v4/SampleServer/SampleCompany.SampleServer.csproj" />
   </Folder>
-  <Folder Name="/NodeManagers/">
-    <Project Path="tutorials/SampleCompany/NodeManagers/SampleCompany.NodeManagers.csproj" />
+  <Folder Name="/V4/Legacy/">
+    <Project Path="tutorials/SampleCompany/v4/Simple/SampleClient/SampleCompany.SimpleClient.csproj" />
+    <Project Path="tutorials/SampleCompany/v4/Simple/SampleServer/SampleCompany.SimpleServer.csproj" />
   </Folder>
-  <Project Path="tutorials/SampleCompany/SampleClient/SampleCompany.SampleClient.csproj" />
-  <Project Path="tutorials/SampleCompany/SampleServer/SampleCompany.SampleServer.csproj" />
+  <Folder Name="/V4/NodeManagers/">
+    <Project Path="tutorials/SampleCompany/v4/NodeManagers/SampleCompany.NodeManagers.csproj" />
+  </Folder>
+  <Folder Name="/V5/">
+    <Project Path="tutorials/SampleCompany/v5/SampleClient/SampleCompany.SampleClient.csproj" />
+    <Project Path="tutorials/SampleCompany/v5/SampleServer/SampleCompany.SampleServer.csproj" />
+  </Folder>
+  <Folder Name="/V5/NodeManagers/">
+    <Project Path="tutorials/SampleCompany/v5/NodeManagers/SampleCompany.NodeManagers.csproj" />
+  </Folder>
 </Solution>

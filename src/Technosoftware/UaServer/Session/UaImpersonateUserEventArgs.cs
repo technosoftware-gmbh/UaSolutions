@@ -19,7 +19,7 @@ using System;
 
 using Opc.Ua;
 
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -39,7 +39,7 @@ namespace Technosoftware.UaServer
             m_userTokenPolicy = userTokenPolicy;
             m_endpointDescription = endpointDescription;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Properties
         /// <summary>
@@ -92,7 +92,7 @@ namespace Technosoftware.UaServer
         {
             get { return m_endpointDescription; }
         }
-        #endregion
+        #endregion Public Properties
 
         #region Private Fields
         private UserIdentityToken m_newIdentity;
@@ -101,6 +101,6 @@ namespace Technosoftware.UaServer
         private IUserIdentity m_identity;
         private IUserIdentity m_effectiveIdentity;
         private EndpointDescription m_endpointDescription;
-        #endregion
+        #endregion Private Fields
     }
 }

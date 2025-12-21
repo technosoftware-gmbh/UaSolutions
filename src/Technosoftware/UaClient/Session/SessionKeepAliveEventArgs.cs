@@ -17,7 +17,7 @@
 using System;
 
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -40,7 +40,7 @@ namespace Technosoftware.UaClient
             CurrentState = currentState;
             CurrentTime = currentTime;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Properties
         /// <summary>
@@ -62,9 +62,9 @@ namespace Technosoftware.UaClient
         /// Gets or sets a flag indicating whether the session should send another keep alive.
         /// </summary>
         public bool CancelKeepAlive { get; set; }
-        #endregion
+        #endregion Public Properties
 
         #region Private Fields
-        #endregion
+        #endregion Private Fields
     }
 }

@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -41,7 +41,7 @@ namespace Technosoftware.UaClient
             NotificationMessage = notificationMessage;
             StringTable = stringTable;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Properties
         /// <summary>
@@ -58,9 +58,9 @@ namespace Technosoftware.UaClient
         /// Gets the string table returned with the notification message.
         /// </summary>
         public IList<string> StringTable { get; }
-        #endregion
+        #endregion Public Properties
 
         #region Private Fields
-        #endregion
+        #endregion Private Fields
     }
 }

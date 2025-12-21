@@ -247,7 +247,8 @@ namespace Technosoftware.UaServer.Tests
                 requestHeader,
                 kMaxAge,
                 TimestampsToReturn.Neither,
-                readIdCollection, CancellationToken.None).ConfigureAwait(false);
+                readIdCollection,
+                CancellationToken.None).ConfigureAwait(false);
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, readIdCollection);
             ServerFixtureUtils.ValidateDiagnosticInfos(
                 readResponse.DiagnosticInfos,

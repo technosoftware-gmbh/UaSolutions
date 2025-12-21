@@ -452,7 +452,7 @@ namespace SampleCompany.ReferenceClient
                     }
 
                     // create the UA Client object and connect to configured server.
-                    using var uaClient = new UAClient(
+                    using var uaClient = new MyUaClient(
                         application.ApplicationConfiguration,
                         reverseConnectManager,
                         telemetry,

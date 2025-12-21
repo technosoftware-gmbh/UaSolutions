@@ -31,9 +31,10 @@
   <ItemGroup>
     <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
     <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
     <ProjectReference Include="..\..\..\src\Technosoftware\UaClient\Technosoftware.UaClient.csproj" />
     <ProjectReference Include="..\..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="5.0.0-rc" />
   </ItemGroup>
 
   <ItemGroup>

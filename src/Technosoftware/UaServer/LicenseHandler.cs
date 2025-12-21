@@ -15,7 +15,7 @@
 
 #region Using Directives
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -34,6 +34,6 @@ namespace Technosoftware.UaServer
         {
             return CheckLicense(Technosoftware.UaUtilities.Licensing.ApplicationType.Server, serialNumber);
         }
-        #endregion
+        #endregion Public Methods
     }
 }

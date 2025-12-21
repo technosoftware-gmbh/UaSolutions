@@ -351,7 +351,6 @@ namespace Technosoftware.UaServer
 
             lock (m_lock)
             {
-
                 if (secureChannelContext == null || !IsSecureChannelValid(secureChannelContext.SecureChannelId))
                 {
                     UpdateDiagnosticCounters(requestType, true, true);
@@ -1142,6 +1141,8 @@ namespace Technosoftware.UaServer
             bool error,
             bool authorizationError)
         {
+            ServiceCounterDataType counter = null;
+
             lock (DiagnosticsLock)
             {
                 if (!error)
@@ -1160,8 +1161,6 @@ namespace Technosoftware.UaServer
                         SessionDiagnostics.UnauthorizedRequestCount++;
                     }
                 }
-
-                ServiceCounterDataType counter = null;
 
                 switch (requestType)
                 {
@@ -1271,6 +1270,11 @@ namespace Technosoftware.UaServer
                         counter.ErrorCount++;
                     }
                 }
+            }
+
+            if (counter != null)
+            {
+                m_server.SessionManager.RaiseSessionDiagnosticsChangedEvent(this);
             }
         }
 

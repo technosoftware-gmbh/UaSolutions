@@ -219,7 +219,7 @@ namespace Technosoftware.UaClient.Tests
         {
             base.GlobalCleanup();
         }
-        #endregion
+        #endregion Test Setup
 
         #region Private Methods
         /// <summary>
@@ -284,7 +284,7 @@ namespace Technosoftware.UaClient.Tests
                 CancellationToken.None
             ).ConfigureAwait(false);
         }
-        #endregion
+        #endregion Private Methods
 
         #region Read Benchmarks - Small Messages
         /// <summary>
@@ -326,7 +326,7 @@ namespace Technosoftware.UaClient.Tests
                 ).ConfigureAwait(false);
             }
         }
-        #endregion
+        #endregion Read Benchmarks - Small Messages
 
         #region Read Benchmarks - Medium Messages
         /// <summary>
@@ -367,7 +367,7 @@ namespace Technosoftware.UaClient.Tests
                 ).ConfigureAwait(false);
             }
         }
-        #endregion
+        #endregion Read Benchmarks - Medium Messages
 
         #region Read Benchmarks - Large Messages
         /// <summary>
@@ -409,7 +409,7 @@ namespace Technosoftware.UaClient.Tests
                 ).ConfigureAwait(false);
             }
         }
-        #endregion
+        #endregion Read Benchmarks - Large Messages
 
         #region Write Benchmarks - Small Messages
         /// <summary>
@@ -464,7 +464,7 @@ namespace Technosoftware.UaClient.Tests
                 ).ConfigureAwait(false);
             }
         }
-        #endregion
+        #endregion Write Benchmarks - Small Messages
 
         #region Browse Benchmarks
         /// <summary>
@@ -532,7 +532,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.NotNull(response);
             Assert.NotNull(response.Results);
         }
-        #endregion
+        #endregion Browse Benchmarks
 
         #region Call Benchmarks
         /// <summary>
@@ -568,7 +568,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.NotNull(response.Results);
             Assert.AreEqual(1, response.Results.Count);
         }
-        #endregion
+        #endregion Call Benchmarks
 
         #region Session Management Benchmarks
         /// <summary>
@@ -616,7 +616,7 @@ namespace Technosoftware.UaClient.Tests
             await session.CloseAsync(CancellationToken.None).ConfigureAwait(false);
             session.Dispose();
         }
-        #endregion
+        #endregion Session Management Benchmarks
 
         #region Combined Workload Benchmarks
         /// <summary>
@@ -692,7 +692,7 @@ namespace Technosoftware.UaClient.Tests
                 CancellationToken.None
             ).ConfigureAwait(false);
         }
-        #endregion
+        #endregion Combined Workload Benchmarks
 
         #region Throughput Benchmarks
         /// <summary>
@@ -816,7 +816,7 @@ namespace Technosoftware.UaClient.Tests
             }
             // Throughput = 100 operations / Mean time in seconds
         }
-        #endregion
+        #endregion Throughput Benchmarks
 
         #region Comprehensive Security Policy Test
         /// <summary>
@@ -897,6 +897,6 @@ namespace Technosoftware.UaClient.Tests
             // Assert at least some policies work
             Assert.Greater(successful, 0, "No security policies were successful");
         }
-        #endregion
+        #endregion Comprehensive Security Policy Test
     }
 }

@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+    <AssemblyName>SampleCompany.NodeManagers</AssemblyName>
+    <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
+    <PackageId>SampleCompany.NodeManagers</PackageId>
+    <RootNamespace>SampleCompany.NodeManagers</RootNamespace>
+    <Company>SampleCompany</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>SampleCompany NodeManagers Library</Description>
+    <Copyright>Copyright © 2018 - 2025 SampleCompany</Copyright>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <NoWarn>CS1591;CS1573;RCS1139</NoWarn>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Update="Roslynator.Analyzers" Version="4.14.0" />
+    <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="Roslynator.Analyzers" Version="4.14.1" />
+    <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.1" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="5.0.0-rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="5.0.0-rc" />
+  </ItemGroup>
+  <Target Name="GetPackagingOutputs" />
+</Project>

@@ -24,12 +24,12 @@ namespace SampleCompany.ReferenceClient
     /// <summary>
     /// OPC UA Client with examples of basic functionality.
     /// </summary>
-    public class UAClient : IUAClient, IDisposable
+    public class MyUaClient : IMyUaClient, IDisposable
     {
         /// <summary>
         /// Initializes a new instance of the UAClient class.
         /// </summary>
-        public UAClient(
+        public MyUaClient(
             ApplicationConfiguration configuration,
             ITelemetryContext telemetry,
             Action<IList, IList> validateResponse)
@@ -44,14 +44,14 @@ namespace SampleCompany.ReferenceClient
         /// <summary>
         /// Initializes a new instance of the UAClient class for reverse connections.
         /// </summary>
-        public UAClient(
+        public MyUaClient(
             ApplicationConfiguration configuration,
             ReverseConnectManager reverseConnectManager,
             ITelemetryContext telemetry,
             Action<IList, IList> validateResponse)
         {
             ValidateResponse = validateResponse;
-            m_logger = telemetry.CreateLogger<UAClient>();
+            m_logger = telemetry.CreateLogger<MyUaClient>();
             m_telemetry = telemetry;
             m_configuration = configuration;
             m_configuration.CertificateValidator.CertificateValidation += CertificateValidation;
@@ -170,7 +170,7 @@ namespace SampleCompany.ReferenceClient
         {
             if (m_disposed)
             {
-                throw new ObjectDisposedException(nameof(UAClient));
+                throw new ObjectDisposedException(nameof(MyUaClient));
             }
 
             if (serverUrl == null)

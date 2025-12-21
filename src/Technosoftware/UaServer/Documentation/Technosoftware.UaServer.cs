@@ -15,7 +15,7 @@
 
 #region Using Directives
 
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {

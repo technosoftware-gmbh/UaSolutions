@@ -17,7 +17,7 @@
 
 using System;
 
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -35,7 +35,7 @@ namespace Technosoftware.UaServer
             Reason = reason;
         }
 
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Properties
 
@@ -44,10 +44,10 @@ namespace Technosoftware.UaServer
         /// </summary>
         public SessionEventReason Reason { get; }
 
-        #endregion
+        #endregion Public Properties
 
         #region Private Fields
 
-        #endregion
+        #endregion Private Fields
     }
 }

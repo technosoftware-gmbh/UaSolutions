@@ -60,7 +60,7 @@ namespace Technosoftware.UaServer
             // create a event to signal shutdown.
             m_shutdownEvent = new ManualResetEvent(true);
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region IDisposable Members        
         /// <summary>
@@ -91,7 +91,7 @@ namespace Technosoftware.UaServer
                 m_shutdownEvent.Set();
             }
         }
-        #endregion
+        #endregion IDisposable Members        
 
         #region Public Interface
         /// <summary>
@@ -527,7 +527,7 @@ namespace Technosoftware.UaServer
                 throw new ServiceResultException(e, StatusCodes.BadUnexpectedError);
             }
         }
-        #endregion
+        #endregion Public Interface
 
         #region Protected Methods
         /// <summary>
@@ -567,6 +567,17 @@ namespace Technosoftware.UaServer
                 m_maxHistoryContinuationPoints);
         }
 
+        /// <inheritdoc />
+        public virtual void RaiseSessionDiagnosticsChangedEvent(IUaSession session)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            RaiseSessionEvent(session, SessionEventReason.DiagnosticsChanged);
+        }
+
         /// <summary>
         /// Raises an event related to a session.
         /// </summary>
@@ -587,6 +598,9 @@ namespace Technosoftware.UaServer
                         break;
                     case SessionEventReason.Closing:
                         handler = m_SessionClosing;
+                        break;
+                    case SessionEventReason.DiagnosticsChanged:
+                        handler = m_SessionDiagnosticsChanged;
                         break;
                     case SessionEventReason.ChannelKeepAlive:
                         handler = m_SessionChannelKeepAlive;
@@ -611,7 +625,7 @@ namespace Technosoftware.UaServer
                 }
             }
         }
-        #endregion
+        #endregion Protected Methods
 
         #region Private Methods
         /// <summary>
@@ -666,7 +680,7 @@ namespace Technosoftware.UaServer
                 m_logger.LogError(e, "Server - Session Monitor Thread Exited Unexpectedly");
             }
         }
-        #endregion
+        #endregion Private Methods
 
         #region Private Fields
         private readonly SemaphoreSlim m_semaphoreSlim = new(1, 1);
@@ -688,10 +702,11 @@ namespace Technosoftware.UaServer
         private event EventHandler<SessionEventArgs> m_SessionCreated;
         private event EventHandler<SessionEventArgs> m_SessionActivated;
         private event EventHandler<SessionEventArgs> m_SessionClosing;
+        private event EventHandler<SessionEventArgs> m_SessionDiagnosticsChanged;
         private event EventHandler<SessionEventArgs> m_SessionChannelKeepAlive;
         private event EventHandler<ImpersonateUserEventArgs> m_ImpersonateUser;
         private event EventHandler<ValidateSessionLessRequestEventArgs> m_ValidateSessionLessRequest;
-        #endregion
+        #endregion Private Fields
 
         #region IUaSessionManager Members
         /// <inheritdoc/>
@@ -728,6 +743,25 @@ namespace Technosoftware.UaServer
                 lock (m_eventLock)
                 {
                     m_SessionActivated -= value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public event EventHandler<SessionEventArgs> SessionDiagnosticsChanged
+        {
+            add
+            {
+                lock (m_eventLock)
+                {
+                    m_SessionDiagnosticsChanged += value;
+                }
+            }
+            remove
+            {
+                lock (m_eventLock)
+                {
+                    m_SessionDiagnosticsChanged -= value;
                 }
             }
         }
@@ -824,7 +858,7 @@ namespace Technosoftware.UaServer
             }
             return null;
         }
-        #endregion
+        #endregion IUaSessionManager Members
 
         #region Obsolete IUaSessionManager Members
         #pragma warning disable 67
@@ -852,6 +886,6 @@ namespace Technosoftware.UaServer
         [Obsolete("Use ValidateSessionLessRequest")]
         public event EventHandler<ValidateSessionLessRequestEventArgs> ValidateSessionLessRequestEvent;
         #pragma warning restore 67
-        #endregion
+        #endregion Obsolete IUaSessionManager Members
     }
 }

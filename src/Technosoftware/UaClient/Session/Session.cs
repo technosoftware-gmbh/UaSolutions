@@ -5142,7 +5142,7 @@ namespace Technosoftware.UaClient
         [Obsolete]
         private event EventHandler<PublishSequenceNumbersToAcknowledgeEventArgs>? m_PublishSequenceNumbersToAcknowledgeEvent;
         #pragma warning restore 67
-        #endregion
+        #endregion Obsolete Events
     }
 
     /// <summary>

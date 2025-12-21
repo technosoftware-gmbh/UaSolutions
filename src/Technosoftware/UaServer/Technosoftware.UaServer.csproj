@@ -19,9 +19,9 @@
     <PackageId>$(PackageId).Debug</PackageId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
     <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
     <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
   </ItemGroup>
   <Target Name="GetPackagingOutputs" />
 </Project>

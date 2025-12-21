@@ -15,6 +15,6 @@
 
 #region Using Directives
 using System;
-#endregion
+#endregion Using Directives
 
 [assembly: CLSCompliant(false)]

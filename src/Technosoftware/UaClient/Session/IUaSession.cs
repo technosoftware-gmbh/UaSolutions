@@ -557,7 +557,7 @@ namespace Technosoftware.UaClient
             SubscriptionCollection subscriptions,
             bool sendInitialValues,
             CancellationToken ct = default);
-        #endregion Subscription Methods
+        #endregion Public Methods
 
         #region Publish Methods
         /// <summary>

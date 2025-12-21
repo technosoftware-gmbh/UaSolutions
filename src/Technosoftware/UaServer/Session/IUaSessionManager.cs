@@ -49,6 +49,11 @@ namespace Technosoftware.UaServer
         event  EventHandler<SessionEventArgs> SessionClosing;
 
         /// <summary>
+        /// Raised after diagnostics of an existing session were changed.
+        /// </summary>
+        event EventHandler<SessionEventArgs> SessionDiagnosticsChanged;
+
+        /// <summary>
         /// Raised to signal a channel that the session is still alive.
         /// </summary>
         event  EventHandler<SessionEventArgs> SessionChannelKeepAlive;
@@ -62,7 +67,7 @@ namespace Technosoftware.UaServer
         /// Raised to validate a session-less request.
         /// </summary>
         event EventHandler<ValidateSessionLessRequestEventArgs> ValidateSessionLessRequest;
-        #endregion
+        #endregion Event Definitions
 
         /// <summary>
         /// Starts the session manager.
@@ -132,6 +137,11 @@ namespace Technosoftware.UaServer
         /// and that the sequence number is not out of order (update requests only).
         /// </remarks>
         UaServerOperationContext ValidateRequest(RequestHeader requestHeader, SecureChannelContext secureChannelContext, RequestType requestType);
+
+        /// <summary>
+        /// Triggers the <see cref="IUaSessionManager.SessionDiagnosticsChanged"/> event so subscribers can react.
+        /// </summary>
+        void RaiseSessionDiagnosticsChangedEvent(IUaSession session);
 
         #region Obsolete Event Definitions
         /// <summary>
@@ -223,6 +233,11 @@ namespace Technosoftware.UaServer
         /// A session was activated and the user identity or preferred locales changed.
         /// </summary>
         Activated,
+
+        /// <summary>
+        /// The diagnostics of an existing session were changed.
+        /// </summary>
+        DiagnosticsChanged,
 
         /// <summary>
         /// A session is about to be closed.

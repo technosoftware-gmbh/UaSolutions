@@ -30,19 +30,6 @@ using Technosoftware.UaClient;
 namespace SampleCompany.ReferenceClient
 {
     /// <summary>
-    /// A client interface which holds an active session.
-    /// The client handler may reconnect and the Session
-    /// property may be updated during operation.
-    /// </summary>
-    public interface IUAClient
-    {
-        /// <summary>
-        /// The session to use.
-        /// </summary>
-        IUaSession Session { get; }
-    }
-
-    /// <summary>
     /// Sample Session calls based on the reference server node model.
     /// </summary>
     public class ClientSamples
@@ -548,7 +535,7 @@ namespace SampleCompany.ReferenceClient
         /// <param name="filterUATypes">Filters nodes from namespace 0 from the result.</param>
         /// <returns>The list of nodes on the server.</returns>
         public async Task<IList<INode>> FetchAllNodesNodeCacheAsync(
-            IUAClient uaClient,
+            IMyUaClient uaClient,
             NodeId startingNode,
             bool fetchTree = false,
             bool addRootNode = false,
@@ -697,7 +684,7 @@ namespace SampleCompany.ReferenceClient
         /// <param name="startingNode">The node where the browse operation starts.</param>
         /// <param name="browseDescription">An optional BrowseDescription to use.</param>
         public async Task<ReferenceDescriptionCollection> ManagedBrowseFullAddressSpaceAsync(
-            IUAClient uaClient,
+            IMyUaClient uaClient,
             NodeId startingNode = null,
             BrowseDescription browseDescription = null,
             CancellationToken ct = default)
@@ -873,7 +860,7 @@ namespace SampleCompany.ReferenceClient
         /// <param name="startingNode">The node where the browse operation starts.</param>
         /// <param name="browseDescription">An optional BrowseDescription to use.</param>
         public async Task<ReferenceDescriptionCollection> BrowseFullAddressSpaceAsync(
-            IUAClient uaClient,
+            IMyUaClient uaClient,
             NodeId startingNode = null,
             BrowseDescription browseDescription = null,
             CancellationToken ct = default)
@@ -1116,7 +1103,7 @@ namespace SampleCompany.ReferenceClient
         /// Output all values as JSON.
         /// </summary>
         public async Task<ResultSet<DataValue>> ReadAllValuesAsync(
-            IUAClient uaClient,
+            IMyUaClient uaClient,
             NodeIdCollection variableIds,
             CancellationToken ct = default)
         {
@@ -1210,7 +1197,7 @@ namespace SampleCompany.ReferenceClient
         /// <param name="uaClient">The UAClient with a session to use.</param>
         /// <param name="variableIds">The variables to subscribe.</param>
         public async Task SubscribeAllValuesAsync(
-            IUAClient uaClient,
+            IMyUaClient uaClient,
             NodeCollection variableIds,
             int samplingInterval,
             int publishingInterval,

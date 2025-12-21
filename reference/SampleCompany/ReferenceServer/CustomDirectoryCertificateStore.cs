@@ -26,7 +26,7 @@ using System.Runtime.InteropServices;
 using Opc.Ua;
 using Opc.Ua.Redaction;
 using Opc.Ua.Security.Certificates;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.ReferenceServer
 {
@@ -92,7 +92,7 @@ namespace SampleCompany.ReferenceServer
             m_noSubDirs = noSubDirs;
             m_certificates = [];
         }
-        #endregion
+        #endregion Constructors
 
         #region IDisposable Members
         /// <summary>
@@ -126,14 +126,14 @@ namespace SampleCompany.ReferenceServer
             }
             Close();
         }
-        #endregion
+        #endregion IDisposable Members
 
         #region Public Properties
         /// <summary>
         /// The directory containing the certificate store.
         /// </summary>
         public DirectoryInfo Directory { get; private set; }
-        #endregion
+        #endregion Public Properties
 
         #region ICertificateStore Members
         /// <inheritdoc/>
@@ -1083,7 +1083,7 @@ namespace SampleCompany.ReferenceServer
 
             return Task.FromResult(false);
         }
-        #endregion
+        #endregion ICertificateStore Members
 
         #region Private Methods
         /// <summary>
@@ -1355,7 +1355,7 @@ namespace SampleCompany.ReferenceServer
 
             return fileInfo;
         }
-        #endregion
+        #endregion Private Methods
 
         #region Private Class
         private class Entry
@@ -1366,7 +1366,7 @@ namespace SampleCompany.ReferenceServer
             public X509Certificate2 CertificateWithPrivateKey;
             public DateTime LastWriteTimeUtc;
         }
-        #endregion
+        #endregion Private Class
 
         #region Private Fields
         private readonly SemaphoreSlim m_lock = new(1, 1);
@@ -1377,6 +1377,6 @@ namespace SampleCompany.ReferenceServer
         private DirectoryInfo m_privateKeySubdir;
         private readonly Dictionary<string, Entry> m_certificates;
         private DateTime m_lastDirectoryCheck;
-        #endregion
+        #endregion Private Fields
     }
 }

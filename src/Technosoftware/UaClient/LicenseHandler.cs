@@ -17,7 +17,7 @@
 using Opc.Ua;
 
 using Technosoftware.UaUtilities.Licensing;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -35,6 +35,6 @@ namespace Technosoftware.UaClient
         {
             return CheckLicense(Technosoftware.UaUtilities.Licensing.ApplicationType.Client, serialNumber);
         }
-        #endregion
+        #endregion Public Methods
     }
 }
