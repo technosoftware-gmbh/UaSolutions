@@ -25,21 +25,46 @@ using Technosoftware.UaServer;
 
 namespace SampleCompany.ReferenceServer
 {
+    /// <summary>
+    /// Main class for the Reference UA server
+    /// </summary>
+    /// <typeparam name="T">Any class based on the UaStandardServer class.</typeparam>
     public class MyUaServer<T>
         where T : UaStandardServer, new()
     {
+        #region Public Properties
+        /// <summary>
+        /// Application instance used by the UA server.
+        /// </summary>
         public ApplicationInstance Application { get; private set; }
 
+        /// <summary>
+        /// Application configuration used by the UA server.
+        /// </summary>
         public ApplicationConfiguration Configuration => Application.ApplicationConfiguration;
 
+        /// <summary>
+        /// Specifies whether a certificate is automatically accepted (True) or not (False).
+        /// </summary>
         public bool AutoAccept { get; set; }
 
+        /// <summary>
+        /// In case the private key is protected by a password it is specified by this property.
+        /// </summary>
         public char[] Password { get; set; }
 
+        /// <summary>
+        /// The exit code at the time the server stopped.
+        /// </summary>
         public ExitCode ExitCode { get; private set; }
 
+        /// <summary>
+        /// The server object
+        /// </summary>
         public T Server { get; private set; }
+        #endregion Public Properties
 
+        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Ctor of the server.
         /// </summary>
@@ -53,6 +78,8 @@ namespace SampleCompany.ReferenceServer
         /// <summary>
         /// Load the application configuration.
         /// </summary>
+        /// <param name="applicationName">The name of the application.</param>
+        /// <param name="configSectionName">The section name within the configuration.</param>
         /// <exception cref="ErrorExitException"></exception>
         public async Task LoadAsync(string applicationName, string configSectionName)
         {
@@ -67,7 +94,8 @@ namespace SampleCompany.ReferenceServer
                     ApplicationName = applicationName,
                     ApplicationType = ApplicationType.Server,
                     ConfigSectionName = configSectionName,
-                    CertificatePasswordProvider = passwordProvider
+                    CertificatePasswordProvider = passwordProvider,
+                    DisableCertificateAutoCreation = false
                 };
 
                 // load the application configuration.
@@ -82,6 +110,7 @@ namespace SampleCompany.ReferenceServer
         /// <summary>
         /// Load the application configuration.
         /// </summary>
+        /// <param name="renewCertificate">Specifies whether the certificate should be renewed (true) or not (false)</param>
         /// <exception cref="ErrorExitException"></exception>
         public async Task CheckCertificateAsync(bool renewCertificate)
         {
@@ -105,7 +134,7 @@ namespace SampleCompany.ReferenceServer
                 if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
                 {
                     config.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(
-                        CertificateValidator_CertificateValidation
+                        OnCertificateValidation
                     );
                 }
             }
@@ -207,7 +236,7 @@ namespace SampleCompany.ReferenceServer
         /// The certificate validator is used
         /// if auto accept is not selected in the configuration.
         /// </summary>
-        private void CertificateValidator_CertificateValidation(
+        private void OnCertificateValidation(
             CertificateValidator validator,
             CertificateValidationEventArgs e
         )
@@ -244,6 +273,8 @@ namespace SampleCompany.ReferenceServer
         /// <summary>
         /// Output the status of a connected session.
         /// </summary>
+        /// <param name="session">The session.</param>
+        /// <param name="reason">The reason</param>
         private void LogSessionStatusLastContact(IUaSession session, string reason)
         {
             lock (session.DiagnosticsLock)
@@ -295,6 +326,7 @@ namespace SampleCompany.ReferenceServer
                 await Task.Delay(1000).ConfigureAwait(false);
             }
         }
+        #endregion Helper Methods
 
         /// <summary>
         /// A dialog which asks for user input.
@@ -345,9 +377,11 @@ namespace SampleCompany.ReferenceServer
             }
         }
 
+        #region Private Fields
         private readonly ITelemetryContext m_telemetry;
         private readonly ILogger m_logger;
         private Task m_status;
         private DateTime m_lastEventTime;
+        #endregion Private Fields
     }
 }

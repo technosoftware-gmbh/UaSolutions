@@ -29,13 +29,14 @@ using SampleCompany.Common;
 namespace SampleCompany.ReferenceClient
 {
     /// <summary>
-    /// The program.
+    /// The main program.
     /// </summary>
     public static class Program
     {
         /// <summary>
-        /// Main entry point.
+        /// The main entry point for the application.
         /// </summary>
+        /// <param name="args">The arguments given on commandline.</param>
         /// <exception cref="ErrorExitException"></exception>
         public static async Task Main(string[] args)
         {

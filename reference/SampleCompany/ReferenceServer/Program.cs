@@ -35,7 +35,7 @@ namespace SampleCompany.ReferenceServer
         /// <param name="args">The arguments.</param>
         public static async Task<int> Main(string[] args)
         {
-            Console.WriteLine("OPC UA Console Sample Server");
+            Console.WriteLine("OPC UA Console Reference Server");
 
             #region License validation
             //const string licenseData =

@@ -23,7 +23,7 @@ using Technosoftware.UaServer;
 namespace SampleCompany.NodeManagers.Reference
 {
     /// <summary>
-    /// Implements the Quickstart Reference Server.
+    /// Implements a basic OPC UA Server.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -81,23 +81,23 @@ namespace SampleCompany.NodeManagers.Reference
             else
             {
                 nodeManagers =
-            [
-                // create the custom node manager.
-                new ReferenceServerNodeManager(
-                    server,
-                    configuration,
-                    UseSamplingGroupsInReferenceNodeManager)
-            ];
+                [
+                    // create the custom node manager.
+                    new ReferenceServerNodeManager(
+                        server,
+                        configuration,
+                        UseSamplingGroupsInReferenceNodeManager)
+                ];
 
-            foreach (IUaNodeManagerFactory nodeManagerFactory in NodeManagerFactories)
-            {
-                nodeManagers.Add(nodeManagerFactory.Create(server, configuration));
-            }
+                foreach (IUaNodeManagerFactory nodeManagerFactory in NodeManagerFactories)
+                {
+                    nodeManagers.Add(nodeManagerFactory.Create(server, configuration));
+                }
 
-            foreach (IUaAsyncNodeManagerFactory nodeManagerFactory in AsyncNodeManagerFactories)
-            {
-                asyncNodeManagers.Add(nodeManagerFactory.CreateAsync(server, configuration).AsTask().GetAwaiter().GetResult());
-            }
+                foreach (IUaAsyncNodeManagerFactory nodeManagerFactory in AsyncNodeManagerFactories)
+                {
+                    asyncNodeManagers.Add(nodeManagerFactory.CreateAsync(server, configuration).AsTask().GetAwaiter().GetResult());
+                }
             }
 
             return new MasterNodeManager(server, configuration, null, asyncNodeManagers, nodeManagers);

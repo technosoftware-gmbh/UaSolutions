@@ -11,6 +11,7 @@
 
 #region Using Directives
 using System;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,16 +35,46 @@ namespace SampleCompany.SampleServer
         /// <param name="args">The arguments.</param>
         public static async Task<int> Main(string[] args)
         {
-            TextWriter output = Console.Out;
-            await output.WriteLineAsync("OPC UA Console Sample Server").ConfigureAwait(false);
+            Console.WriteLine("OPC UA Console Sample Server");
 
             #region License validation
-            const string licenseData =
-                    @"";
-            bool licensed = Technosoftware.UaServer.LicenseHandler.Validate(licenseData);
-            if (!licensed)
+            //const string licenseData =
+            //        @"";
+            //bool licensed = Technosoftware.UaServer.LicenseHandler.Validate(licenseData);
+            //if (!licensed)
+            //{
+            //    Console.WriteLine("WARNING: No valid license applied.");
+            //}
+
+            string licensedString = $"   Licensed Product     : {Technosoftware.UaUtilities.Licensing.LicenseHandler.LicensedProduct}";
+            Console.WriteLine(licensedString);
+            licensedString = $"   Licensed Features    : {Technosoftware.UaUtilities.Licensing.LicenseHandler.LicensedFeatures}";
+            Console.WriteLine(licensedString);
+            if (Technosoftware.UaUtilities.Licensing.LicenseHandler.IsEvaluation)
             {
-                await output.WriteLineAsync("WARNING: No valid license applied.").ConfigureAwait(false);
+                licensedString = $"   Evaluation expires at: {Technosoftware.UaUtilities.Licensing.LicenseHandler.LicenseExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {Technosoftware.UaUtilities.Licensing.LicenseHandler.LicenseExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            licensedString = $"   Support Included     : {Technosoftware.UaUtilities.Licensing.LicenseHandler.Support}";
+            Console.WriteLine(licensedString);
+            if (Technosoftware.UaUtilities.Licensing.LicenseHandler.Support != Technosoftware.UaUtilities.Licensing.SupportType.None)
+            {
+                licensedString = $"   Support expire at    : {Technosoftware.UaUtilities.Licensing.LicenseHandler.SupportExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {Technosoftware.UaUtilities.Licensing.LicenseHandler.SupportExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            if (Technosoftware.UaUtilities.Licensing.LicenseHandler.IsEvaluation)
+            {
+                licensedString = $"   Evaluation Period    : {Technosoftware.UaUtilities.Licensing.LicenseHandler.EvaluationPeriod} minutes.";
+                Console.WriteLine(licensedString);
+            }
+
+            if (!Technosoftware.UaUtilities.Licensing.LicenseHandler.IsLicensed && !Technosoftware.UaUtilities.Licensing.LicenseHandler.IsEvaluation)
+            {
+                Console.WriteLine("ERROR: No valid license applied.");
             }
             #endregion License validation
 
@@ -56,8 +87,9 @@ namespace SampleCompany.SampleServer
             bool autoAccept = false;
             bool logConsole = false;
             bool appLog = false;
+            bool fileLog = false;
             bool renewCertificate = false;
-            string password = null;
+            char[] password = null;
             int timeout = -1;
 
             string usage = Utils.IsRunningOnMono()
@@ -70,94 +102,67 @@ namespace SampleCompany.SampleServer
                 { "a|autoaccept", "auto accept certificates (for testing only)", a => autoAccept = a != null },
                 { "c|console", "log to console", c => logConsole = c != null },
                 { "l|log", "log app output", c => appLog = c != null },
-                { "p|password=", "optional password for private key", p => password = p },
+                { "f|file", "log to file", f => fileLog = f != null },
+                { "p|password=", "optional password for private key", p => password = p.ToCharArray() },
                 { "r|renew", "renew application certificate", r => renewCertificate = r != null },
                 { "t|timeout=", "timeout in seconds to exit application", (int t) => timeout = t * 1000 }
             };
 
+            using var telemetry = new ConsoleTelemetry();
+            ILogger logger = LoggerUtils.Null.Logger;
             try
             {
                 // parse command line and set options
-                ConsoleUtils.ProcessCommandLine(output, args, options, ref showHelp, "REFSERVER");
+                ConsoleUtils.ProcessCommandLine(args, options, ref showHelp, "SAMPLESERVER");
 
-                string licensedString = $"   Licensed Product     : {LicenseHandler.LicensedProduct}";
-                await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                licensedString = $"   Licensed Features    : {LicenseHandler.LicensedFeatures}";
-                await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                if (LicenseHandler.IsEvaluation)
-                {
-                    licensedString = $"   Evaluation expires at: {LicenseHandler.LicenseExpirationDate}";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                    licensedString = $"   Days until Expiration: {LicenseHandler.LicenseExpirationDays}";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                }
-                licensedString = $"   Support Included     : {LicenseHandler.Support}";
-                await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                if (LicenseHandler.Support != SupportType.None)
-                {
-                    licensedString = $"   Support expire at    : {LicenseHandler.SupportExpirationDate}";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                    licensedString = $"   Days until Expiration: {LicenseHandler.SupportExpirationDays}";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                }
-                if (LicenseHandler.IsEvaluation)
-                {
-                    licensedString = $"   Evaluation Period    : {LicenseHandler.EvaluationPeriod} minutes.";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                }
-
-                if (!LicenseHandler.IsLicensed && !LicenseHandler.IsEvaluation)
-                {
-                    await output.WriteLineAsync("ERROR: No valid license applied.").ConfigureAwait(false);
-                }
-
+                // log console output to logger
                 if (logConsole && appLog)
                 {
-                    output = new LogWriter();
+                    logger = telemetry.CreateLogger("Main");
                 }
 
                 // create the UA server
-                var server = new MyUaServer<NodeManagers.Simulation.SimulationServer>(output)
+                var server = new MyUaServer<NodeManagers.Simulation.SimulationServer>(telemetry)
                 {
                     AutoAccept = autoAccept,
                     Password = password
                 };
 
                 // load the server configuration, validate certificates
-                output.WriteLine("Loading configuration from {0}.", configSectionName);
+                Console.WriteLine($"Loading configuration from {configSectionName}.");
                 await server.LoadAsync(applicationName, configSectionName).ConfigureAwait(false);
 
                 // setup the logging
-                ConsoleUtils.ConfigureLogging(server.Configuration, applicationName, logConsole, LogLevel.Information);
+                telemetry.ConfigureLogging(server.Configuration, applicationName, logConsole, fileLog, appLog, LogLevel.Information);
 
                 // check or renew the certificate
-                await output.WriteLineAsync("Check the certificate.").ConfigureAwait(false);
+                Console.WriteLine("Check the certificate.");
                 await server.CheckCertificateAsync(renewCertificate).ConfigureAwait(false);
 
                 // Create and add the node managers
                 server.Create(NodeManagerUtils.NodeManagerFactories);
 
                 // start the server
-                await output.WriteLineAsync("Start the server.").ConfigureAwait(false);
+                Console.WriteLine("Start the server.");
                 await server.StartAsync().ConfigureAwait(false);
 
-                await output.WriteLineAsync("Server started. Press Ctrl-C to exit...").ConfigureAwait(false);
+                Console.WriteLine("Server started. Press Ctrl-C to exit...");
 
                 // wait for timeout or Ctrl-C
-                var quitCts = new CancellationTokenSource();
-                ManualResetEvent quitEvent = ConsoleUtils.CtrlCHandler(quitCts);
+                var quitCTS = new CancellationTokenSource();
+                ManualResetEvent quitEvent = ConsoleUtils.CtrlCHandler(quitCTS);
                 bool ctrlc = quitEvent.WaitOne(timeout);
 
                 // stop server. May have to wait for clients to disconnect.
-                await output.WriteLineAsync("Server stopped. Waiting for exit...").ConfigureAwait(false);
+                Console.WriteLine("Server stopped. Waiting for exit...");
                 await server.StopAsync().ConfigureAwait(false);
 
                 return (int)ExitCode.Ok;
             }
-            catch (ErrorExitException errorExitException)
+            catch (ErrorExitException eee)
             {
-                output.WriteLine("The application exits with error: {0}", errorExitException.Message);
-                return (int)errorExitException.ExitCode;
+                Console.WriteLine($"The application exits with error: {eee.Message}");
+                return (int)eee.ExitCode;
             }
         }
     }

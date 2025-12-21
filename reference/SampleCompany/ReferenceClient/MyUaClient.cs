@@ -26,8 +26,9 @@ namespace SampleCompany.ReferenceClient
     /// </summary>
     public class MyUaClient : IMyUaClient, IDisposable
     {
+        #region Constructors, Destructor, Initialization
         /// <summary>
-        /// Initializes a new instance of the UAClient class.
+        /// Initializes a new instance of the MyUaClient class.
         /// </summary>
         public MyUaClient(
             ApplicationConfiguration configuration,
@@ -42,7 +43,7 @@ namespace SampleCompany.ReferenceClient
         }
 
         /// <summary>
-        /// Initializes a new instance of the UAClient class for reverse connections.
+        /// Initializes a new instance of the MyUaClient class for reverse connections.
         /// </summary>
         public MyUaClient(
             ApplicationConfiguration configuration,
@@ -54,10 +55,12 @@ namespace SampleCompany.ReferenceClient
             m_logger = telemetry.CreateLogger<MyUaClient>();
             m_telemetry = telemetry;
             m_configuration = configuration;
-            m_configuration.CertificateValidator.CertificateValidation += CertificateValidation;
+            m_configuration.CertificateValidator.CertificateValidation += OnCertificateValidation;
             m_reverseConnectManager = reverseConnectManager;
         }
+        #endregion Constructors, Destructor, Initialization
 
+        #region IDisposable
         /// <inheritdoc/>
         public void Dispose()
         {
@@ -78,11 +81,13 @@ namespace SampleCompany.ReferenceClient
             if (disposing)
             {
                 Utils.SilentDispose(Session);
-                m_configuration.CertificateValidator.CertificateValidation -= CertificateValidation;
+                m_configuration.CertificateValidator.CertificateValidation -= OnCertificateValidation;
             }
             m_disposed = true;
         }
+        #endregion IDisposable
 
+        #region Public Properties
         /// <summary>
         /// Action used
         /// </summary>
@@ -127,7 +132,9 @@ namespace SampleCompany.ReferenceClient
         /// The file to use for log output.
         /// </summary>
         public string LogFile { get; set; }
+        #endregion Public Properties
 
+        #region Public Methods
         /// <summary>
         /// Do a Durable Subscription Transfer
         /// </summary>
@@ -271,7 +278,7 @@ namespace SampleCompany.ReferenceClient
                         Session.TransferSubscriptionsOnReconnect = true;
 
                         // set up keep alive callback.
-                        Session.KeepAlive += Session_KeepAlive;
+                        Session.KeepAlive += OnSessionKeepAlive;
 
                         // prepare a reconnect handler
                         m_reconnectHandler = new SessionReconnectHandler(
@@ -308,7 +315,7 @@ namespace SampleCompany.ReferenceClient
 
                     lock (m_lock)
                     {
-                        Session.KeepAlive -= Session_KeepAlive;
+                        Session.KeepAlive -= OnSessionKeepAlive;
                         m_reconnectHandler?.Dispose();
                         m_reconnectHandler = null;
                     }
@@ -337,11 +344,12 @@ namespace SampleCompany.ReferenceClient
                 m_logger.LogError(ex, "Disconnect Error");
             }
         }
+        #endregion Public Methods
 
         /// <summary>
         /// Handles a keep alive event from a session and triggers a reconnect if necessary.
         /// </summary>
-        private void Session_KeepAlive(object sender, KeepAliveEventArgs e)
+        private void OnSessionKeepAlive(object sender, KeepAliveEventArgs e)
         {
             try
             {
@@ -368,7 +376,7 @@ namespace SampleCompany.ReferenceClient
                             Session,
                             m_reverseConnectManager,
                             ReconnectPeriod,
-                            Client_ReconnectComplete
+                            OnClientReconnectComplete
                             );
                     if (state == SessionReconnectHandler.ReconnectState.Triggered)
                     {
@@ -400,7 +408,7 @@ namespace SampleCompany.ReferenceClient
         /// <summary>
         /// Called when the reconnect attempt was successful.
         /// </summary>
-        private void Client_ReconnectComplete(object sender, EventArgs e)
+        private void OnClientReconnectComplete(object sender, EventArgs e)
         {
             // ignore callbacks from discarded objects.
             if (!ReferenceEquals(sender, m_reconnectHandler))
@@ -443,7 +451,7 @@ namespace SampleCompany.ReferenceClient
         /// Handles the certificate validation event.
         /// This event is triggered every time an untrusted certificate is received from the server.
         /// </summary>
-        protected virtual void CertificateValidation(
+        protected virtual void OnCertificateValidation(
             CertificateValidator sender,
             CertificateValidationEventArgs e)
         {
