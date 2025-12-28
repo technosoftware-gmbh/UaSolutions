@@ -22,8 +22,8 @@
     <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="Roslynator.Analyzers" Version="4.14.1" />
-    <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.1" />
+    <PackageReference Update="Roslynator.Analyzers" Version="4.15.0" />
+    <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.15.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
     <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="5.0.0-rc" />
