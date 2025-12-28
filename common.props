@@ -34,8 +34,8 @@
     <AnalysisModeStyle>default</AnalysisModeStyle>
   </PropertyGroup>
   <ItemGroup Condition="$(NO_RCS) == ''">
-    <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" Version="4.14.1" />
-    <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" Version="4.14.1" />
+    <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" Version="4.15.0" />
+    <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" Version="4.15.0" />
   </ItemGroup>
   <PropertyGroup>
     <NoWarn>$(NoWarn);NU1510</NoWarn>
