@@ -28,6 +28,7 @@ The OPC UA Server NET offers a fast and easy access to the OPC Unified Architect
  
 We provide an online help for the following versions: 
 
+ * [V5.0 Development Version (DEV)](https://technosoftware.com/help/UaSolutions/50/)
  * [V4.2 Mainline Version (ML)](https://technosoftware.com/help/UaSolutions/42/)
  * [V3.4 Long Term Support (LTS)](https://technosoftware.com/help/UaSolutions/34/)
 
