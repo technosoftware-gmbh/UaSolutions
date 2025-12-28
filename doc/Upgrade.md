@@ -1,4 +1,4 @@
-# Upgrade from 3.4 to 4.2
+# Upgrade from 4.2 to 5.0
 
 [TOC]
 
@@ -8,7 +8,7 @@
 
 Please be aware that only the following versions are supported:
 
-- .NET 4.7.2, .NET 4.8, .NET 8.0, .NET 9.0
+- .NET 4.7.2, .NET 4.8, .NET 8.0, .NET 9.0, .NET 10.0
 
 Please check the targets.props file for changes required for the sammple projects.
 
@@ -16,25 +16,14 @@ Please check the targets.props file for changes required for the sammple project
 
 ### Changes in the project (csproj) file
 
-The following package must be added:
-
-- Technosoftware.UaSolutions.UaUtilities
-
-The following changes in assemblies must be done:
-
-- Technosoftware.UaSolution.UaBindings.Https -> Technosoftware.UaSolutions.UaBindings.Https
-- Technosoftware.UaSolution.UaCore -> Technosoftware.UaSolutions.UaCore
-- Technosoftware.UaSolution.UaConfiguration -> Technosoftware.UaSolutions.UaConfiguration
-- Technosoftware.UaSolution.UaClient -> Technosoftware.UaSolutions.UaClient
-
 The affected part of the csproj file will then be:
 
 ```
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaClient" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaClient" Version="5.0.0-rc" />
   </ItemGroup>
 ```
 
@@ -46,41 +35,22 @@ Depending on the version you are coming from you should compare the changes made
 
 ### Breaking changes in some methods
 
-- DeleteApplicationInstanceCertificateAsync has an additional parameter or can be used without one
-- CheckApplicationInstanceCertificateAsync was replaced with CheckApplicationInstanceCertificateAsync
-
-
 ## Upgrade server application
 
 ### Changes in the project (csproj) file
-
-The following package must be added:
-
-- Technosoftware.UaSolutions.UaUtilities
-
-The following changes in assemblies must be done:
-
-- Technosoftware.UaSolution.UaBindings.Https -> Technosoftware.UaSolutions.UaBindings.Https
-- Technosoftware.UaSolution.UaCore -> Technosoftware.UaSolutions.UaCore
-- Technosoftware.UaSolution.UaConfiguration -> Technosoftware.UaSolutions.UaConfiguration
-- Technosoftware.UaSolution.UaServer -> Technosoftware.UaSolutions.UaServer
-
-If you use the server development using the UaBaseServer you need to change one of the following:
-
-- Technosoftware.UaSolution.UaBaseServer -> Technosoftware.UaSolutions.UaBaseServer
 
 The affected part of the csproj file will then be:
 
 ```
   <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
-    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="5.0.0-rc" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaBaseServer" Version="4.2.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaBaseServer" Version="5.0.0-rc" />
   </ItemGroup>
 ```
 
