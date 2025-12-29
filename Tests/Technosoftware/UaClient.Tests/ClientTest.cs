@@ -1,32 +1,15 @@
-/* ========================================================================
- * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
- *
- * OPC Foundation MIT License 1.00
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- *
- * The complete license agreement can be found here:
- * http://opcfoundation.org/License/MIT/1.00/
- * ======================================================================*/
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
+#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -43,13 +26,13 @@ using Moq;
 using NUnit.Framework;
 using Opc.Ua;
 using Opc.Ua.Bindings;
-using Technosoftware.UaConfiguration;
 using Opc.Ua.Security.Certificates;
 using Opc.Ua.Security.Certificates.Tests;
-using Opc.Ua.Tests;
-using Assert = NUnit.Framework.Legacy.ClassicAssert;
-using Technosoftware.UaServer.Tests;
 using Technosoftware.Tests;
+using Technosoftware.UaConfiguration;
+using Technosoftware.UaServer.Tests;
+using Assert = NUnit.Framework.Legacy.ClassicAssert;
+#endregion Using Directives
 
 namespace Technosoftware.UaClient.Tests
 {
@@ -1737,7 +1720,7 @@ namespace Technosoftware.UaClient.Tests
             var activityListener = new ActivityListener
             {
                 ShouldListenTo = _ => true,
-                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded
+                Sample = (ref _) => ActivitySamplingResult.AllDataAndRecorded
             };
 
             ActivitySource.AddActivityListener(activityListener);
@@ -1857,7 +1840,7 @@ namespace Technosoftware.UaClient.Tests
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
                 (securityPolicy != SecurityPolicies.ECC_brainpoolP256r1 &&
-                 securityPolicy != SecurityPolicies.ECC_brainpoolP384r1))
+                    securityPolicy != SecurityPolicies.ECC_brainpoolP384r1))
             {
                 var userIdentity = new UserIdentity("user1", "password"u8);
 
@@ -1906,7 +1889,7 @@ namespace Technosoftware.UaClient.Tests
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
                 (securityPolicy != SecurityPolicies.ECC_brainpoolP256r1 &&
-                 securityPolicy != SecurityPolicies.ECC_brainpoolP384r1))
+                    securityPolicy != SecurityPolicies.ECC_brainpoolP384r1))
             {
                 const string identityToken = "fakeTokenString";
 

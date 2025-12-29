@@ -1,32 +1,15 @@
-/* ========================================================================
- * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
- *
- * OPC Foundation MIT License 1.00
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- *
- * The complete license agreement can be found here:
- * http://opcfoundation.org/License/MIT/1.00/
- * ======================================================================*/
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
+#region Using Directives
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -39,6 +22,7 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using Opc.Ua;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
+#endregion Using Directives
 
 namespace Technosoftware.UaClient.Tests
 {
@@ -1459,7 +1443,6 @@ namespace Technosoftware.UaClient.Tests
             object sender,
             PublishSequenceNumbersToAcknowledgeEventArgs e)
         {
-            IUaSession session = (IUaSession)sender;
             // for testing do not ack any sequence numbers
             e.DeferredAcknowledgementsToSend.Clear();
             e.AcknowledgementsToSend.Clear();
@@ -1482,7 +1465,7 @@ namespace Technosoftware.UaClient.Tests
 
             Session.AddSubscription(subscription);
             await subscription.CreateAsync(CancellationToken.None).ConfigureAwait(false);
-            Assert.That(subscription.Created, Is.True);
+            NUnit.Framework.Assert.That(subscription.Created, Is.True);
 
             // Create monitored items
             var triggeringItem = new MonitoredItem(subscription.DefaultItem)
@@ -1522,9 +1505,9 @@ namespace Technosoftware.UaClient.Tests
             // Create the items
             await subscription.ApplyChangesAsync(CancellationToken.None).ConfigureAwait(false);
 
-            Assert.That(triggeringItem.Created, Is.True);
-            Assert.That(triggeredItem1.Created, Is.True);
-            Assert.That(triggeredItem2.Created, Is.True);
+            NUnit.Framework.Assert.That(triggeringItem.Created, Is.True);
+            NUnit.Framework.Assert.That(triggeredItem1.Created, Is.True);
+            NUnit.Framework.Assert.That(triggeredItem2.Created, Is.True);
 
             // Set up triggering relationship using the new method
             var linksToAdd = new List<MonitoredItem> { triggeredItem1, triggeredItem2 };
@@ -1534,16 +1517,16 @@ namespace Technosoftware.UaClient.Tests
                 null,
                 CancellationToken.None).ConfigureAwait(false);
 
-            Assert.That(response, Is.Not.Null);
+            NUnit.Framework.Assert.That(response, Is.Not.Null);
 
             // Verify the triggering relationships are tracked
-            Assert.That(triggeringItem.TriggeredItems, Is.Not.Null);
-            Assert.That(triggeringItem.TriggeredItems.Count, Is.EqualTo(2));
-            Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem1.ClientHandle));
-            Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem2.ClientHandle));
+            NUnit.Framework.Assert.That(triggeringItem.TriggeredItems, Is.Not.Null);
+            NUnit.Framework.Assert.That(triggeringItem.TriggeredItems.Count, Is.EqualTo(2));
+            NUnit.Framework.Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem1.ClientHandle));
+            NUnit.Framework.Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem2.ClientHandle));
 
-            Assert.That(triggeredItem1.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
-            Assert.That(triggeredItem2.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
+            NUnit.Framework.Assert.That(triggeredItem1.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
+            NUnit.Framework.Assert.That(triggeredItem2.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
 
             // Snapshot the subscription state
             subscription.Snapshot(out SubscriptionState state);
@@ -1551,9 +1534,9 @@ namespace Technosoftware.UaClient.Tests
             // Verify that the triggering relationships are persisted
             MonitoredItemState triggeringItemState = state.MonitoredItems
                 .FirstOrDefault(m => m.ClientId == triggeringItem.ClientHandle);
-            Assert.That(triggeringItemState, Is.Not.Null);
-            Assert.That(triggeringItemState.TriggeredItems, Is.Not.Null);
-            Assert.That(triggeringItemState.TriggeredItems.Count, Is.EqualTo(2));
+            NUnit.Framework.Assert.That(triggeringItemState, Is.Not.Null);
+            NUnit.Framework.Assert.That(triggeringItemState.TriggeredItems, Is.Not.Null);
+            NUnit.Framework.Assert.That(triggeringItemState.TriggeredItems.Count, Is.EqualTo(2));
 
             // Clean up
             await subscription.DeleteAsync(true, CancellationToken.None).ConfigureAwait(false);
@@ -1566,7 +1549,7 @@ namespace Technosoftware.UaClient.Tests
         /// </summary>
         [Test]
         [Order(1100)]
-        public async Task ConcurrentCreateItemsNoDuplicates()
+        public async Task ConcurrentCreateItemsNoDuplicatesAsync()
         {
             var subscription = new TestableSubscription(Session.DefaultSubscription);
             Session.AddSubscription(subscription);
@@ -1585,39 +1568,39 @@ namespace Technosoftware.UaClient.Tests
             }
 
             subscription.AddItems(items);
-            Assert.That(subscription.MonitoredItemCount, Is.EqualTo(10));
+            NUnit.Framework.Assert.That(subscription.MonitoredItemCount, Is.EqualTo(10));
 
             // Simulate concurrent CreateItemsAsync calls
             // Use 3 concurrent tasks to ensure at least 2 will race with each other
-            const int ConcurrentTasks = 3;
+            const int concurrentTasks = 3;
             var tasks = new List<Task<IList<MonitoredItem>>>();
-            for (int i = 0; i < ConcurrentTasks; i++)
+            for (int i = 0; i < concurrentTasks; i++)
             {
                 tasks.Add(Task.Run(() =>
                     subscription.CreateItemsAsync(CancellationToken.None)));
             }
 
-            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+            IList<MonitoredItem>[] results = await Task.WhenAll(tasks).ConfigureAwait(false);
 
             // Verify that all items were created exactly once
             int totalCreated = 0;
-            foreach (var item in items)
+            foreach (MonitoredItem item in items)
             {
                 if (item.Status.Created)
                 {
                     totalCreated++;
-                    Assert.That(item.Status.Id, Is.GreaterThan(0u), 
+                    NUnit.Framework.Assert.That(item.Status.Id, Is.GreaterThan(0u),
                         $"Item {item.DisplayName} should have a server-assigned ID");
                 }
             }
 
-            Assert.That(totalCreated, Is.EqualTo(10), 
+            NUnit.Framework.Assert.That(totalCreated, Is.EqualTo(10),
                 "All 10 items should be created exactly once");
 
             // Verify that each result list contains only the items that were actually created
             // by that specific call (should be empty for concurrent calls after the first)
             int nonEmptyResults = 0;
-            foreach (var result in results)
+            foreach (IList<MonitoredItem> result in results)
             {
                 if (result.Count > 0)
                 {
@@ -1625,7 +1608,7 @@ namespace Technosoftware.UaClient.Tests
                 }
             }
 
-            Assert.That(nonEmptyResults, Is.LessThanOrEqualTo(1),
+            NUnit.Framework.Assert.That(nonEmptyResults, Is.LessThanOrEqualTo(1),
                 "Only one CreateItemsAsync call should have created items");
 
             // Clean up

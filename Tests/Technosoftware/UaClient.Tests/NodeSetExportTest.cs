@@ -1,33 +1,15 @@
-/* ========================================================================
- * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
- *
- * OPC Foundation MIT License 1.00
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- *
- * The complete license agreement can be found here:
- * http://opcfoundation.org/License/MIT/1.00/
- * ======================================================================*/
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
-using System;
+#region Using Directives
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -36,6 +18,7 @@ using NUnit.Framework;
 using Opc.Ua.Export;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
 using Opc.Ua;
+#endregion Using Directives
 
 namespace Technosoftware.UaClient.Tests
 {
@@ -50,7 +33,7 @@ namespace Technosoftware.UaClient.Tests
     [TestFixtureSource(nameof(FixtureArgs))]
     public class NodeSetExportTest : ClientTestFramework
     {
-        public static readonly new object[] FixtureArgs =
+        public static new readonly object[] FixtureArgs =
         [
             new object[] { Utils.UriSchemeOpcTcp }
         ];
@@ -101,7 +84,7 @@ namespace Technosoftware.UaClient.Tests
         /// Test exporting nodes to NodeSet2 XML.
         /// </summary>
         [Test]
-        public async Task ExportNodesToNodeSet2()
+        public async Task ExportNodesToNodeSet2Async()
         {
             // Browse to get some nodes
             var browser = new Browser(Session)
@@ -117,7 +100,7 @@ namespace Technosoftware.UaClient.Tests
 
             // Browse starting from Server object
             ReferenceDescriptionCollection references = await browser.BrowseAsync(nodesToBrowse[0]).ConfigureAwait(false);
-            
+
             // Fetch the actual nodes
             foreach (ReferenceDescription reference in references)
             {
@@ -146,7 +129,7 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 // Verify the file was created and has content
-                FileInfo fileInfo = new FileInfo(tempFile);
+                var fileInfo = new FileInfo(tempFile);
                 Assert.IsTrue(fileInfo.Exists, "NodeSet2 file should exist");
                 Assert.Greater(fileInfo.Length, 0, "NodeSet2 file should not be empty");
 
@@ -172,7 +155,7 @@ namespace Technosoftware.UaClient.Tests
         /// Test exporting different node types to NodeSet2 XML.
         /// </summary>
         [Test]
-        public async Task ExportDifferentNodeTypes()
+        public async Task ExportDifferentNodeTypesAsync()
         {
             var allNodes = new List<INode>();
 
@@ -248,7 +231,7 @@ namespace Technosoftware.UaClient.Tests
         /// Test exporting and re-importing nodes.
         /// </summary>
         [Test]
-        public async Task ExportAndReimportNodes()
+        public async Task ExportAndReimportNodesAsync()
         {
             var allNodes = new List<INode>();
 

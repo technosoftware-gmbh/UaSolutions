@@ -1,32 +1,15 @@
-/* ========================================================================
- * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
- *
- * OPC Foundation MIT License 1.00
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- *
- * The complete license agreement can be found here:
- * http://opcfoundation.org/License/MIT/1.00/
- * ======================================================================*/
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
+#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,11 +17,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Jobs;
 using NUnit.Framework;
-using Opc.Ua.Tests;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
 using Opc.Ua;
+#endregion Using Directives
 
 namespace Technosoftware.UaClient.Tests
 {
@@ -127,10 +109,10 @@ namespace Technosoftware.UaClient.Tests
     [DisassemblyDiagnoser]
     public class SecurityPolicyBenchmarks : ClientTestFramework
     {
-        private const int MessageCount = 100;
-        private const int SmallMessageNodeCount = 10;
-        private const int MediumMessageNodeCount = 50;
-        private const int LargeMessageNodeCount = 200;
+        private const int kMessageCount = 100;
+        private const int kSmallMessageNodeCount = 10;
+        private const int kMediumMessageNodeCount = 50;
+        private const int kLargeMessageNodeCount = 200;
 
         private IList<NodeId> m_smallTestSet;
         private IList<NodeId> m_mediumTestSet;
@@ -233,47 +215,39 @@ namespace Technosoftware.UaClient.Tests
             }
 
             // Get available test nodes
-            var allTestNodes = GetTestSetStatic(Session.NamespaceUris);
+            IList<NodeId> allTestNodes = GetTestSetStatic(Session.NamespaceUris);
 
             // Ensure we have enough nodes for testing
-            if (allTestNodes.Count < LargeMessageNodeCount)
+            if (allTestNodes.Count < kLargeMessageNodeCount)
             {
                 // If not enough static nodes, add simulation nodes
-                var simNodes = GetTestSetSimulation(Session.NamespaceUris);
-                allTestNodes = allTestNodes.Concat(simNodes)
-                    .Take(LargeMessageNodeCount)
-                    .ToList();
+                IList<NodeId> simNodes = GetTestSetSimulation(Session.NamespaceUris);
+                allTestNodes = [.. allTestNodes.Concat(simNodes).Take(kLargeMessageNodeCount)];
             }
 
             // Create test sets of different sizes
-            m_smallTestSet = allTestNodes.Take(SmallMessageNodeCount).ToList();
-            m_mediumTestSet = allTestNodes.Take(MediumMessageNodeCount).ToList();
-            m_largeTestSet = allTestNodes.Take(LargeMessageNodeCount).ToList();
+            m_smallTestSet = [.. allTestNodes.Take(kSmallMessageNodeCount)];
+            m_mediumTestSet = [.. allTestNodes.Take(kMediumMessageNodeCount)];
+            m_largeTestSet = [.. allTestNodes.Take(kLargeMessageNodeCount)];
 
             // Prepare ReadValueId collections
-            m_smallReadValueIds = new ReadValueIdCollection(
-                m_smallTestSet.Select(nodeId => new ReadValueId
+            m_smallReadValueIds = [.. m_smallTestSet.Select(nodeId => new ReadValueId
                 {
                     NodeId = nodeId,
                     AttributeId = Attributes.Value
-                })
-            );
+                })];
 
-            m_mediumReadValueIds = new ReadValueIdCollection(
-                m_mediumTestSet.Select(nodeId => new ReadValueId
+            m_mediumReadValueIds = [.. m_mediumTestSet.Select(nodeId => new ReadValueId
                 {
                     NodeId = nodeId,
                     AttributeId = Attributes.Value
-                })
-            );
+                })];
 
-            m_largeReadValueIds = new ReadValueIdCollection(
-                m_largeTestSet.Select(nodeId => new ReadValueId
+            m_largeReadValueIds = [.. m_largeTestSet.Select(nodeId => new ReadValueId
                 {
                     NodeId = nodeId,
                     AttributeId = Attributes.Value
-                })
-            );
+                })];
 
             // Verify we can read the nodes
             await Session.ReadAsync(
@@ -291,7 +265,8 @@ namespace Technosoftware.UaClient.Tests
         /// Benchmark: Read small message (10 nodes) - measures baseline performance.
         /// Tests CPU and memory overhead for small messages with different security policies.
         /// </summary>
-        [Test, Order(100)]
+        [Test]
+        [Order(100)]
         [Benchmark(Baseline = true, Description = "Read 10 nodes")]
         public async Task ReadSmallMessageAsync()
         {
@@ -311,11 +286,12 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// Benchmark: Read small messages repeatedly - measures sustained throughput.
         /// </summary>
-        [Test, Order(101)]
+        [Test]
+        [Order(101)]
         [Benchmark(Description = "Read 10 nodes x100 iterations")]
         public async Task ReadSmallMessageBurstAsync()
         {
-            for (int i = 0; i < MessageCount; i++)
+            for (int i = 0; i < kMessageCount; i++)
             {
                 await Session.ReadAsync(
                     null,
@@ -332,7 +308,8 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// Benchmark: Read medium message (50 nodes) - measures typical workload performance.
         /// </summary>
-        [Test, Order(200)]
+        [Test]
+        [Order(200)]
         [Benchmark(Description = "Read 50 nodes")]
         public async Task ReadMediumMessageAsync()
         {
@@ -352,11 +329,12 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// Benchmark: Read medium messages repeatedly - measures sustained medium-load throughput.
         /// </summary>
-        [Test, Order(201)]
+        [Test]
+        [Order(201)]
         [Benchmark(Description = "Read 50 nodes x100 iterations")]
         public async Task ReadMediumMessageBurstAsync()
         {
-            for (int i = 0; i < MessageCount; i++)
+            for (int i = 0; i < kMessageCount; i++)
             {
                 await Session.ReadAsync(
                     null,
@@ -374,7 +352,8 @@ namespace Technosoftware.UaClient.Tests
         /// Benchmark: Read large message (200 nodes) - measures high-load performance.
         /// Tests encryption/decryption overhead with larger payloads.
         /// </summary>
-        [Test, Order(300)]
+        [Test]
+        [Order(300)]
         [Benchmark(Description = "Read 200 nodes")]
         public async Task ReadLargeMessageAsync()
         {
@@ -394,11 +373,12 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// Benchmark: Read large messages repeatedly - measures sustained high-load throughput.
         /// </summary>
-        [Test, Order(301)]
+        [Test]
+        [Order(301)]
         [Benchmark(Description = "Read 200 nodes x100 iterations")]
         public async Task ReadLargeMessageBurstAsync()
         {
-            for (int i = 0; i < MessageCount; i++)
+            for (int i = 0; i < kMessageCount; i++)
             {
                 await Session.ReadAsync(
                     null,
@@ -416,7 +396,8 @@ namespace Technosoftware.UaClient.Tests
         /// Benchmark: Write small message (10 nodes) - measures write performance.
         /// Tests CPU and memory overhead for write operations with different security policies.
         /// </summary>
-        [Test, Order(400)]
+        [Test]
+        [Order(400)]
         [Benchmark(Description = "Write 10 nodes")]
         public async Task WriteSmallMessageAsync()
         {
@@ -442,11 +423,12 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// Benchmark: Write small messages repeatedly - measures sustained write throughput.
         /// </summary>
-        [Test, Order(401)]
+        [Test]
+        [Order(401)]
         [Benchmark(Description = "Write 10 nodes x100 iterations")]
         public async Task WriteSmallMessageBurstAsync()
         {
-            for (int i = 0; i < MessageCount; i++)
+            for (int i = 0; i < kMessageCount; i++)
             {
                 var writeValues = new WriteValueCollection(
                     m_smallTestSet.Select(nodeId => new WriteValue
@@ -471,7 +453,8 @@ namespace Technosoftware.UaClient.Tests
         /// Benchmark: Browse operation - measures browse performance.
         /// Tests how security policy affects browse operations and reference enumeration.
         /// </summary>
-        [Test, Order(500)]
+        [Test]
+        [Order(500)]
         [Benchmark(Description = "Browse Objects folder")]
         public async Task BrowseAsync()
         {
@@ -504,7 +487,8 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// Benchmark: Browse multiple nodes - measures browse throughput.
         /// </summary>
-        [Test, Order(501)]
+        [Test]
+        [Order(501)]
         [Benchmark(Description = "Browse 10 nodes")]
         public async Task BrowseMultipleNodesAsync()
         {
@@ -539,7 +523,8 @@ namespace Technosoftware.UaClient.Tests
         /// Benchmark: Call GetMonitoredItems method - measures method call performance.
         /// Tests how security policy affects method call operations.
         /// </summary>
-        [Test, Order(600)]
+        [Test]
+        [Order(600)]
         [Benchmark(Description = "Call GetMonitoredItems method")]
         public async Task CallMethodAsync()
         {
@@ -548,7 +533,7 @@ namespace Technosoftware.UaClient.Tests
                 new Variant((uint)0) // subscriptionId
             };
 
-            CallMethodRequestCollection requests = new CallMethodRequestCollection
+            var requests = new CallMethodRequestCollection
             {
                 new CallMethodRequest
                 {
@@ -575,11 +560,12 @@ namespace Technosoftware.UaClient.Tests
         /// Benchmark: Create and close session - measures session establishment overhead.
         /// This is critical for understanding the cost of security policy negotiation.
         /// </summary>
-        [Test, Order(700)]
+        [Test]
+        [Order(700)]
         [Benchmark(Description = "Create and close session")]
         public async Task CreateCloseSessionAsync()
         {
-            var session = await ClientFixture.ConnectAsync(
+            IUaSession session = await ClientFixture.ConnectAsync(
                 ServerUrl,
                 SecurityPolicy
             ).ConfigureAwait(false);
@@ -593,11 +579,12 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// Benchmark: Create, use, and close session - measures full session lifecycle.
         /// </summary>
-        [Test, Order(701)]
+        [Test]
+        [Order(701)]
         [Benchmark(Description = "Session lifecycle with read")]
         public async Task SessionLifecycleWithReadAsync()
         {
-            var session = await ClientFixture.ConnectAsync(
+            IUaSession session = await ClientFixture.ConnectAsync(
                 ServerUrl,
                 SecurityPolicy
             ).ConfigureAwait(false);
@@ -623,7 +610,8 @@ namespace Technosoftware.UaClient.Tests
         /// Benchmark: Mixed operations - measures realistic workload performance.
         /// Combines read, write, browse, and call operations to simulate real applications.
         /// </summary>
-        [Test, Order(800)]
+        [Test]
+        [Order(800)]
         [Benchmark(Description = "Mixed workload (read+write+browse+call)")]
         public async Task MixedWorkloadAsync()
         {
@@ -700,7 +688,8 @@ namespace Technosoftware.UaClient.Tests
         /// Executes 100 read operations and calculates ops/sec from elapsed time.
         /// BenchmarkDotNet will show the total time; ops/sec = 100 / (Mean in seconds).
         /// </summary>
-        [Test, Order(850)]
+        [Test]
+        [Order(850)]
         [Benchmark(Description = "Read 100 ops (for throughput)")]
         public async Task ReadThroughputAsync()
         {
@@ -724,7 +713,8 @@ namespace Technosoftware.UaClient.Tests
         /// Executes 100 write operations and calculates ops/sec from elapsed time.
         /// BenchmarkDotNet will show the total time; ops/sec = 100 / (Mean in seconds).
         /// </summary>
-        [Test, Order(851)]
+        [Test]
+        [Order(851)]
         [Benchmark(Description = "Write 100 ops (for throughput)")]
         public async Task WriteThroughputAsync()
         {
@@ -754,7 +744,8 @@ namespace Technosoftware.UaClient.Tests
         /// Executes 100 browse operations and calculates ops/sec from elapsed time.
         /// BenchmarkDotNet will show the total time; ops/sec = 100 / (Mean in seconds).
         /// </summary>
-        [Test, Order(852)]
+        [Test]
+        [Order(852)]
         [Benchmark(Description = "Browse 100 ops (for throughput)")]
         public async Task BrowseThroughputAsync()
         {
@@ -790,7 +781,8 @@ namespace Technosoftware.UaClient.Tests
         /// Executes 100 call operations and calculates ops/sec from elapsed time.
         /// BenchmarkDotNet will show the total time; ops/sec = 100 / (Mean in seconds).
         /// </summary>
-        [Test, Order(853)]
+        [Test]
+        [Order(853)]
         [Benchmark(Description = "Call 100 ops (for throughput)")]
         public async Task CallThroughputAsync()
         {
@@ -823,7 +815,8 @@ namespace Technosoftware.UaClient.Tests
         /// Test all available security policies to ensure benchmarks work with each.
         /// This is not a benchmark but validates that all security policies can be tested.
         /// </summary>
-        [Test, Order(900)]
+        [Test]
+        [Order(900)]
         [Category("SecurityPolicyValidation")]
         public async Task TestAllSecurityPoliciesAsync()
         {
@@ -840,7 +833,7 @@ namespace Technosoftware.UaClient.Tests
 
                 try
                 {
-                    var session = await ClientFixture.ConnectAsync(
+                    IUaSession session = await ClientFixture.ConnectAsync(
                         ServerUrl,
                         policyUri
                     ).ConfigureAwait(false);
@@ -848,18 +841,17 @@ namespace Technosoftware.UaClient.Tests
                     Assert.NotNull(session, $"Failed to create session with {displayName}");
 
                     // Perform a basic read to verify the connection works
-                    var response = await session.ReadAsync(
+                    ReadResponse response = await session.ReadAsync(
                         null,
                         0,
                         TimestampsToReturn.Both,
-                        new ReadValueIdCollection
-                        {
+                        [
                             new ReadValueId
                             {
                                 NodeId = VariableIds.Server_ServerStatus_CurrentTime,
                                 AttributeId = Attributes.Value
                             }
-                        },
+                        ],
                         CancellationToken.None
                     ).ConfigureAwait(false);
 
@@ -888,7 +880,7 @@ namespace Technosoftware.UaClient.Tests
             if (failed > 0)
             {
                 TestContext.Out.WriteLine("\nFailed policies:");
-                foreach (var kvp in results.Where(r => !r.Value))
+                foreach (KeyValuePair<string, bool> kvp in results.Where(r => !r.Value))
                 {
                     TestContext.Out.WriteLine($"  - {kvp.Key}");
                 }

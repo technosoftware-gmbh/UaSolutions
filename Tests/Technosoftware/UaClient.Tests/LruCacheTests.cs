@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
 using Opc.Ua;
-using Opc.Ua.Tests;
 using Technosoftware.Tests;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
 

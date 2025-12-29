@@ -1,32 +1,15 @@
-/* ========================================================================
- * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
- *
- * OPC Foundation MIT License 1.00
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- *
- * The complete license agreement can be found here:
- * http://opcfoundation.org/License/MIT/1.00/
- * ======================================================================*/
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
+#region Using Directives
 using System;
 using System.Linq;
 using System.Threading;
@@ -36,10 +19,10 @@ using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using Opc.Ua;
 using Opc.Ua.Test;
-using SampleCompany.NodeManagers;
 using SampleCompany.NodeManagers.Reference;
 using Technosoftware.Tests;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
+#endregion Using Directives
 
 namespace Technosoftware.UaServer.Tests
 {
@@ -991,7 +974,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public async Task ServerStatusTimestampsMatchAsync()
         {
-            var logger = m_telemetry.CreateLogger<ReferenceServerTests>();
+            ILogger<ReferenceServerTests> logger = m_telemetry.CreateLogger<ReferenceServerTests>();
 
             // Read ServerStatus children (CurrentTime, StartTime, State, etc.)
             var nodesToRead = new ReadValueIdCollection
@@ -1002,7 +985,7 @@ namespace Technosoftware.UaServer.Tests
             };
 
             m_requestHeader.Timestamp = DateTime.UtcNow;
-            var readResponse = await m_server.ReadAsync(
+            ReadResponse readResponse = await m_server.ReadAsync(
                 m_secureChannelContext,
                 m_requestHeader,
                 0,
@@ -1016,7 +999,7 @@ namespace Technosoftware.UaServer.Tests
             // Verify that SourceTimestamp and ServerTimestamp are equal for all ServerStatus children
             for (int i = 0; i < readResponse.Results.Count; i++)
             {
-                var result = readResponse.Results[i];
+                DataValue result = readResponse.Results[i];
                 logger.LogInformation(
                     "NodeId: {NodeId}, SourceTimestamp: {SourceTimestamp}, ServerTimestamp: {ServerTimestamp}",
                     nodesToRead[i].NodeId,
@@ -1040,7 +1023,7 @@ namespace Technosoftware.UaServer.Tests
             ILogger logger = telemetry.CreateLogger<ReferenceServerTests>();
 
             // Get the NodeId for Data_Dynamic_Scalar_Int32Value
-            NodeId int32ValueNodeId = new NodeId(
+            var int32ValueNodeId = new NodeId(
                 SampleCompany.NodeManagers.TestData.Variables.Data_Dynamic_Scalar_Int32Value,
                 (ushort)m_server.CurrentInstance.NamespaceUris.GetIndex(SampleCompany.NodeManagers.TestData.Namespaces.TestData));
 
@@ -1080,7 +1063,8 @@ namespace Technosoftware.UaServer.Tests
                 "Int32Value node should have HistoryRead access level");
 
             // Perform a history read operation
-            var historyReadDetails = new ReadRawModifiedDetails {
+            var historyReadDetails = new ReadRawModifiedDetails
+            {
                 StartTime = DateTime.UtcNow.AddHours(-1),
                 EndTime = DateTime.UtcNow,
                 NumValuesPerNode = 10,
@@ -1124,7 +1108,7 @@ namespace Technosoftware.UaServer.Tests
                 Assert.Greater(historyData.DataValues.Count, 0, "Should have at least one historical value");
 
                 // Verify the data values have proper timestamps
-                foreach (var dataValue in historyData.DataValues)
+                foreach (DataValue dataValue in historyData.DataValues)
                 {
                     Assert.IsNotNull(dataValue, "DataValue should not be null");
                     Assert.IsTrue(dataValue.ServerTimestamp != DateTime.MinValue,
@@ -1133,7 +1117,7 @@ namespace Technosoftware.UaServer.Tests
             }
             else
             {
-                Assert.Fail("HistoryData body should be of type HistoryData");
+                NUnit.Framework.Assert.Fail("HistoryData body should be of type HistoryData");
             }
         }
 

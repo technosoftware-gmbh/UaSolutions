@@ -1,3 +1,15 @@
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
 // Archie - December 17 2024
 // Requires discussion with Part 9 Editor
 #define AddActiveState
@@ -10,6 +22,7 @@ using Moq;
 using NUnit.Framework;
 using Opc.Ua;
 using Technosoftware.Tests;
+#endregion Using Directives
 
 namespace Technosoftware.UaServer.Tests
 {

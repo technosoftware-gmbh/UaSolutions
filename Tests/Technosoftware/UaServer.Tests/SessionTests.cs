@@ -1,8 +1,21 @@
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
 using System.Threading.Tasks;
 using NUnit.Framework;
 
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
 using Opc.Ua;
+#endregion Using Directives
 
 namespace Technosoftware.UaServer.Tests
 {
@@ -11,7 +24,7 @@ namespace Technosoftware.UaServer.Tests
     public class SessionTests
     {
         [Test]
-        public async Task UpdateDiagnosticCounters_RaisesEvent_WhenPerRequestCounterChanged()
+        public async Task UpdateDiagnosticCounters_RaisesEvent_WhenPerRequestCounterChangedAsync()
         {
             var fixture = new ServerFixture<UaStandardServer>();
             await fixture.StartAsync().ConfigureAwait(false);
@@ -21,7 +34,7 @@ namespace Technosoftware.UaServer.Tests
                 UaStandardServer server = fixture.Server;
 
                 (RequestHeader requestHeader, SecureChannelContext secureChannelContext) =
-                    await ServerFixtureUtils.CreateAndActivateSessionAsync(server, "UpdateDiagnosticCountersTest").ConfigureAwait(false);
+                    await server.CreateAndActivateSessionAsync("UpdateDiagnosticCountersTest").ConfigureAwait(false);
 
                 IUaSession session = server.CurrentInstance.SessionManager.GetSession(requestHeader.AuthenticationToken);
                 Assert.NotNull(session, "Session should exist after Create/Activate.");
@@ -54,7 +67,7 @@ namespace Technosoftware.UaServer.Tests
         [TestCase(RequestType.ActivateSession)]
         [TestCase(RequestType.CloseSession)]
         [TestCase(RequestType.Cancel)]
-        public async Task UpdateDiagnosticCounters_DoesNotRaiseEvent_ForIgnoredRequestTypes(RequestType requestType)
+        public async Task UpdateDiagnosticCounters_DoesNotRaiseEvent_ForIgnoredRequestTypesAsync(RequestType requestType)
         {
             var fixture = new ServerFixture<UaStandardServer>();
             await fixture.StartAsync().ConfigureAwait(false);
@@ -64,7 +77,7 @@ namespace Technosoftware.UaServer.Tests
                 UaStandardServer server = fixture.Server;
 
                 (RequestHeader requestHeader, SecureChannelContext secureChannelContext) =
-                    await ServerFixtureUtils.CreateAndActivateSessionAsync(server, "UpdateDiagnosticCountersIgnoredTest").ConfigureAwait(false);
+                    await server.CreateAndActivateSessionAsync("UpdateDiagnosticCountersIgnoredTest").ConfigureAwait(false);
 
                 IUaSession session = server.CurrentInstance.SessionManager.GetSession(requestHeader.AuthenticationToken);
                 Assert.NotNull(session, "Session should exist after Create/Activate.");
