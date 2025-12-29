@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -26,6 +22,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Bindings;
+using KeyValuePair = Opc.Ua.KeyValuePair;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -629,7 +626,7 @@ namespace Technosoftware.UaServer
             {
                 response = new AdditionalParametersType();
 
-                foreach (Opc.Ua.KeyValuePair ii in parameters.Parameters)
+                foreach (KeyValuePair ii in parameters.Parameters)
                 {
                     if (ii.Key == "ECDHPolicyUri")
                     {
@@ -640,7 +637,7 @@ namespace Technosoftware.UaServer
                             session.SetEccUserTokenSecurityPolicy(policyUri);
                             EphemeralKeyType key = session.GetNewEccKey();
                             response.Parameters.Add(
-                                new Opc.Ua.KeyValuePair
+                                new KeyValuePair
                                 {
                                     Key = "ECDHKey",
                                     Value = new ExtensionObject(key)
@@ -649,7 +646,7 @@ namespace Technosoftware.UaServer
                         else
                         {
                             response.Parameters.Add(
-                                new Opc.Ua.KeyValuePair
+                                new KeyValuePair
                                 {
                                     Key = "ECDHKey",
                                     Value = StatusCodes.BadSecurityPolicyRejected
@@ -680,7 +677,7 @@ namespace Technosoftware.UaServer
             {
                 response = new AdditionalParametersType();
                 response.Parameters
-                    .Add(new Opc.Ua.KeyValuePair { Key = "ECDHKey", Value = new ExtensionObject(key) });
+                    .Add(new KeyValuePair { Key = "ECDHKey", Value = new ExtensionObject(key) });
             }
 
             return response;
@@ -2424,10 +2421,11 @@ namespace Technosoftware.UaServer
         /// <returns>Boolean value.</returns>
         public async ValueTask<bool> RegisterWithDiscoveryServerAsync(CancellationToken ct = default)
         {
-            var configuration = new ApplicationConfiguration(Configuration);
-
+            var configuration = new ApplicationConfiguration(Configuration)
+            {
             // use a dedicated certificate validator with the registration, but derive behavior from server config
-            configuration.CertificateValidator = new CertificateValidator(MessageContext.Telemetry);
+                CertificateValidator = new CertificateValidator(MessageContext.Telemetry)
+            };
             await configuration
                 .CertificateValidator.UpdateAsync(
                     configuration.SecurityConfiguration,
@@ -2732,8 +2730,8 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Verifies that the request header is valid.
         /// </summary>
-        /// <param name="requestHeader">The request header.</param>
         /// <param name="secureChannelContext">The secure channel context.</param>
+        /// <param name="requestHeader">The request header.</param>
         /// <param name="requestType">Type of the request.</param>
         /// <exception cref="ServiceResultException"></exception>
         protected virtual UaServerOperationContext ValidateRequest(
