@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -15,11 +11,10 @@
 
 #region Using Directives
 using System;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// A factory for <see cref="IUaDataChangeMonitoredItemQueue"> and </see> <see cref="IUaEventMonitoredItemQueue"/>
@@ -28,22 +23,45 @@ namespace Technosoftware.UaServer.Subscriptions
     {
         /// <inheritdoc/>
         public bool SupportsDurableQueues => false;
-        /// <inheritdoc/>
-        public IUaDataChangeMonitoredItemQueue CreateDataChangeQueue(bool createDurable, uint monitoredItemId)
+
+        /// <summary>
+        /// Create monitored item queue factory
+        /// </summary>
+        /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
+        public MonitoredItemQueueFactory(ITelemetryContext telemetry)
         {
-            return new DataChangeMonitoredItemQueue(createDurable, monitoredItemId);
+            m_telemetry = telemetry;
         }
 
         /// <inheritdoc/>
-        public IUaEventMonitoredItemQueue CreateEventQueue(bool createDurable, uint monitoredItemId)
+        public IUaDataChangeMonitoredItemQueue CreateDataChangeQueue(
+            bool isDurable,
+            uint monitoredItemId)
         {
-            return new EventMonitoredItemQueue(createDurable, monitoredItemId);
+            return new DataChangeMonitoredItemQueue(isDurable, monitoredItemId, m_telemetry);
+        }
+
+        /// <inheritdoc/>
+        public IUaEventMonitoredItemQueue CreateEventQueue(bool isDurable, uint monitoredItemId)
+        {
+            return new EventMonitoredItemQueue(isDurable, monitoredItemId, m_telemetry);
         }
 
         /// <inheritdoc/>
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Overridable method to dispose of resources.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
             //only needed for managed resources
         }
+
+        private readonly ITelemetryContext m_telemetry;
     }
 }

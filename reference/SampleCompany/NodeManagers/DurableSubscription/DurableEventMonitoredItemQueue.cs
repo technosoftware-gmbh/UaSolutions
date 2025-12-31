@@ -12,39 +12,35 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription
 {
     public class DurableEventMonitoredItemQueue : IUaEventMonitoredItemQueue
     {
-        #region Constants
         private const uint kMaxNoOfEntriesCheckedForDuplicateEvents = 1000;
         private const uint kBatchSize = 1000;
-        #endregion Constants
 
-        #region Events
         /// <summary>
         /// Invoked when the queue is disposed
         /// </summary>
         public event EventHandler Disposed;
-        #endregion Events
 
-        #region Constructors
         /// <summary>
         /// Creates an empty queue.
         /// </summary>
         public DurableEventMonitoredItemQueue(
             bool createDurable,
             uint monitoredItemId,
-            IBatchPersistor batchPersistor)
+            IBatchPersistor batchPersistor,
+            ITelemetryContext telemetry)
         {
             IsDurable = createDurable;
+            m_logger = telemetry.CreateLogger<DurableEventMonitoredItemQueue>();
             m_batchPersistor = batchPersistor;
             MonitoredItemId = monitoredItemId;
             QueueSize = 0;
@@ -69,9 +65,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             MonitoredItemId = queue.MonitoredItemId;
             m_batchPersistor = batchPersistor;
         }
-        #endregion Constructors
 
-        #region Public Methods
         /// <inheritdoc/>
         public bool IsDurable { get; }
 
@@ -92,15 +86,15 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             {
                 if (m_dequeueBatch.IsPersisted)
                 {
-                    Opc.Ua.Utils.LogDebug(
-                        "Dequeue was requeusted but queue was not restored for monitoreditem {0} try to restore for 10 ms.",
+                    m_logger.LogDebug(
+                        "Dequeue was requeusted but queue was not restored for monitoreditem {MonitoredItemId} try to restore for 10 ms.",
                         MonitoredItemId);
                     m_batchPersistor.RequestBatchRestore(m_dequeueBatch);
 
                     if (!SpinWait.SpinUntil(() => !m_dequeueBatch.RestoreInProgress, 10))
                     {
-                        Opc.Ua.Utils.LogDebug(
-                            "Dequeue failed for monitoreditem {0} as queue could not be restored in time.",
+                        m_logger.LogDebug(
+                            "Dequeue failed for monitoreditem {MonitoredItemId} as queue could not be restored in time.",
                             MonitoredItemId);
                         // Dequeue failed as queue could not be restored in time
                         return false;
@@ -157,7 +151,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 // persist the batch
                 else
                 {
-                    Opc.Ua.Utils.LogDebug("Storing batch for monitored item {0}", MonitoredItemId);
+                    m_logger.LogDebug("Storing batch for monitored item {MonitoredItemId}", MonitoredItemId);
 
                     var batchToStore = new EventBatch(
                         m_enqueueBatch.Events,
@@ -167,10 +161,10 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     //only persist second batch in list, as the first could be needed, for duplicate event check
                     if (m_eventBatches.Count > 1)
                     {
-                        m_batchPersistor.RequestBatchPersist(m_eventBatches[m_eventBatches.Count - 2]);
+                        m_batchPersistor.RequestBatchPersist(m_eventBatches[^2]);
                     }
 
-                    m_enqueueBatch = new EventBatch(new List<EventFieldList>(), kBatchSize, MonitoredItemId);
+                    m_enqueueBatch = new EventBatch([], kBatchSize, MonitoredItemId);
                 }
             }
         }
@@ -183,7 +177,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             // request a restore if the dequeue batch is half empty
             if (m_dequeueBatch.Events.Count <= kBatchSize / 2 && m_eventBatches.Count > 0)
             {
-                m_batchPersistor.RequestBatchRestore(m_eventBatches.First());
+                m_batchPersistor.RequestBatchRestore(m_eventBatches[0]);
             }
 
             // if the dequeue batch is empty and there are stored batches, set the dequeue batch to the first stored batch
@@ -191,13 +185,13 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             {
                 if (m_eventBatches.Count > 0 && m_dequeueBatch != m_enqueueBatch)
                 {
-                    m_dequeueBatch = m_eventBatches.First();
+                    m_dequeueBatch = m_eventBatches[0];
                     m_eventBatches.RemoveAt(0);
 
                     // Request a restore for the next batch if there is one
                     if (m_eventBatches.Count > 0)
                     {
-                        m_batchPersistor.RequestBatchRestore(m_eventBatches.First());
+                        m_batchPersistor.RequestBatchRestore(m_eventBatches[0]);
                     }
                 }
                 else
@@ -231,12 +225,12 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 else if (i >= m_enqueueBatch.Events.Count && m_eventBatches.Count > 0)
                 {
                     int indexInStoredBatch = i - m_enqueueBatch.Events.Count;
-                    if (indexInStoredBatch < m_eventBatches.Last().Events.Count && m_eventBatches.Last().Events[indexInStoredBatch] is EventFieldList storedEvent)
+                    if (indexInStoredBatch < m_eventBatches[^1].Events.Count &&
+                        m_eventBatches[^1].Events[
+                            indexInStoredBatch] is EventFieldList storedEvent &&
+                        ReferenceEquals(instance, storedEvent.Handle))
                     {
-                        if (ReferenceEquals(instance, storedEvent.Handle))
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
             }
@@ -269,7 +263,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     // Remove from stored batches if needed
                     while (itemsToRemove > 0 && m_eventBatches.Count > 0)
                     {
-                        var batch = m_eventBatches.First();
+                        EventBatch batch = m_eventBatches[0];
                         m_batchPersistor.RestoreSynchronously(batch);
                         int batchCount = batch.Events.Count;
 
@@ -312,7 +306,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     // Remove from stored batches if needed
                     while (itemsToRemove > 0 && m_eventBatches.Count > 0)
                     {
-                        var batch = m_eventBatches.Last();
+                        EventBatch batch = m_eventBatches[^1];
                         m_batchPersistor.RestoreSynchronously(batch);
                         int batchCount = batch.Events.Count;
 
@@ -377,9 +371,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 Disposed?.Invoke(this, EventArgs.Empty);
             }
         }
-        #endregion Public Methods
 
-        #region Private Fields
         /// <summary>
         /// the contained in the queue
         /// </summary>
@@ -387,7 +379,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         private readonly List<EventBatch> m_eventBatches = [];
         private EventBatch m_dequeueBatch;
         private readonly IBatchPersistor m_batchPersistor;
-        #endregion Private Fields
+        private readonly ILogger m_logger;
     }
 
     /// <summary>

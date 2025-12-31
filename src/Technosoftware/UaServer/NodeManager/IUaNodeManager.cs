@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -16,11 +12,11 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Text;
-
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
@@ -33,12 +29,12 @@ namespace Technosoftware.UaServer
         /// Returns the NamespaceUris for the Nodes belonging to the NodeManager.
         /// </summary>
         /// <remarks>
-        /// By default the MasterNodeManager uses the namespaceIndex to determine who owns an Node.
-        /// 
+        /// <para>By default the MasterNodeManager uses the namespaceIndex to determine who owns an Node.</para>
+        /// <para>
         /// Servers that do not wish to partition their address space this way must provide their own
         /// implementation of MasterNodeManager.GetManagerHandle().
-        /// 
-        /// NodeManagers which depend on a custom partitioning scheme must return a null value.
+        /// </para>
+        /// <para>NodeManagers which depend on a custom partitioning scheme must return a null value.</para>
         /// </remarks>
         IEnumerable<string> NamespaceUris { get; }
 
@@ -48,7 +44,7 @@ namespace Technosoftware.UaServer
         /// <returns>A table of references that need to be added to other node managers.</returns>
         /// <remarks>
         /// A node manager owns a set of nodes. These nodes may be known in advance or they may be stored in an
-        /// external system are retrieved on demand. These nodes may have two way references to nodes that are owned 
+        /// external system are retrived on demand. These nodes may have two way references to nodes that are owned
         /// by other node managers. In these cases, the node managers only manage one half of those references. The
         /// other half of the reference should be returned to the MasterNodeManager.
         /// </remarks>
@@ -62,12 +58,11 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Returns an opaque handle identifying to the node to the node manager.
         /// </summary>
-        /// <param name="nodeId">The node to get the handle for.</param>
         /// <returns>A node handle, null if the node manager does not recognize the node id.</returns>
         /// <remarks>
-        /// The method must not block by querying an underlying system. If the node manager wraps an 
-        /// underlying system then it must check to see if it recognizes the syntax of the node id. 
-        /// The handle in this case may simply be a partially parsed version of the node id. 
+        /// The method must not block by querying an underlying system. If the node manager wraps an
+        /// underlying system then it must check to see if it recognizes the syntax of the node id.
+        /// The handle in this case may simply be a partially parsed version of the node id.
         /// </remarks>
         object GetManagerHandle(NodeId nodeId);
 
@@ -105,13 +100,13 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="context">The context to used when processing the request.</param>
         /// <param name="continuationPoint">The continuation point that stores the state of the Browse operation.</param>
-        /// <param name="references">The list of references that meet the filter criteria.</param>     
+        /// <param name="references">The list of references that meet the filter criteria.</param>
         /// <remarks>
         /// NodeManagers will likely have references to other NodeManagers which means they will not be able
-        /// to apply the NodeClassMask or fill in the attributes for the target Node. In these cases the 
+        /// to apply the NodeClassMask or fill in the attributes for the target Node. In these cases the
         /// NodeManager must return a ReferenceDescription with the NodeId and ReferenceTypeId set. The caller will
-        /// be responsible for filling in the target attributes. 
-        /// The references parameter may already contain references when the method is called. The implementer must 
+        /// be responsible for filling in the target attributes.
+        /// The references parameter may already contain references when the method is called. The implementer must
         /// include these references when calculating whether a continuation point must be returned.
         /// </remarks>
         /// <exception cref="ArgumentNullException">Thrown if the context, continuationPoint or references parameters are null.</exception>
@@ -132,7 +127,7 @@ namespace Technosoftware.UaServer
         /// <remarks>
         /// A null context indicates that the server's internal logic is making the call.
         /// The first target in the list must be the target that matches the instance declaration (if applicable).
-        /// Any local targets that belong to other NodeManagers are returned as unresolvedTargetIds. 
+        /// Any local targets that belong to other NodeManagers are returned as unresolvedTargetIds.
         /// The caller must check the BrowseName to determine if it matches the relativePath.
         /// The implementor must not throw an exception if the source or target nodes do not exist.
         /// </remarks>
@@ -148,18 +143,22 @@ namespace Technosoftware.UaServer
         /// Reads the attribute values for a set of nodes.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// The MasterNodeManager pre-processes the nodesToRead and ensures that:
         ///    - the AttributeId is a known attribute.
         ///    - the IndexRange, if specified, is valid.
         ///    - the DataEncoding and the IndexRange are not specified if the AttributeId is not Value.
-        ///
+        /// </para>
+        /// <para>
         /// The MasterNodeManager post-processes the values by:
         ///    - sets values[ii].StatusCode to the value of errors[ii].Code
         ///    - creates a instance of DataValue if one does not exist and an errors[ii] is bad.
         ///    - removes timestamps from the DataValue if the client does not want them.
-        /// 
+        /// </para>
+        /// <para>
         /// The node manager must ignore ReadValueId with the Processed flag set to true.
         /// The node manager must set the Processed flag for any ReadValueId that it processes.
+        /// </para>
         /// </remarks>
         void Read(
             UaServerOperationContext context,
@@ -258,7 +257,7 @@ namespace Technosoftware.UaServer
             IList<MonitoringFilterResult> filterErrors,
             IList<IUaMonitoredItem> monitoredItems,
             bool createDurable,
-            ref long globalIdCounter);
+            MonitoredItemIdFactory monitoredItemIdFactory);
 
         /// <summary>
         /// Restore a set of monitored items after a restart.

@@ -82,6 +82,7 @@
         <LibTypesTargetFrameworks>netstandard2.1</LibTypesTargetFrameworks>
         <LibxTargetFrameworks>netstandard2.1</LibxTargetFrameworks>
         <HttpsTargetFrameworks>netstandard2.1</HttpsTargetFrameworks>
+        <SKIP_ECC_CERTIFICATE_REQUEST_SIGNING>true</SKIP_ECC_CERTIFICATE_REQUEST_SIGNING>
       </PropertyGroup>
     </When>
     <When Condition="'$(CustomTestTarget)' == 'net48'">
@@ -134,14 +135,14 @@
     </When>
     <Otherwise>
       <PropertyGroup>
-        <AppTargetFrameworks>net9.0;net8.0</AppTargetFrameworks>
-        <AppTargetFramework>net9.0</AppTargetFramework>
-        <TestsTargetFrameworks>net8.0;net9.0</TestsTargetFrameworks>
-        <LibTargetFrameworks>net8.0;net9.0</LibTargetFrameworks>
-        <LibCoreTargetFrameworks>net8.0;net9.0</LibCoreTargetFrameworks>
-        <LibTypesTargetFrameworks>net8.0;net9.0</LibTypesTargetFrameworks>
-        <LibxTargetFrameworks>net8.0;net9.0</LibxTargetFrameworks>
-        <HttpsTargetFrameworks>net8.0;net9.0</HttpsTargetFrameworks>
+        <AppTargetFrameworks>net10.0;net9.0;net8.0</AppTargetFrameworks>
+        <AppTargetFramework>net10.0</AppTargetFramework>
+        <TestsTargetFrameworks>net8.0;net9.0;net10.0</TestsTargetFrameworks>
+        <LibTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</HttpsTargetFrameworks>
       </PropertyGroup>
     </Otherwise>
   </Choose>

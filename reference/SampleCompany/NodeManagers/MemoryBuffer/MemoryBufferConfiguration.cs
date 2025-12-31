@@ -10,10 +10,9 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
-#endregion
+using System.Runtime.Serialization;
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.MemoryBuffer
 {
@@ -23,7 +22,6 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
     [DataContract(Namespace = Namespaces.MemoryBuffer)]
     public class MemoryBufferConfiguration
     {
-        #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
@@ -35,7 +33,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         /// <summary>
         /// Initializes the object during deserialization.
         /// </summary>
-        [OnDeserializing()]
+        [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
@@ -46,25 +44,14 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         /// </summary>
         private void Initialize()
         {
-            buffers_ = null;
+            Buffers = null;
         }
-        #endregion
 
-        #region Public Properties
         /// <summary>
-        /// The buffers exposed by the memory 
+        /// The buffers exposed by the memory
         /// </summary>
         [DataMember(Order = 1)]
-        public MemoryBufferInstanceCollection Buffers
-        {
-            get => buffers_;
-            set => buffers_ = value;
-        }
-        #endregion
-
-        #region Private Members
-        private MemoryBufferInstanceCollection buffers_;
-        #endregion
+        public MemoryBufferInstanceCollection Buffers { get; set; }
     }
 
     /// <summary>
@@ -73,7 +60,6 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
     [DataContract(Namespace = Namespaces.MemoryBuffer)]
     public class MemoryBufferInstance
     {
-        #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
@@ -85,7 +71,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         /// <summary>
         /// Initializes the object during deserialization.
         /// </summary>
-        [OnDeserializing()]
+        [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
@@ -96,58 +82,37 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         /// </summary>
         private void Initialize()
         {
-            name_ = null;
-            tagCount_ = 0;
-            dataType_ = null;
+            Name = null;
+            TagCount = 0;
+            DataType = null;
         }
-        #endregion
 
-        #region Public Properties
         /// <summary>
         /// The browse name for the instance.
         /// </summary>
         [DataMember(Order = 1)]
-        public string Name
-        {
-            get => name_;
-            set => name_ = value;
-        }
+        public string Name { get; set; }
 
         /// <summary>
         /// The number of tags in the buffer.
         /// </summary>
         [DataMember(Order = 2)]
-        public int TagCount
-        {
-            get => tagCount_;
-            set => tagCount_ = value;
-        }
+        public int TagCount { get; set; }
 
         /// <summary>
         /// The data type of the tags in the buffer.
         /// </summary>
         [DataMember(Order = 3)]
-        public string DataType
-        {
-            get => dataType_;
-            set => dataType_ = value;
-        }
-        #endregion
-
-        #region Private Members
-        private string name_;
-        private int tagCount_;
-        private string dataType_;
-        #endregion
+        public string DataType { get; set; }
     }
 
-    #region MemoryBufferInstanceCollection Class
     /// <summary>
     /// A collection of MemoryBufferInstances.
     /// </summary>
-    [CollectionDataContract(Name = "ListOfMemoryBufferInstance", Namespace = Namespaces.MemoryBuffer, ItemName = "MemoryBufferInstance")]
-    public partial class MemoryBufferInstanceCollection : List<MemoryBufferInstance>
-    {
-    }
-    #endregion
+    [CollectionDataContract(
+        Name = "ListOfMemoryBufferInstance",
+        Namespace = Namespaces.MemoryBuffer,
+        ItemName = "MemoryBufferInstance"
+    )]
+    public class MemoryBufferInstanceCollection : List<MemoryBufferInstance>;
 }

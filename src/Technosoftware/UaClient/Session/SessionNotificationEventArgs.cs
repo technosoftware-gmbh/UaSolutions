@@ -1,4 +1,4 @@
-﻿#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
@@ -18,13 +18,14 @@ using System;
 using System.Collections.Generic;
 
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
     /// <summary>
     ///     Represents the event arguments provided when a new notification message arrives.
     /// </summary>
+    [Obsolete("Use NotificationEventArgs")]
     public class SessionNotificationEventArgs : EventArgs
     {
         #region Constructors, Destructor, Initialization
@@ -40,7 +41,7 @@ namespace Technosoftware.UaClient
             NotificationMessage = notificationMessage;
             StringTable = stringTable;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Properties
         /// <summary>
@@ -57,9 +58,9 @@ namespace Technosoftware.UaClient
         /// Gets the string table returned with the notification message.
         /// </summary>
         public IList<string> StringTable { get; }
-        #endregion
+        #endregion Public Properties
 
         #region Private Fields
-        #endregion
+        #endregion Private Fields
     }
 }

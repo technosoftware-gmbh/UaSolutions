@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -15,17 +11,16 @@
 
 #region Using Directives
 using System;
-
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Provides an optionally durable queue for data changes used by <see cref="DataChangeQueueHandler"/> and created by <see cref="IUaMonitoredItemQueueFactory"/>.
     /// If long running operations are performed by the queue the operation should be performed in a separate thread to avoid blocking the main thread.
     /// Min Enqueue performance: no long running operations, fast enqueue until max queue size is reached
-    /// Min Dequeue performance: MaxNotificationsPerPublish * 3 with no delay, in a cycle of 3 * MinPublishingInterval in the least favorable condition (single MonitoredItem, continous publishing (MinPublishingInterval --, MaxNotificationsPerPublish ++), very large queue)
+    /// Min Dequeue performance: MaxNotificationsPerPublish * 3 with no delay, in a cycle of 3 * MinPublishingInterval in the least favorable condition (single MI, continous publishing (MinPublishingInterval --, MaxNotificationsPerPublish ++), very large queue)
     /// Queue reset is allowed to be slow
     /// </summary>
     public interface IUaDataChangeMonitoredItemQueue : IDisposable
@@ -73,7 +68,7 @@ namespace Technosoftware.UaServer.Subscriptions
         bool Dequeue(out DataValue value, out ServiceResult error);
 
         /// <summary>
-        /// returns the the oldest value in the queue without dequeueing. Null if queue is empty
+        /// returns the oldest value in the queue without dequeueing. Null if queue is empty
         /// </summary>
         DataValue PeekOldestValue();
 

@@ -12,19 +12,16 @@
 #region Using Directives
 using System;
 using System.Globalization;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
-
-#pragma warning disable CS0219
-
-#pragma warning disable CS1591
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
-    public class DiscreteHolder : AlarmConditionTypeHolder
+    public abstract class DiscreteHolder : AlarmConditionTypeHolder
     {
-        public DiscreteHolder(
+        protected DiscreteHolder(
+            ILogger logger,
             AlarmNodeManager alarmNodeManager,
             FolderState parent,
             SourceController trigger,
@@ -33,11 +30,22 @@ namespace SampleCompany.NodeManagers.Alarms
             Type controllerType,
             int interval,
             bool optional = true,
-            double maxShelveTime = AlarmConstants.NormalMaxTimeShelved,
-            bool create = true) :
-            base(alarmNodeManager, parent, trigger, name, alarmConditionType, controllerType, interval, optional, maxShelveTime, false)
+            double maxShelveTime = AlarmDefines.NORMAL_MAX_TIME_SHELVED,
+            bool create = true)
+            : base(
+                logger,
+                alarmNodeManager,
+                parent,
+                trigger,
+                name,
+                alarmConditionType,
+                controllerType,
+                interval,
+                optional,
+                maxShelveTime,
+                false)
         {
-            Utils.LogTrace("{0} Discrete Constructor Optional = {1}", name, optional);
+            m_logger.LogTrace("{Name} Discrete Constructor Optional = {Optional}", name, optional);
             if (create)
             {
                 Initialize(ObjectTypes.DiscreteAlarmType, name, maxShelveTime);
@@ -47,45 +55,31 @@ namespace SampleCompany.NodeManagers.Alarms
         public new void Initialize(
             uint alarmTypeIdentifier,
             string name,
-            double maxTimeShelved = AlarmConstants.NormalMaxTimeShelved)
+            double maxTimeShelved = AlarmDefines.NORMAL_MAX_TIME_SHELVED)
         {
-            analog_ = false;
+            m_analog = false;
 
-            if (alarm_ == null)
-            {
-                alarm_ = new DiscreteAlarmState(parent_);
-            }
+            m_alarm ??= new DiscreteAlarmState(m_parent);
 
             // Call the base class to set parameters
             base.Initialize(alarmTypeIdentifier, name, maxTimeShelved);
         }
 
-        #region Overrides
-
         public override void SetValue(string message = "")
         {
-
-            var active = alarmController_.IsBooleanActive();
-            var value = alarmController_.GetValue();
+            bool active = m_alarmController.IsBooleanActive();
+            int value = m_alarmController.GetValue();
 
             if (message.Length == 0)
             {
-                message = "Discrete Alarm analog value = " + value.ToString(CultureInfo.InvariantCulture) + ", active = " + active.ToString();
+                message =
+                    "Discrete Alarm analog value = " +
+                    value.ToString(CultureInfo.InvariantCulture) +
+                    ", active = " +
+                    active.ToString();
             }
 
             base.SetValue(message);
         }
-
-        #endregion
-
-        #region Helpers
-        private DiscreteAlarmState GetAlarm()
-        {
-            return (DiscreteAlarmState)alarm_;
-        }
-
-        #endregion
     }
-
-
 }

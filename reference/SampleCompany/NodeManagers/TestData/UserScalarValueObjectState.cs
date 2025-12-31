@@ -10,19 +10,13 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System;
-using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-using System.Reflection;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
     public partial class UserScalarValueObjectState
     {
-        #region Initialization
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
@@ -30,32 +24,75 @@ namespace SampleCompany.NodeManagers.TestData
         {
             base.OnAfterCreate(context, node);
 
-            InitializeVariable(context, BooleanValue, Variables.UserScalarValueObjectType_BooleanValue);
+            InitializeVariable(
+                context,
+                BooleanValue,
+                Variables.UserScalarValueObjectType_BooleanValue);
             InitializeVariable(context, SByteValue, Variables.UserScalarValueObjectType_SByteValue);
             InitializeVariable(context, ByteValue, Variables.UserScalarValueObjectType_ByteValue);
             InitializeVariable(context, Int16Value, Variables.UserScalarValueObjectType_Int16Value);
-            InitializeVariable(context, UInt16Value, Variables.UserScalarValueObjectType_UInt16Value);
+            InitializeVariable(
+                context,
+                UInt16Value,
+                Variables.UserScalarValueObjectType_UInt16Value);
             InitializeVariable(context, Int32Value, Variables.UserScalarValueObjectType_Int32Value);
-            InitializeVariable(context, UInt32Value, Variables.UserScalarValueObjectType_UInt32Value);
+            InitializeVariable(
+                context,
+                UInt32Value,
+                Variables.UserScalarValueObjectType_UInt32Value);
             InitializeVariable(context, Int64Value, Variables.UserScalarValueObjectType_Int64Value);
-            InitializeVariable(context, UInt64Value, Variables.UserScalarValueObjectType_UInt64Value);
+            InitializeVariable(
+                context,
+                UInt64Value,
+                Variables.UserScalarValueObjectType_UInt64Value);
             InitializeVariable(context, FloatValue, Variables.UserScalarValueObjectType_FloatValue);
-            InitializeVariable(context, DoubleValue, Variables.UserScalarValueObjectType_DoubleValue);
-            InitializeVariable(context, StringValue, Variables.UserScalarValueObjectType_StringValue);
-            InitializeVariable(context, DateTimeValue, Variables.UserScalarValueObjectType_DateTimeValue);
+            InitializeVariable(
+                context,
+                DoubleValue,
+                Variables.UserScalarValueObjectType_DoubleValue);
+            InitializeVariable(
+                context,
+                StringValue,
+                Variables.UserScalarValueObjectType_StringValue);
+            InitializeVariable(
+                context,
+                DateTimeValue,
+                Variables.UserScalarValueObjectType_DateTimeValue);
             InitializeVariable(context, GuidValue, Variables.UserScalarValueObjectType_GuidValue);
-            InitializeVariable(context, ByteStringValue, Variables.UserScalarValueObjectType_ByteStringValue);
-            InitializeVariable(context, XmlElementValue, Variables.UserScalarValueObjectType_XmlElementValue);
-            InitializeVariable(context, NodeIdValue, Variables.UserScalarValueObjectType_NodeIdValue);
-            InitializeVariable(context, ExpandedNodeIdValue, Variables.UserScalarValueObjectType_ExpandedNodeIdValue);
-            InitializeVariable(context, QualifiedNameValue, Variables.UserScalarValueObjectType_QualifiedNameValue);
-            InitializeVariable(context, LocalizedTextValue, Variables.UserScalarValueObjectType_LocalizedTextValue);
-            InitializeVariable(context, StatusCodeValue, Variables.UserScalarValueObjectType_StatusCodeValue);
-            InitializeVariable(context, VariantValue, Variables.UserScalarValueObjectType_VariantValue);
+            InitializeVariable(
+                context,
+                ByteStringValue,
+                Variables.UserScalarValueObjectType_ByteStringValue);
+            InitializeVariable(
+                context,
+                XmlElementValue,
+                Variables.UserScalarValueObjectType_XmlElementValue);
+            InitializeVariable(
+                context,
+                NodeIdValue,
+                Variables.UserScalarValueObjectType_NodeIdValue);
+            InitializeVariable(
+                context,
+                ExpandedNodeIdValue,
+                Variables.UserScalarValueObjectType_ExpandedNodeIdValue);
+            InitializeVariable(
+                context,
+                QualifiedNameValue,
+                Variables.UserScalarValueObjectType_QualifiedNameValue);
+            InitializeVariable(
+                context,
+                LocalizedTextValue,
+                Variables.UserScalarValueObjectType_LocalizedTextValue);
+            InitializeVariable(
+                context,
+                StatusCodeValue,
+                Variables.UserScalarValueObjectType_StatusCodeValue);
+            InitializeVariable(
+                context,
+                VariantValue,
+                Variables.UserScalarValueObjectType_VariantValue);
         }
-        #endregion
 
-        #region Protected Methods
         /// <summary>
         /// Handles the generate values method.
         /// </summary>
@@ -65,9 +102,7 @@ namespace SampleCompany.NodeManagers.TestData
             NodeId objectId,
             uint count)
         {
-            var system = context.SystemHandle as TestDataSystem;
-
-            if (system == null)
+            if (context.SystemHandle is not TestDataSystem system)
             {
                 return StatusCodes.BadOutOfService;
             }
@@ -98,6 +133,5 @@ namespace SampleCompany.NodeManagers.TestData
 
             return base.OnGenerateValues(context, method, objectId, count);
         }
-        #endregion
     }
 }

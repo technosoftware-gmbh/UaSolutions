@@ -1,4 +1,4 @@
-﻿#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
@@ -16,13 +16,14 @@
 #region Using Directives
 using System;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
     /// <summary>
     ///     Represents the event arguments provided when a publish error occurs.
     /// </summary>
+    [Obsolete("Use PublishErrorEventArgs")]
     public class SessionPublishErrorEventArgs : EventArgs
     {
         #region Constructors, Destructor, Initialization
@@ -43,7 +44,7 @@ namespace Technosoftware.UaClient
             SubscriptionId = subscriptionId;
             SequenceNumber = sequenceNumber;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Properties
         /// <summary>
@@ -60,9 +61,9 @@ namespace Technosoftware.UaClient
         /// Gets the sequence number for the message that could not be republished.
         /// </summary>
         public uint SequenceNumber { get; }
-        #endregion
+        #endregion Public Properties
 
         #region Private Fields
-        #endregion
+        #endregion Private Fields
     }
 }

@@ -11,13 +11,12 @@
 
 #region Using Directives
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
     public partial class StructureValueObjectState
     {
-        #region Initialization
         /// <summary>
         /// Initializes the object with structures.
         /// </summary>
@@ -25,12 +24,16 @@ namespace SampleCompany.NodeManagers.TestData
         {
             base.OnAfterCreate(context, node);
 
-            InitializeVariable(context, ScalarStructure, Variables.StructureValueObjectType_ScalarStructure);
-            InitializeVariable(context, VectorStructure, Variables.StructureValueObjectType_VectorStructure);
+            InitializeVariable(
+                context,
+                ScalarStructure,
+                Variables.StructureValueObjectType_ScalarStructure);
+            InitializeVariable(
+                context,
+                VectorStructure,
+                Variables.StructureValueObjectType_VectorStructure);
         }
-        #endregion
 
-        #region Protected Methods
         /// <summary>
         /// Handles the generate values method.
         /// </summary>
@@ -40,9 +43,7 @@ namespace SampleCompany.NodeManagers.TestData
             NodeId objectId,
             uint count)
         {
-            var system = context.SystemHandle as TestDataSystem;
-
-            if (system == null)
+            if (context.SystemHandle is not TestDataSystem)
             {
                 return StatusCodes.BadOutOfService;
             }
@@ -52,6 +53,5 @@ namespace SampleCompany.NodeManagers.TestData
 
             return base.OnGenerateValues(context, method, objectId, count);
         }
-        #endregion
     }
 }

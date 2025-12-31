@@ -1,6 +1,67 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 5.0.0 Release Candidate
+
+### New features:
+
+#### Server
+
+- Support for async method calls by implementing IAsyncNodeManager interface
+- New Task based Request Queue
+- New generated Code with async Method Call handlers & async Service Calls
+- New extended CustomNodeManager with support for SamplingGroup Mechanism
+
+### Changes:
+
+- Enhanced license handling for support contracts
+
+### Breaking Changes:
+
+#### Server
+
+- UaServer: All classes are now under one namespacer (Technosoftware.UaServer)
+- IUaMonitoredItem Interface extended & used instead of UaMonitoredItem Class
+- New IUaSession Interface instead of Session Class
+- IUaSesssionManager, IUaSubscriptionManager, IUaSubscription & IuaServerData interfaces extended
+- Renamed UaImpersonateUserEventArgs to ImpersonateUserEventArgs
+- Renamed several event handlers to correct naming issues, e.g. SessionCreatedEvent -> SessionCreated
+- Merged UaStandardServer into UaServer, simplifying class usages. UaGenericServer and UaGenericNodeManager no longer exists
+
+#### Client
+
+- All sync methods are now marked as deprecated
+- NodeCache now has an async interface (to have access to the ITypeTable interface use the .TypeTree property or AsNodeTable method 
+- ApplicationInstance Methods Returning a task have Async suffixes
+
+### Fixes:
+
+#### Server
+
+- Fix Subscription Keepalive being sent on first publish
+- Handle unsent requests on closed SecureChannel to be sent on new channel of the same session
+
+#### Client
+
+- Disable Subscription cleanup if subscriptions are being created
+- Fix subscription leaking due to not completed PublishResponseMessageWorkerAsync tasks
+- Fix subscription leaking due to not completed PublishResponseMessageWorkerAsync tasks
+
+### Integrated OPC UA Stack Versions
+
+The following OPC UA Foundation releases of the OPC UA Stack were integrated:
+
+- 1.5.378.10-preview
+- 1.5.377.21
+
+Detailed release notes are available [here](https://github.com/OPCFoundation/UA-.NETStandard/releases). Some of the changes are listed below.
+
+#### Breaking Changes:
+
+- ICertificateStore Async Methods now have async suffixes, old names deprecated
+- All obsolete Methods removed
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 4.2.0
 
 ### Breaking Changes:

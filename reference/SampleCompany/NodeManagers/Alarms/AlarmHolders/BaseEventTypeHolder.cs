@@ -12,17 +12,16 @@
 #region Using Directives
 using System;
 using System.Linq;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
-
-#pragma warning disable CS1591
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
-    public class BaseEventTypeHolder : AlarmHolder
+    public abstract class BaseEventTypeHolder : AlarmHolder
     {
         protected BaseEventTypeHolder(
+            ILogger logger,
             AlarmNodeManager alarmNodeManager,
             FolderState parent,
             SourceController trigger,
@@ -30,19 +29,23 @@ namespace SampleCompany.NodeManagers.Alarms
             SupportedAlarmConditionType alarmConditionType,
             Type controllerType,
             int interval,
-            bool optional) :
-            base(alarmNodeManager, parent, trigger, controllerType, interval)
+            bool optional)
+            : base(
+                logger,
+                alarmNodeManager,
+                parent,
+                trigger,
+                controllerType,
+                interval)
         {
-            optional_ = optional;
+            m_optional = optional;
         }
 
-        protected new void Initialize(
-            uint alarmTypeIdentifier,
-            string name)
+        protected new void Initialize(uint alarmTypeIdentifier, string name)
         {
-            alarmTypeIdentifier_ = alarmTypeIdentifier;
+            m_alarmTypeIdentifier = alarmTypeIdentifier;
 
-            if (alarm_ != null)
+            if (m_alarm != null)
             {
                 // Call the base class to set parameters
                 base.Initialize(alarmTypeIdentifier, name);
@@ -50,47 +53,34 @@ namespace SampleCompany.NodeManagers.Alarms
                 BaseEventState alarm = GetAlarm();
 
                 alarm.EventId.Value = Guid.NewGuid().ToByteArray();
-                alarm.EventType.Value = new NodeId(alarmTypeIdentifier, GetNameSpaceIndex(alarmTypeIdentifier));
-                alarm.SourceNode.Value = trigger_.NodeId;
-                alarm.SourceName.Value = trigger_.SymbolicName;
+                alarm.EventType.Value = new NodeId(
+                    alarmTypeIdentifier,
+                    GetNameSpaceIndex(alarmTypeIdentifier));
+                alarm.SourceNode.Value = m_trigger.NodeId;
+                alarm.SourceName.Value = m_trigger.SymbolicName;
                 alarm.Time.Value = DateTime.UtcNow;
                 alarm.ReceiveTime.Value = alarm.Time.Value;
                 alarm.Message.Value = name + " Initialized";
-                alarm.Severity.Value = AlarmConstants.InactiveSeverity;
+                alarm.Severity.Value = AlarmDefines.INACTIVE_SEVERITY;
 
                 // TODO Implement for Optionals - Needs to go to all places where Time is set.
                 alarm.LocalTime = null;
             }
         }
 
-        #region Overrides
-
         public override void SetValue(string message = "")
         {
-
         }
-
-        #endregion
-
-        #region Helpers
 
         private BaseEventState GetAlarm(BaseEventState alarm = null)
         {
-            if (alarm == null)
-            {
-                alarm = alarm_;
-            }
-            return (BaseEventState)alarm;
+            alarm ??= m_alarm;
+            return alarm;
         }
-
-
-        #endregion
-
-        #region Child Helpers
 
         protected bool IsEvent(byte[] eventId)
         {
-            var isEvent = false;
+            bool isEvent = false;
             if (GetAlarm().EventId.Value.SequenceEqual(eventId))
             {
                 isEvent = true;
@@ -98,9 +88,5 @@ namespace SampleCompany.NodeManagers.Alarms
 
             return isEvent;
         }
-
-
-        #endregion
-
     }
 }

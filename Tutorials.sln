@@ -1,21 +1,33 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.1.32228.430
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11312.151
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NodeManagers", "NodeManagers", "{64FB4509-A5BE-4053-9F56-85D37C4AEF73}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleCompany.NodeManagers", "tutorials\SampleCompany\NodeManagers\SampleCompany.NodeManagers.csproj", "{62681F76-F2C5-4B05-8208-5309AD932AB9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleCompany.NodeManagers", "tutorials\SampleCompany\v4\NodeManagers\SampleCompany.NodeManagers.csproj", "{62681F76-F2C5-4B05-8208-5309AD932AB9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Legacy", "Legacy", "{C8D10361-85E0-48E7-8B51-BEF7399B8823}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SimpleClient", "tutorials\SampleCompany\Simple\SampleClient\SampleCompany.SimpleClient.csproj", "{84BFFDE3-9891-8B13-A29A-DA90AC6F6296}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SimpleClient", "tutorials\SampleCompany\v4\Simple\SampleClient\SampleCompany.SimpleClient.csproj", "{84BFFDE3-9891-8B13-A29A-DA90AC6F6296}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SimpleServer", "tutorials\SampleCompany\Simple\SampleServer\SampleCompany.SimpleServer.csproj", "{408282EB-A3A8-5F0C-FD81-4746E8455453}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SimpleServer", "tutorials\SampleCompany\v4\Simple\SampleServer\SampleCompany.SimpleServer.csproj", "{408282EB-A3A8-5F0C-FD81-4746E8455453}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SampleClient", "tutorials\SampleCompany\SampleClient\SampleCompany.SampleClient.csproj", "{EF601AC5-9638-16CD-3CAB-24D25BF25A4C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SampleClient", "tutorials\SampleCompany\v4\SampleClient\SampleCompany.SampleClient.csproj", "{EF601AC5-9638-16CD-3CAB-24D25BF25A4C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SampleServer", "tutorials\SampleCompany\SampleServer\SampleCompany.SampleServer.csproj", "{1D47F412-BF3C-F516-7426-80AB9647C38F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SampleServer", "tutorials\SampleCompany\v4\SampleServer\SampleCompany.SampleServer.csproj", "{1D47F412-BF3C-F516-7426-80AB9647C38F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "V4", "V4", "{A67890A8-625A-4839-BF75-345DBF5B4B70}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "V5", "V5", "{3E8107A9-C379-450C-8E3B-1714BD699A65}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NodeManagers", "NodeManagers", "{38C4CBA6-AE67-459D-A840-B4AF7694933D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SampleClient", "tutorials\SampleCompany\v5\SampleClient\SampleCompany.SampleClient.csproj", "{330747F5-7F38-971C-9DEC-503FD340956A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.SampleServer", "tutorials\SampleCompany\v5\SampleServer\SampleCompany.SampleServer.csproj", "{95279A5E-112A-204D-57A3-E8B4FA26BADE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCompany.NodeManagers", "tutorials\SampleCompany\v5\NodeManagers\SampleCompany.NodeManagers.csproj", "{D1B1DA5E-8B22-D9C7-88F0-3F0F8D8DF29E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,14 +55,34 @@ Global
 		{1D47F412-BF3C-F516-7426-80AB9647C38F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1D47F412-BF3C-F516-7426-80AB9647C38F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1D47F412-BF3C-F516-7426-80AB9647C38F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{330747F5-7F38-971C-9DEC-503FD340956A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{330747F5-7F38-971C-9DEC-503FD340956A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{330747F5-7F38-971C-9DEC-503FD340956A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{330747F5-7F38-971C-9DEC-503FD340956A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95279A5E-112A-204D-57A3-E8B4FA26BADE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95279A5E-112A-204D-57A3-E8B4FA26BADE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95279A5E-112A-204D-57A3-E8B4FA26BADE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95279A5E-112A-204D-57A3-E8B4FA26BADE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1B1DA5E-8B22-D9C7-88F0-3F0F8D8DF29E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1B1DA5E-8B22-D9C7-88F0-3F0F8D8DF29E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1B1DA5E-8B22-D9C7-88F0-3F0F8D8DF29E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1B1DA5E-8B22-D9C7-88F0-3F0F8D8DF29E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{64FB4509-A5BE-4053-9F56-85D37C4AEF73} = {A67890A8-625A-4839-BF75-345DBF5B4B70}
 		{62681F76-F2C5-4B05-8208-5309AD932AB9} = {64FB4509-A5BE-4053-9F56-85D37C4AEF73}
+		{C8D10361-85E0-48E7-8B51-BEF7399B8823} = {A67890A8-625A-4839-BF75-345DBF5B4B70}
 		{84BFFDE3-9891-8B13-A29A-DA90AC6F6296} = {C8D10361-85E0-48E7-8B51-BEF7399B8823}
 		{408282EB-A3A8-5F0C-FD81-4746E8455453} = {C8D10361-85E0-48E7-8B51-BEF7399B8823}
+		{EF601AC5-9638-16CD-3CAB-24D25BF25A4C} = {A67890A8-625A-4839-BF75-345DBF5B4B70}
+		{1D47F412-BF3C-F516-7426-80AB9647C38F} = {A67890A8-625A-4839-BF75-345DBF5B4B70}
+		{38C4CBA6-AE67-459D-A840-B4AF7694933D} = {3E8107A9-C379-450C-8E3B-1714BD699A65}
+		{330747F5-7F38-971C-9DEC-503FD340956A} = {3E8107A9-C379-450C-8E3B-1714BD699A65}
+		{95279A5E-112A-204D-57A3-E8B4FA26BADE} = {3E8107A9-C379-450C-8E3B-1714BD699A65}
+		{D1B1DA5E-8B22-D9C7-88F0-3F0F8D8DF29E} = {38C4CBA6-AE67-459D-A840-B4AF7694933D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {519D77B6-EA9C-4A11-8248-ABCC01FD533C}

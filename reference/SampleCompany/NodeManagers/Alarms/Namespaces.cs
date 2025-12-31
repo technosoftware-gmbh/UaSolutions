@@ -9,15 +9,12 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
-#endregion
-
 namespace SampleCompany.NodeManagers.Alarms
 {
     /// <summary>
     /// Defines constants for all namespaces referenced by the model design.
     /// </summary>
-    public static partial class Namespaces
+    public static class Namespaces
     {
         /// <summary>
         /// The URI for the Alarms namespace (.NET code namespace is 'Alarms').

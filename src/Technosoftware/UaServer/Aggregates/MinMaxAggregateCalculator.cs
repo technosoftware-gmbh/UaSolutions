@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -14,18 +10,15 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
 using System;
 using System.Collections.Generic;
-
 using Opc.Ua;
+#endregion Using Directives
 
-#endregion
-
-namespace Technosoftware.UaServer.Aggregates
+namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Calculates the value of an aggregate. 
+    /// Calculates the value of an aggregate.
     /// </summary>
     public class MinMaxAggregateCalculator : AggregateCalculator
     {
@@ -39,19 +32,20 @@ namespace Technosoftware.UaServer.Aggregates
         /// <param name="processingInterval">The processing interval.</param>
         /// <param name="stepped">Whether to use stepped interpolation.</param>
         /// <param name="configuration">The aggregate configuration.</param>
+        /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
         public MinMaxAggregateCalculator(
             NodeId aggregateId,
             DateTime startTime,
             DateTime endTime,
             double processingInterval,
             bool stepped,
-            AggregateConfiguration configuration)
-        :
-            base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
+            AggregateConfiguration configuration,
+            ITelemetryContext telemetry)
+            : base(aggregateId, startTime, endTime, processingInterval, stepped, configuration, telemetry)
         {
             SetPartialBit = true;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Overridden Methods
         /// <summary>
@@ -61,65 +55,37 @@ namespace Technosoftware.UaServer.Aggregates
         {
             uint? id = AggregateId.Identifier as uint?;
 
-            if (id != null)
+            if (id == null)
             {
-                switch (id.Value)
-                {
-                    case Objects.AggregateFunction_Minimum:
-                    {
-                        return ComputeMinMax(slice, 1, false);
-                    }
-
-                    case Objects.AggregateFunction_MinimumActualTime:
-                    {
-                        return ComputeMinMax(slice, 1, true);
-                    }
-
-                    case Objects.AggregateFunction_Maximum:
-                    {
-                        return ComputeMinMax(slice, 2, false);
-                    }
-
-                    case Objects.AggregateFunction_MaximumActualTime:
-                    {
-                        return ComputeMinMax(slice, 2, true);
-                    }
-
-                    case Objects.AggregateFunction_Range:
-                    {
-                        return ComputeMinMax(slice, 3, false);
-                    }
-
-                    case Objects.AggregateFunction_Minimum2:
-                    {
-                        return ComputeMinMax2(slice, 1, false);
-                    }
-
-                    case Objects.AggregateFunction_MinimumActualTime2:
-                    {
-                        return ComputeMinMax2(slice, 1, true);
-                    }
-
-                    case Objects.AggregateFunction_Maximum2:
-                    {
-                        return ComputeMinMax2(slice, 2, false);
-                    }
-
-                    case Objects.AggregateFunction_MaximumActualTime2:
-                    {
-                        return ComputeMinMax2(slice, 2, true);
-                    }
-
-                    case Objects.AggregateFunction_Range2:
-                    {
-                        return ComputeMinMax2(slice, 3, false);
-                    }
-                }
+                return base.ComputeValue(slice);
             }
-
-            return base.ComputeValue(slice);
+            switch (id.Value)
+            {
+                case Objects.AggregateFunction_Minimum:
+                    return ComputeMinMax(slice, 1, false);
+                case Objects.AggregateFunction_MinimumActualTime:
+                    return ComputeMinMax(slice, 1, true);
+                case Objects.AggregateFunction_Maximum:
+                    return ComputeMinMax(slice, 2, false);
+                case Objects.AggregateFunction_MaximumActualTime:
+                    return ComputeMinMax(slice, 2, true);
+                case Objects.AggregateFunction_Range:
+                    return ComputeMinMax(slice, 3, false);
+                case Objects.AggregateFunction_Minimum2:
+                    return ComputeMinMax2(slice, 1, false);
+                case Objects.AggregateFunction_MinimumActualTime2:
+                    return ComputeMinMax2(slice, 1, true);
+                case Objects.AggregateFunction_Maximum2:
+                    return ComputeMinMax2(slice, 2, false);
+                case Objects.AggregateFunction_MaximumActualTime2:
+                    return ComputeMinMax2(slice, 2, true);
+                case Objects.AggregateFunction_Range2:
+                    return ComputeMinMax2(slice, 3, false);
+                default:
+                    return base.ComputeValue(slice);
+            }
         }
-        #endregion
+        #endregion Overridden Methods
 
         #region Protected Methods
         /// <summary>
@@ -154,7 +120,6 @@ namespace Technosoftware.UaServer.Aggregates
 
             for (int ii = 0; ii < values.Count; ii++)
             {
-                double currentValue = 0;
                 DateTime currentTime = values[ii].SourceTimestamp;
                 StatusCode currentStatus = values[ii].StatusCode;
 
@@ -165,6 +130,7 @@ namespace Technosoftware.UaServer.Aggregates
                     continue;
                 }
 
+                double currentValue;
                 // convert to double.
                 try
                 {
@@ -201,7 +167,6 @@ namespace Technosoftware.UaServer.Aggregates
                     duplicatesMinimumsExist = false;
                     goodValueExists = true;
                 }
-
                 // check for duplicate minimums.
                 else if (minimumGoodValue == currentValue)
                 {
@@ -217,7 +182,6 @@ namespace Technosoftware.UaServer.Aggregates
                     duplicatesMaximumsExist = false;
                     goodValueExists = true;
                 }
-
                 // check for duplicate maximums.
                 else if (maximumGoodValue == currentValue)
                 {
@@ -244,7 +208,6 @@ namespace Technosoftware.UaServer.Aggregates
             object processedValue = null;
             TypeInfo processedType = null;
             DateTime processedTimestamp = DateTime.MinValue;
-            bool uncertainValueExists = false;
             bool duplicatesExist = false;
 
             if (valueType == 1)
@@ -252,24 +215,23 @@ namespace Technosoftware.UaServer.Aggregates
                 processedValue = minimumGoodValue;
                 processedTimestamp = minimumGoodTimestamp;
                 processedType = minimumOriginalType;
-                uncertainValueExists = minimumGoodValue > minimumUncertainValue;
+                _ = minimumGoodValue > minimumUncertainValue;
                 duplicatesExist = duplicatesMinimumsExist;
             }
-
             else if (valueType == 2)
             {
                 processedValue = maximumGoodValue;
                 processedTimestamp = maximumGoodTimestamp;
                 processedType = maximumOriginalType;
-                uncertainValueExists = maximumGoodValue < maximumUncertainValue;
+                _ = maximumGoodValue < maximumUncertainValue;
                 duplicatesExist = duplicatesMaximumsExist;
             }
-
             else if (valueType == 3)
             {
                 processedValue = Math.Abs(maximumGoodValue - minimumGoodValue);
                 processedType = TypeInfo.Scalars.Double;
-                uncertainValueExists = maximumGoodValue < maximumUncertainValue || minimumGoodValue > minimumUncertainValue;
+                _ = maximumGoodValue < maximumUncertainValue ||
+                    minimumGoodValue > minimumUncertainValue;
             }
 
             // set calculated if not returning actual time and value is not at the start time.
@@ -281,13 +243,17 @@ namespace Technosoftware.UaServer.Aggregates
             // set the multiple values flags.
             if (duplicatesExist)
             {
-                statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.MultipleValues);
+                statusCode = statusCode.SetAggregateBits(
+                    statusCode.AggregateBits | AggregateBits.MultipleValues);
             }
 
             // convert back to original datatype.
             if (processedType != null && processedType.BuiltInType != BuiltInType.Double)
             {
-                processedValue = TypeInfo.Cast(processedValue, TypeInfo.Scalars.Double, processedType.BuiltInType);
+                processedValue = TypeInfo.Cast(
+                    processedValue,
+                    TypeInfo.Scalars.Double,
+                    processedType.BuiltInType);
             }
             else
             {
@@ -295,9 +261,11 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // create processed value.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(processedValue, processedType);
-            value.StatusCode = statusCode;
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(processedValue, processedType),
+                StatusCode = statusCode
+            };
 
             if (returnActualTime)
             {
@@ -345,7 +313,6 @@ namespace Technosoftware.UaServer.Aggregates
 
             for (int ii = 0; ii < values.Count; ii++)
             {
-                double currentValue = 0;
                 DateTime currentTime = values[ii].SourceTimestamp;
                 StatusCode currentStatus = values[ii].StatusCode;
 
@@ -355,6 +322,7 @@ namespace Technosoftware.UaServer.Aggregates
                     continue;
                 }
 
+                double currentValue;
                 // convert to double.
                 try
                 {
@@ -366,12 +334,9 @@ namespace Technosoftware.UaServer.Aggregates
                 }
 
                 // skip endpoint if stepped.
-                if (currentTime == slice.EndTime)
+                if (currentTime == slice.EndTime && Stepped)
                 {
-                    if (Stepped)
-                    {
-                        break;
-                    }
+                    break;
                 }
 
                 // check for new minimum.
@@ -384,7 +349,6 @@ namespace Technosoftware.UaServer.Aggregates
                     duplicatesMinimumsExist = false;
                     goodValueExists = true;
                 }
-
                 // check for duplicate minimums.
                 else if (minimumGoodValue == currentValue)
                 {
@@ -401,7 +365,6 @@ namespace Technosoftware.UaServer.Aggregates
                     duplicatesMaximumsExist = false;
                     goodValueExists = true;
                 }
-
                 // check for duplicate maximums.
                 else if (maximumGoodValue == currentValue)
                 {
@@ -416,7 +379,8 @@ namespace Technosoftware.UaServer.Aggregates
                 // check if interval is partial and set the flag accordingly
                 if (slice.Partial)
                 {
-                    noDataValue.StatusCode = noDataValue.StatusCode.SetAggregateBits(AggregateBits.Partial);
+                    noDataValue.StatusCode = noDataValue.StatusCode
+                        .SetAggregateBits(AggregateBits.Partial);
                 }
                 return noDataValue;
             }
@@ -436,7 +400,6 @@ namespace Technosoftware.UaServer.Aggregates
                 processedType = minimumOriginalType;
                 duplicatesExist = duplicatesMinimumsExist;
             }
-
             else if (valueType == 2)
             {
                 processedValue = maximumGoodValue;
@@ -445,7 +408,6 @@ namespace Technosoftware.UaServer.Aggregates
                 processedType = maximumOriginalType;
                 duplicatesExist = duplicatesMaximumsExist;
             }
-
             else if (valueType == 3)
             {
                 processedValue = Math.Abs(maximumGoodValue - minimumGoodValue);
@@ -456,21 +418,28 @@ namespace Technosoftware.UaServer.Aggregates
             StatusCode statusCode = processedStatusCode;
 
             // set calculated if not returning actual time and value is not at the start time.
-            if (!returnActualTime && processedTimestamp != slice.StartTime && (statusCode.AggregateBits & AggregateBits.Interpolated) == 0)
+            if (!returnActualTime &&
+                processedTimestamp != slice.StartTime &&
+                (statusCode.AggregateBits & AggregateBits.Interpolated) == 0)
             {
-                statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.Calculated);
+                statusCode = statusCode.SetAggregateBits(
+                    statusCode.AggregateBits | AggregateBits.Calculated);
             }
 
             // set the multiple values flags.
             if (duplicatesExist)
             {
-                statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.MultipleValues);
+                statusCode = statusCode.SetAggregateBits(
+                    statusCode.AggregateBits | AggregateBits.MultipleValues);
             }
 
             // convert back to original datatype.
             if (processedType != null && processedType.BuiltInType != BuiltInType.Double)
             {
-                processedValue = TypeInfo.Cast(processedValue, TypeInfo.Scalars.Double, processedType.BuiltInType);
+                processedValue = TypeInfo.Cast(
+                    processedValue,
+                    TypeInfo.Scalars.Double,
+                    processedType.BuiltInType);
             }
             else
             {
@@ -478,9 +447,11 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             // create processed value.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(processedValue, processedType);
-            value.StatusCode = GetTimeBasedStatusCode(slice, values, statusCode);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(processedValue, processedType),
+                StatusCode = GetTimeBasedStatusCode(slice, values, statusCode)
+            };
 
             // zero value if status is bad.
             if (StatusCode.IsBad(value.StatusCode))
@@ -496,16 +467,15 @@ namespace Technosoftware.UaServer.Aggregates
                     if (processedTimestamp == slice.StartTime)
                     {
                         processedTimestamp = processedTimestamp.AddMilliseconds(+1);
-                        value.StatusCode = value.StatusCode.SetAggregateBits(value.StatusCode.AggregateBits | AggregateBits.Interpolated);
+                        value.StatusCode = value.StatusCode.SetAggregateBits(
+                            value.StatusCode.AggregateBits | AggregateBits.Interpolated);
                     }
                 }
-                else
+                else if (processedTimestamp == slice.EndTime)
                 {
-                    if (processedTimestamp == slice.EndTime)
-                    {
-                        processedTimestamp = processedTimestamp.AddMilliseconds(-1);
-                        value.StatusCode = value.StatusCode.SetAggregateBits(value.StatusCode.AggregateBits | AggregateBits.Interpolated);
-                    }
+                    processedTimestamp = processedTimestamp.AddMilliseconds(-1);
+                    value.StatusCode = value.StatusCode.SetAggregateBits(
+                        value.StatusCode.AggregateBits | AggregateBits.Interpolated);
                 }
 
                 value.SourceTimestamp = processedTimestamp;
@@ -519,6 +489,6 @@ namespace Technosoftware.UaServer.Aggregates
 
             return value;
         }
-        #endregion
+        #endregion Protected Methods
     }
 }

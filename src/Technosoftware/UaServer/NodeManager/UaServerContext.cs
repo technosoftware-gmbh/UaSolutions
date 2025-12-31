@@ -3,33 +3,28 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
-
 #region Using Directives
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
     /// <summary>
     /// A generic implementation for ISystemContext interface.
     /// </summary>
-    public class UaServerContext : SystemContext
+    public class UaServerContext : SessionSystemContext
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemContext"/> class.
         /// </summary>
         /// <param name="server">The server.</param>
         public UaServerContext(IUaServerData server)
+            : base(server.Telemetry)
         {
             OperationContext = null;
             NamespaceUris = server.NamespaceUris;
@@ -44,6 +39,7 @@ namespace Technosoftware.UaServer
         /// <param name="server">The server.</param>
         /// <param name="context">The context.</param>
         public UaServerContext(IUaServerData server, UaServerOperationContext context)
+             : base(server.Telemetry)
         {
             OperationContext = context;
             NamespaceUris = server.NamespaceUris;
@@ -57,7 +53,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="server">The server.</param>
         /// <param name="session">The session.</param>
-        public UaServerContext(IUaServerData server, Sessions.Session session)
+        public UaServerContext(IUaServerData server, IUaSession session)
+             : base(server.Telemetry)
         {
             OperationContext = null;
             SessionId = session.Id;
@@ -68,9 +65,7 @@ namespace Technosoftware.UaServer
             TypeTable = server.TypeTree;
             EncodeableFactory = server.Factory;
         }
-        #endregion
 
-        #region Public Members
         /// <summary>
         /// The operation context associated with system context.
         /// </summary>
@@ -116,7 +111,7 @@ namespace Technosoftware.UaServer
         /// <returns>
         /// A copy of the system context that references the new session.
         /// </returns>
-        public UaServerContext Copy(Sessions.Session session)
+        public UaServerContext Copy(IUaSession session)
         {
             var copy = (UaServerContext)MemberwiseClone();
 
@@ -163,6 +158,5 @@ namespace Technosoftware.UaServer
 
             return copy;
         }
-        #endregion
     }
 }

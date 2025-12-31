@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);CLIENT_ASYNC</DefineConstants>
     <AssemblyName>$(AssemblyPrefix).UaClient</AssemblyName>
     <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
     <PackageId>$(PackagePrefix).UaClient</PackageId>
@@ -9,39 +8,26 @@
     <Product>OPC UA Solutions .NET</Product>
     <Description>OPC UA Solutions .NET Client Library</Description>
     <Copyright>Copyright © 2018 - 2025 Technosoftware GmbH</Copyright>
-    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
-    <DefineConstants>$(DefineConstants);SIGNASSEMBLY</DefineConstants>
-  </PropertyGroup>
-
+  <ItemGroup>
+    <InternalsVisibleTo Include="Technosoftware.UaClient.Tests" />
+  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <PackageId>$(PackageId).Debug</PackageId>
   </PropertyGroup>
-
-  <!-- select ECC support -->
-  <Choose>
-    <When Condition="'$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'netstandard2.0'">
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);ECC_SUPPORT</DefineConstants>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
   <ItemGroup>
-    <PackageReference Update="Roslynator.Analyzers" Version="4.14.0" />
-    <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.14.0" />
+    <PackageReference Update="Roslynator.Analyzers" Version="4.15.0" />
+    <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.15.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="4.2.0" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="4.2.0" />
+    <PackageReference Include="BitFaster.Caching" Version="2.5.4" />
   </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
+  </ItemGroup>
   <Target Name="GetPackagingOutputs" />
-
 </Project>

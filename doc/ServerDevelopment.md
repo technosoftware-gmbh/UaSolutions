@@ -4,13 +4,15 @@
 
 ## OPC UA Server .NET
 
-The OPC UA Server NET offers a fast and easy access to the OPC Unified Architecture (UA) technology.
+The **OPC UA Server NET** offers a fast and easy access to the OPC Unified Architecture (UA) technology.
 
-Develop OPC UA compliant Servers with C# targeting .NET 9.0 or .NET 8. For backward compatibility we also provide .NET 4.8 and .NET 4.7.2 support.
+Develop OPC UA compliant Servers with C# targeting .NET 10.0, .NET 9.0 or .NET 8.0. For backward compatibility we also provide .NET 4.8 and .NET 4.7.2 support.
 
-.NET 9.0 or .NET 8 allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
+.NET 10.0, .NET 9.0 or .NET 8.0 allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
 
-The server API is easy to use and many OPC specific functions are handled by the framework. The included Model Compiler can be used to create the necessary C# classes of Information Model’s specified in XML and CSV based files. 
+The **OPC UA Server NET** API is easy to use and many OPC specific functions are handled by the framework. The included Model Compiler can be used to create the necessary C# classes of Information Model’s specified in XML and CSV based files. 
+
+The **OPC UA Server NET** is based on the OPC Foundation stack with several enhancements to make the development smooth and efficient. While we use the **OPC UA Server NET** mainly in our own services it is also possible to use it in your own development. 
 
 Documentation of the Model Compiler can be found [here](https://github.com/OPCFoundation/UA-ModelCompiler).
 
@@ -23,6 +25,7 @@ Documentation of the Model Compiler can be found [here](https://github.com/OPCFo
 | 3.4         | 10-SEP-2025 | Updated to OPC UA Core 1.5.376.244   |
 | 4.0         | 23-SEP-2025 | Initial version based on version 4.0 |
 | 4.2         | 01-NOV-2025 | Documented UaStandardServer usage    |
+| 5.0 RC      | 29-DEC-2025 | Work in Progress                     |
 
 **Purpose and audience of document**
 
@@ -194,16 +197,11 @@ The DLLs are delivered as local NuGet Packages. The OPC UA Server .NET uses the 
 
 | **Name**                                       | **Description**                                                                                    |
 |:-----------------------------------------------|:--------------------------------------------------------------------------------------------------:|
+| **Technosoftware.UaSolutions.UaTypes**          | The OPC UA Types Class Library.                                                                   |
 | **Technosoftware.UaSolutions.UaCore**           | The OPC UA Core Class Library.                                                                    |
 | **Technosoftware.UaSolutions.UaBindings.Https** | The OPC UA Https Binding Library.                                                                 |
 | **Technosoftware.UaSolutions.UaConfiguration**  | Contains configuration related classes like, e.g. ApplicationInstance.                            |
 | **Technosoftware.UaSolutions.UaServer**         | The OPC UA Server Class library containing the classes and methods usable for server development. |
-
-The following package is only needed up to version 4.1, with 4.2 it was integrated into UaServer:
-
-| **Name**                                       | **Description**                                                                                                    |
-|:-----------------------------------------------|:------------------------------------------------------------------------------------------------------------------:|
-| **Technosoftware.UaSolutions.UaStandardServer** | The OPC UA Standard Server Class library used by the samples explained in [Server Design based](#server-design).  |
 
 ### Solution
 

@@ -1,0 +1,16 @@
+<xs:schema
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
+  xmlns:tns="http://samplecompany.com/SampleServer/NodeManagers/Boiler"
+  targetNamespace="http://samplecompany.com/SampleServer/NodeManagers/Boiler"
+  elementFormDefault="qualified"
+>
+  <xs:annotation>
+    <xs:appinfo>
+      <ua:Model ModelUri="http://samplecompany.com/SampleServer/NodeManagers/Boiler" Version="1.0.0" PublicationDate="2025-12-15T07:53:32.0223966Z" />
+    </xs:appinfo>
+  </xs:annotation>
+  
+  <xs:import namespace="http://opcfoundation.org/UA/2008/02/Types.xsd" />
+
+</xs:schema>

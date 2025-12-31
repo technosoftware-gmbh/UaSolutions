@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -19,13 +15,14 @@ using System;
 
 using Opc.Ua;
 
-#endregion
+#endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
     /// <summary>
     ///     A class which provides the event arguments for session related event.
     /// </summary>
+    [Obsolete("Use ImpersonateUserEventArgs")]
     public class UaImpersonateUserEventArgs : EventArgs
     {
         #region Constructors, Destructor, Initialization
@@ -38,7 +35,7 @@ namespace Technosoftware.UaServer
             m_userTokenPolicy = userTokenPolicy;
             m_endpointDescription = endpointDescription;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Public Properties
         /// <summary>
@@ -91,7 +88,7 @@ namespace Technosoftware.UaServer
         {
             get { return m_endpointDescription; }
         }
-        #endregion
+        #endregion Public Properties
 
         #region Private Fields
         private UserIdentityToken m_newIdentity;
@@ -100,6 +97,6 @@ namespace Technosoftware.UaServer
         private IUserIdentity m_identity;
         private IUserIdentity m_effectiveIdentity;
         private EndpointDescription m_endpointDescription;
-        #endregion
+        #endregion Private Fields
     }
 }

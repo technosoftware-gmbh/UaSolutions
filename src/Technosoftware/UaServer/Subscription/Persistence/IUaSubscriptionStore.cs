@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -15,11 +11,9 @@
 
 #region Using Directives
 using System.Collections.Generic;
+#endregion Using Directives
 
-using Opc.Ua;
-#endregion
-
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Interface for storing subscriptions on server shutdown and restoring on startup
@@ -42,7 +36,7 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Restore a DataChangeMonitoredItemQueue from storage
         /// </summary>
-        /// <param name="monitoredItemId">Id of the MonitoredItem owning the the queue</param>
+        /// <param name="monitoredItemId">Id of the MonitoredItem owning the queue</param>
         /// <returns>the queue</returns>
         IUaDataChangeMonitoredItemQueue RestoreDataChangeMonitoredItemQueue(uint monitoredItemId);
 
@@ -69,7 +63,9 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Creates a new instance of the result
         /// </summary>
-        public RestoreSubscriptionResult(bool succcess, IEnumerable<IUaStoredSubscription> subscriptions)
+        public RestoreSubscriptionResult(
+            bool succcess,
+            IEnumerable<IUaStoredSubscription> subscriptions)
         {
             Success = succcess;
             Subscriptions = subscriptions;
@@ -84,5 +80,5 @@ namespace Technosoftware.UaServer.Subscriptions
         /// The restored subscriptions
         /// </summary>
         public IEnumerable<IUaStoredSubscription> Subscriptions { get; set; }
-    };
+    }
 }

@@ -1,0 +1,400 @@
+#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.Extensions.Logging;
+using System.Threading;
+using System.Threading.Tasks;
+using Technosoftware.UaServer;
+using SampleCompany.NodeManagers.Reference;
+using Opc.Ua;
+#endregion Using Directives
+
+namespace Technosoftware.UaClient.Tests
+{
+    /// <summary>
+    /// <para>
+    /// Reference Server modification which allows to change the maximum number
+    /// of (browse) continuation points during the execution of a test.
+    /// This makes it easier to compare browse results without any restriction
+    /// with results where the server may allocate only a limited number of
+    /// continuation points.
+    /// To make this work some other classes must be derived and modified, as
+    /// well (see the ServerSessionWithLimits, SessionManagerWithLimits and
+    /// MasterNodeManagerWithLimits classes).
+    /// </para>
+    /// <para>
+    /// Use with care. This class and especially its dedicated functionality
+    /// should be used for test purposes only.
+    /// </para>
+    /// </summary>
+    public class ReferenceServerWithLimits : ReferenceServer
+    {
+        public uint TestMaxBrowseReferencesPerNode { get; set; } = 10u;
+        private MasterNodeManager MasterNodeManagerReference { get; set; }
+        private SessionManagerWithLimits SessionManagerForTest { get; set; }
+
+        public override Task<BrowseResponse> BrowseAsync(
+            SecureChannelContext secureChannelContext,
+            RequestHeader requestHeader,
+            ViewDescription view,
+            uint requestedMaxReferencesPerNode,
+            BrowseDescriptionCollection nodesToBrowse,
+            CancellationToken ct)
+        {
+            return base.BrowseAsync(
+                secureChannelContext,
+                requestHeader,
+                view,
+                TestMaxBrowseReferencesPerNode,
+                nodesToBrowse,
+                ct);
+        }
+
+        public void SetMaxNumberOfContinuationPoints(uint maxNumberOfContinuationPoints)
+        {
+            Configuration.ServerConfiguration.MaxBrowseContinuationPoints
+                = (int)maxNumberOfContinuationPoints;
+            ((MasterNodeManagerWithLimits)MasterNodeManagerReference)
+                .MaxContinuationPointsPerBrowseForUnitTest =
+                maxNumberOfContinuationPoints;
+            foreach (UaServer.IUaSession session in SessionManagerForTest.GetSessions().ToList())
+            {
+                try
+                {
+                    ((ServerSessionWithLimits)session).SetMaxNumberOfContinuationPoints(
+                        maxNumberOfContinuationPoints);
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        protected override MasterNodeManager CreateMasterNodeManager(
+            IUaServerData server,
+            ApplicationConfiguration configuration)
+        {
+            m_logger.LogInformation(
+                Utils.TraceMasks.StartStop,
+                "Creating the Reference Server Node Manager.");
+
+            IList<IUaNodeManager> nodeManagers =
+            [
+                // create the custom node manager.
+                new ReferenceServerNodeManager(server, configuration)
+            ];
+
+            foreach (IUaNodeManagerFactory nodeManagerFactory in NodeManagerFactories)
+            {
+                nodeManagers.Add(nodeManagerFactory.Create(server, configuration));
+            }
+            //this.MasterNodeManagerReference = new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
+            MasterNodeManagerReference = new MasterNodeManagerWithLimits(
+                server,
+                configuration,
+                null,
+                [.. nodeManagers]);
+            // create master node manager.
+            return MasterNodeManagerReference;
+        }
+
+        protected override IUaSessionManager CreateSessionManager(
+            IUaServerData server,
+            ApplicationConfiguration configuration)
+        {
+            SessionManagerForTest = new SessionManagerWithLimits(server, configuration);
+            return SessionManagerForTest;
+        }
+    }
+
+    /// <summary>
+    /// provide a means to set the maximum number of browse continuation points to
+    /// the (Server) session.
+    /// </summary>
+    public class ServerSessionWithLimits : UaServer.Session
+    {
+        public ServerSessionWithLimits(
+            UaServerOperationContext context,
+            IUaServerData server,
+            X509Certificate2 serverCertificate,
+            NodeId authenticationToken,
+            byte[] clientNonce,
+            Nonce serverNonce,
+            string sessionName,
+            ApplicationDescription clientDescription,
+            string endpointUrl,
+            X509Certificate2 clientCertificate,
+            X509Certificate2Collection clientCertificateChain,
+            double sessionTimeout,
+            uint maxResponseMessageSize,
+            double maxRequestAge,
+            int maxBrowseContinuationPoints,
+            int maxHistoryContinuationPoints)
+            : base(
+                context,
+                server,
+                serverCertificate,
+                authenticationToken,
+                clientNonce,
+                serverNonce,
+                sessionName,
+                clientDescription,
+                endpointUrl,
+                clientCertificate,
+                clientCertificateChain,
+                sessionTimeout,
+                maxBrowseContinuationPoints,
+                maxHistoryContinuationPoints)
+        {
+        }
+
+        public void SetMaxNumberOfContinuationPoints(uint maxNumberOfContinuationPoints)
+        {
+            MaxBrowseContinuationPoints = (int)maxNumberOfContinuationPoints;
+        }
+    }
+
+    /// <summary>
+    /// ensures that the (Server) session is the derived one for the test.
+    /// </summary>
+    public class SessionManagerWithLimits : SessionManager
+    {
+        private readonly IUaServerData m_4TestServer;
+        private readonly int m_4TestMaxRequestAge;
+        private readonly int m_4TestMaxBrowseContinuationPoints;
+        private readonly int m_4TestMaxHistoryContinuationPoints;
+
+        public SessionManagerWithLimits(
+            IUaServerData server,
+            ApplicationConfiguration configuration)
+            : base(server, configuration)
+        {
+            m_4TestServer = server;
+            m_4TestMaxRequestAge = configuration.ServerConfiguration.MaxRequestAge;
+            m_4TestMaxBrowseContinuationPoints = configuration.ServerConfiguration
+                .MaxBrowseContinuationPoints;
+            m_4TestMaxHistoryContinuationPoints = configuration.ServerConfiguration
+                .MaxHistoryContinuationPoints;
+        }
+
+        /// <summary>
+        /// TBD - Remove unused parameter.
+        /// </summary>
+        protected override UaServer.IUaSession CreateSession(
+            UaServerOperationContext context,
+            IUaServerData server,
+            X509Certificate2 serverCertificate,
+            NodeId sessionCookie,
+            byte[] clientNonce,
+            Nonce serverNonce,
+            string sessionName,
+            ApplicationDescription clientDescription,
+            string endpointUrl,
+            X509Certificate2 clientCertificate,
+            X509Certificate2Collection clientCertificateChain,
+            double sessionTimeout,
+            uint maxResponseMessageSize,
+            int maxRequestAge, // TBD - Remove unused parameter.
+            int maxContinuationPoints)
+        {
+            return new ServerSessionWithLimits(
+                context,
+                m_4TestServer,
+                serverCertificate,
+                sessionCookie,
+                clientNonce,
+                serverNonce,
+                sessionName,
+                clientDescription,
+                endpointUrl,
+                clientCertificate,
+                clientCertificateChain,
+                sessionTimeout,
+                maxResponseMessageSize,
+                m_4TestMaxRequestAge,
+                m_4TestMaxBrowseContinuationPoints,
+                m_4TestMaxHistoryContinuationPoints);
+        }
+    }
+
+    /// <summary>
+    /// Hack which ensures the injected maximum number of browse continuation points
+    /// is really used when the browse service call is executed.
+    /// </summary>
+    public class MasterNodeManagerWithLimits : MasterNodeManager
+    {
+        public MasterNodeManagerWithLimits(
+            IUaServerData server,
+            ApplicationConfiguration configuration,
+            string dynamicNamespaceUri,
+            params IUaNodeManager[] additionalManagers)
+            : base(server, configuration, dynamicNamespaceUri, additionalManagers)
+        {
+            m_logger = server.Telemetry.CreateLogger<MasterNodeManagerWithLimits>();
+        }
+
+        public uint MaxContinuationPointsPerBrowseForUnitTest { get; set; }
+
+        /// <summary>
+        /// Returns the set of references that meet the filter criteria.
+        /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <exception cref="ServiceResultException"></exception>
+        public override async ValueTask<(BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos)> BrowseAsync(
+            UaServerOperationContext context,
+            ViewDescription view,
+            uint maxReferencesPerNode,
+            BrowseDescriptionCollection nodesToBrowse,
+            CancellationToken cancellationToken = default)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (nodesToBrowse == null)
+            {
+                throw new ArgumentNullException(nameof(nodesToBrowse));
+            }
+
+            if (view != null && !NodeId.IsNull(view.ViewId))
+            {
+                (object viewHandle, IUaStandardAsyncNodeManager viewManager) =
+                    await GetManagerHandleAsync(view.ViewId, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (viewHandle == null || viewManager == null)
+                {
+                    throw new ServiceResultException(StatusCodes.BadViewIdUnknown);
+                }
+
+                UaNodeMetadata metadata = await viewManager.GetNodeMetadataAsync(
+                        context,
+                        viewHandle,
+                        BrowseResultMask.NodeClass,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (metadata == null || metadata.NodeClass != NodeClass.View)
+                {
+                    throw new ServiceResultException(StatusCodes.BadViewIdUnknown);
+                }
+
+                // validate access rights and role permissions
+                ServiceResult validationResult = await ValidatePermissionsAsync(
+                        context,
+                        viewManager,
+                        viewHandle,
+                        PermissionType.Browse,
+                        null,
+                        true,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (ServiceResult.IsBad(validationResult))
+                {
+                    throw new ServiceResultException(validationResult);
+                }
+                view.Handle = viewHandle;
+            }
+
+            bool diagnosticsExist = false;
+            var results = new BrowseResultCollection(nodesToBrowse.Count);
+            var diagnosticInfos = new DiagnosticInfoCollection(nodesToBrowse.Count);
+
+            uint continuationPointsAssigned = 0;
+
+            for (int ii = 0; ii < nodesToBrowse.Count; ii++)
+            {
+                // check if request has timed out or been cancelled.
+                if (StatusCode.IsBad(context.OperationStatus))
+                {
+                    // release all allocated continuation points.
+                    foreach (BrowseResult current in results)
+                    {
+                        if (current != null &&
+                            current.ContinuationPoint != null &&
+                            current.ContinuationPoint.Length > 0)
+                        {
+                            UaContinuationPoint cp = context.Session
+                                .RestoreContinuationPoint(current.ContinuationPoint);
+                            cp.Dispose();
+                        }
+                    }
+
+                    throw new ServiceResultException(context.OperationStatus);
+                }
+
+                BrowseDescription nodeToBrowse = nodesToBrowse[ii];
+
+                // initialize result.
+                var result = new BrowseResult { StatusCode = StatusCodes.Good };
+                results.Add(result);
+
+                ServiceResult error;
+
+                // need to trap unexpected exceptions to handle bugs in the node managers.
+                try
+                {
+                    error = await BrowseAsync(
+                        context,
+                        view,
+                        maxReferencesPerNode,
+                        MaxContinuationPointsPerBrowseForUnitTest <= 0 ||
+                        continuationPointsAssigned < MaxContinuationPointsPerBrowseForUnitTest,
+                        nodeToBrowse,
+                        result,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    error = ServiceResult.Create(
+                        e,
+                        StatusCodes.BadUnexpectedError,
+                        "Unexpected error browsing node.");
+                }
+
+                // check for continuation point.
+                if (result.ContinuationPoint != null && result.ContinuationPoint.Length > 0)
+                {
+                    continuationPointsAssigned++;
+                }
+
+                // check for error.
+                result.StatusCode = error.StatusCode;
+
+                if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
+                {
+                    DiagnosticInfo diagnosticInfo = null;
+
+                    if (error != null && error.Code != StatusCodes.Good)
+                    {
+                        diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(Server, context, error, m_logger);
+                        diagnosticsExist = true;
+                    }
+
+                    diagnosticInfos.Add(diagnosticInfo);
+                }
+            }
+
+            // clear the diagnostics array if no diagnostics requested or no errors occurred.
+            UpdateDiagnostics(context, diagnosticsExist, ref diagnosticInfos);
+
+            return (results, diagnosticInfos);
+        }
+
+        private readonly ILogger m_logger;
+    }
+}

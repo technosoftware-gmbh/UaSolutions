@@ -18,18 +18,16 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Opc.Ua;
-using Technosoftware.UaServer;
-using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription
 {
     /// <inheritdoc/>
     public class BatchPersistor : IBatchPersistor
     {
-        #region Constants
         private static readonly JsonSerializerSettings s_settings = new()
         {
             TypeNameHandling = TypeNameHandling.All
@@ -41,9 +39,13 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             "Batches");
 
         private const string kBaseFilename = "_batch.txt";
-        #endregion Constants
 
-        #region IBatchPersistor Members
+        public BatchPersistor(ITelemetryContext telemetry)
+        {
+            m_logger = telemetry.CreateLogger<DurableDataChangeMonitoredItemQueue>();
+            m_telemetry = telemetry;
+        }
+
         /// <inheritdoc/>
         public void RequestBatchPersist(BatchBase batch)
         {
@@ -97,6 +99,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 if (File.Exists(filePath))
                 {
                     string json = File.ReadAllText(filePath);
+                    using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
                     result = JsonConvert.DeserializeObject(json, batch.GetType(), s_settings);
 
                     File.Delete(filePath);
@@ -104,7 +107,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             }
             catch (Exception ex)
             {
-                Opc.Ua.Utils.LogError(ex, "Failed to restore batch");
+                m_logger.LogError(ex, "Failed to restore batch");
 
                 batch.RestoreInProgress = false;
                 m_batchesToRestore.TryRemove(batch.Id, out _);
@@ -134,6 +137,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             batch.CancelBatchPersist = cancellationTokenSource;
             try
             {
+                using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
                 string result = JsonConvert.SerializeObject(batch, s_settings);
 
                 if (!Directory.Exists(s_storage_path))
@@ -167,7 +171,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             }
             catch (Exception ex)
             {
-                Opc.Ua.Utils.LogWarning(ex, "Failed to store batch");
+                m_logger.LogWarning(ex, "Failed to store batch");
                 lock (batch)
                 {
                     batch.PersistingInProgress = false;
@@ -176,9 +180,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 }
             }
         }
-        #endregion IBatchPersistor Members
 
-        #region Public Methods
         /// <inheritdoc/>
         public void DeleteBatches(IEnumerable<uint> batchesToKeep)
         {
@@ -205,7 +207,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             }
             catch (Exception ex)
             {
-                Opc.Ua.Utils.LogWarning(ex, "Failed to clean up batches");
+                m_logger.LogWarning(ex, "Failed to clean up batches");
             }
         }
 
@@ -232,14 +234,13 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             }
             catch (Exception ex)
             {
-                Opc.Ua.Utils.LogWarning(ex, "Failed to clean up single batch");
+                m_logger.LogWarning(ex, "Failed to clean up single batch");
             }
         }
-        #endregion Public Methods
 
-        #region Private Fields
         private readonly ConcurrentDictionary<Guid, BatchBase> m_batchesToRestore = new();
         private readonly ConcurrentDictionary<Guid, BatchBase> m_batchesToPersist = new();
-        #endregion Private Fields
+        private readonly ILogger m_logger;
+        private readonly ITelemetryContext m_telemetry;
     }
 }

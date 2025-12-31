@@ -11,24 +11,28 @@
 
 #region Using Directives
 using System;
-
+using System.Diagnostics;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
     /// <summary>
     /// Helper class to allow for creation of various entities
     /// </summary>
-
-    public class AlarmHelpers
+    public static class AlarmHelpers
     {
         /// <summary>
         /// Create a mechanism to create a folder
         /// </summary>
-        public static FolderState CreateFolder(NodeState parent, ushort nameSpaceIndex, string path, string name)
+        public static FolderState CreateFolder(
+            NodeState parent,
+            ushort nameSpaceIndex,
+            string path,
+            string name)
         {
-            var folder = new FolderState(parent) {
+            var folder = new FolderState(parent)
+            {
                 SymbolicName = name,
                 ReferenceTypeId = ReferenceTypes.Organizes,
                 TypeDefinitionId = ObjectTypeIds.FolderType,
@@ -48,9 +52,14 @@ namespace SampleCompany.NodeManagers.Alarms
         /// <summary>
         /// Create a mechanism to create a variable
         /// </summary>
-        public static BaseDataVariableState CreateVariable(NodeState parent, ushort nameSpaceIndex, string path, string name, bool boolValue = false)
+        public static BaseDataVariableState CreateVariable(
+            NodeState parent,
+            ushort nameSpaceIndex,
+            string path,
+            string name,
+            bool boolValue = false)
         {
-            var dataTypeIdentifier = DataTypes.Int32;
+            uint dataTypeIdentifier = DataTypes.Int32;
             if (boolValue)
             {
                 dataTypeIdentifier = DataTypes.Boolean;
@@ -61,9 +70,15 @@ namespace SampleCompany.NodeManagers.Alarms
         /// <summary>
         /// Create a mechanism to create a Variable
         /// </summary>
-        public static BaseDataVariableState CreateVariable(NodeState parent, ushort nameSpaceIndex, string path, string name, uint dataTypeIdentifier)
+        public static BaseDataVariableState CreateVariable(
+            NodeState parent,
+            ushort nameSpaceIndex,
+            string path,
+            string name,
+            uint dataTypeIdentifier)
         {
-            var variable = new BaseDataVariableState(parent) {
+            var variable = new BaseDataVariableState(parent)
+            {
                 SymbolicName = name,
                 ReferenceTypeId = ReferenceTypes.Organizes,
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
@@ -81,13 +96,16 @@ namespace SampleCompany.NodeManagers.Alarms
                     break;
                 case DataTypes.Int32:
                     variable.DataType = DataTypeIds.Int32;
-                    variable.Value = AlarmConstants.NormalStartValue;
+                    variable.Value = AlarmDefines.NORMAL_START_VALUE;
                     break;
                 case DataTypes.Double:
                     variable.DataType = DataTypeIds.Double;
-                    variable.Value = (double)AlarmConstants.NormalStartValue;
+                    variable.Value = (double)AlarmDefines.NORMAL_START_VALUE;
                     break;
                 default:
+                    Debug.Fail($"Unexpected data type {dataTypeIdentifier}");
+                    variable.DataType = DataTypeIds.Int32;
+                    variable.Value = AlarmDefines.NORMAL_START_VALUE;
                     break;
             }
             variable.ValueRank = ValueRanks.Scalar;
@@ -105,9 +123,14 @@ namespace SampleCompany.NodeManagers.Alarms
         /// <summary>
         /// Create a mechanism to create a method
         /// </summary>
-        public static MethodState CreateMethod(NodeState parent, ushort nameSpaceIndex, string path, string name)
+        public static MethodState CreateMethod(
+            NodeState parent,
+            ushort nameSpaceIndex,
+            string path,
+            string name)
         {
-            var method = new MethodState(parent) {
+            var method = new MethodState(parent)
+            {
                 SymbolicName = name,
                 ReferenceTypeId = ReferenceTypeIds.HasComponent,
                 NodeId = new NodeId(path, nameSpaceIndex),
@@ -130,7 +153,8 @@ namespace SampleCompany.NodeManagers.Alarms
         public static void AddStartInputParameters(MethodState startMethod, ushort namespaceIndex)
         {
             // set input arguments
-            startMethod.InputArguments = new PropertyState<Argument[]>(startMethod) {
+            startMethod.InputArguments = new PropertyState<Argument[]>(startMethod)
+            {
                 NodeId = new NodeId(startMethod.BrowseName.Name + "InArgs", namespaceIndex),
                 BrowseName = BrowseNames.InputArguments
             };
@@ -140,10 +164,16 @@ namespace SampleCompany.NodeManagers.Alarms
             startMethod.InputArguments.DataType = DataTypeIds.Argument;
             startMethod.InputArguments.ValueRank = ValueRanks.OneDimension;
 
-            startMethod.InputArguments.Value = new Argument[]
-            {
-                        new Argument() { Name = "UInt32 value", Description = "Runtime of Alarms in seconds.",  DataType = DataTypeIds.UInt32, ValueRank = ValueRanks.Scalar }
-            };
+            startMethod.InputArguments.Value =
+            [
+                new Argument
+                {
+                    Name = "UInt32 value",
+                    Description = "Runtime of Alarms in seconds.",
+                    DataType = DataTypeIds.UInt32,
+                    ValueRank = ValueRanks.Scalar
+                }
+            ];
         }
     }
 }

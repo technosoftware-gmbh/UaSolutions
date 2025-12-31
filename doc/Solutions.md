@@ -2,7 +2,7 @@
 
 [TOC]
 
-## OPC UA Client Solution .NET
+## OPC UA Client
 
 ![](images/OPCUAClientNET.png)
 
@@ -12,7 +12,7 @@ The OPC UA Client .NET  offers a fast and easy access to the OPC Unified Archite
 
 The OPC UA Client .NET API defines classes which can be used to implement an OPC client capable to access OPC servers supporting different profiles with the same API. These classes manage client side state information; provide higher level abstractions for OPC tasks such as managing sessions and subscriptions or saving and restoring connection information for later use.
 
-## OPC UA Server Solution .NET
+## OPC UA Server
 
 ![](images/OPCUAServerNET.png)
 

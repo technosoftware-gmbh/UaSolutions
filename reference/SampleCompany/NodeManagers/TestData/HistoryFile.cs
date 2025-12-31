@@ -12,36 +12,26 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-using System.Text;
-using System.Reflection;
 using System.Threading;
-using System.Globalization;
-
 using Opc.Ua;
-using Technosoftware.UaServer;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
     /// <summary>
     /// Wraps a file which contains a list of historical values.
     /// </summary>
-    internal class HistoryFile : IHistoryDataSource
+    internal sealed class HistoryFile : IHistoryDataSource
     {
-        #region Constructors
         /// <summary>
         /// Creates a new file.
         /// </summary>
-        internal HistoryFile(object dataLock, List<HistoryEntry> entries)
+        internal HistoryFile(Lock dataLock, List<HistoryEntry> entries)
         {
             m_lock = dataLock;
             m_entries = entries;
         }
-        #endregion
 
-        #region IHistoryReader Members
         /// <summary>
         /// Returns the next value in the archive.
         /// </summary>
@@ -50,7 +40,11 @@ namespace SampleCompany.NodeManagers.TestData
         /// <param name="isReadModified">Whether to return modified data.</param>
         /// <param name="position">A index that must be passed to the NextRaw call. </param>
         /// <returns>The DataValue.</returns>
-        public DataValue FirstRaw(DateTime startTime, bool isForward, bool isReadModified, out int position)
+        public DataValue FirstRaw(
+            DateTime startTime,
+            bool isForward,
+            bool isReadModified,
+            out int position)
         {
             position = -1;
 
@@ -58,7 +52,7 @@ namespace SampleCompany.NodeManagers.TestData
             {
                 if (isForward)
                 {
-                    for (var ii = 0; ii < m_entries.Count; ii++)
+                    for (int ii = 0; ii < m_entries.Count; ii++)
                     {
                         if (m_entries[ii].Value.ServerTimestamp >= startTime)
                         {
@@ -69,7 +63,7 @@ namespace SampleCompany.NodeManagers.TestData
                 }
                 else
                 {
-                    for (var ii = m_entries.Count - 1; ii >= 0; ii--)
+                    for (int ii = m_entries.Count - 1; ii >= 0; ii--)
                     {
                         if (m_entries[ii].Value.ServerTimestamp <= startTime)
                         {
@@ -86,14 +80,13 @@ namespace SampleCompany.NodeManagers.TestData
 
                 HistoryEntry entry = m_entries[position];
 
-                var value = new DataValue {
+                return new DataValue
+                {
                     Value = entry.Value.Value,
                     ServerTimestamp = entry.Value.ServerTimestamp,
                     SourceTimestamp = entry.Value.SourceTimestamp,
                     StatusCode = entry.Value.StatusCode
                 };
-
-                return value;
             }
         }
 
@@ -105,7 +98,11 @@ namespace SampleCompany.NodeManagers.TestData
         /// <param name="isReadModified">Whether to return modified data.</param>
         /// <param name="position">An index previously returned by the reader.</param>
         /// <returns>The DataValue.</returns>
-        public DataValue NextRaw(DateTime lastTime, bool isForward, bool isReadModified, ref int position)
+        public DataValue NextRaw(
+            DateTime lastTime,
+            bool isForward,
+            bool isReadModified,
+            ref int position)
         {
             position++;
 
@@ -118,21 +115,17 @@ namespace SampleCompany.NodeManagers.TestData
 
                 HistoryEntry entry = m_entries[position];
 
-                var value = new DataValue {
+                return new DataValue
+                {
                     Value = entry.Value.Value,
                     ServerTimestamp = entry.Value.ServerTimestamp,
                     SourceTimestamp = entry.Value.SourceTimestamp,
                     StatusCode = entry.Value.StatusCode
                 };
-
-                return value;
             }
         }
-        #endregion
 
-        #region Private Fields
-        private readonly object m_lock = new object();
-        private List<HistoryEntry> m_entries;
-        #endregion
+        private readonly Lock m_lock = new();
+        private readonly List<HistoryEntry> m_entries;
     }
 }

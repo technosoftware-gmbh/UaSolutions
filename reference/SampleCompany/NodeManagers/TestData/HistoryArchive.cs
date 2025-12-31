@@ -12,47 +12,32 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
-using System.Xml;
-using System.IO;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
 {
     /// <summary>
     /// A class that provides access to archived data.
     /// </summary>
-    internal class HistoryArchive : IDisposable
+    internal sealed class HistoryArchive : IDisposable
     {
-        #region IDisposable Members
+        public HistoryArchive(ITelemetryContext telemetry)
+        {
+            m_logger = telemetry.CreateLogger<HistoryArchive>();
+        }
+
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
+            m_updateTimer?.Dispose();
+            m_updateTimer = null;
         }
 
-        /// <summary>
-        /// An overrideable version of the Dispose.
-        /// </summary>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (m_updateTimer != null)
-                {
-                    m_updateTimer.Dispose();
-                    m_updateTimer = null;
-                }
-            }
-        }
-        #endregion
-
-        #region Public Interface
         /// <summary>
         /// Returns an object that can be used to browse the archive.
         /// </summary>
@@ -65,9 +50,7 @@ namespace SampleCompany.NodeManagers.TestData
                     return null;
                 }
 
-                HistoryRecord record = null;
-
-                if (!m_records.TryGetValue(nodeId, out record))
+                if (!m_records.TryGetValue(nodeId, out HistoryRecord record))
                 {
                     return null;
                 }
@@ -83,20 +66,20 @@ namespace SampleCompany.NodeManagers.TestData
         {
             lock (m_lock)
             {
-                var record = new HistoryRecord {
-                    RawData = new List<HistoryEntry>(),
+                var record = new HistoryRecord
+                {
+                    RawData = [],
                     Historizing = true,
                     DataType = dataType
                 };
 
                 DateTime now = DateTime.UtcNow;
 
-                for (var ii = 1000; ii >= 0; ii--)
+                for (int ii = 1000; ii >= 0; ii--)
                 {
-                    var entry = new HistoryEntry {
-                        Value = new DataValue {
-                            ServerTimestamp = now.AddSeconds(-(ii * 10))
-                        }
+                    var entry = new HistoryEntry
+                    {
+                        Value = new DataValue { ServerTimestamp = now.AddSeconds(-(ii * 10)) }
                     };
                     entry.Value.SourceTimestamp = entry.Value.ServerTimestamp.AddMilliseconds(1234);
                     entry.IsModified = false;
@@ -104,31 +87,21 @@ namespace SampleCompany.NodeManagers.TestData
                     switch (dataType)
                     {
                         case BuiltInType.Int32:
-                        {
                             entry.Value.Value = ii;
                             break;
-                        }
                     }
 
                     record.RawData.Add(entry);
                 }
 
-                if (m_records == null)
-                {
-                    m_records = new Dictionary<NodeId, HistoryRecord>();
-                }
+                m_records ??= [];
 
                 m_records[nodeId] = record;
 
-                if (m_updateTimer == null)
-                {
-                    m_updateTimer = new Timer(OnUpdate, null, 10000, 10000);
-                }
+                m_updateTimer ??= new Timer(OnUpdate, null, 10000, 10000);
             }
         }
-        #endregion
 
-        #region Private Methods
         /// <summary>
         /// Periodically adds new values into the archive.
         /// </summary>
@@ -147,22 +120,20 @@ namespace SampleCompany.NodeManagers.TestData
                             continue;
                         }
 
-                        var entry = new HistoryEntry {
-                            Value = new DataValue {
-                                ServerTimestamp = now
-                            }
+                        var entry = new HistoryEntry
+                        {
+                            Value = new DataValue { ServerTimestamp = now }
                         };
-                        entry.Value.SourceTimestamp = entry.Value.ServerTimestamp.AddMilliseconds(-4567);
+                        entry.Value.SourceTimestamp = entry.Value.ServerTimestamp
+                            .AddMilliseconds(-4567);
                         entry.IsModified = false;
 
                         switch (record.DataType)
                         {
                             case BuiltInType.Int32:
-                            {
-                                var lastValue = (int)record.RawData[record.RawData.Count - 1].Value.Value;
+                                int lastValue = (int)record.RawData[^1].Value.Value;
                                 entry.Value.Value = lastValue + 1;
                                 break;
-                            }
                         }
 
                         record.RawData.Add(entry);
@@ -171,38 +142,32 @@ namespace SampleCompany.NodeManagers.TestData
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Unexpected error updating history.");
+                m_logger.LogError(e, "Unexpected error updating history.");
             }
         }
-        #endregion
 
-        #region Private Fields
-        private readonly object m_lock = new object();
+        private readonly Lock m_lock = new();
         private Timer m_updateTimer;
         private Dictionary<NodeId, HistoryRecord> m_records;
-        #endregion
+        private readonly ILogger m_logger;
     }
 
-    #region HistoryEntry Class
     /// <summary>
     /// A single entry in the archive.
     /// </summary>
-    internal class HistoryEntry
+    internal sealed class HistoryEntry
     {
         public DataValue Value;
         public bool IsModified;
     }
-    #endregion
 
-    #region HistoryRecord Class
     /// <summary>
     /// A record in the archive.
     /// </summary>
-    internal class HistoryRecord
+    internal sealed class HistoryRecord
     {
         public List<HistoryEntry> RawData;
         public bool Historizing;
         public BuiltInType DataType;
     }
-    #endregion
 }

@@ -11,11 +11,8 @@
 
 #region Using Directives
 using System;
-
 using Opc.Ua;
-#endregion
-
-#pragma warning disable CS1591
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.Alarms
 {
@@ -30,9 +27,20 @@ namespace SampleCompany.NodeManagers.Alarms
             Type controllerType,
             int interval,
             bool optional = true,
-            double maxShelveTime = AlarmConstants.NormalMaxTimeShelved,
-            bool create = true) :
-            base(alarmNodeManager, parent, trigger, name, alarmConditionType, controllerType, interval, optional, maxShelveTime, false)
+            double maxShelveTime = AlarmDefines.NORMAL_MAX_TIME_SHELVED,
+            bool create = true)
+            : base(
+                alarmNodeManager.ServerData.Telemetry.CreateLogger<OffNormalAlarmTypeHolder>(),
+                alarmNodeManager,
+                parent,
+                trigger,
+                name,
+                alarmConditionType,
+                controllerType,
+                interval,
+                optional,
+                maxShelveTime,
+                false)
         {
             if (create)
             {
@@ -43,12 +51,9 @@ namespace SampleCompany.NodeManagers.Alarms
         public new void Initialize(
             uint alarmTypeIdentifier,
             string name,
-            double maxTimeShelved = AlarmConstants.NormalMaxTimeShelved)
+            double maxTimeShelved = AlarmDefines.NORMAL_MAX_TIME_SHELVED)
         {
-            if (alarm_ == null)
-            {
-                alarm_ = new OffNormalAlarmState(parent_);
-            }
+            m_alarm ??= new OffNormalAlarmState(m_parent);
 
             OffNormalAlarmState alarm = GetAlarm();
 
@@ -57,14 +62,9 @@ namespace SampleCompany.NodeManagers.Alarms
             alarm.NormalState.Value = new NodeId();
         }
 
-        #region Helpers
-
         private OffNormalAlarmState GetAlarm()
         {
-            return (OffNormalAlarmState)alarm_;
+            return (OffNormalAlarmState)m_alarm;
         }
-
-        #endregion
-
     }
 }

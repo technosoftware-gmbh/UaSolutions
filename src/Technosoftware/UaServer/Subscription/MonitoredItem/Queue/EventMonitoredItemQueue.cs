@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -16,12 +12,11 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Linq;
-
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion
+#endregion Using Directives
 
-namespace Technosoftware.UaServer.Subscriptions
+namespace Technosoftware.UaServer
 {
     /// <summary>
     /// Provides a queue for events.
@@ -33,21 +28,24 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <summary>
         /// Creates an empty queue.
         /// </summary>
-        public EventMonitoredItemQueue(bool createDurable, uint monitoredItemId)
+        public EventMonitoredItemQueue(bool createDurable, uint monitoredItemId, ITelemetryContext telemetry)
         {
+            m_logger = telemetry.CreateLogger<DataChangeMonitoredItemQueue>();
             if (createDurable)
             {
-                Utils.LogError("EventMonitoredItemQueue does not support durable queues, please provide full implementation of IDurableMonitoredItemQueue using Server.CreateDurableMonitoredItemQueueFactory to supply own factory");
-                throw new ArgumentException("DataChangeMonitoredItemQueue does not support durable Queues", nameof(createDurable));
+                m_logger.LogError(
+                    "EventMonitoredItemQueue does not support durable queues, please provide full implementation of IDurableMonitoredItemQueue using Server.CreateDurableMonitoredItemQueueFactory to supply own factory");
+                throw new ArgumentException(
+                    "DataChangeMonitoredItemQueue does not support durable Queues",
+                    nameof(createDurable));
             }
             m_events = [];
-            m_monitoredItemId = monitoredItemId;
+            MonitoredItemId = monitoredItemId;
             QueueSize = 0;
         }
 
-        #region Public Methods
         /// <inheritdoc/>
-        public uint MonitoredItemId => m_monitoredItemId;
+        public uint MonitoredItemId { get; }
 
         /// <inheritdoc/>
         public virtual bool IsDurable => false;
@@ -62,9 +60,9 @@ namespace Technosoftware.UaServer.Subscriptions
         public bool Dequeue(out EventFieldList value)
         {
             value = null;
-            if (m_events.Any())
+            if (m_events.Count != 0)
             {
-                value = m_events.First();
+                value = m_events[0];
                 m_events.RemoveAt(0);
                 return true;
             }
@@ -72,9 +70,17 @@ namespace Technosoftware.UaServer.Subscriptions
         }
 
         /// <inheritdoc/>
-        public virtual void Dispose()
+        public void Dispose()
         {
-            //Only needed for unmanaged resources
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// An overrideable version of the Dispose.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
         }
 
         /// <inheritdoc/>
@@ -82,13 +88,15 @@ namespace Technosoftware.UaServer.Subscriptions
         {
             if (QueueSize == 0)
             {
-                throw new ServiceResultException(StatusCodes.BadInternalError, "Error queueing Event. Queue size is set to 0");
+                throw new ServiceResultException(
+                    StatusCodes.BadInternalError,
+                    "Error queueing Event. Queue size is set to 0");
             }
 
             //Discard oldest
             if (m_events.Count == QueueSize)
             {
-                Dequeue(out var _);
+                Dequeue(out EventFieldList _);
             }
 
             m_events.Add(value);
@@ -97,16 +105,17 @@ namespace Technosoftware.UaServer.Subscriptions
         /// <inheritdoc/>
         public bool IsEventContainedInQueue(IFilterTarget instance)
         {
-            int maxCount = m_events.Count > kMaxNoOfEntriesCheckedForDuplicateEvents ? (int)kMaxNoOfEntriesCheckedForDuplicateEvents : m_events.Count;
+            int maxCount =
+                m_events.Count > kMaxNoOfEntriesCheckedForDuplicateEvents
+                    ? (int)kMaxNoOfEntriesCheckedForDuplicateEvents
+                    : m_events.Count;
 
             for (int i = 0; i < maxCount; i++)
             {
-                if (m_events[i] is EventFieldList processedEvent)
+                if (m_events[i] is EventFieldList processedEvent &&
+                    ReferenceEquals(instance, processedEvent.Handle))
                 {
-                    if (ReferenceEquals(instance, processedEvent.Handle))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
             return false;
@@ -129,15 +138,15 @@ namespace Technosoftware.UaServer.Subscriptions
                 }
             }
         }
-        #endregion
 
-        #region Private Fields
         /// <summary>
         /// the contained in the queue
         /// </summary>
         protected List<EventFieldList> m_events;
-        private readonly uint m_monitoredItemId;
-        #endregion
-    }
 
+        /// <summary>
+        /// The logger to use here and in derived classes
+        /// </summary>
+        protected ILogger m_logger;
+    }
 }

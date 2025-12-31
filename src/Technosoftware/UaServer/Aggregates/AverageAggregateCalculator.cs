@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -14,18 +10,16 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
 using System;
 using System.Collections.Generic;
-
+using System.Diagnostics;
 using Opc.Ua;
+#endregion Using Directives
 
-#endregion
-
-namespace Technosoftware.UaServer.Aggregates
+namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Calculates the value of an aggregate. 
+    /// Calculates the value of an aggregate.
     /// </summary>
     public class AverageAggregateCalculator : AggregateCalculator
     {
@@ -39,19 +33,20 @@ namespace Technosoftware.UaServer.Aggregates
         /// <param name="processingInterval">The processing interval.</param>
         /// <param name="stepped">Whether to use stepped interpolation.</param>
         /// <param name="configuration">The aggregate configuration.</param>
+        /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
         public AverageAggregateCalculator(
             NodeId aggregateId,
             DateTime startTime,
             DateTime endTime,
             double processingInterval,
             bool stepped,
-            AggregateConfiguration configuration)
-        :
-            base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
+            AggregateConfiguration configuration,
+            ITelemetryContext telemetry)
+            : base(aggregateId, startTime, endTime, processingInterval, stepped, configuration, telemetry)
         {
-            SetPartialBit = aggregateId != Opc.Ua.ObjectIds.AggregateFunction_Average;
+            SetPartialBit = aggregateId != ObjectIds.AggregateFunction_Average;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Overridden Methods
         /// <summary>
@@ -61,40 +56,27 @@ namespace Technosoftware.UaServer.Aggregates
         {
             uint? id = AggregateId.Identifier as uint?;
 
-            if (id != null)
+            if (id == null)
             {
-                switch (id.Value)
-                {
-                    case Objects.AggregateFunction_Average:
-                    {
-                        return ComputeAverage(slice);
-                    }
-
-                    case Objects.AggregateFunction_TimeAverage:
-                    {
-                        return ComputeTimeAverage(slice, false, 1);
-                    }
-
-                    case Objects.AggregateFunction_Total:
-                    {
-                        return ComputeTimeAverage(slice, false, 2);
-                    }
-
-                    case Objects.AggregateFunction_TimeAverage2:
-                    {
-                        return ComputeTimeAverage(slice, true, 1);
-                    }
-
-                    case Objects.AggregateFunction_Total2:
-                    {
-                        return ComputeTimeAverage(slice, true, 2);
-                    }
-                }
+                return base.ComputeValue(slice);
             }
-
-            return base.ComputeValue(slice);
+            switch (id.Value)
+            {
+                case Objects.AggregateFunction_Average:
+                    return ComputeAverage(slice);
+                case Objects.AggregateFunction_TimeAverage:
+                    return ComputeTimeAverage(slice, false, 1);
+                case Objects.AggregateFunction_Total:
+                    return ComputeTimeAverage(slice, false, 2);
+                case Objects.AggregateFunction_TimeAverage2:
+                    return ComputeTimeAverage(slice, true, 1);
+                case Objects.AggregateFunction_Total2:
+                    return ComputeTimeAverage(slice, true, 2);
+                default:
+                    return base.ComputeValue(slice);
+            }
         }
-        #endregion
+        #endregion Overridden Methods
 
         #region Protected Methods
         /// <summary>
@@ -142,10 +124,12 @@ namespace Technosoftware.UaServer.Aggregates
             double result = total / count;
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(result, TypeInfo.Scalars.Double);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(result, TypeInfo.Scalars.Double),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
             value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
             value.StatusCode = GetValueBasedStatusCode(slice, values, value.StatusCode);
 
@@ -159,8 +143,7 @@ namespace Technosoftware.UaServer.Aggregates
         protected DataValue ComputeTimeAverage(TimeSlice slice, bool useSimpleBounds, int valueType)
         {
             // get the values in the slice.
-            List<DataValue> values = null;
-
+            List<DataValue> values;
             if (useSimpleBounds)
             {
                 values = GetValuesWithSimpleBounds(slice);
@@ -211,16 +194,23 @@ namespace Technosoftware.UaServer.Aggregates
             switch (valueType)
             {
                 case 1:
-                { result = total / totalDuration; break; }
+                    result = total / totalDuration;
+                    break;
                 case 2:
-                { result = total; break; }
+                    result = total;
+                    break;
+                default:
+                    Debug.Fail($"Unexpected value type {valueType}");
+                    break;
             }
 
             // set the timestamp and status.
-            DataValue value = new DataValue();
-            value.WrappedValue = new Variant(result, TypeInfo.Scalars.Double);
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                WrappedValue = new Variant(result, TypeInfo.Scalars.Double),
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
 
             if (useSimpleBounds)
             {
@@ -241,6 +231,6 @@ namespace Technosoftware.UaServer.Aggregates
             // return result.
             return value;
         }
-        #endregion
+        #endregion Protected Methods
     }
 }

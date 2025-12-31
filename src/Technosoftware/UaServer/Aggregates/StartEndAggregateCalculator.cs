@@ -3,10 +3,6 @@
 // Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
-// The Software is subject to the Technosoftware GmbH Software License 
-// Agreement, which can be found here:
-// https://technosoftware.com/documents/Source_License_Agreement.pdf
-//
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
@@ -14,18 +10,15 @@
 #endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-
 using System;
 using System.Collections.Generic;
-
 using Opc.Ua;
+#endregion Using Directives
 
-#endregion
-
-namespace Technosoftware.UaServer.Aggregates
+namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Calculates the value of an aggregate. 
+    /// Calculates the value of an aggregate.
     /// </summary>
     public class StartEndAggregateCalculator : AggregateCalculator
     {
@@ -39,19 +32,20 @@ namespace Technosoftware.UaServer.Aggregates
         /// <param name="processingInterval">The processing interval.</param>
         /// <param name="stepped">Whether to use stepped interpolation.</param>
         /// <param name="configuration">The aggregate configuration.</param>
+        /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
         public StartEndAggregateCalculator(
             NodeId aggregateId,
             DateTime startTime,
             DateTime endTime,
             double processingInterval,
             bool stepped,
-            AggregateConfiguration configuration)
-        :
-            base(aggregateId, startTime, endTime, processingInterval, stepped, configuration)
+            AggregateConfiguration configuration,
+            ITelemetryContext telemetry)
+            : base(aggregateId, startTime, endTime, processingInterval, stepped, configuration, telemetry)
         {
             SetPartialBit = true;
         }
-        #endregion
+        #endregion Constructors, Destructor, Initialization
 
         #region Overridden Methods
         /// <summary>
@@ -61,45 +55,29 @@ namespace Technosoftware.UaServer.Aggregates
         {
             uint? id = AggregateId.Identifier as uint?;
 
-            if (id != null)
+            if (id == null)
             {
-                switch (id.Value)
-                {
-                    case Objects.AggregateFunction_Start:
-                    {
-                        return ComputeStartEnd(slice, false);
-                    }
-
-                    case Objects.AggregateFunction_End:
-                    {
-                        return ComputeStartEnd(slice, true);
-                    }
-
-                    case Objects.AggregateFunction_Delta:
-                    {
-                        return ComputeDelta(slice);
-                    }
-
-                    case Objects.AggregateFunction_StartBound:
-                    {
-                        return ComputeStartEnd2(slice, false);
-                    }
-
-                    case Objects.AggregateFunction_EndBound:
-                    {
-                        return ComputeStartEnd2(slice, true);
-                    }
-
-                    case Objects.AggregateFunction_DeltaBounds:
-                    {
-                        return ComputeDelta2(slice);
-                    }
-                }
+                return base.ComputeValue(slice);
             }
-
-            return base.ComputeValue(slice);
+            switch (id.Value)
+            {
+                case Objects.AggregateFunction_Start:
+                    return ComputeStartEnd(slice, false);
+                case Objects.AggregateFunction_End:
+                    return ComputeStartEnd(slice, true);
+                case Objects.AggregateFunction_Delta:
+                    return ComputeDelta(slice);
+                case Objects.AggregateFunction_StartBound:
+                    return ComputeStartEnd2(slice, false);
+                case Objects.AggregateFunction_EndBound:
+                    return ComputeStartEnd2(slice, true);
+                case Objects.AggregateFunction_DeltaBounds:
+                    return ComputeDelta2(slice);
+                default:
+                    return base.ComputeValue(slice);
+            }
         }
-        #endregion
+        #endregion Overridden Methods
 
         #region Protected Methods
         /// <summary>
@@ -122,11 +100,7 @@ namespace Technosoftware.UaServer.Aggregates
                 return values[0];
             }
 
-            // return end value.
-            else
-            {
-                return values[values.Count - 1];
-            }
+            return values[^1];
         }
 
         /// <summary>
@@ -143,15 +117,14 @@ namespace Technosoftware.UaServer.Aggregates
                 return GetNoDataValue(slice);
             }
 
-            // find start value.
-            DataValue start = null;
             double startValue = double.NaN;
             TypeInfo originalType = null;
             bool badDataSkipped = false;
 
             for (int ii = 0; ii < values.Count; ii++)
             {
-                start = values[ii];
+                // find start value.
+                DataValue start = values[ii];
 
                 if (IsGood(start))
                 {
@@ -167,17 +140,15 @@ namespace Technosoftware.UaServer.Aggregates
                     }
                 }
 
-                start = null;
                 badDataSkipped = true;
             }
 
-            // find end value.
-            DataValue end = null;
             double endValue = double.NaN;
 
             for (int ii = values.Count - 1; ii >= 0; ii--)
             {
-                end = values[ii];
+                // find end value.
+                DataValue end = values[ii];
 
                 if (IsGood(end))
                 {
@@ -194,7 +165,6 @@ namespace Technosoftware.UaServer.Aggregates
                     break;
                 }
 
-                end = null;
                 badDataSkipped = true;
             }
 
@@ -204,9 +174,11 @@ namespace Technosoftware.UaServer.Aggregates
                 return GetNoDataValue(slice);
             }
 
-            DataValue value = new DataValue();
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
 
             // set status code.
             if (badDataSkipped)
@@ -221,7 +193,10 @@ namespace Technosoftware.UaServer.Aggregates
 
             if (originalType != null && originalType.BuiltInType != BuiltInType.Double)
             {
-                object delta2 = TypeInfo.Cast(delta, TypeInfo.Scalars.Double, originalType.BuiltInType);
+                object delta2 = TypeInfo.Cast(
+                    delta,
+                    TypeInfo.Scalars.Double,
+                    originalType.BuiltInType);
                 value.WrappedValue = new Variant(delta2, originalType);
             }
             else
@@ -247,18 +222,17 @@ namespace Technosoftware.UaServer.Aggregates
                 return GetNoDataValue(slice);
             }
 
-            DataValue value = null;
+            DataValue value;
 
             // return start bound.
             if ((!returnEnd && !TimeFlowsBackward) || (returnEnd && TimeFlowsBackward))
             {
                 value = values[0];
             }
-
             // return end bound.
             else
             {
-                value = values[values.Count - 1];
+                value = values[^1];
             }
 
             if (!IsGood(value))
@@ -295,7 +269,7 @@ namespace Technosoftware.UaServer.Aggregates
             }
 
             DataValue start = values[0];
-            DataValue end = values[values.Count - 1];
+            DataValue end = values[^1];
 
             // check for bad bounds.
             if (!IsGood(start) || !IsGood(end))
@@ -303,10 +277,10 @@ namespace Technosoftware.UaServer.Aggregates
                 return GetNoDataValue(slice);
             }
 
-            // convert to doubles.
-            double startValue = 0;
             TypeInfo originalType = null;
 
+            // convert to doubles.
+            double startValue;
             try
             {
                 startValue = CastToDouble(start);
@@ -317,8 +291,7 @@ namespace Technosoftware.UaServer.Aggregates
                 startValue = double.NaN;
             }
 
-            double endValue = 0;
-
+            double endValue;
             try
             {
                 endValue = CastToDouble(end);
@@ -334,9 +307,11 @@ namespace Technosoftware.UaServer.Aggregates
                 return GetNoDataValue(slice);
             }
 
-            DataValue value = new DataValue();
-            value.SourceTimestamp = GetTimestamp(slice);
-            value.ServerTimestamp = GetTimestamp(slice);
+            var value = new DataValue
+            {
+                SourceTimestamp = GetTimestamp(slice),
+                ServerTimestamp = GetTimestamp(slice)
+            };
 
             if (!IsGood(start) || !IsGood(end))
             {
@@ -350,7 +325,10 @@ namespace Technosoftware.UaServer.Aggregates
 
             if (originalType != null && originalType.BuiltInType != BuiltInType.Double)
             {
-                object delta2 = TypeInfo.Cast(delta, TypeInfo.Scalars.Double, originalType.BuiltInType);
+                object delta2 = TypeInfo.Cast(
+                    delta,
+                    TypeInfo.Scalars.Double,
+                    originalType.BuiltInType);
                 value.WrappedValue = new Variant(delta2, originalType);
             }
             else
@@ -361,6 +339,6 @@ namespace Technosoftware.UaServer.Aggregates
             // return result.
             return value;
         }
-        #endregion
+        #endregion Protected Methods
     }
 }

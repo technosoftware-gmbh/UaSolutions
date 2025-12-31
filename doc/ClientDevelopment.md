@@ -2,11 +2,17 @@
 
 [TOC]
 
-The OPC UA Client .NET  offers a fast and easy access to the OPC Unified Architecture (UA) technology. Develop OPC UA compliant Clients with C# targeting .NET 9.0 and .NET 8.0. For backward compatibility we also provide .NET 4.8 and .NET 4.7.2 support.
+## OPC UA Client .NET
 
-.NET 9.0 and .NET 8.0 allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
+The **OPC UA Client .NET** offers a fast and easy access to the OPC Unified Architecture (UA) technology. 
+
+Develop OPC UA compliant Clients with C# targeting .NET 10.0, .NET 9.0 and .NET 8.0. For backward compatibility we also provide .NET 4.8 and .NET 4.7.2 support.
+
+.NET 10.0, .NET 9.0 and .NET 8.0 allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
 
 The **OPC UA Client .NET API** defines classes which can be used to implement an OPC client capable to access OPC servers supporting different profiles with the same API. These classes manage client side state information; provide higher level abstractions for OPC tasks such as managing sessions and subscriptions or saving and restoring connection information for later use.
+
+The **OPC UA Client .NET** is based on the OPC Foundation stack with several enhancements to make the development smooth and efficient. While we use the **OPC UA Client .NET** mainly in our own services it is also possible to use it in your own development. 
 
 **Document Control**
 
@@ -16,6 +22,7 @@ The **OPC UA Client .NET API** defines classes which can be used to implement an
 | 3.3         | 02-FEB-2024 | Updated to new sample client         |
 | 3.4         | 10-SEP-2025 | Updated to OPC UA Core 1.5.376.244   |
 | 4.0         | 23-SEP-2025 | Initial version based on version 4.0 |
+| 5.0 RC      | 29-DEC-2025 | Work in Progress                     |
 
 **Purpose and audience of document**
 
@@ -190,14 +197,11 @@ The DLLs are delivered as local NuGet Packages. The OPC UA Client .NET uses the 
 
 | **Name**                                       | **Description**                                                                                    |
 |:-----------------------------------------------|:---------------------------------------------------------------------------------------------------|
-| **Technosoftware.UaSolutions.UaCore**           | The OPC UA Core Class Library.                                                                     |
-| **Technosoftware.UaSolutions.UaBindings.Https** | The OPC UA Https Binding Library.                                                                  |
-| **Technosoftware.UaSolutions.UaConfiguration**  | Contains configuration related classes like, e.g. ApplicationInstance.                             |
-| **Technosoftware.UaSolutions.UaClient**         | The OPC UA Client Class library containing the classes and methods usable for server development.  |
-
-### Directory Structure
-
-We provide an online help for the current version: [OPC UA Solution NET Online Help](https://technosoftware.com/help/UaSolutions/40/) which also contains updated information about the directory structure.
+| **Technosoftware.UaSolutions.UaTypes**          | The OPC UA Types Class Library.                                                                   |
+| **Technosoftware.UaSolutions.UaCore**           | The OPC UA Core Class Library.                                                                    |
+| **Technosoftware.UaSolutions.UaBindings.Https** | The OPC UA Https Binding Library.                                                                 |
+| **Technosoftware.UaSolutions.UaConfiguration**  | Contains configuration related classes like, e.g. ApplicationInstance.                            |
+| **Technosoftware.UaSolutions.UaClient**         | The OPC UA Client Class library containing the classes and methods usable for server development. |
 
 ### Solution
 
