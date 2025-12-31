@@ -31,7 +31,6 @@
 #### Client
 
 - All sync methods are now marked as deprecated
-- DataTypeDictionaries moved into the ComplexTypes Package. If the helper methods of the Session were used we recommend to use the complex type system as a replacement that can handle all servers from OPC UA Spec 1.0 - 1.0.05.
 - NodeCache now has an async interface (to have access to the ITypeTable interface use the .TypeTree property or AsNodeTable method 
 - ApplicationInstance Methods Returning a task have Async suffixes
 
