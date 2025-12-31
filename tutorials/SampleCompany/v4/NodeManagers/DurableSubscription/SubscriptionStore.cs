@@ -80,10 +80,8 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 if (File.Exists(filePath))
                 {
                     string json = File.ReadAllText(filePath);
-                    List<IUaStoredSubscription> result = JsonConvert
-                        .DeserializeObject<List<IUaStoredSubscription>>(
-                            json,
-                            s_settings);
+                    List<IUaStoredSubscription> result =
+                        JsonConvert.DeserializeObject<List<IUaStoredSubscription>>(json, s_settings);
 
                     File.Delete(filePath);
 

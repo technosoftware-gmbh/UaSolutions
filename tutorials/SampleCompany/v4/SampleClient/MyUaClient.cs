@@ -23,7 +23,9 @@ using Technosoftware.UaClient;
 
 namespace SampleCompany.SampleClient
 {
-    /// <summary>The UA client sample functionality.</summary>
+    /// <summary>
+    /// OPC UA Client with examples of basic functionality.
+    /// </summary>
     public class MyUaClient : IMyUaClient, IDisposable
     {
         #region Constructors, Destructor, Initialization

@@ -102,7 +102,6 @@ namespace SampleCompany.SampleServer
 
                 // load the application configuration.
                 await Application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
-
             }
             catch (Exception ex)
             {
@@ -269,8 +268,9 @@ namespace SampleCompany.SampleServer
         /// </summary>
         private void OnEventStatus(object sender, SessionEventArgs eventArgs)
         {
+            Session session = (Session)sender;
+
             m_lastEventTime = DateTime.UtcNow;
-            var session = sender as Session;
             PrintSessionStatus(session, eventArgs.Reason.ToString());
         }
         #endregion Event Handlers

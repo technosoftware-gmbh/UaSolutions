@@ -32,18 +32,18 @@ namespace SampleCompany.SampleClient
     /// <summary>
     /// Sample Session calls based on the sample server node model.
     /// </summary>
-    public class ClientSamples
+    public class ClientFunctions
     {
         private const int kMaxSearchDepth = 128;
 
-        public ClientSamples(
+        public ClientFunctions(
             ITelemetryContext telemetry,
             Action<IList, IList> validateResponse,
             ManualResetEvent quitEvent = null,
             bool verbose = false)
         {
             m_telemetry = telemetry;
-            m_logger = telemetry.CreateLogger<ClientSamples>();
+            m_logger = telemetry.CreateLogger<ClientFunctions>();
             m_validateResponse = validateResponse ?? ClientBase.ValidateResponse;
             m_quitEvent = quitEvent;
             m_verbose = verbose;

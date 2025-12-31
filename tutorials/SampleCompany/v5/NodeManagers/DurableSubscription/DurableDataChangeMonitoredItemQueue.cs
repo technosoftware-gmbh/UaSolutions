@@ -22,13 +22,18 @@ namespace SampleCompany.NodeManagers.DurableSubscription
 {
     public class DurableDataChangeMonitoredItemQueue : IUaDataChangeMonitoredItemQueue
     {
+        #region Constants
         private const uint kBatchSize = 1000;
+        #endregion Constants
 
+        #region Events
         /// <summary>
         /// Invoked when the queue is disposed
         /// </summary>
         public event EventHandler Disposed;
+        #endregion Events
 
+        #region Constructors
         /// <summary>
         /// Creates an empty queue.
         /// </summary>
@@ -64,7 +69,29 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             QueueSize = queue.QueueSize;
             ItemsInQueue = queue.ItemsInQueue;
         }
+        #endregion Constructors
 
+        #region IDisposable Members
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// An overrideable version of the Dispose.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Disposed?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        #endregion IDisposable Members
+
+        #region Public Methods
         /// <inheritdoc/>
         public uint MonitoredItemId { get; }
 
@@ -120,43 +147,6 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             m_enqueueBatch.Values.Add((value, m_queueErrors ? error : null));
             ItemsInQueue++;
             HandleEnqueueBatching();
-        }
-
-        /// <summary>
-        /// persists batches if needed
-        /// </summary>
-        private void HandleEnqueueBatching()
-        {
-            // Store the batch if it is full
-            if (m_enqueueBatch.Values.Count >= kBatchSize)
-            {
-                // Special case: if the enqueue and dequeue batch are the same only one batch exists, so no storing is needed
-                if (m_dequeueBatch == m_enqueueBatch)
-                {
-                    m_dequeueBatch = new DataChangeBatch(
-                        m_enqueueBatch.Values,
-                        kBatchSize,
-                        MonitoredItemId);
-                    m_enqueueBatch = new DataChangeBatch([], kBatchSize, MonitoredItemId);
-                }
-                // persist the batch
-                else
-                {
-                    m_logger.LogDebug("Storing batch for monitored item {MonitoredItemId}", MonitoredItemId);
-
-                    var batchToStore = new DataChangeBatch(
-                        m_enqueueBatch.Values,
-                        kBatchSize,
-                        MonitoredItemId);
-                    m_dataChangeBatches.Add(batchToStore);
-                    if (m_dataChangeBatches.Count > 1)
-                    {
-                        m_batchPersistor.RequestBatchPersist(m_dataChangeBatches[^2]);
-                    }
-
-                    m_enqueueBatch = new DataChangeBatch([], kBatchSize, MonitoredItemId);
-                }
-            }
         }
 
         /// <inheritdoc/>
@@ -257,6 +247,57 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             return true;
         }
 
+        /// <inheritdoc/>
+        public DataValue PeekOldestValue()
+        {
+            // check for empty queue.
+            if (ItemsInQueue == 0)
+            {
+                return null;
+            }
+
+            return m_dequeueBatch.Values[0].Item1;
+        }
+        #endregion Public Methods
+
+        #region Private Methods
+        /// <summary>
+        /// persists batches if needed
+        /// </summary>
+        private void HandleEnqueueBatching()
+        {
+            // Store the batch if it is full
+            if (m_enqueueBatch.Values.Count >= kBatchSize)
+            {
+                // Special case: if the enqueue and dequeue batch are the same only one batch exists, so no storing is needed
+                if (m_dequeueBatch == m_enqueueBatch)
+                {
+                    m_dequeueBatch = new DataChangeBatch(
+                        m_enqueueBatch.Values,
+                        kBatchSize,
+                        MonitoredItemId);
+                    m_enqueueBatch = new DataChangeBatch([], kBatchSize, MonitoredItemId);
+                }
+                // persist the batch
+                else
+                {
+                    m_logger.LogDebug("Storing batch for monitored item {MonitoredItemId}", MonitoredItemId);
+
+                    var batchToStore = new DataChangeBatch(
+                        m_enqueueBatch.Values,
+                        kBatchSize,
+                        MonitoredItemId);
+                    m_dataChangeBatches.Add(batchToStore);
+                    if (m_dataChangeBatches.Count > 1)
+                    {
+                        m_batchPersistor.RequestBatchPersist(m_dataChangeBatches[^2]);
+                    }
+
+                    m_enqueueBatch = new DataChangeBatch([], kBatchSize, MonitoredItemId);
+                }
+            }
+        }
+
         /// <summary>
         /// Restores batches if needed
         /// </summary>
@@ -289,43 +330,16 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 }
             }
         }
+        #endregion Private Methods
 
-        /// <inheritdoc/>
-        public DataValue PeekOldestValue()
-        {
-            // check for empty queue.
-            if (ItemsInQueue == 0)
-            {
-                return null;
-            }
-
-            return m_dequeueBatch.Values[0].Item1;
-        }
-
-        /// <inheritdoc/>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// An overrideable version of the Dispose.
-        /// </summary>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                Disposed?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
+        #region Private Fields
         private DataChangeBatch m_enqueueBatch;
         private readonly List<DataChangeBatch> m_dataChangeBatches = [];
         private DataChangeBatch m_dequeueBatch;
         private bool m_queueErrors;
         private readonly IBatchPersistor m_batchPersistor;
         private readonly ILogger m_logger;
+        #endregion Private Fields
     }
 
     /// <summary>

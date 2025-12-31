@@ -10,19 +10,7 @@
 #endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
+using System;
 #endregion Using Directives
 
-namespace SampleCompany.NodeManagers.Simulation
-{
-    /// <summary>
-    /// Defines constants for namespaces used by the servers.
-    /// </summary>
-    public static class Namespaces
-    {
-        /// <summary>
-        /// The namespace for the nodes provided by the Simulation server.
-        /// </summary>
-        public const string SimulationServer
-            = "http://samplecompany.com/SampleServer/NodeManagers/Simulation";
-    }
-}
+[assembly: CLSCompliant(false)]

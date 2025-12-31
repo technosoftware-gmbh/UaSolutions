@@ -28,6 +28,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
     /// <inheritdoc/>
     public class BatchPersistor : IBatchPersistor
     {
+        #region Constants
         private static readonly JsonSerializerSettings s_settings = new()
         {
             TypeNameHandling = TypeNameHandling.All
@@ -39,13 +40,17 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             "Batches");
 
         private const string kBaseFilename = "_batch.txt";
+        #endregion Constants
 
+        #region Constructors
         public BatchPersistor(ITelemetryContext telemetry)
         {
             m_logger = telemetry.CreateLogger<DurableDataChangeMonitoredItemQueue>();
             m_telemetry = telemetry;
         }
+        #endregion Constructors
 
+        #region IBatchPersistor Members
         /// <inheritdoc/>
         public void RequestBatchPersist(BatchBase batch)
         {
@@ -180,7 +185,9 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 }
             }
         }
+        #endregion IBatchPersistor Members
 
+        #region Public Methods
         /// <inheritdoc/>
         public void DeleteBatches(IEnumerable<uint> batchesToKeep)
         {
@@ -237,10 +244,13 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 m_logger.LogWarning(ex, "Failed to clean up single batch");
             }
         }
+        #endregion Public Methods
 
+        #region Private Fields
         private readonly ConcurrentDictionary<Guid, BatchBase> m_batchesToRestore = new();
         private readonly ConcurrentDictionary<Guid, BatchBase> m_batchesToPersist = new();
         private readonly ILogger m_logger;
         private readonly ITelemetryContext m_telemetry;
+        #endregion Private Fields
     }
 }

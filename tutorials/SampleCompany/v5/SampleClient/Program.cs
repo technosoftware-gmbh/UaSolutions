@@ -482,7 +482,7 @@ namespace SampleCompany.SampleClient
                         uaClient.ReconnectPeriodExponentialBackoff = 10000;
                         uaClient.Session.MinPublishRequestCount = 3;
                         uaClient.Session.TransferSubscriptionsOnReconnect = true;
-                        var samples = new ClientSamples(
+                        var samples = new ClientFunctions(
                             telemetry,
                             ClientBase.ValidateResponse,
                             quitEvent,

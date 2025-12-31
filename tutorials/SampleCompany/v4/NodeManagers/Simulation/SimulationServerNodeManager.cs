@@ -18,10 +18,11 @@ using System.Numerics;
 using System.Threading;
 using System.Xml;
 using Opc.Ua;
+using Opc.Ua.Test;
 using BrowseNames = Opc.Ua.BrowseNames;
 using ObjectIds = Opc.Ua.ObjectIds;
 using ReferenceTypes = Opc.Ua.ReferenceTypes;
-using Opc.Ua.Test;
+using Range = Opc.Ua.Range;
 using Technosoftware.UaServer;
 #endregion Using Directives
 
@@ -51,20 +52,8 @@ namespace SampleCompany.NodeManagers.Simulation
 
         #region IDisposable Members
         /// <summary>
-        /// Dispose(bool disposing) executes in two distinct scenarios.
-        /// If disposing equals true, the method has been called directly
-        /// or indirectly by a user's code. Managed and unmanaged resources
-        /// can be disposed.
-        /// If disposing equals false, the method has been called by the
-        /// runtime from inside the finalizer and you should not reference
-        /// other objects. Only unmanaged resources can be disposed.
+        /// An overrideable version of the Dispose.
         /// </summary>
-        /// <param name="disposing">If disposing equals true, the method has been called directly
-        /// or indirectly by a user's code. Managed and unmanaged resources
-        /// can be disposed.
-        /// If disposing equals false, the method has been called by the
-        /// runtime from inside the finalizer and you should not reference
-        /// other objects. Only unmanaged resources can be disposed.</param>
         protected override void Dispose(bool disposing)
         {
             // Check to see if Dispose has already been called.
@@ -382,7 +371,9 @@ namespace SampleCompany.NodeManagers.Simulation
                         AccessLevels.CurrentReadOrWrite,
                         null);
                     // Set an arbitrary precision decimal value.
-                    var largeInteger = BigInteger.Parse("1234567890123546789012345678901234567890123456789012345");
+                    var largeInteger = BigInteger.Parse(
+                        "1234567890123546789012345678901234567890123456789012345",
+                        CultureInfo.InvariantCulture);
                     var decimalValue = new DecimalDataType {
                         Scale = 100,
                         Value = largeInteger.ToByteArray()

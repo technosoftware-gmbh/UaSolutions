@@ -22,14 +22,19 @@ namespace SampleCompany.NodeManagers.DurableSubscription
 {
     public class DurableEventMonitoredItemQueue : IUaEventMonitoredItemQueue
     {
+        #region Constants
         private const uint kMaxNoOfEntriesCheckedForDuplicateEvents = 1000;
         private const uint kBatchSize = 1000;
+        #endregion Constants
 
+        #region Events
         /// <summary>
         /// Invoked when the queue is disposed
         /// </summary>
         public event EventHandler Disposed;
+        #endregion Events
 
+        #region Constructors
         /// <summary>
         /// Creates an empty queue.
         /// </summary>
@@ -65,7 +70,9 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             MonitoredItemId = queue.MonitoredItemId;
             m_batchPersistor = batchPersistor;
         }
+        #endregion Constructors
 
+        #region Public Methods
         /// <inheritdoc/>
         public bool IsDurable { get; }
 
@@ -371,7 +378,9 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 Disposed?.Invoke(this, EventArgs.Empty);
             }
         }
+        #endregion Public Methods
 
+        #region Private Fields
         /// <summary>
         /// the contained in the queue
         /// </summary>
@@ -380,6 +389,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         private EventBatch m_dequeueBatch;
         private readonly IBatchPersistor m_batchPersistor;
         private readonly ILogger m_logger;
+        #endregion Private Fields
     }
 
     /// <summary>

@@ -18,7 +18,7 @@ using Newtonsoft.Json;
 using Opc.Ua;
 using Technosoftware.UaServer;
 using Technosoftware.UaServer.Subscriptions;
-#endregion
+#endregion Using Directives
 
 namespace SampleCompany.NodeManagers.DurableSubscription
 {
@@ -37,9 +37,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         private const string kQueueDirectory = "Queues";
         private const string kBase_filename = "_queue.txt";
 
-        private ConcurrentDictionary<uint, DurableDataChangeMonitoredItemQueue> m_dataChangeQueues
-            = new();
-
+        private ConcurrentDictionary<uint, DurableDataChangeMonitoredItemQueue> m_dataChangeQueues = new();
         private ConcurrentDictionary<uint, DurableEventMonitoredItemQueue> m_eventQueues = new();
 
         /// <inheritdoc/>
@@ -47,14 +45,14 @@ namespace SampleCompany.NodeManagers.DurableSubscription
 
         /// <inheritdoc/>
         public IUaDataChangeMonitoredItemQueue CreateDataChangeQueue(
-            bool createDurable,
+            bool isDurable,
             uint monitoredItemId)
         {
             //use durable queue only if MI is durable
-            if (createDurable)
+            if (isDurable)
             {
                 var queue = new DurableDataChangeMonitoredItemQueue(
-                    createDurable,
+                    isDurable,
                     monitoredItemId,
                     m_batchPersistor);
                 queue.Disposed += DataChangeQueueDisposed;
@@ -62,17 +60,17 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 return queue;
             }
 
-            return new DataChangeMonitoredItemQueue(createDurable, monitoredItemId);
+            return new DataChangeMonitoredItemQueue(isDurable, monitoredItemId);
         }
 
         /// <inheritdoc/>
-        public IUaEventMonitoredItemQueue CreateEventQueue(bool createDurable, uint monitoredItemId)
+        public IUaEventMonitoredItemQueue CreateEventQueue(bool isDurable, uint monitoredItemId)
         {
             //use durable queue only if MI is durable
-            if (createDurable)
+            if (isDurable)
             {
                 var queue = new DurableEventMonitoredItemQueue(
-                    createDurable,
+                    isDurable,
                     monitoredItemId,
                     m_batchPersistor);
                 queue.Disposed += EventQueueDisposed;
@@ -80,7 +78,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 return queue;
             }
 
-            return new EventMonitoredItemQueue(createDurable, monitoredItemId);
+            return new EventMonitoredItemQueue(isDurable, monitoredItemId);
         }
 
         private void DataChangeQueueDisposed(object sender, EventArgs eventArgs)
@@ -204,10 +202,9 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 }
                 string result = File.ReadAllText(targetFile);
                 File.Delete(targetFile);
-                StorableDataChangeQueue template = JsonConvert
-                    .DeserializeObject<StorableDataChangeQueue>(
-                        result,
-                        s_settings);
+                StorableDataChangeQueue template = JsonConvert.DeserializeObject<StorableDataChangeQueue>(
+                    result,
+                    s_settings);
 
                 var queue = new DurableDataChangeMonitoredItemQueue(template, m_batchPersistor);
                 m_dataChangeQueues.AddOrUpdate(id, queue, (_, _) => queue);

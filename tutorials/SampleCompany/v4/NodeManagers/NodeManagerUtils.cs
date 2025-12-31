@@ -25,7 +25,6 @@ namespace SampleCompany.NodeManagers
     /// <summary>
     /// Helpers to find node managers implemented in this library.
     /// </summary>
-
     public static class NodeManagerUtils
     {
         /// <summary>
