@@ -7,7 +7,7 @@
     <Company>Technosoftware GmbH</Company>
     <Product>OPC UA Solutions .NET</Product>
     <Description>OPC UA Solutions .NET Server Library</Description>
-    <Copyright>Copyright © 2018 - 2025 Technosoftware GmbH</Copyright>
+    <Copyright>Copyright © 2018 - 2026 Technosoftware GmbH</Copyright>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

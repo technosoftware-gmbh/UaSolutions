@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -15,6 +15,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -221,7 +222,7 @@ namespace Technosoftware.UaServer
 
                 // TODO: Ensure shutdown awaits completion and a cancellation token is passed
                 _ = Task.Factory.StartNew(
-                    () => PublishSubscriptions(m_publishingResolution),
+                    () => PublishSubscriptionsAsync(m_publishingResolution),
                     default,
                     TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
                     TaskScheduler.Default);
@@ -453,10 +454,11 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Signals that a session is closing.
         /// </summary>
-        public virtual void SessionClosing(
+        public virtual async ValueTask SessionClosingAsync(
             UaServerOperationContext context,
             NodeId sessionId,
-            bool deleteSubscriptions)
+            bool deleteSubscriptions,
+            CancellationToken cancellationToken)
         {
             IList<IUaSubscription> subscriptionsToDelete = null;
 
@@ -498,7 +500,7 @@ namespace Technosoftware.UaServer
                         RaiseSubscriptionEvent(subscription, true);
 
                         // delete subscription.
-                        subscription.Delete(context);
+                        await subscription.DeleteAsync(context, cancellationToken).ConfigureAwait(false);
 
                         // get the count for the diagnostics.
                         uint publishingIntervalCount = GetPublishingIntervalCount();
@@ -513,7 +515,7 @@ namespace Technosoftware.UaServer
                     // mark the subscriptions as abandoned.
                     else
                     {
-                        m_semaphoreSlim.Wait();
+                        await m_semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
                         try
                         {
                             (m_abandonedSubscriptions ??= []).Add(subscription);
@@ -655,11 +657,14 @@ namespace Technosoftware.UaServer
         /// Deletes the specified subscription.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public StatusCode DeleteSubscription(UaServerOperationContext context, uint subscriptionId)
+        public async ValueTask<StatusCode> DeleteSubscriptionAsync(
+            UaServerOperationContext context,
+            uint subscriptionId,
+            CancellationToken cancellationToken = default)
         {
             IUaSubscription subscription = null;
 
-            m_semaphoreSlim.Wait();
+            await m_semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 // remove from publish queue.
@@ -715,7 +720,7 @@ namespace Technosoftware.UaServer
                 RaiseSubscriptionEvent(subscription, true);
 
                 // delete subscription.
-                subscription.Delete(context);
+                await subscription.DeleteAsync(context, cancellationToken).ConfigureAwait(false);
 
                 // get the count for the diagnostics.
                 uint publishingIntervalCount = GetPublishingIntervalCount();
@@ -789,7 +794,7 @@ namespace Technosoftware.UaServer
         /// Creates a new subscription.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public virtual void CreateSubscription(
+        public virtual async ValueTask<CreateSubscriptionResponse> CreateSubscriptionAsync(
             UaServerOperationContext context,
             double requestedPublishingInterval,
             uint requestedLifetimeCount,
@@ -797,15 +802,17 @@ namespace Technosoftware.UaServer
             uint maxNotificationsPerPublish,
             bool publishingEnabled,
             byte priority,
-            out uint subscriptionId,
-            out double revisedPublishingInterval,
-            out uint revisedLifetimeCount,
-            out uint revisedMaxKeepAliveCount)
+            CancellationToken cancellationToken = default)
         {
             if (m_subscriptions.Count >= m_maxSubscriptionCount)
             {
                 throw new ServiceResultException(StatusCodes.BadTooManySubscriptions);
             }
+
+            uint subscriptionId;
+            double revisedPublishingInterval;
+            uint revisedLifetimeCount;
+            uint revisedMaxKeepAliveCount;
 
             uint publishingIntervalCount = 0;
 
@@ -844,7 +851,7 @@ namespace Technosoftware.UaServer
                 priority,
                 publishingEnabled);
 
-            m_semaphoreSlim.Wait();
+            await m_semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 // save subscription.
@@ -910,26 +917,33 @@ namespace Technosoftware.UaServer
 
             // raise subscription event.
             RaiseSubscriptionEvent(subscription, false);
+
+            return new CreateSubscriptionResponse
+            {
+                SubscriptionId = subscriptionId,
+                RevisedPublishingInterval = revisedPublishingInterval,
+                RevisedLifetimeCount = revisedLifetimeCount,
+                RevisedMaxKeepAliveCount = revisedMaxKeepAliveCount
+            };
         }
 
         /// <summary>
         /// Deletes group of subscriptions.
         /// </summary>
-        public void DeleteSubscriptions(
+        public async ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             UaServerOperationContext context,
             UInt32Collection subscriptionIds,
-            out StatusCodeCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            CancellationToken cancellationToken = default)
         {
             bool diagnosticsExist = false;
-            results = new StatusCodeCollection(subscriptionIds.Count);
-            diagnosticInfos = new DiagnosticInfoCollection(subscriptionIds.Count);
+            var results = new StatusCodeCollection(subscriptionIds.Count);
+            var diagnosticInfos = new DiagnosticInfoCollection(subscriptionIds.Count);
 
             foreach (uint subscriptionId in subscriptionIds)
             {
                 try
                 {
-                    StatusCode result = DeleteSubscription(context, subscriptionId);
+                    StatusCode result = await DeleteSubscriptionAsync(context, subscriptionId, cancellationToken).ConfigureAwait(false);
                     results.Add(result);
 
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
@@ -964,6 +978,12 @@ namespace Technosoftware.UaServer
             {
                 diagnosticInfos.Clear();
             }
+
+            return new DeleteSubscriptionsResponse
+            {
+                Results = results,
+                DiagnosticInfos = diagnosticInfos
+            };
         }
 
         /// <summary>
@@ -1327,15 +1347,14 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Attaches a groups of subscriptions to a different session.
         /// </summary>
-        public void TransferSubscriptions(
+        public async ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             UaServerOperationContext context,
             UInt32Collection subscriptionIds,
             bool sendInitialValues,
-            out TransferResultCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            CancellationToken cancellationToken = default)
         {
-            results = [];
-            diagnosticInfos = [];
+            var results = new TransferResultCollection();
+            var diagnosticInfos = new DiagnosticInfoCollection();
 
             m_logger.LogInformation(
                 "TransferSubscriptions to SessionId={SessionId}, Count={Count}, sendInitialValues={SendInitialValues}",
@@ -1417,10 +1436,10 @@ namespace Technosoftware.UaServer
                     }
 
                     // transfer session, add subscription to publish queue
-                    m_semaphoreSlim.Wait();
+                    await m_semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
                     try
                     {
-                        subscription.TransferSession(context, sendInitialValues);
+                        await subscription.TransferSessionAsync(context, sendInitialValues, cancellationToken).ConfigureAwait(false);
 
                         // remove from queue in old session
                         if (ownerSession != null &&
@@ -1517,7 +1536,7 @@ namespace Technosoftware.UaServer
                             }
                         }
 
-                        m_semaphoreSlim.Wait();
+                        await m_semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
                         try
                         {
                             // trigger publish response to return status immediately
@@ -1591,6 +1610,11 @@ namespace Technosoftware.UaServer
                         m_logger);
                 }
             }
+            return new TransferSubscriptionsResponse
+            {
+                Results = results,
+                DiagnosticInfos = diagnosticInfos
+            };
         }
 
         /// <summary>
@@ -1650,13 +1674,12 @@ namespace Technosoftware.UaServer
         /// Adds monitored items to a subscription.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public void CreateMonitoredItems(
+        public async ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemCreateRequestCollection itemsToCreate,
-            out MonitoredItemCreateResultCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            CancellationToken cancellationToken = default)
         {
             // find subscription.
             if (!m_subscriptions.TryGetValue(subscriptionId, out IUaSubscription subscription))
@@ -1667,12 +1690,11 @@ namespace Technosoftware.UaServer
             int currentMonitoredItemCount = subscription.MonitoredItemCount;
 
             // create the items.
-            subscription.CreateMonitoredItems(
+            CreateMonitoredItemsResponse response = await subscription.CreateMonitoredItemsAsync(
                 context,
                 timestampsToReturn,
                 itemsToCreate,
-                out results,
-                out diagnosticInfos);
+                cancellationToken).ConfigureAwait(false);
 
             int monitoredItemCountIncrement = subscription.MonitoredItemCount -
                 currentMonitoredItemCount;
@@ -1686,19 +1708,20 @@ namespace Technosoftware.UaServer
                     UpdateCurrentMonitoredItemsCount(diagnostics, monitoredItemCountIncrement);
                 }
             }
+
+            return response;
         }
 
         /// <summary>
         /// Modifies monitored items in a subscription.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public void ModifyMonitoredItems(
+        public ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemModifyRequestCollection itemsToModify,
-            out MonitoredItemModifyResultCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            CancellationToken cancellationToken = default)
         {
             // find subscription.
             if (!m_subscriptions.TryGetValue(subscriptionId, out IUaSubscription subscription))
@@ -1707,24 +1730,22 @@ namespace Technosoftware.UaServer
             }
 
             // modify the items.
-            subscription.ModifyMonitoredItems(
+            return subscription.ModifyMonitoredItemsAsync(
                 context,
                 timestampsToReturn,
                 itemsToModify,
-                out results,
-                out diagnosticInfos);
+                cancellationToken);
         }
 
         /// <summary>
         /// Deletes the monitored items in a subscription.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public void DeleteMonitoredItems(
+        public async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
             UInt32Collection monitoredItemIds,
-            out StatusCodeCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            CancellationToken cancellationToken = default)
         {
             // find subscription.
             if (!m_subscriptions.TryGetValue(subscriptionId, out IUaSubscription subscription))
@@ -1735,11 +1756,10 @@ namespace Technosoftware.UaServer
             int currentMonitoredItemCount = subscription.MonitoredItemCount;
 
             // create the items.
-            subscription.DeleteMonitoredItems(
+            DeleteMonitoredItemsResponse response = await subscription.DeleteMonitoredItemsAsync(
                 context,
                 monitoredItemIds,
-                out results,
-                out diagnosticInfos);
+                cancellationToken).ConfigureAwait(false);
 
             int monitoredItemCountIncrement = subscription.MonitoredItemCount -
                 currentMonitoredItemCount;
@@ -1753,6 +1773,8 @@ namespace Technosoftware.UaServer
                     UpdateCurrentMonitoredItemsCount(diagnostics, monitoredItemCountIncrement);
                 }
             }
+
+            return response;
         }
 
         /// <summary>
@@ -2022,7 +2044,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Periodically checks if the sessions have timed out.
         /// </summary>
-        private void PublishSubscriptions(object data)
+        private async ValueTask PublishSubscriptionsAsync(int sleepCycle, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -2030,7 +2052,6 @@ namespace Technosoftware.UaServer
                     "Subscription - Publish Task {TaskId:X8} Started.",
                     Task.CurrentId);
 
-                int sleepCycle = Convert.ToInt32(data, CultureInfo.InvariantCulture);
                 int timeToWait = sleepCycle;
 
                 while (true)
@@ -2040,7 +2061,7 @@ namespace Technosoftware.UaServer
                     SessionPublishQueue[] queues = null;
                     IUaSubscription[] abandonedSubscriptions = null;
 
-                    m_semaphoreSlim.Wait();
+                    await m_semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
                     try
                     {
                         // collect active session queues.
@@ -2094,7 +2115,7 @@ namespace Technosoftware.UaServer
                         // schedule cleanup on a background thread.
                         if (subscriptionsToDelete.Count > 0)
                         {
-                            m_semaphoreSlim.Wait();
+                            await m_semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
                             try
                             {
                                 for (int ii = 0; ii < subscriptionsToDelete.Count; ii++)
@@ -2111,7 +2132,7 @@ namespace Technosoftware.UaServer
                         }
                     }
 
-                    if (m_shutdownEvent.WaitOne(timeToWait))
+                    if (m_shutdownEvent.WaitOne(0))
                     {
                         m_logger.LogInformation(
                             "Subscription - Publish Task {TaskId:X8} Exited Normally.",
@@ -2119,9 +2140,14 @@ namespace Technosoftware.UaServer
                         break;
                     }
 
-                    int delay = (int)(DateTime.UtcNow - start).TotalMilliseconds;
-                    timeToWait = sleepCycle;
+                    await Task.Delay(timeToWait, cancellationToken).ConfigureAwait(false);
                 }
+            }
+            catch (ObjectDisposedException)
+            {
+                m_logger.LogInformation(
+                    "Subscription - Publish Task {TaskId:X8} Exited Normally (disposed during shutdown).",
+                    Task.CurrentId);
             }
             catch (Exception e)
             {
@@ -2186,6 +2212,12 @@ namespace Technosoftware.UaServer
                     }
                 }
             }
+            catch (ObjectDisposedException)
+            {
+                m_logger.LogInformation(
+                    "Subscription - ConditionRefresh Task {TaskId:X8} Exited Normally (disposed during shutdown).",
+                    Task.CurrentId);
+            }
             catch (Exception e)
             {
                 m_logger.LogError(
@@ -2213,17 +2245,18 @@ namespace Technosoftware.UaServer
                     subscriptionsToDelete.Count);
 
                 Task.Run(
-                    () => CleanupSubscriptionsCore(server, subscriptionsToDelete, logger));
+                    () => CleanupSubscriptionsCoreAsync(server, subscriptionsToDelete, logger));
             }
         }
 
         /// <summary>
         /// Deletes any expired subscriptions.
         /// </summary>
-        private static void CleanupSubscriptionsCore(
+        private static async ValueTask CleanupSubscriptionsCoreAsync(
             IUaServerData server,
             IList<IUaSubscription> subscriptionsToDelete,
-            ILogger logger)
+            ILogger logger,
+            CancellationToken cancellationToken = default)
         {
             try
             {
@@ -2231,7 +2264,7 @@ namespace Technosoftware.UaServer
 
                 foreach (IUaSubscription subscription in subscriptionsToDelete)
                 {
-                    server.DeleteSubscription(subscription.Id);
+                    await server.DeleteSubscriptionAsync(subscription.Id, cancellationToken).ConfigureAwait(false);
                 }
 
                 logger.LogInformation("Server - CleanupSubscriptions Task Completed");

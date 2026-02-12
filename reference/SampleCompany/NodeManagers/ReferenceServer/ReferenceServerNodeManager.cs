@@ -1,13 +1,13 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -4028,7 +4028,6 @@ namespace SampleCompany.NodeManagers.Reference
             variable.Historizing = false;
             variable.Value = TypeInfo.GetDefaultValue((uint)dataType, valueRank, ServerData.TypeTree);
             variable.StatusCode = StatusCodes.Good;
-            variable.Timestamp = DateTime.UtcNow;
 
             if (valueRank == ValueRanks.OneDimension)
             {
@@ -4160,7 +4159,6 @@ namespace SampleCompany.NodeManagers.Reference
                 TypeInfo.GetDefaultValue(dataType, valueRank, ServerData.TypeTree);
 
             variable.StatusCode = StatusCodes.Good;
-            variable.Timestamp = DateTime.UtcNow;
             // The latest UNECE version (Rev 11, published in 2015) is available here:
             // http://www.opcfoundation.org/UA/EngineeringUnits/UNECE/rec20_latest_08052015.zip
             variable.EngineeringUnits.Value = new EUInformation(
@@ -4217,7 +4215,6 @@ namespace SampleCompany.NodeManagers.Reference
             variable.Historizing = false;
             variable.Value = (bool)GetNewValue(variable);
             variable.StatusCode = StatusCodes.Good;
-            variable.Timestamp = DateTime.UtcNow;
 
             variable.TrueState.Value = trueState;
             variable.TrueState.AccessLevel = AccessLevels.CurrentReadOrWrite;
@@ -4261,7 +4258,6 @@ namespace SampleCompany.NodeManagers.Reference
             variable.Historizing = false;
             variable.Value = (uint)0;
             variable.StatusCode = StatusCodes.Good;
-            variable.Timestamp = DateTime.UtcNow;
             variable.OnWriteValue = OnWriteDiscrete;
 
             var strings = new LocalizedText[values.Length];
@@ -4322,7 +4318,6 @@ namespace SampleCompany.NodeManagers.Reference
             variable.Historizing = false;
             variable.Value = (uint)0;
             variable.StatusCode = StatusCodes.Good;
-            variable.Timestamp = DateTime.UtcNow;
             variable.OnWriteValue = OnWriteValueDiscrete;
 
             // there are two enumerations for this type:
@@ -4584,7 +4579,6 @@ namespace SampleCompany.NodeManagers.Reference
             };
             variable.Value = GetNewValue(variable);
             variable.StatusCode = StatusCodes.Good;
-            variable.Timestamp = DateTime.UtcNow;
 
             if (valueRank == ValueRanks.OneDimension)
             {
@@ -5052,26 +5046,23 @@ namespace SampleCompany.NodeManagers.Reference
             NodeId nodeId,
             IDictionary<NodeId, NodeState> cache)
         {
-            lock (Lock)
+            // quickly exclude nodes that are not in the namespace.
+            if (!IsNodeIdInNamespace(nodeId))
             {
-                // quickly exclude nodes that are not in the namespace.
-                if (!IsNodeIdInNamespace(nodeId))
-                {
-                    return null;
-                }
-
-                if (!PredefinedNodes.TryGetValue(nodeId, out NodeState node))
-                {
-                    return null;
-                }
-
-                return new UaNodeHandle
-                {
-                    NodeId = nodeId,
-                    Node = node,
-                    Validated = true
-                };
+                return null;
             }
+
+            if (!PredefinedNodes.TryGetValue(nodeId, out NodeState node))
+            {
+                return null;
+            }
+
+            return new UaNodeHandle
+            {
+                NodeId = nodeId,
+                Node = node,
+                Validated = true
+            };
         }
 
         /// <summary>

@@ -1,13 +1,13 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -1465,7 +1465,7 @@ namespace Technosoftware.UaClient.Tests
 
             Session.AddSubscription(subscription);
             await subscription.CreateAsync(CancellationToken.None).ConfigureAwait(false);
-            NUnit.Framework.Assert.That(subscription.Created, Is.True);
+            Assert.That(subscription.Created, Is.True);
 
             // Create monitored items
             var triggeringItem = new MonitoredItem(subscription.DefaultItem)
@@ -1505,9 +1505,9 @@ namespace Technosoftware.UaClient.Tests
             // Create the items
             await subscription.ApplyChangesAsync(CancellationToken.None).ConfigureAwait(false);
 
-            NUnit.Framework.Assert.That(triggeringItem.Created, Is.True);
-            NUnit.Framework.Assert.That(triggeredItem1.Created, Is.True);
-            NUnit.Framework.Assert.That(triggeredItem2.Created, Is.True);
+            Assert.That(triggeringItem.Created, Is.True);
+            Assert.That(triggeredItem1.Created, Is.True);
+            Assert.That(triggeredItem2.Created, Is.True);
 
             // Set up triggering relationship using the new method
             var linksToAdd = new List<MonitoredItem> { triggeredItem1, triggeredItem2 };
@@ -1517,16 +1517,16 @@ namespace Technosoftware.UaClient.Tests
                 null,
                 CancellationToken.None).ConfigureAwait(false);
 
-            NUnit.Framework.Assert.That(response, Is.Not.Null);
+            Assert.That(response, Is.Not.Null);
 
             // Verify the triggering relationships are tracked
-            NUnit.Framework.Assert.That(triggeringItem.TriggeredItems, Is.Not.Null);
-            NUnit.Framework.Assert.That(triggeringItem.TriggeredItems.Count, Is.EqualTo(2));
-            NUnit.Framework.Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem1.ClientHandle));
-            NUnit.Framework.Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem2.ClientHandle));
+            Assert.That(triggeringItem.TriggeredItems, Is.Not.Null);
+            Assert.That(triggeringItem.TriggeredItems.Count, Is.EqualTo(2));
+            Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem1.ClientHandle));
+            Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem2.ClientHandle));
 
-            NUnit.Framework.Assert.That(triggeredItem1.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
-            NUnit.Framework.Assert.That(triggeredItem2.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
+            Assert.That(triggeredItem1.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
+            Assert.That(triggeredItem2.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
 
             // Snapshot the subscription state
             subscription.Snapshot(out SubscriptionState state);
@@ -1534,9 +1534,9 @@ namespace Technosoftware.UaClient.Tests
             // Verify that the triggering relationships are persisted
             MonitoredItemState triggeringItemState = state.MonitoredItems
                 .FirstOrDefault(m => m.ClientId == triggeringItem.ClientHandle);
-            NUnit.Framework.Assert.That(triggeringItemState, Is.Not.Null);
-            NUnit.Framework.Assert.That(triggeringItemState.TriggeredItems, Is.Not.Null);
-            NUnit.Framework.Assert.That(triggeringItemState.TriggeredItems.Count, Is.EqualTo(2));
+            Assert.That(triggeringItemState, Is.Not.Null);
+            Assert.That(triggeringItemState.TriggeredItems, Is.Not.Null);
+            Assert.That(triggeringItemState.TriggeredItems.Count, Is.EqualTo(2));
 
             // Clean up
             await subscription.DeleteAsync(true, CancellationToken.None).ConfigureAwait(false);
@@ -1568,39 +1568,39 @@ namespace Technosoftware.UaClient.Tests
             }
 
             subscription.AddItems(items);
-            NUnit.Framework.Assert.That(subscription.MonitoredItemCount, Is.EqualTo(10));
+            Assert.That(subscription.MonitoredItemCount, Is.EqualTo(10));
 
             // Simulate concurrent CreateItemsAsync calls
             // Use 3 concurrent tasks to ensure at least 2 will race with each other
-            const int concurrentTasks = 3;
+            const int ConcurrentTasks = 3;
             var tasks = new List<Task<IList<MonitoredItem>>>();
-            for (int i = 0; i < concurrentTasks; i++)
+            for (int i = 0; i < ConcurrentTasks; i++)
             {
                 tasks.Add(Task.Run(() =>
                     subscription.CreateItemsAsync(CancellationToken.None)));
             }
 
-            IList<MonitoredItem>[] results = await Task.WhenAll(tasks).ConfigureAwait(false);
+            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
 
             // Verify that all items were created exactly once
             int totalCreated = 0;
-            foreach (MonitoredItem item in items)
+            foreach (var item in items)
             {
                 if (item.Status.Created)
                 {
                     totalCreated++;
-                    NUnit.Framework.Assert.That(item.Status.Id, Is.GreaterThan(0u),
+                    Assert.That(item.Status.Id, Is.GreaterThan(0u), 
                         $"Item {item.DisplayName} should have a server-assigned ID");
                 }
             }
 
-            NUnit.Framework.Assert.That(totalCreated, Is.EqualTo(10),
+            Assert.That(totalCreated, Is.EqualTo(10), 
                 "All 10 items should be created exactly once");
 
             // Verify that each result list contains only the items that were actually created
             // by that specific call (should be empty for concurrent calls after the first)
             int nonEmptyResults = 0;
-            foreach (IList<MonitoredItem> result in results)
+            foreach (var result in results)
             {
                 if (result.Count > 0)
                 {
@@ -1608,7 +1608,7 @@ namespace Technosoftware.UaClient.Tests
                 }
             }
 
-            NUnit.Framework.Assert.That(nonEmptyResults, Is.LessThanOrEqualTo(1),
+            Assert.That(nonEmptyResults, Is.LessThanOrEqualTo(1),
                 "Only one CreateItemsAsync call should have created items");
 
             // Clean up

@@ -135,9 +135,9 @@
     </When>
     <Otherwise>
       <PropertyGroup>
-        <AppTargetFrameworks>net10.0;net9.0;net8.0</AppTargetFrameworks>
+        <AppTargetFrameworks>net10.0;net9.0;net8.0;net48</AppTargetFrameworks>
         <AppTargetFramework>net10.0</AppTargetFramework>
-        <TestsTargetFrameworks>net8.0;net9.0;net10.0</TestsTargetFrameworks>
+        <TestsTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</TestsTargetFrameworks>
         <LibTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibTargetFrameworks>
         <LibCoreTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibCoreTargetFrameworks>
         <LibTypesTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibTypesTargetFrameworks>

@@ -1,6 +1,6 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com
 //
 // The Software is subject to the Technosoftware GmbH Software License
@@ -11,7 +11,7 @@
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -500,23 +500,22 @@ namespace Technosoftware.UaClient
             try
             {
                 IUaSession session;
-                if (transportChannel == null)
-                {
-                    throw ServiceResultException.Unexpected(
-                        "Transport channel is null for reverse connect session recreation.");
-                }
                 if (m_reverseConnectManager != null)
                 {
                     ITransportWaitingConnection? connection;
                     do
                     {
-                        EndpointDescription endpointDescription =
-                            current.Endpoint ?? transportChannel.EndpointDescription;
-
+                        EndpointDescription? endpointDescription =
+                            current.Endpoint ?? transportChannel?.EndpointDescription;
+                        if (endpointDescription == null)
+                        {
+                            throw ServiceResultException.Unexpected(
+                                "EndpointDescription is null for reverse connect session recreation.");
+                        }
                         connection = await m_reverseConnectManager
                             .WaitForConnectionAsync(
                                 new Uri(endpointDescription.EndpointUrl),
-                                endpointDescription.Server.ApplicationUri)
+                                endpointDescription.Server?.ApplicationUri)
                             .ConfigureAwait(false);
 
                         if (m_updateFromServer)
@@ -552,8 +551,11 @@ namespace Technosoftware.UaClient
                             .ConfigureAwait(false);
                         m_updateFromServer = false;
                     }
-
-                    session = await current
+                    session = transportChannel == null
+                        ? await current
+                            .SessionFactory.RecreateAsync(current)
+                            .ConfigureAwait(false)
+                        : await current
                         .SessionFactory.RecreateAsync(current, transportChannel)
                         .ConfigureAwait(false);
                 }

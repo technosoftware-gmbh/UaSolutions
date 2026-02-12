@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -72,6 +72,12 @@ namespace Technosoftware.UaServer
         TypeTable TypeTree { get; }
 
         /// <summary>
+        /// The factory which helps creating main
+        /// node managers used by the server.
+        /// </summary>
+        IUaMainNodeManagerFactory MainNodeManagerFactory { get; }
+
+        /// <summary>
         /// The master node manager for the server.
         /// </summary>
         /// <value>The node manager.</value>
@@ -88,6 +94,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <value>The diagnostics node manager.</value>
         DiagnosticsNodeManager DiagnosticsNodeManager { get; }
+
+        /// <summary>
+        /// Returns the node manager that managers the server configuration.
+        /// </summary>
+        /// <value>The configuration node manager.</value>
+        ConfigurationNodeManager ConfigurationNodeManager { get; }
 
         /// <summary>
         /// The manager for events that all components use to queue events that occur.
@@ -225,7 +237,8 @@ namespace Technosoftware.UaServer
         /// Deletes the specified subscription.
         /// </summary>
         /// <param name="subscriptionId">The subscription identifier.</param>
-        void DeleteSubscription(uint subscriptionId);
+        /// <param name="cancellationToken">The cancellation token.</param>
+        ValueTask DeleteSubscriptionAsync(uint subscriptionId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Called by any component to report a global event.
@@ -271,6 +284,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="nodeManager">The node manager.</param>
         void SetNodeManager(MasterNodeManager nodeManager);
+
+        /// <summary>
+        /// Stores the MainNodeManagerFactory
+        /// </summary>
+        /// <param name="mainNodeManagerFactory">The main node manager factory.</param>
+        void SetMainNodeManagerFactory(IUaMainNodeManagerFactory mainNodeManagerFactory);
 
         /// <summary>
         /// Stores the SessionManager, the SubscriptionManager in the datastore.

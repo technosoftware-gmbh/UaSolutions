@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -98,7 +98,6 @@ namespace Technosoftware.UaServer
         /// </summary>
         bool Activate(
             UaServerOperationContext context,
-            List<SoftwareCertificate> clientSoftwareCertificates,
             UserIdentityToken identityToken,
             IUserIdentity identity,
             IUserIdentity effectiveIdentity,
@@ -172,7 +171,6 @@ namespace Technosoftware.UaServer
         void ValidateBeforeActivate(
             UaServerOperationContext context,
             SignatureData clientSignature,
-            List<SoftwareCertificate> clientSoftwareCertificates,
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
             out UserIdentityToken identityToken,

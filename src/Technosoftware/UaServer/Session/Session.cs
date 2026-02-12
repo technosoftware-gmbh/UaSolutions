@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -423,7 +423,6 @@ namespace Technosoftware.UaServer
         public void ValidateBeforeActivate(
             UaServerOperationContext context,
             SignatureData clientSignature,
-            List<SoftwareCertificate> clientSoftwareCertificates,
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
             out UserIdentityToken identityToken,
@@ -516,14 +515,6 @@ namespace Technosoftware.UaServer
                         throw new ServiceResultException(StatusCodes.BadSecureChannelIdInvalid);
                     }
                 }
-                else
-                {
-                    // cannot change the certificates after activation.
-                    if (clientSoftwareCertificates != null && clientSoftwareCertificates.Count > 0)
-                    {
-                        throw new ServiceResultException(StatusCodes.BadInvalidArgument);
-                    }
-                }
 
                 // validate the user identity token.
                 identityToken = ValidateUserIdentityToken(
@@ -540,7 +531,6 @@ namespace Technosoftware.UaServer
         /// </summary>
         public bool Activate(
             UaServerOperationContext context,
-            List<SoftwareCertificate> clientSoftwareCertificates,
             UserIdentityToken identityToken,
             IUserIdentity identity,
             IUserIdentity effectiveIdentity,
@@ -581,21 +571,6 @@ namespace Technosoftware.UaServer
 
                 // update server nonce.
                 m_serverNonce = serverNonce;
-
-                // build list of signed certificates for audit event.
-                var signedSoftwareCertificates = new List<SignedSoftwareCertificate>();
-
-                if (clientSoftwareCertificates != null)
-                {
-                    foreach (SoftwareCertificate softwareCertificate in clientSoftwareCertificates)
-                    {
-                        var item = new SignedSoftwareCertificate
-                        {
-                            CertificateData = softwareCertificate.SignedCertificate.RawData
-                        };
-                        signedSoftwareCertificates.Add(item);
-                    }
-                }
 
                 // update the contact time.
                 lock (DiagnosticsLock)

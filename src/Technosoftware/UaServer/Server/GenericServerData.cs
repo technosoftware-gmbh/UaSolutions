@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -130,14 +130,24 @@ namespace Technosoftware.UaServer
         public IUaSubscriptionManager SubscriptionManager { get; private set; }
 
         /// <summary>
-        /// Stores the MasterNodeManager and the CoreNodeManager
+        /// Stores the MasterNodeManager, the DiagnosticsNodeManager and the CoreNodeManager
         /// </summary>
         /// <param name="nodeManager">The node manager.</param>
         public void SetNodeManager(MasterNodeManager nodeManager)
         {
             NodeManager = nodeManager;
             DiagnosticsNodeManager = nodeManager.DiagnosticsNodeManager;
+            ConfigurationNodeManager = nodeManager.ConfigurationNodeManager;
             CoreNodeManager = nodeManager.CoreNodeManager;
+        }
+
+        /// <summary>
+        /// Stores the MainNodeManagerFactory
+        /// </summary>
+        /// <param name="mainNodeManagerFactory">The main node manager factory.</param>
+        public void SetMainNodeManagerFactory(IUaMainNodeManagerFactory mainNodeManagerFactory)
+        {
+            MainNodeManagerFactory = mainNodeManagerFactory;
         }
 
         /// <summary>
@@ -262,6 +272,9 @@ namespace Technosoftware.UaServer
         /// <value>The node manager.</value>
         public MasterNodeManager NodeManager { get; private set; }
 
+        /// <inheritdoc/>
+        public IUaMainNodeManagerFactory MainNodeManagerFactory { get; private set; }
+
         /// <summary>
         /// The internal node manager for the servers.
         /// </summary>
@@ -273,6 +286,9 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <value>The diagnostics node manager.</value>
         public DiagnosticsNodeManager DiagnosticsNodeManager { get; private set; }
+
+        /// <inheritdoc/>
+        public ConfigurationNodeManager ConfigurationNodeManager { get; private set; }
 
         /// <summary>
         /// The manager for events that all components use to queue events that occur.
@@ -479,7 +495,8 @@ namespace Technosoftware.UaServer
         {
             await NodeManager.SessionClosingAsync(context, sessionId, deleteSubscriptions, cancellationToken)
                 .ConfigureAwait(false);
-            SubscriptionManager.SessionClosing(context, sessionId, deleteSubscriptions);
+            await SubscriptionManager.SessionClosingAsync(context, sessionId, deleteSubscriptions, cancellationToken)
+                .ConfigureAwait(false);
             SessionManager.CloseSession(sessionId);
         }
 
@@ -487,9 +504,10 @@ namespace Technosoftware.UaServer
         /// Deletes the specified subscription.
         /// </summary>
         /// <param name="subscriptionId">The subscription identifier.</param>
-        public void DeleteSubscription(uint subscriptionId)
+        /// <param name="cancellationToken">The cancellation token</param>
+        public async ValueTask DeleteSubscriptionAsync(uint subscriptionId, CancellationToken cancellationToken = default)
         {
-            SubscriptionManager.DeleteSubscription(null, subscriptionId);
+            await SubscriptionManager.DeleteSubscriptionAsync(null, subscriptionId, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -582,7 +600,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         private void CreateServerObject()
         {
-            lock (DiagnosticsNodeManager.Lock)
+            lock (DiagnosticsLock)
             {
                 // get the server object.
                 ServerObjectState serverObject = ServerObject = (ServerObjectState)
@@ -828,6 +846,7 @@ namespace Technosoftware.UaServer
                 {
                     serverStatusState.Timestamp = now;
                     serverStatusState.CurrentTime.Timestamp = now;
+                    serverStatusState.State.Timestamp = now;
                 }
             }
         }

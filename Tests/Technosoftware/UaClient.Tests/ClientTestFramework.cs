@@ -1,13 +1,13 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -48,6 +48,7 @@ namespace Technosoftware.UaClient.Tests
         public bool SingleSession { get; set; } = true;
         public int MaxChannelCount { get; set; } = 100;
         public bool SupportsExternalServerUrl { get; set; }
+        public bool UseSamplingGroupsInReferenceNodeManager { get; set; }
         public ServerFixture<ReferenceServer> ServerFixture { get; set; }
         public ClientFixture ClientFixture { get; set; }
         public ReferenceServer ReferenceServer { get; set; }
@@ -202,7 +203,8 @@ namespace Technosoftware.UaClient.Tests
                 SecurityNone = securityNone,
                 AutoAccept = true,
                 AllNodeManagers = true,
-                OperationLimits = true
+                OperationLimits = true,
+                UseSamplingGroupsInReferenceNodeManager = UseSamplingGroupsInReferenceNodeManager
             };
 
             await ServerFixture.LoadConfigurationAsync(PkiRoot).ConfigureAwait(false);

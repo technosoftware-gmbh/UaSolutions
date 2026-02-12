@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -1007,14 +1007,12 @@ namespace Technosoftware.UaServer
         /// <param name="logger">A contextual logger to log to</param>
         /// <param name="auditEntryId">The audit entry id.</param>
         /// <param name="session">The session that is activated.</param>
-        /// <param name="softwareCertificates">The software certificates</param>
         /// <param name="exception">The exception received during activate session request</param>
         public static void ReportAuditActivateSessionEvent(
             this IUaAuditEventServer server,
             ILogger logger,
             string auditEntryId,
             IUaSession session,
-            IList<SoftwareCertificate> softwareCertificates,
             Exception exception = null)
         {
             if (server?.Auditing != true)
@@ -1063,25 +1061,6 @@ namespace Technosoftware.UaServer
                     BrowseNames.UserIdentityToken,
                     Utils.Clone(session?.IdentityToken),
                     false);
-
-                if (softwareCertificates != null)
-                {
-                    // build the list of SignedSoftwareCertificate
-                    var signedSoftwareCertificates = new List<SignedSoftwareCertificate>();
-                    foreach (SoftwareCertificate softwareCertificate in softwareCertificates)
-                    {
-                        var item = new SignedSoftwareCertificate
-                        {
-                            CertificateData = softwareCertificate.SignedCertificate.RawData
-                        };
-                        signedSoftwareCertificates.Add(item);
-                    }
-                    e.SetChildValue(
-                        systemContext,
-                        BrowseNames.ClientSoftwareCertificates,
-                        signedSoftwareCertificates.ToArray(),
-                        false);
-                }
 
                 server.ReportAuditEvent(systemContext, e);
             }

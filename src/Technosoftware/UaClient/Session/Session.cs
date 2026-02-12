@@ -1,6 +1,6 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com
 //
 // The Software is subject to the Technosoftware GmbH Software License
@@ -11,7 +11,7 @@
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -216,6 +216,25 @@ namespace Technosoftware.UaClient
             // update the default subscription.
             DefaultSubscription.MinLifetimeInterval = (uint)m_configuration.ClientConfiguration
                 .MinSubscriptionLifetime;
+
+            // initialize operation limits from client configuration.
+            if (m_configuration.ClientConfiguration.OperationLimits != null)
+            {
+                OperationLimits clientLimits = m_configuration.ClientConfiguration.OperationLimits;
+                OperationLimits.MaxNodesPerRead = clientLimits.MaxNodesPerRead;
+                OperationLimits.MaxNodesPerHistoryReadData = clientLimits.MaxNodesPerHistoryReadData;
+                OperationLimits.MaxNodesPerHistoryReadEvents = clientLimits.MaxNodesPerHistoryReadEvents;
+                OperationLimits.MaxNodesPerWrite = clientLimits.MaxNodesPerWrite;
+                OperationLimits.MaxNodesPerHistoryUpdateData = clientLimits.MaxNodesPerHistoryUpdateData;
+                OperationLimits.MaxNodesPerHistoryUpdateEvents = clientLimits.MaxNodesPerHistoryUpdateEvents;
+                OperationLimits.MaxNodesPerMethodCall = clientLimits.MaxNodesPerMethodCall;
+                OperationLimits.MaxNodesPerBrowse = clientLimits.MaxNodesPerBrowse;
+                OperationLimits.MaxNodesPerRegisterNodes = clientLimits.MaxNodesPerRegisterNodes;
+                OperationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds =
+                    clientLimits.MaxNodesPerTranslateBrowsePathsToNodeIds;
+                OperationLimits.MaxNodesPerNodeManagement = clientLimits.MaxNodesPerNodeManagement;
+                OperationLimits.MaxMonitoredItemsPerCall = clientLimits.MaxMonitoredItemsPerCall;
+            }
 
             NamespaceUris = messageContext.NamespaceUris;
             ServerUris = messageContext.ServerUris;
@@ -951,8 +970,8 @@ namespace Technosoftware.UaClient
         {
             using Activity? activity = m_telemetry.StartActivity();
             // Snapshot subscription state
-            var subscriptionStateCollection = new SubscriptionStateCollection(SubscriptionCount);
-            foreach (Subscription subscription in Subscriptions)
+            var subscriptionStateCollection = new SubscriptionStateCollection();
+            foreach (Subscription subscription in subscriptions)
             {
                 subscription.Snapshot(out SubscriptionState state);
                 subscriptionStateCollection.Add(state);
@@ -1197,8 +1216,6 @@ namespace Technosoftware.UaClient
             byte[] serverCertificateData = response.ServerCertificate;
             SignatureData serverSignature = response.ServerSignature;
             EndpointDescriptionCollection serverEndpoints = response.ServerEndpoints;
-            SignedSoftwareCertificateCollection serverSoftwareCertificates = response
-                .ServerSoftwareCertificates;
 
             m_sessionTimeout = response.RevisedSessionTimeout;
             m_maxRequestMessageSize = response.MaxRequestMessageSize;
@@ -1232,8 +1249,6 @@ namespace Technosoftware.UaClient
                     clientCertificateData,
                     clientCertificateChainData,
                     clientNonce);
-
-                HandleSignedSoftwareCertificates(serverSoftwareCertificates);
 
                 //  process additional header
                 ProcessResponseAdditionalHeader(response.ResponseHeader, serverCertificate);
@@ -1281,10 +1296,6 @@ namespace Technosoftware.UaClient
                     m_instanceCertificateChain,
                     m_endpoint.Description.SecurityMode != MessageSecurityMode.None);
 
-                // send the software certificates assigned to the client.
-                SignedSoftwareCertificateCollection clientSoftwareCertificates
-                    = GetSoftwareCertificates();
-
                 // copy the preferred locales if provided.
                 if (preferredLocales != null && preferredLocales.Count > 0)
                 {
@@ -1295,7 +1306,7 @@ namespace Technosoftware.UaClient
                 ActivateSessionResponse activateResponse = await ActivateSessionAsync(
                         null,
                         clientSignature,
-                        clientSoftwareCertificates,
+                        null,
                         m_preferredLocales,
                         new ExtensionObject(identityToken),
                         userTokenSignature,
@@ -1319,12 +1330,6 @@ namespace Technosoftware.UaClient
                             i,
                             certificateResults[i]);
                     }
-                }
-
-                if (clientSoftwareCertificates?.Count > 0 &&
-                    (certificateResults == null || certificateResults.Count == 0))
-                {
-                    m_logger.LogInformation("Empty results were received for the ActivateSession call.");
                 }
 
                 // fetch namespaces.
@@ -1488,14 +1493,10 @@ namespace Technosoftware.UaClient
                 m_instanceCertificateChain,
                 m_endpoint.Description.SecurityMode != MessageSecurityMode.None);
 
-            // send the software certificates assigned to the client.
-            SignedSoftwareCertificateCollection clientSoftwareCertificates
-                = GetSoftwareCertificates();
-
             ActivateSessionResponse response = await ActivateSessionAsync(
                 null,
                 clientSignature,
-                clientSoftwareCertificates,
+                null,
                 preferredLocales,
                 new ExtensionObject(identityToken),
                 userTokenSignature,
@@ -1854,6 +1855,35 @@ namespace Technosoftware.UaClient
         public async Task FetchOperationLimitsAsync(CancellationToken ct)
         {
             using Activity? activity = m_telemetry.StartActivity();
+
+            // Helper extraction
+            static T Get<T>(ref int index, IList<DataValue> values, IList<ServiceResult> errors)
+                where T : struct
+            {
+                DataValue value = values[index];
+                ServiceResult error = errors.Count > 0 ? errors[index] : ServiceResult.Good;
+                index++;
+                if (ServiceResult.IsNotBad(error) && value.Value is T retVal)
+                {
+                    return retVal;
+                }
+                return default;
+            }
+
+            // Apply operation limit logic: if client value is 0, use server value; otherwise use min(client, server)
+            static uint ApplyOperationLimit(uint clientLimit, uint serverLimit)
+            {
+                if (clientLimit == 0)
+                {
+                    return serverLimit;
+                }
+                if (serverLimit == 0)
+                {
+                    return clientLimit;
+                }
+                return Math.Min(clientLimit, serverLimit);
+            }
+
             // First we read the node read max to optimize the second read.
             var nodeIds = new List<NodeId>
             {
@@ -1862,7 +1892,7 @@ namespace Technosoftware.UaClient
             (DataValueCollection values, IList<ServiceResult> errors) =
                 await this.ReadValuesAsync(nodeIds, ct).ConfigureAwait(false);
             int index = 0;
-            OperationLimits.MaxNodesPerRead = Get<uint>(ref index, values, errors);
+            OperationLimits.MaxNodesPerRead = ApplyOperationLimit(OperationLimits.MaxNodesPerRead, Get<uint>(ref index, values, errors));
 
             nodeIds =
             [
@@ -1897,18 +1927,31 @@ namespace Technosoftware.UaClient
 
             (values, errors) = await this.ReadValuesAsync(nodeIds, ct).ConfigureAwait(false);
             index = 0;
-            OperationLimits.MaxNodesPerHistoryReadData = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerHistoryReadEvents = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerWrite = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerRead = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerHistoryUpdateData = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerHistoryUpdateEvents = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerMethodCall = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerBrowse = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerRegisterNodes = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerNodeManagement = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxMonitoredItemsPerCall = Get<uint>(ref index, values, errors);
-            OperationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds = Get<uint>(ref index, values, errors);
+            OperationLimits.MaxNodesPerHistoryReadData = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerHistoryReadData, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerHistoryReadEvents = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerHistoryReadEvents, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerWrite = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerWrite, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerRead = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerRead, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerHistoryUpdateData = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerHistoryUpdateData, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerHistoryUpdateEvents = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerHistoryUpdateEvents, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerMethodCall = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerMethodCall, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerBrowse = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerBrowse, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerRegisterNodes = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerRegisterNodes, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerNodeManagement = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerNodeManagement, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxMonitoredItemsPerCall = ApplyOperationLimit(
+                OperationLimits.MaxMonitoredItemsPerCall, Get<uint>(ref index, values, errors));
+            OperationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds = ApplyOperationLimit(
+                OperationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds,
+                Get<uint>(ref index, values, errors));
             ServerCapabilities.MaxBrowseContinuationPoints = Get<ushort>(ref index, values, errors);
             ServerCapabilities.MaxHistoryContinuationPoints = Get<ushort>(ref index, values, errors);
             ServerCapabilities.MaxQueryContinuationPoints = Get<ushort>(ref index, values, errors);
@@ -1924,20 +1967,6 @@ namespace Technosoftware.UaClient
             ServerCapabilities.MaxSubscriptionsPerSession = Get<uint>(ref index, values, errors);
             ServerCapabilities.MaxWhereClauseParameters = Get<uint>(ref index, values, errors);
             ServerCapabilities.MaxSelectClauseParameters = Get<uint>(ref index, values, errors);
-
-            // Helper extraction
-            static T Get<T>(ref int index, IList<DataValue> values, IList<ServiceResult> errors)
-                where T : struct
-            {
-                DataValue value = values[index];
-                ServiceResult error = errors.Count > 0 ? errors[index] : ServiceResult.Good;
-                index++;
-                if (ServiceResult.IsNotBad(error) && value.Value is T retVal)
-                {
-                    return retVal;
-                }
-                return default;
-            }
 
             uint maxByteStringLength = (uint?)m_configuration.TransportQuotas?.MaxByteStringLength ?? 0u;
             if (maxByteStringLength != 0 &&
@@ -2340,10 +2369,6 @@ namespace Technosoftware.UaClient
                     m_instanceCertificateChain,
                     m_endpoint.Description.SecurityMode != MessageSecurityMode.None);
 
-                // send the software certificates assigned to the client.
-                SignedSoftwareCertificateCollection clientSoftwareCertificates
-                    = GetSoftwareCertificates();
-
                 m_logger.LogInformation("Session REPLACING channel for {SessionId}.", SessionId);
 
                 if (connection != null)
@@ -2533,18 +2558,18 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Recreate the subscriptions in a recreated session.
         /// </summary>
-        /// <param name="transferSbscriptionTemplates">Uses Transfer service
+        /// <param name="transferSubscriptionTemplates">Uses Transfer service
         /// if set to <c>true</c>.</param>
         /// <param name="subscriptionsTemplate">The template for the subscriptions.</param>
         /// <param name="ct">Cancellation token to cancel operation with</param>
         private async Task RecreateSubscriptionsAsync(
-            bool transferSbscriptionTemplates,
+            bool transferSubscriptionTemplates,
             IEnumerable<Subscription> subscriptionsTemplate,
             CancellationToken ct)
         {
             using Activity? activity = m_telemetry.StartActivity();
             bool transferred = false;
-            if (transferSbscriptionTemplates)
+            if (transferSubscriptionTemplates)
             {
                 try
                 {
@@ -2642,14 +2667,6 @@ namespace Technosoftware.UaClient
         }
 
         /// <summary>
-        /// Returns the software certificates assigned to the application.
-        /// </summary>
-        protected virtual SignedSoftwareCertificateCollection GetSoftwareCertificates()
-        {
-            return [];
-        }
-
-        /// <summary>
         /// Handles an error when validating the application instance certificate provided by the server.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
@@ -2658,26 +2675,6 @@ namespace Technosoftware.UaClient
             ServiceResult result)
         {
             throw new ServiceResultException(result);
-        }
-
-        /// <summary>
-        /// Handles an error when validating software certificates provided by the server.
-        /// </summary>
-        /// <exception cref="ServiceResultException"></exception>
-        protected virtual void OnSoftwareCertificateError(
-            SignedSoftwareCertificate signedCertificate,
-            ServiceResult result)
-        {
-            throw new ServiceResultException(result);
-        }
-
-        /// <summary>
-        /// Inspects the software certificates provided by the server.
-        /// </summary>
-        protected virtual void ValidateSoftwareCertificates(
-            List<SoftwareCertificate> softwareCertificates)
-        {
-            // always accept valid certificates.
         }
 
         /// <summary>
@@ -3114,6 +3111,10 @@ namespace Technosoftware.UaClient
                 catch (ObjectDisposedException) when (Disposed)
                 {
                     // This should not happen, but we fail gracefully anyway
+                }
+                catch (TaskCanceledException)
+                {
+                    //expected exception type
                 }
                 catch (Exception e)
                 {
@@ -3563,7 +3564,7 @@ namespace Technosoftware.UaClient
                 if (m_subscriptions.Count == 0)
                 {
                     // Publish responses with error should occur after deleting the last subscription.
-                    m_logger.LogError(
+                    m_logger.LogWarning(
                         "Publish #{RequestHandle}, Subscription count = 0, Error: {Message}",
                         requestHeader.RequestHandle,
                         e.Message);
@@ -3580,7 +3581,8 @@ namespace Technosoftware.UaClient
                 // raise an error event.
                 var error = new ServiceResult(e);
 
-                if (error.Code != StatusCodes.BadNoSubscription)
+                // raise publish error even for BadNoSubscription if there are active subscriptions.
+                if (error.Code != StatusCodes.BadNoSubscription || m_subscriptions.Any(s => s.Created))
                 {
                     EventHandler<PublishErrorEventArgs>? callback = m_PublishError;
 
@@ -3677,6 +3679,7 @@ namespace Technosoftware.UaClient
                         });
                         return;
                     case StatusCodes.BadTimeout:
+                    case StatusCodes.BadRequestTimeout:
                         break;
                     default:
                         m_logger.LogError(
@@ -4174,38 +4177,6 @@ namespace Technosoftware.UaClient
         {
             ChannelToken? currentToken = (NullableTransportChannel as ISecureChannel)?.CurrentToken;
             return currentToken?.ServerNonce;
-        }
-
-        /// <summary>
-        /// Handles the validation of server software certificates and application callback.
-        /// </summary>
-        private void HandleSignedSoftwareCertificates(
-            SignedSoftwareCertificateCollection serverSoftwareCertificates)
-        {
-            // get a validator to check certificates provided by server.
-            CertificateValidator validator = m_configuration.CertificateValidator;
-
-            // validate software certificates.
-            var softwareCertificates = new List<SoftwareCertificate>();
-
-            foreach (SignedSoftwareCertificate signedCertificate in serverSoftwareCertificates)
-            {
-                ServiceResult result = SoftwareCertificate.Validate(
-                    validator,
-                    signedCertificate.CertificateData,
-                    m_telemetry,
-                    out SoftwareCertificate softwareCertificate);
-
-                if (ServiceResult.IsBad(result))
-                {
-                    OnSoftwareCertificateError(signedCertificate, result);
-                }
-
-                softwareCertificates.Add(softwareCertificate);
-            }
-
-            // check if software certificates meet application requirements.
-            ValidateSoftwareCertificates(softwareCertificates);
         }
 
         /// <summary>

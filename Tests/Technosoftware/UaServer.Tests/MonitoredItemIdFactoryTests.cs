@@ -1,19 +1,20 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using NUnit.Framework;
 using Opc.Ua;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -192,7 +193,7 @@ namespace Technosoftware.UaServer.Tests
                     // If a valid ID is found, all subsequent IDs must also be greater.
                     if (firstValidIdIndex != -1)
                     {
-                        var subsequentIds = idsAfterReset.Skip(firstValidIdIndex).ToList();
+                        List<uint> subsequentIds = idsAfterReset.Skip(firstValidIdIndex).ToList();
                         Assert.That(subsequentIds.All(id => id > startValue), Is.True,
                             $"An ID was generated that was not greater than the new start value {startValue} after a reset.");
 

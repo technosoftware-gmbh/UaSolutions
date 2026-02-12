@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -21,14 +21,9 @@ using Opc.Ua;
 
 namespace Technosoftware.UaServer
 {
-    /// <summary>
-    /// The default node manager for the server.
-    /// </summary>
-    /// <remarks>
-    /// Every Server has one instance of this NodeManager.
-    /// It stores objects that implement ILocalNode and indexes them by NodeId.
-    /// </remarks>
-    public class CoreNodeManager : IUaNodeManager, IDisposable
+    /// <inheritdoc/>
+
+    public class CoreNodeManager : IUaNodeManager, IDisposable, IUaCoreNodeManager
     {
         /// <summary>
         /// Initializes the object with default values.
@@ -107,18 +102,14 @@ namespace Technosoftware.UaServer
         /// </summary>
         public object DataLock { get; } = new object();
 
-        /// <summary>
-        /// Imports the nodes from a dictionary of NodeState objects.
-        /// </summary>
+        /// <inheritdoc/>
         public void ImportNodes(ISystemContext context, IEnumerable<NodeState> predefinedNodes)
         {
             ImportNodes(context, predefinedNodes, false);
         }
 
-        /// <summary>
-        /// Imports the nodes from a dictionary of NodeState objects.
-        /// </summary>
-        internal void ImportNodes(
+        /// <inheritdoc/>
+        public void ImportNodes(
             ISystemContext context,
             IEnumerable<NodeState> predefinedNodes,
             bool isInternal)
@@ -133,11 +124,11 @@ namespace Technosoftware.UaServer
                 node.Export(context, nodesToExport);
             }
 
-            lock (Server.CoreNodeManager.DataLock)
+            lock (DataLock)
             {
                 foreach (ILocalNode nodeToExport in nodesToExport.OfType<ILocalNode>())
                 {
-                    Server.CoreNodeManager.AttachNode(nodeToExport, isInternal);
+                    AttachNode(nodeToExport, isInternal);
                 }
             }
         }
@@ -702,7 +693,7 @@ namespace Technosoftware.UaServer
                     DataValue value = values[ii] = new DataValue();
 
                     value.Value = null;
-                    value.ServerTimestamp = DateTime.UtcNow;
+                    value.ServerTimestamp = DateTime.MinValue; // Will be set later
                     value.SourceTimestamp = DateTime.MinValue;
                     value.StatusCode = StatusCodes.BadAttributeIdInvalid;
 
@@ -771,11 +762,17 @@ namespace Technosoftware.UaServer
 
                         value.Value = defaultValue;
 
-                        // don't replace timestamp if it was set in the NodeSource
+                        // Set SourceTimestamp if not already set by the node
                         if (value.SourceTimestamp == DateTime.MinValue)
                         {
                             value.SourceTimestamp = DateTime.UtcNow;
                         }
+
+                        // Set ServerTimestamp to match SourceTimestamp for Value attributes
+                        // This ensures ServerTimestamp and SourceTimestamp are equal,
+                        // which is important for nodes like ServerStatus children where
+                        // the node's read callback sets a specific timestamp
+                        value.ServerTimestamp = value.SourceTimestamp;
                     }
                 }
             }
@@ -2877,7 +2874,7 @@ namespace Technosoftware.UaServer
 
             if (referencesToDelete.Count > 0)
             {
-                Task.Run(() => OnDeleteReferences(referencesToDelete));
+                Task.Run(() => OnDeleteReferencesAsync(referencesToDelete));
             }
         }
 
@@ -2959,20 +2956,14 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Deletes the external references to a node in a background thread.
         /// </summary>
-        private void OnDeleteReferences(object state)
+        private async ValueTask OnDeleteReferencesAsync(Dictionary<NodeId, IList<IReference>> referencesToDelete)
         {
-            var referencesToDelete = state as Dictionary<NodeId, IList<IReference>>;
-
-            if (state == null)
-            {
-                return;
-            }
-
             foreach (KeyValuePair<NodeId, IList<IReference>> current in referencesToDelete)
             {
                 try
                 {
-                    Server.NodeManager.DeleteReferences(current.Key, current.Value);
+                    await Server.NodeManager.DeleteReferencesAsync(current.Key, current.Value)
+                        .ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -3148,7 +3139,7 @@ namespace Technosoftware.UaServer
 
             if (!isInternal && source.NodeId.NamespaceIndex == 0)
             {
-                lock (Server.DiagnosticsNodeManager.Lock)
+                lock (Server.DiagnosticsLock)
                 {
                     NodeState state = Server.DiagnosticsNodeManager
                         .FindPredefinedNode(source.NodeId, null);

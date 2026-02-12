@@ -1,6 +1,6 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com
 //
 // The Software is subject to the Technosoftware GmbH Software License
@@ -11,7 +11,7 @@
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -127,6 +127,7 @@ namespace Technosoftware.UaClient
             ServerId = state.ServerId;
             TriggeringItemId = state.TriggeringItemId;
             TriggeredItems = state.TriggeredItems != null ? new UInt32Collection(state.TriggeredItems) : null;
+            CacheQueueSize = state.CacheQueueSize < 1 ? 1 : state.CacheQueueSize;
         }
 
         /// <inheritdoc/>
@@ -137,7 +138,8 @@ namespace Technosoftware.UaClient
                 ServerId = Status.Id,
                 ClientId = ClientHandle,
                 TriggeringItemId = TriggeringItemId,
-                TriggeredItems = TriggeredItems != null ? new UInt32Collection(TriggeredItems) : null
+                TriggeredItems = TriggeredItems != null ? new UInt32Collection(TriggeredItems) : null,
+                CacheQueueSize = CacheQueueSize
             };
         }
 
@@ -390,7 +392,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Returns the queue size used by the cache.
         /// </summary>
-        public int CacheQueueSize
+        public uint CacheQueueSize
         {
             get
             {
@@ -1111,7 +1113,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Constructs a cache for a monitored item.
         /// </summary>
-        public MonitoredItemDataCache(ITelemetryContext? telemetry, int queueSize = 1)
+        public MonitoredItemDataCache(ITelemetryContext? telemetry, uint queueSize = 1)
         {
             QueueSize = queueSize;
             m_logger = telemetry.CreateLogger<MonitoredItemDataCache>();
@@ -1128,7 +1130,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The size of the queue to maintain.
         /// </summary>
-        public int QueueSize { get; private set; }
+        public uint QueueSize { get; private set; }
 
         /// <summary>
         /// The last value received from the server.
@@ -1144,12 +1146,8 @@ namespace Technosoftware.UaClient
             if (m_values != null)
             {
                 values = new List<DataValue>(m_values.Count);
-                for (int ii = 0; ii < values.Count; ii++)
+                while (m_values.TryDequeue(out DataValue? dequeued))
                 {
-                    if (!m_values.TryDequeue(out DataValue? dequeued))
-                    {
-                        break;
-                    }
                     values.Add(dequeued);
                 }
             }
@@ -1211,7 +1209,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Changes the queue size.
         /// </summary>
-        public void SetQueueSize(int queueSize)
+        public void SetQueueSize(uint queueSize)
         {
             if (queueSize == QueueSize)
             {
@@ -1259,7 +1257,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Constructs a cache for a monitored item.
         /// </summary>
-        public MonitoredItemEventCache(int queueSize)
+        public MonitoredItemEventCache(uint queueSize)
         {
             QueueSize = queueSize;
             m_events = new Queue<EventFieldList>();
@@ -1268,7 +1266,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The size of the queue to maintain.
         /// </summary>
-        public int QueueSize { get; private set; }
+        public uint QueueSize { get; private set; }
 
         /// <summary>
         /// The last event received.
@@ -1307,7 +1305,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Changes the queue size.
         /// </summary>
-        public void SetQueueSize(int queueSize)
+        public void SetQueueSize(uint queueSize)
         {
             if (queueSize == QueueSize)
             {

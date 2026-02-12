@@ -1,13 +1,13 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System.Collections.Generic;
@@ -15,9 +15,9 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Opc.Ua;
 using Opc.Ua.Export;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
-using Opc.Ua;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient.Tests
@@ -33,7 +33,7 @@ namespace Technosoftware.UaClient.Tests
     [TestFixtureSource(nameof(FixtureArgs))]
     public class NodeSetExportTest : ClientTestFramework
     {
-        public static new readonly object[] FixtureArgs =
+        public static readonly new object[] FixtureArgs =
         [
             new object[] { Utils.UriSchemeOpcTcp }
         ];
@@ -129,7 +129,7 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 // Verify the file was created and has content
-                var fileInfo = new FileInfo(tempFile);
+                FileInfo fileInfo = new FileInfo(tempFile);
                 Assert.IsTrue(fileInfo.Exists, "NodeSet2 file should exist");
                 Assert.Greater(fileInfo.Length, 0, "NodeSet2 file should not be empty");
 
@@ -292,6 +292,391 @@ namespace Technosoftware.UaClient.Tests
                 if (File.Exists(tempFile))
                 {
                     File.Delete(tempFile);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Test exporting nodes with default options (no values).
+        /// </summary>
+        [Test]
+        public async Task ExportNodesToNodeSet2_DefaultOptions()
+        {
+            var allNodes = new List<INode>();
+
+            // Get variable node that has a value
+            INode serverStatusNode = await Session.NodeCache.FindAsync(VariableIds.Server_ServerStatus).ConfigureAwait(false);
+            if (serverStatusNode != null)
+            {
+                allNodes.Add(serverStatusNode);
+            }
+
+            // Get another variable
+            INode stateNode = await Session.NodeCache.FindAsync(VariableIds.Server_ServerStatus_State).ConfigureAwait(false);
+            if (stateNode != null)
+            {
+                allNodes.Add(stateNode);
+            }
+
+            Assert.Greater(allNodes.Count, 0, "Should have found at least one node");
+
+            // Export with default options
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                using (var stream = new FileStream(tempFile, FileMode.Create))
+                {
+                    var systemContext = new SystemContext(Telemetry)
+                    {
+                        NamespaceUris = Session.NamespaceUris,
+                        ServerUris = Session.ServerUris
+                    };
+
+                    UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream, NodeSetExportOptions.Default);
+                }
+
+                // Read it back and verify values are not exported
+                using (var stream = new FileStream(tempFile, FileMode.Open))
+                {
+                    var nodeSet = UANodeSet.Read(stream);
+                    Assert.IsNotNull(nodeSet, "Should be able to read the exported NodeSet2");
+                    Assert.IsNotNull(nodeSet.Items, "NodeSet2 should contain items");
+                    
+                    // Check that variables don't have values
+                    var variables = nodeSet.Items.OfType<Opc.Ua.Export.UAVariable>().ToList();
+                    foreach (var variable in variables)
+                    {
+                        Assert.IsNull(variable.Value, "Value should not be exported with Default options");
+                    }
+                }
+
+                // Verify default file is smaller or equal to complete
+                FileInfo defaultFile = new FileInfo(tempFile);
+                long defaultSize = defaultFile.Length;
+
+                // Export with complete options
+                string tempFileComplete = Path.GetTempFileName();
+                try
+                {
+                    using (var stream = new FileStream(tempFileComplete, FileMode.Create))
+                    {
+                        var systemContext = new SystemContext(Telemetry)
+                        {
+                            NamespaceUris = Session.NamespaceUris,
+                            ServerUris = Session.ServerUris
+                        };
+
+                        UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream, NodeSetExportOptions.Complete);
+                    }
+
+                    FileInfo completeFile = new FileInfo(tempFileComplete);
+                    long completeSize = completeFile.Length;
+
+                    // Default should be smaller or equal to complete
+                    // (Equal if nodes don't have values to export)
+                    Assert.LessOrEqual(defaultSize, completeSize, "Default export should not be larger than Complete");
+                }
+                finally
+                {
+                    if (File.Exists(tempFileComplete))
+                    {
+                        File.Delete(tempFileComplete);
+                    }
+                }
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Test exporting nodes with complete options (all metadata).
+        /// </summary>
+        [Test]
+        public async Task ExportNodesToNodeSet2_CompleteOptions()
+        {
+            var allNodes = new List<INode>();
+
+            // Get variable node
+            INode serverStatusNode = await Session.NodeCache.FindAsync(VariableIds.Server_ServerStatus).ConfigureAwait(false);
+            if (serverStatusNode != null)
+            {
+                allNodes.Add(serverStatusNode);
+            }
+
+            Assert.Greater(allNodes.Count, 0, "Should have found at least one node");
+
+            // Export with complete options
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                using (var stream = new FileStream(tempFile, FileMode.Create))
+                {
+                    var systemContext = new SystemContext(Telemetry)
+                    {
+                        NamespaceUris = Session.NamespaceUris,
+                        ServerUris = Session.ServerUris
+                    };
+
+                    UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream, NodeSetExportOptions.Complete);
+                }
+
+                // Read it back
+                using (var stream = new FileStream(tempFile, FileMode.Open))
+                {
+                    var nodeSet = UANodeSet.Read(stream);
+                    Assert.IsNotNull(nodeSet, "Should be able to read the exported NodeSet2");
+                    Assert.IsNotNull(nodeSet.Items, "NodeSet2 should contain items");
+                }
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Test exporting nodes with custom options.
+        /// </summary>
+        [Test]
+        public async Task ExportNodesToNodeSet2_CustomOptions()
+        {
+            var allNodes = new List<INode>();
+
+            // Get variable node
+            INode serverStatusNode = await Session.NodeCache.FindAsync(VariableIds.Server_ServerStatus).ConfigureAwait(false);
+            if (serverStatusNode != null)
+            {
+                allNodes.Add(serverStatusNode);
+            }
+
+            Assert.Greater(allNodes.Count, 0, "Should have found at least one node");
+
+            // Export with custom options - values exported
+            var customOptions = new NodeSetExportOptions
+            {
+                ExportValues = true,
+                ExportParentNodeId = false
+            };
+
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                using (var stream = new FileStream(tempFile, FileMode.Create))
+                {
+                    var systemContext = new SystemContext(Telemetry)
+                    {
+                        NamespaceUris = Session.NamespaceUris,
+                        ServerUris = Session.ServerUris
+                    };
+
+                    UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream, customOptions);
+                }
+
+                // Verify the file was created and has content
+                FileInfo fileInfo = new FileInfo(tempFile);
+                Assert.IsTrue(fileInfo.Exists, "NodeSet2 file should exist");
+                Assert.Greater(fileInfo.Length, 0, "NodeSet2 file should not be empty");
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Test that default export options preserve backward compatibility.
+        /// </summary>
+        [Test]
+        public async Task ExportNodesToNodeSet2_BackwardCompatibility()
+        {
+            var allNodes = new List<INode>();
+
+            // Get some nodes
+            INode serverNode = await Session.NodeCache.FindAsync(ObjectIds.Server).ConfigureAwait(false);
+            if (serverNode != null)
+            {
+                allNodes.Add(serverNode);
+            }
+
+            Assert.Greater(allNodes.Count, 0, "Should have found at least one node");
+
+            string tempFile1 = Path.GetTempFileName();
+            string tempFile2 = Path.GetTempFileName();
+            
+            try
+            {
+                var systemContext = new SystemContext(Telemetry)
+                {
+                    NamespaceUris = Session.NamespaceUris,
+                    ServerUris = Session.ServerUris
+                };
+
+                // Export without options (backward compatibility)
+                using (var stream = new FileStream(tempFile1, FileMode.Create))
+                {
+                    UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream);
+                }
+
+                // Export with default options
+                using (var stream = new FileStream(tempFile2, FileMode.Create))
+                {
+                    UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream, NodeSetExportOptions.Default);
+                }
+
+                // Both should be readable
+                using (var stream = new FileStream(tempFile1, FileMode.Open))
+                {
+                    var nodeSet = UANodeSet.Read(stream);
+                    Assert.IsNotNull(nodeSet, "Should be able to read backward compatible export");
+                }
+
+                using (var stream = new FileStream(tempFile2, FileMode.Open))
+                {
+                    var nodeSet = UANodeSet.Read(stream);
+                    Assert.IsNotNull(nodeSet, "Should be able to read default options export");
+                }
+            }
+            finally
+            {
+                if (File.Exists(tempFile1))
+                {
+                    File.Delete(tempFile1);
+                }
+                if (File.Exists(tempFile2))
+                {
+                    File.Delete(tempFile2);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Test exporting with user context option.
+        /// </summary>
+        [Test]
+        public async Task ExportNodesToNodeSet2_UserContextOptions()
+        {
+            var allNodes = new List<INode>();
+
+            // Get method node that has UserExecutable
+            INode getMonitoredItemsNode = await Session.NodeCache.FindAsync(MethodIds.Server_GetMonitoredItems).ConfigureAwait(false);
+            if (getMonitoredItemsNode != null)
+            {
+                allNodes.Add(getMonitoredItemsNode);
+            }
+
+            // Get variable node that has UserAccessLevel
+            INode serverStatusNode = await Session.NodeCache.FindAsync(VariableIds.Server_ServerStatus).ConfigureAwait(false);
+            if (serverStatusNode != null)
+            {
+                allNodes.Add(serverStatusNode);
+            }
+
+            Assert.Greater(allNodes.Count, 0, "Should have found at least one node");
+
+            // Export WITHOUT user context
+            string tempFileNoContext = Path.GetTempFileName();
+            try
+            {
+                using (var stream = new FileStream(tempFileNoContext, FileMode.Create))
+                {
+                    var systemContext = new SystemContext(Telemetry)
+                    {
+                        NamespaceUris = Session.NamespaceUris,
+                        ServerUris = Session.ServerUris
+                    };
+
+                    var optionsNoContext = new NodeSetExportOptions
+                    {
+                        ExportValues = false,
+                        ExportParentNodeId = false,
+                        ExportUserContext = false
+                    };
+
+                    UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream, optionsNoContext);
+                }
+
+                // Export WITH user context
+                string tempFileWithContext = Path.GetTempFileName();
+                try
+                {
+                    using (var stream = new FileStream(tempFileWithContext, FileMode.Create))
+                    {
+                        var systemContext = new SystemContext(Telemetry)
+                        {
+                            NamespaceUris = Session.NamespaceUris,
+                            ServerUris = Session.ServerUris
+                        };
+
+                        var optionsWithContext = new NodeSetExportOptions
+                        {
+                            ExportValues = false,
+                            ExportParentNodeId = false,
+                            ExportUserContext = true
+                        };
+
+                        UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream, optionsWithContext);
+                    }
+
+                    // Read both files and compare
+                    Opc.Ua.Export.UANodeSet nodeSetNoContext;
+                    using (var stream = new FileStream(tempFileNoContext, FileMode.Open))
+                    {
+                        nodeSetNoContext = UANodeSet.Read(stream);
+                        Assert.IsNotNull(nodeSetNoContext, "Should be able to read NodeSet without user context");
+                    }
+
+                    Opc.Ua.Export.UANodeSet nodeSetWithContext;
+                    using (var stream = new FileStream(tempFileWithContext, FileMode.Open))
+                    {
+                        nodeSetWithContext = UANodeSet.Read(stream);
+                        Assert.IsNotNull(nodeSetWithContext, "Should be able to read NodeSet with user context");
+                    }
+
+                    // Verify that methods in the context version have UserExecutable
+                    var methodsNoContext = nodeSetNoContext.Items?.OfType<Opc.Ua.Export.UAMethod>().ToList() ?? new List<Opc.Ua.Export.UAMethod>();
+                    var methodsWithContext = nodeSetWithContext.Items?.OfType<Opc.Ua.Export.UAMethod>().ToList() ?? new List<Opc.Ua.Export.UAMethod>();
+                    
+                    Assert.AreEqual(methodsNoContext.Count, methodsWithContext.Count, "Should have same number of methods");
+
+                    // Variables with context should potentially have UserAccessLevel if different from AccessLevel
+                    var variablesNoContext = nodeSetNoContext.Items?.OfType<Opc.Ua.Export.UAVariable>().ToList() ?? new List<Opc.Ua.Export.UAVariable>();
+                    var variablesWithContext = nodeSetWithContext.Items?.OfType<Opc.Ua.Export.UAVariable>().ToList() ?? new List<Opc.Ua.Export.UAVariable>();
+                    
+                    Assert.AreEqual(variablesNoContext.Count, variablesWithContext.Count, "Should have same number of variables");
+
+                    // File with user context should be larger or equal
+                    FileInfo fileNoContext = new FileInfo(tempFileNoContext);
+                    FileInfo fileWithContext = new FileInfo(tempFileWithContext);
+                    
+                    // Note: Sizes might be equal if UserAccessLevel == AccessLevel for all variables
+                    // The important part is that export completes successfully with both options
+                    Assert.IsTrue(fileWithContext.Length > 0, "Export with user context should produce a valid file");
+                    Assert.IsTrue(fileNoContext.Length > 0, "Export without user context should produce a valid file");
+                }
+                finally
+                {
+                    if (File.Exists(tempFileWithContext))
+                    {
+                        File.Delete(tempFileWithContext);
+                    }
+                }
+            }
+            finally
+            {
+                if (File.Exists(tempFileNoContext))
+                {
+                    File.Delete(tempFileNoContext);
                 }
             }
         }
