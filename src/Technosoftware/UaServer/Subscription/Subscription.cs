@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -375,7 +375,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Deletes the subscription.
         /// </summary>
-        public void Delete(UaServerOperationContext context)
+        public async ValueTask DeleteAsync(UaServerOperationContext context, CancellationToken cancellationToken = default)
         {
             // delete the diagnostics.
             if (m_diagnosticsId != null && !m_diagnosticsId.IsNullNodeId)
@@ -385,34 +385,30 @@ namespace Technosoftware.UaServer
                     .DeleteSubscriptionDiagnostics(systemContext, m_diagnosticsId);
             }
 
-            lock (m_lock)
+            try
             {
-                try
+                TraceState(LogLevel.Information, TraceStateId.Deleted, "DELETED");
+
+                // the context may be null if the server is cleaning up expired subscriptions.
+                // in this case we create a context with a dummy request and use the current session.
+                if (context == null)
                 {
-                    TraceState(LogLevel.Information, TraceStateId.Deleted, "DELETED");
-
-                    // the context may be null if the server is cleaning up expired subscriptions.
-                    // in this case we create a context with a dummy request and use the current session.
-                    if (context == null)
+                    var requestHeader = new RequestHeader
                     {
-                        var requestHeader = new RequestHeader
-                        {
-                            ReturnDiagnostics = (int)DiagnosticsMasks.OperationSymbolicIdAndText
-                        };
-                        context = new UaServerOperationContext(requestHeader, null, RequestType.Unknown);
-                    }
+                        ReturnDiagnostics = (int)DiagnosticsMasks.OperationSymbolicIdAndText
+                    };
+                    context = new UaServerOperationContext(requestHeader, null, RequestType.Unknown);
+                }
 
-                    DeleteMonitoredItems(
+                await DeleteMonitoredItemsAsync(
                         context,
                         [.. m_monitoredItems.Keys],
                         true,
-                        out StatusCodeCollection results,
-                        out DiagnosticInfoCollection diagnosticInfos);
-                }
-                catch (Exception e)
-                {
-                    m_logger.LogError(e, "Delete items for subscription failed.");
-                }
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                m_logger.LogError(e, "Delete items for subscription failed.");
             }
         }
 
@@ -564,7 +560,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="context">The session to which the subscription is transferred.</param>
         /// <param name="sendInitialValues">Whether the first Publish response shall contain current values.</param>
-        public void TransferSession(UaServerOperationContext context, bool sendInitialValues)
+        /// <param name="cancellationToken">The cancellation token.</param>
+        public async ValueTask TransferSessionAsync(UaServerOperationContext context, bool sendInitialValues, CancellationToken cancellationToken = default)
         {
             // locked by caller
             Session = context.Session;
@@ -576,8 +573,9 @@ namespace Technosoftware.UaServer
                 errors.Add(null);
             }
 
-            m_server.NodeManager
-                .TransferMonitoredItems(context, sendInitialValues, monitoredItems, errors);
+            await m_server.NodeManager
+                .TransferMonitoredItemsAsync(context, sendInitialValues, monitoredItems, errors, cancellationToken)
+                .ConfigureAwait(false);
 
             int badTransfers = 0;
             for (int ii = 0; ii < errors.Count; ii++)
@@ -1525,12 +1523,11 @@ namespace Technosoftware.UaServer
         /// Adds monitored items to a subscription.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-        public void CreateMonitoredItems(
+        public async ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemCreateRequestCollection itemsToCreate,
-            out MonitoredItemCreateResultCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            CancellationToken cancellationToken = default)
         {
             if (context == null)
             {
@@ -1543,6 +1540,9 @@ namespace Technosoftware.UaServer
             }
 
             int count = itemsToCreate.Count;
+
+            MonitoredItemCreateResultCollection results;
+            DiagnosticInfoCollection diagnosticInfos;
 
             lock (m_lock)
             {
@@ -1565,7 +1565,7 @@ namespace Technosoftware.UaServer
                 filterResults.Add(null);
             }
 
-            m_server.NodeManager.CreateMonitoredItems(
+            await m_server.NodeManager.CreateMonitoredItemsAsync(
                 context,
                 Id,
                 m_publishingInterval,
@@ -1574,7 +1574,8 @@ namespace Technosoftware.UaServer
                 errors,
                 filterResults,
                 monitoredItems,
-                IsDurable);
+                IsDurable,
+                cancellationToken).ConfigureAwait(false);
 
             // allocate results.
             bool diagnosticsExist = false;
@@ -1655,6 +1656,12 @@ namespace Technosoftware.UaServer
 
                 TraceState(LogLevel.Information, TraceStateId.Items, "ITEMS CREATED");
             }
+
+            return new CreateMonitoredItemsResponse
+            {
+                Results = results,
+                DiagnosticInfos = diagnosticInfos
+            };
         }
 
         /// <summary>
@@ -1733,12 +1740,11 @@ namespace Technosoftware.UaServer
         /// Modifies monitored items in a subscription.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-        public void ModifyMonitoredItems(
+        public async ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemModifyRequestCollection itemsToModify,
-            out MonitoredItemModifyResultCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            CancellationToken cancellationToken = default)
         {
             if (context == null)
             {
@@ -1754,8 +1760,8 @@ namespace Technosoftware.UaServer
 
             // allocate results.
             bool diagnosticsExist = false;
-            results = new MonitoredItemModifyResultCollection(count);
-            diagnosticInfos = null;
+            var results = new MonitoredItemModifyResultCollection(count);
+            DiagnosticInfoCollection diagnosticInfos = null;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
@@ -1822,13 +1828,15 @@ namespace Technosoftware.UaServer
             // update items.
             if (validItems)
             {
-                m_server.NodeManager.ModifyMonitoredItems(
+                await m_server.NodeManager.ModifyMonitoredItemsAsync(
                     context,
                     timestampsToReturn,
                     monitoredItems,
                     itemsToModify,
                     errors,
-                    filterResults);
+                    filterResults,
+                    cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             lock (m_lock)
@@ -1893,35 +1901,38 @@ namespace Technosoftware.UaServer
 
                 TraceState(LogLevel.Information, TraceStateId.Items, "ITEMS MODIFIED");
             }
+
+            return new ModifyMonitoredItemsResponse
+            {
+                Results = results,
+                DiagnosticInfos = diagnosticInfos
+            };
         }
 
         /// <summary>
         /// Deletes the monitored items in a subscription.
         /// </summary>
-        public void DeleteMonitoredItems(
+        public ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             UInt32Collection monitoredItemIds,
-            out StatusCodeCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            CancellationToken cancellationToken = default)
         {
-            DeleteMonitoredItems(
+            return DeleteMonitoredItemsAsync(
                 context,
                 monitoredItemIds,
                 false,
-                out results,
-                out diagnosticInfos);
+                cancellationToken);
         }
 
         /// <summary>
         /// Deletes the monitored items in a subscription.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-        private void DeleteMonitoredItems(
+        private async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             UInt32Collection monitoredItemIds,
             bool doNotCheckSession,
-            out StatusCodeCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            CancellationToken cancellationToken = default)
         {
             if (context == null)
             {
@@ -1936,8 +1947,8 @@ namespace Technosoftware.UaServer
             int count = monitoredItemIds.Count;
 
             bool diagnosticsExist = false;
-            results = new StatusCodeCollection(count);
-            diagnosticInfos = null;
+            var results = new StatusCodeCollection(count);
+            DiagnosticInfoCollection diagnosticInfos = null;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
@@ -2028,7 +2039,8 @@ namespace Technosoftware.UaServer
             // update items.
             if (validItems)
             {
-                m_server.NodeManager.DeleteMonitoredItems(context, Id, monitoredItems, errors);
+                await m_server.NodeManager.DeleteMonitoredItemsAsync(context, Id, monitoredItems, errors, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             //dispose monitored Items
@@ -2082,6 +2094,12 @@ namespace Technosoftware.UaServer
 
                 TraceState(LogLevel.Information, TraceStateId.Items, "ITEMS DELETED");
             }
+
+            return new DeleteMonitoredItemsResponse
+            {
+                Results = results,
+                DiagnosticInfos = diagnosticInfos
+            };
         }
 
         /// <summary>

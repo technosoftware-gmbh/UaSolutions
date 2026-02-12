@@ -1,13 +1,13 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -49,7 +49,6 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var clientSignature = new SignatureData();
-            var clientSoftwareCertificates = new SignedSoftwareCertificateCollection();
             var localeIds = new StringCollection();
             var userIdentityToken = new ExtensionObject();
             var userTokenSignature = new SignatureData();
@@ -66,7 +65,7 @@ namespace Technosoftware.UaClient.Tests
             ActivateSessionResponse response = await sessionMock.ActivateSessionAsync(
                 requestHeader,
                 clientSignature,
-                clientSoftwareCertificates,
+                null,
                 localeIds,
                 userIdentityToken,
                 userTokenSignature,
@@ -85,7 +84,6 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var clientSignature = new SignatureData();
-            var clientSoftwareCertificates = new SignedSoftwareCertificateCollection();
             var localeIds = new StringCollection();
             var userIdentityToken = new ExtensionObject();
             var userTokenSignature = new SignatureData();
@@ -109,7 +107,7 @@ namespace Technosoftware.UaClient.Tests
                 async () => await sessionMock.ActivateSessionAsync(
                     requestHeader,
                     clientSignature,
-                    clientSoftwareCertificates,
+                    null,
                     localeIds,
                     userIdentityToken,
                     userTokenSignature,
@@ -123,7 +121,6 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var clientSignature = new SignatureData();
-            var clientSoftwareCertificates = new SignedSoftwareCertificateCollection();
             var localeIds = new StringCollection();
             var userIdentityToken = new ExtensionObject();
             var userTokenSignature = new SignatureData();
@@ -141,7 +138,7 @@ namespace Technosoftware.UaClient.Tests
                 async () => await sessionMock.ActivateSessionAsync(
                     requestHeader,
                     clientSignature,
-                    clientSoftwareCertificates,
+                    null,
                     localeIds,
                     userIdentityToken,
                     userTokenSignature,
@@ -598,8 +595,8 @@ namespace Technosoftware.UaClient.Tests
             ActivitySource.AddActivityListener(new ActivityListener
             {
                 ShouldListenTo = a => a.Name == activitySource.Name,
-                Sample = (ref options) => ActivitySamplingResult.AllData,
-                SampleUsingParentId = (ref options) => ActivitySamplingResult.AllData
+                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
+                SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllData
             });
             Assert.That(activitySource.HasListeners(), Is.True);
             sessionMock.ActivityTraceFlags = ClientTraceFlags.Traces;
@@ -657,8 +654,8 @@ namespace Technosoftware.UaClient.Tests
             ActivitySource.AddActivityListener(new ActivityListener
             {
                 ShouldListenTo = a => a.Name == activitySource.Name,
-                Sample = (ref options) => ActivitySamplingResult.AllData,
-                SampleUsingParentId = (ref options) => ActivitySamplingResult.AllData
+                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
+                SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllData
             });
             Assert.That(activitySource.HasListeners(), Is.True);
             sessionMock.ActivityTraceFlags = ClientTraceFlags.Traces;

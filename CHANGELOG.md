@@ -51,6 +51,7 @@
 
 The following OPC UA Foundation releases of the OPC UA Stack were integrated:
 
+- 1.5.378.106
 - 1.5.378.10-preview
 - 1.5.377.21
 

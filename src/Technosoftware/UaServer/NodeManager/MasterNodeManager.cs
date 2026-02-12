@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -23,10 +23,8 @@ using Opc.Ua;
 
 namespace Technosoftware.UaServer
 {
-    /// <summary>
-    /// The master node manager for the server.
-    /// </summary>
-    public class MasterNodeManager : IDisposable
+    /// <inheritdoc/>
+    public class MasterNodeManager : IDisposable, IUaMasterNodeManager
     {
         /// <summary>
         /// Initializes the object with default values.
@@ -96,9 +94,9 @@ namespace Technosoftware.UaServer
             };
 
             // always add the diagnostics and configuration node manager to the start of the list.
-            var configurationAndDiagnosticsManager = new ConfigurationNodeManager(
-                server,
-                configuration);
+            IUaConfigurationNodeManager configurationAndDiagnosticsManager
+                = server.MainNodeManagerFactory.CreateConfigurationNodeManager();
+
             RegisterNodeManager(
                 configurationAndDiagnosticsManager.ToAsyncNodeManager(),
                 registeredManagers,
@@ -106,7 +104,8 @@ namespace Technosoftware.UaServer
 
             // add the core node manager second because the diagnostics node manager takes priority.
             // always add the core node manager to the second of the list.
-            var coreNodeManager = new CoreNodeManager(Server, configuration, (ushort)dynamicNamespaceIndex);
+            IUaCoreNodeManager coreNodeManager = server.MainNodeManagerFactory.CreateCoreNodeManager((ushort)dynamicNamespaceIndex);
+
             m_nodeManagers.Add(coreNodeManager.ToAsyncNodeManager());
 
             // register core node manager for default UA namespace.
@@ -288,26 +287,18 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Returns the core node manager.
-        /// </summary>
+        /// <inheritdoc/>
         public CoreNodeManager CoreNodeManager => m_nodeManagers[1].SyncNodeManager as CoreNodeManager;
 
-        /// <summary>
-        /// Returns the diagnostics node manager.
-        /// </summary>
+        /// <inheritdoc/>
         public DiagnosticsNodeManager DiagnosticsNodeManager
             => m_nodeManagers[0].SyncNodeManager as DiagnosticsNodeManager;
 
-        /// <summary>
-        /// Returns the configuration node manager.
-        /// </summary>
+        /// <inheritdoc/>
         public ConfigurationNodeManager ConfigurationNodeManager
             => m_nodeManagers[0].SyncNodeManager as ConfigurationNodeManager;
 
-        /// <summary>
-        /// Creates the node managers and start them
-        /// </summary>
+        /// <inheritdoc/>
         public virtual async ValueTask StartupAsync(CancellationToken cancellationToken = default)
         {
             await m_startupShutdownSemaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -362,9 +353,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Signals that a session is closing.
-        /// </summary>
+        /// <inheritdoc/>
         public virtual async ValueTask SessionClosingAsync(
             UaServerOperationContext context,
             NodeId sessionId,
@@ -396,9 +385,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Shuts down the node managers.
-        /// </summary>
+        /// <inheritdoc/>
         public virtual async ValueTask ShutdownAsync(CancellationToken cancellationToken = default)
         {
             await m_startupShutdownSemaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -422,47 +409,13 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Registers the node manager as the node manager for Nodes in the specified namespace.
-        /// </summary>
-        /// <param name="namespaceUri">The URI of the namespace.</param>
-        /// <param name="nodeManager">The NodeManager which owns node in the namespace.</param>
-        /// <remarks>
-        /// <para>
-        /// Multiple NodeManagers may register interest in a Namespace.
-        /// The order in which this method is called determines the precedence if multiple NodeManagers exist.
-        /// This method adds the namespaceUri to the Server's Namespace table if it does not already exist.
-        /// </para>
-        /// <para>This method is thread safe and can be called at anytime.</para>
-        /// <para>
-        /// This method does not have to be called for any namespaces that were in the NodeManager's
-        /// NamespaceUri property when the MasterNodeManager was created.
-        /// </para>
-        /// </remarks>
-        /// <exception cref="ArgumentNullException">Throw if the namespaceUri or the nodeManager are null.</exception>
+        /// <inheritdoc/>
         public void RegisterNamespaceManager(string namespaceUri, IUaNodeManager nodeManager)
         {
             RegisterNamespaceManager(namespaceUri, nodeManager.ToAsyncNodeManager());
         }
 
-        /// <summary>
-        /// Registers the node manager as the node manager for Nodes in the specified namespace.
-        /// </summary>
-        /// <param name="namespaceUri">The URI of the namespace.</param>
-        /// <param name="nodeManager">The NodeManager which owns node in the namespace.</param>
-        /// <remarks>
-        /// <para>
-        /// Multiple NodeManagers may register interest in a Namespace.
-        /// The order in which this method is called determines the precedence if multiple NodeManagers exist.
-        /// This method adds the namespaceUri to the Server's Namespace table if it does not already exist.
-        /// </para>
-        /// <para>This method is thread safe and can be called at anytime.</para>
-        /// <para>
-        /// This method does not have to be called for any namespaces that were in the NodeManager's
-        /// NamespaceUri property when the MasterNodeManager was created.
-        /// </para>
-        /// </remarks>
-        /// <exception cref="ArgumentNullException">Throw if the namespaceUri or the nodeManager are null.</exception>
+        /// <inheritdoc/>
         public void RegisterNamespaceManager(string namespaceUri, IUaStandardAsyncNodeManager nodeManager)
         {
             if (string.IsNullOrEmpty(namespaceUri))
@@ -504,25 +457,13 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Unregisters the node manager as the node manager for Nodes in the specified namespace.
-        /// </summary>
-        /// <param name="namespaceUri">The URI of the namespace.</param>
-        /// <param name="nodeManager">The NodeManager which no longer owns nodes in the namespace.</param>
-        /// <returns>A value indicating whether the node manager was successfully unregistered.</returns>
-        /// <exception cref="ArgumentNullException">Throw if the namespaceUri or the nodeManager are null.</exception>
+        /// <inheritdoc/>
         public bool UnregisterNamespaceManager(string namespaceUri, IUaNodeManager nodeManager)
         {
             return UnregisterNamespaceManager(namespaceUri, null, nodeManager);
         }
 
-        /// <summary>
-        /// Unregisters the node manager as the node manager for Nodes in the specified namespace.
-        /// </summary>
-        /// <param name="namespaceUri">The URI of the namespace.</param>
-        /// <param name="nodeManager">The NodeManager which no longer owns nodes in the namespace.</param>
-        /// <returns>A value indicating whether the node manager was successfully unregistered.</returns>
-        /// <exception cref="ArgumentNullException">Throw if the namespaceUri or the nodeManager are null.</exception>
+        /// <inheritdoc/>
         public bool UnregisterNamespaceManager(string namespaceUri, IUaStandardAsyncNodeManager nodeManager)
         {
             return UnregisterNamespaceManager(namespaceUri, nodeManager, null);
@@ -585,9 +526,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Returns node handle and its node manager.
-        /// </summary>
+        /// <inheritdoc/>
         public virtual object GetManagerHandle(NodeId nodeId, out IUaNodeManager nodeManager)
         {
             object handle;
@@ -630,9 +569,7 @@ namespace Technosoftware.UaServer
             return null;
         }
 
-        /// <summary>
-        /// Returns node handle and its node manager.
-        /// </summary>
+        /// <inheritdoc/>
         public virtual object GetManagerHandle(NodeId nodeId, out IUaStandardAsyncNodeManager nodeManager)
         {
             (object handle, IUaStandardAsyncNodeManager nodeManager) result =
@@ -643,9 +580,7 @@ namespace Technosoftware.UaServer
             return result.handle;
         }
 
-        /// <summary>
-        /// Returns node handle and its node manager.
-        /// </summary>
+        /// <inheritdoc/>
         public virtual async ValueTask<(object handle, IUaStandardAsyncNodeManager nodeManager)>
             GetManagerHandleAsync(NodeId nodeId, CancellationToken cancellationToken = default)
         {
@@ -691,14 +626,13 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Adds the references to the target.
         /// </summary>
+        [Obsolete("Use AddReferencesAsync instead.")]
         public virtual void AddReferences(NodeId sourceId, IList<IReference> references)
         {
             AddReferencesAsync(sourceId, references).AsTask().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Adds the references to the target.
-        /// </summary>
+        /// <inheritdoc/>
         public virtual async ValueTask AddReferencesAsync(NodeId sourceId,
                                                           IList<IReference> references,
                                                           CancellationToken cancellationToken = default)
@@ -719,14 +653,13 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Deletes the references to the target.
         /// </summary>
+        [Obsolete("Use DeleteReferencesAsync")]
         public virtual void DeleteReferences(NodeId targetId, IList<IReference> references)
         {
             DeleteReferencesAsync(targetId, references).AsTask().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Deletes the references to the target.
-        /// </summary>
+        /// <inheritdoc/>
         public virtual async ValueTask DeleteReferencesAsync(NodeId targetId,
                                                              IList<IReference> references,
                                                              CancellationToken cancellationToken = default)
@@ -756,17 +689,13 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Deletes the specified references.
-        /// </summary>
+        /// <inheritdoc/>
         public void RemoveReferences(List<LocalReference> referencesToRemove)
         {
             RemoveReferencesAsync(referencesToRemove).AsTask().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Deletes the specified references.
-        /// </summary>
+        /// <inheritdoc/>
         public async ValueTask RemoveReferencesAsync(List<LocalReference> referencesToRemove, CancellationToken cancellationToken = default)
         {
             for (int ii = 0; ii < referencesToRemove.Count; ii++)
@@ -796,10 +725,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Registers a set of node ids.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="nodesToRegister"/> is <c>null</c>.</exception>
+        /// <inheritdoc/>
         public virtual void RegisterNodes(
             UaServerOperationContext context,
             NodeIdCollection nodesToRegister,
@@ -838,10 +764,7 @@ namespace Technosoftware.UaServer
             */
         }
 
-        /// <summary>
-        /// Unregisters a set of node ids.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="nodesToUnregister"/> is <c>null</c>.</exception>
+        /// <inheritdoc/>
         public virtual void UnregisterNodes(
             UaServerOperationContext context,
             NodeIdCollection nodesToUnregister)
@@ -875,6 +798,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="browsePaths"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
+        [Obsolete("Use TranslateBrowsePathsToNodeIdsAsync instead.")]
         public virtual void TranslateBrowsePathsToNodeIds(
             UaServerOperationContext context,
             BrowsePathCollection browsePaths,
@@ -886,11 +810,7 @@ namespace Technosoftware.UaServer
                 browsePaths).AsTask().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Translates a start node id plus a relative paths into a node id.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="browsePaths"/> is <c>null</c>.</exception>
-        /// <exception cref="ServiceResultException"></exception>
+        /// <inheritdoc/>
         public virtual async ValueTask<(BrowsePathResultCollection results, DiagnosticInfoCollection diagnosticInfos)>
             TranslateBrowsePathsToNodeIdsAsync(
             UaServerOperationContext context,
@@ -1268,11 +1188,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Returns the set of references that meet the filter criteria.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-        /// <exception cref="ServiceResultException"></exception>
+        /// <inheritdoc/>
         public virtual async ValueTask<(BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos)> BrowseAsync(
             UaServerOperationContext context,
             ViewDescription view,
@@ -1456,11 +1372,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Continues a browse operation that was previously halted.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-        /// <exception cref="ServiceResultException"></exception>
+        /// <inheritdoc/>
         public virtual async ValueTask<(BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos)>
             BrowseNextAsync(
                 UaServerOperationContext context,
@@ -1867,11 +1779,7 @@ namespace Technosoftware.UaServer
             return true;
         }
 
-        /// <summary>
-        /// Reads a set of nodes.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="nodesToRead"/> is <c>null</c>.</exception>
-        /// <exception cref="ServiceResultException"></exception>
+        /// <inheritdoc/>
         public virtual async ValueTask<(DataValueCollection values, DiagnosticInfoCollection diagnosticInfos)> ReadAsync(
             UaServerOperationContext context,
             double maxAge,
@@ -2011,10 +1919,7 @@ namespace Technosoftware.UaServer
             return (values, diagnosticInfos);
         }
 
-        /// <summary>
-        /// Reads the history of a set of items.
-        /// </summary>
-        /// <exception cref="ServiceResultException"></exception>
+        /// <inheritdoc/>
         public virtual async ValueTask<(HistoryReadResultCollection values, DiagnosticInfoCollection diagnosticInfos)> HistoryReadAsync(
             UaServerOperationContext context,
             ExtensionObject historyReadDetails,
@@ -2142,10 +2047,7 @@ namespace Technosoftware.UaServer
             return (results, diagnosticInfos);
         }
 
-        /// <summary>
-        /// Writes a set of values.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <inheritdoc/>
         public virtual async ValueTask<(StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos)> WriteAsync(
             UaServerOperationContext context,
             WriteValueCollection nodesToWrite,
@@ -2254,9 +2156,7 @@ namespace Technosoftware.UaServer
             return (results, diagnosticInfos);
         }
 
-        /// <summary>
-        /// Updates the history for a set of nodes.
-        /// </summary>
+        /// <inheritdoc/>
         public virtual async ValueTask<(HistoryUpdateResultCollection results, DiagnosticInfoCollection diagnosticInfos)>
             HistoryUpdateAsync(
                 UaServerOperationContext context,
@@ -2391,25 +2291,7 @@ namespace Technosoftware.UaServer
             return (results, diagnosticInfos);
         }
 
-        /// <summary>
-        /// Calls a method defined on an object.
-        /// </summary>
-        public virtual void Call(
-            UaServerOperationContext context,
-            CallMethodRequestCollection methodsToCall,
-            out CallMethodResultCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
-        {
-            (results, diagnosticInfos) = CallAsync(
-                context,
-                methodsToCall).AsTask().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Calls a method defined on an object.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="context"/> is <c>null</c>.</exception>
+        /// <inheritdoc/>
         public virtual async ValueTask<(CallMethodResultCollection results, DiagnosticInfoCollection diagnosticInfos)>
             CallAsync(
                 UaServerOperationContext context,
@@ -2522,21 +2404,7 @@ namespace Technosoftware.UaServer
             return (results, diagnosticInfos);
         }
 
-        /// <summary>
-        /// Calls a method defined on an object.
-        /// </summary>
-        public virtual void ConditionRefresh(
-            UaServerOperationContext context,
-            IList<IUaEventMonitoredItem> monitoredItems)
-        {
-            ConditionRefreshAsync(
-                context,
-                monitoredItems).AsTask().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Handles condition refresh request.
-        /// </summary>
+        /// <inheritdoc/>
         public virtual async ValueTask ConditionRefreshAsync(
             UaServerOperationContext context,
             IList<IUaEventMonitoredItem> monitoredItems,
@@ -2562,6 +2430,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <exception cref="ServiceResultException"></exception>
+        [Obsolete("Use CreateMonitoredItemsAsync")]
         public virtual void CreateMonitoredItems(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -2585,12 +2454,7 @@ namespace Technosoftware.UaServer
                 createDurable).AsTask().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Creates a set of monitored items.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        /// <exception cref="ServiceResultException"></exception>
+        /// <inheritdoc/>
         public virtual async ValueTask CreateMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -2865,27 +2729,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Restore a set of monitored items after a Server Restart.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="itemsToRestore"/> is <c>null</c>.</exception>
-        /// <exception cref="InvalidOperationException"></exception>
-        public virtual void RestoreMonitoredItems(
-            IList<IUaStoredMonitoredItem> itemsToRestore,
-            IList<IUaMonitoredItem> monitoredItems,
-            IUserIdentity savedOwnerIdentity)
-        {
-            RestoreMonitoredItemsAsync(
-                itemsToRestore,
-                monitoredItems,
-                savedOwnerIdentity).AsTask().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Restore a set of monitored items after a Server Restart.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="itemsToRestore"/> is <c>null</c>.</exception>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <inheritdoc/>
         public virtual async ValueTask RestoreMonitoredItemsAsync(
             IList<IUaStoredMonitoredItem> itemsToRestore,
             IList<IUaMonitoredItem> monitoredItems,
@@ -3015,6 +2859,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
+        [Obsolete("Use ModifyMonitoredItemsAsync")]
         public virtual void ModifyMonitoredItems(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
@@ -3032,11 +2877,7 @@ namespace Technosoftware.UaServer
                 filterResults).AsTask().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Modifies a set of monitored items.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-        /// <exception cref="ServiceResultException"></exception>
+        /// <inheritdoc/>
         public virtual async ValueTask ModifyMonitoredItemsAsync(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
@@ -3234,6 +3075,7 @@ namespace Technosoftware.UaServer
         /// Transfers a set of monitored items.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        [Obsolete("User TransferMonitoredItemsAsync")]
         public virtual void TransferMonitoredItems(
             UaServerOperationContext context,
             bool sendInitialValues,
@@ -3247,10 +3089,7 @@ namespace Technosoftware.UaServer
                 errors).AsTask().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Transfers a set of monitored items.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <inheritdoc/>
         public virtual async ValueTask TransferMonitoredItemsAsync(
             UaServerOperationContext context,
             bool sendInitialValues,
@@ -3300,6 +3139,7 @@ namespace Technosoftware.UaServer
         /// Deletes a set of monitored items.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        [Obsolete("Use DeleteMonitoredItemsAsync")]
         public virtual void DeleteMonitoredItems(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -3313,10 +3153,7 @@ namespace Technosoftware.UaServer
                 errors).AsTask().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Deletes a set of monitored items.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <inheritdoc/>
         public virtual async ValueTask DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
@@ -3433,27 +3270,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Changes the monitoring mode for a set of items.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-        public virtual void SetMonitoringMode(
-            UaServerOperationContext context,
-            MonitoringMode monitoringMode,
-            IList<IUaMonitoredItem> itemsToModify,
-            IList<ServiceResult> errors)
-        {
-            SetMonitoringModeAsync(
-                context,
-                monitoringMode,
-                itemsToModify,
-                errors).AsTask().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Changes the monitoring mode for a set of items.
-        /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
+        /// <inheritdoc/>
         public virtual async ValueTask SetMonitoringModeAsync(
             UaServerOperationContext context,
             MonitoringMode monitoringMode,
@@ -3548,14 +3365,10 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected IUaServerData Server { get; }
 
-        /// <summary>
-        /// The node managers being managed.
-        /// </summary>
+        /// <inheritdoc/>
         public IReadOnlyList<IUaStandardAsyncNodeManager> AsyncNodeManagers => m_nodeManagers;
 
-        /// <summary>
-        /// The node managers being managed.
-        /// </summary>
+        /// <inheritdoc/>
         public IReadOnlyList<IUaNodeManager> NodeManagers => m_nodeManagers.ConvertAll(m => m.SyncNodeManager);
 
         /// <summary>
@@ -3735,11 +3548,9 @@ namespace Technosoftware.UaServer
                 return StatusCodes.BadMethodInvalid;
             }
 
-            // check input arguments
-            if (callMethodRequest.InputArguments == null)
-            {
-                return StatusCodes.BadStructureMissing;
-            }
+            // Initialize input arguments to empty collection if null.
+            // Methods with only output parameters (no input parameters) are valid.
+            callMethodRequest.InputArguments ??= [];
 
             return StatusCodes.Good;
         }

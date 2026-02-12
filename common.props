@@ -4,7 +4,7 @@
     <RepositoryUrl>https://github.com/technosoftware-gmbh/UaSolutions</RepositoryUrl>
     <VersionPrefix>5.0.0-rc</VersionPrefix>
     <VersionSuffix>rc-$([System.DateTime]::Now.ToString("yyyyMMdd"))</VersionSuffix>
-    <Copyright>Copyright © 2011 - 2025 Technosoftware GmbH</Copyright>
+    <Copyright>Copyright © 2011 - 2026 Technosoftware GmbH</Copyright>
     <PackagePrefix>Technosoftware.UaSolutions</PackagePrefix>
     <AssemblyPrefix>Technosoftware</AssemblyPrefix>
     <Company>Technosoftware GmbH</Company>

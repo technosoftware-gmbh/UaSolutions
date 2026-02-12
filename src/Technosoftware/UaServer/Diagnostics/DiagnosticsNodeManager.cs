@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -22,10 +22,8 @@ using Opc.Ua;
 
 namespace Technosoftware.UaServer
 {
-    /// <summary>
-    /// A node manager the diagnostic information exposed by the server.
-    /// </summary>
-    public class DiagnosticsNodeManager : UaStandardNodeManager
+    /// <inheritdoc/>
+    public class DiagnosticsNodeManager : UaStandardNodeManager, IUaDiagnosticsNodeManager
     {
         /// <summary>
         /// Initializes the node manager.
@@ -583,22 +581,16 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Force out of band diagnostics update after a change of diagnostics variables.
-        /// </summary>
+        /// <inheritdoc/>
         public void ForceDiagnosticsScan()
         {
             m_lastDiagnosticsScanTime = DateTime.MinValue;
         }
 
-        /// <summary>
-        /// True if diagnostics are currently enabled.
-        /// </summary>
+        /// <inheritdoc/>
         public bool DiagnosticsEnabled { get; private set; }
 
-        /// <summary>
-        /// Sets the flag controlling whether diagnostics is enabled for the server.
-        /// </summary>
+        /// <inheritdoc/>
         public void SetDiagnosticsEnabled(UaServerContext context, bool enabled)
         {
             var nodesToDelete = new List<NodeState>();
@@ -715,9 +707,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Creates the diagnostics node for the server.
-        /// </summary>
+        /// <inheritdoc/>
         public void CreateServerDiagnostics(
             UaServerContext systemContext,
             ServerDiagnosticsSummaryDataType diagnostics,
@@ -789,9 +779,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Creates the diagnostics node for a subscription.
-        /// </summary>
+        /// <inheritdoc/>
         public NodeId CreateSessionDiagnostics(
             UaServerContext systemContext,
             SessionDiagnosticsDataType diagnostics,
@@ -893,9 +881,7 @@ namespace Technosoftware.UaServer
             return nodeId;
         }
 
-        /// <summary>
-        /// Delete the diagnostics node for a session.
-        /// </summary>
+        /// <inheritdoc/>
         public void DeleteSessionDiagnostics(UaServerContext systemContext, NodeId nodeId)
         {
             lock (Lock)
@@ -921,9 +907,7 @@ namespace Technosoftware.UaServer
             DeleteNode(systemContext, nodeId);
         }
 
-        /// <summary>
-        /// Creates the diagnostics node for a subscription.
-        /// </summary>
+        /// <inheritdoc/>
         public NodeId CreateSubscriptionDiagnostics(
             UaServerContext systemContext,
             SubscriptionDiagnosticsDataType diagnostics,
@@ -1015,9 +999,7 @@ namespace Technosoftware.UaServer
             return nodeId;
         }
 
-        /// <summary>
-        /// Delete the diagnostics node for a subscription.
-        /// </summary>
+        /// <inheritdoc/>
         public void DeleteSubscriptionDiagnostics(UaServerContext systemContext, NodeId nodeId)
         {
             lock (Lock)
@@ -1037,9 +1019,7 @@ namespace Technosoftware.UaServer
             DeleteNode(systemContext, nodeId);
         }
 
-        /// <summary>
-        /// Gets the default history capabilities object.
-        /// </summary>
+        /// <inheritdoc/>
         public HistoryServerCapabilitiesState GetDefaultHistoryCapabilities()
         {
             lock (Lock)
@@ -1106,13 +1086,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Updates the Server object EventNotifier based on history capabilities.
-        /// </summary>
-        /// <remarks>
-        /// This method can be overridden to customize the Server EventNotifier based on
-        /// history capabilities settings.
-        /// </remarks>
+        /// <inheritdoc/>
         public virtual void UpdateServerEventNotifier()
         {
             lock (Lock)
@@ -1161,9 +1135,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Adds an aggregate function to the server capabilities object.
-        /// </summary>
+        /// <inheritdoc/>
         public void AddAggregateFunction(
             NodeId aggregateId,
             string aggregateName,
@@ -1211,9 +1183,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Adds a modelling rule to the server capabilities object.
-        /// </summary>
+        /// <inheritdoc/>
         public void AddModellingRule(
             NodeId modellingRuleId,
             string modellingRuleName)

@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -27,10 +27,8 @@ using KeyValuePair = Opc.Ua.KeyValuePair;
 
 namespace Technosoftware.UaServer
 {
-    /// <summary>
-    /// The standard implementation of a UA server.
-    /// </summary>
-    public class UaStandardServer : SessionServerBase
+    /// <inheritdoc/>
+    public class UaStandardServer : SessionServerBase, IUaStandardServer
     {
         /// <summary>
         /// An overrideable version of the Dispose.
@@ -334,7 +332,6 @@ namespace Technosoftware.UaServer
             byte[] serverNonce;
             byte[] serverCertificate = null;
             EndpointDescriptionCollection serverEndpoints = null;
-            SignedSoftwareCertificateCollection serverSoftwareCertificates = null;
             SignatureData serverSignature = null;
             uint maxRequestMessageSize = (uint)MessageContext.MaxMessageSize;
 
@@ -516,9 +513,6 @@ namespace Technosoftware.UaServer
                     // return the endpoints supported by the server.
                     serverEndpoints = GetEndpointDescriptions(endpointUrl, BaseAddresses, null);
 
-                    // return the software certificates assigned to the server.
-                    serverSoftwareCertificates = [.. ServerProperties.SoftwareCertificates];
-
                     // sign the nonce provided by the client.
                     serverSignature = null;
 
@@ -568,7 +562,6 @@ namespace Technosoftware.UaServer
                     ServerNonce = serverNonce,
                     ServerCertificate = serverCertificate,
                     ServerEndpoints = serverEndpoints,
-                    ServerSoftwareCertificates = serverSoftwareCertificates,
                     ServerSignature = serverSignature,
                     MaxRequestMessageSize = maxRequestMessageSize
                 };
@@ -712,75 +705,14 @@ namespace Technosoftware.UaServer
             DiagnosticInfoCollection diagnosticInfos = null;
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.ActivateSession);
-            // validate client's software certificates.
-            var softwareCertificates = new List<SoftwareCertificate>();
 
             try
             {
-                if (context?.SecurityPolicyUri != SecurityPolicies.None)
-                {
-                    bool diagnosticsExist = false;
-
-                    if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
-                    {
-                        diagnosticInfos = [];
-                    }
-
-                    results = [];
-                    diagnosticInfos = [];
-
-                    foreach (SignedSoftwareCertificate signedCertificate in clientSoftwareCertificates)
-                    {
-                        ServiceResult result = SoftwareCertificate.Validate(
-                            CertificateValidator,
-                            signedCertificate.CertificateData,
-                            m_serverInternal.Telemetry,
-                            out SoftwareCertificate softwareCertificate);
-
-                        if (ServiceResult.IsBad(result))
-                        {
-                            results.Add(result.Code);
-
-                            // add diagnostics if requested.
-                            if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
-                            {
-                                DiagnosticInfo diagnosticInfo = UaServerUtils.CreateDiagnosticInfo(
-                                    ServerInternal,
-                                    context,
-                                    result,
-                                    m_logger);
-                                diagnosticInfos.Add(diagnosticInfo);
-                                diagnosticsExist = true;
-                            }
-                        }
-                        else
-                        {
-                            softwareCertificates.Add(softwareCertificate);
-                            results.Add(StatusCodes.Good);
-
-                            // add diagnostics if requested.
-                            if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
-                            {
-                                diagnosticInfos.Add(null);
-                            }
-                        }
-                    }
-
-                    if (!diagnosticsExist && diagnosticInfos != null)
-                    {
-                        diagnosticInfos.Clear();
-                    }
-                }
-
-                // check if certificates meet the server's requirements.
-                ValidateSoftwareCertificates(softwareCertificates);
-
                 // activate the session.
                 (bool identityChanged, serverNonce) = await ServerInternal.SessionManager.ActivateSessionAsync(
                         context,
                         requestHeader.AuthenticationToken,
                         clientSignature,
-                        softwareCertificates,
                         userIdentityToken,
                         userTokenSignature,
                         localeIds,
@@ -805,8 +737,7 @@ namespace Technosoftware.UaServer
                 ServerInternal.ReportAuditActivateSessionEvent(
                     m_logger,
                     context?.AuditEntryId,
-                    session,
-                    softwareCertificates);
+                    session);
 
                 ResponseHeader responseHeader = CreateResponse(requestHeader, StatusCodes.Good);
 
@@ -833,7 +764,6 @@ namespace Technosoftware.UaServer
                     m_logger,
                     context?.AuditEntryId,
                     session,
-                    softwareCertificates,
                     e);
 
                 lock (ServerInternal.DiagnosticsWriteLock)
@@ -1094,6 +1024,10 @@ namespace Technosoftware.UaServer
             ByteStringCollection continuationPoints,
             CancellationToken ct)
         {
+            // check for valid license
+            UaUtilities.Licensing.LicenseHandler
+                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.None);
+
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.BrowseNext);
 
             try
@@ -1151,6 +1085,10 @@ namespace Technosoftware.UaServer
             NodeIdCollection nodesToRegister,
             CancellationToken ct)
         {
+            // check for valid license
+            UaUtilities.Licensing.LicenseHandler
+                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.None);
+
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.RegisterNodes);
 
             try
@@ -1202,6 +1140,10 @@ namespace Technosoftware.UaServer
             NodeIdCollection nodesToUnregister,
             CancellationToken ct)
         {
+            // check for valid license
+            UaUtilities.Licensing.LicenseHandler
+                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.None);
+
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.UnregisterNodes);
 
             try
@@ -1309,6 +1251,10 @@ namespace Technosoftware.UaServer
             ReadValueIdCollection nodesToRead,
             CancellationToken ct)
         {
+            // check for valid license
+            UaUtilities.Licensing.LicenseHandler
+                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
+
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Read);
 
             try
@@ -1364,6 +1310,10 @@ namespace Technosoftware.UaServer
             HistoryReadValueIdCollection nodesToRead,
             CancellationToken ct)
         {
+            // check for valid license
+            UaUtilities.Licensing.LicenseHandler
+                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
+
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.HistoryRead);
 
             try
@@ -1429,6 +1379,10 @@ namespace Technosoftware.UaServer
             WriteValueCollection nodesToWrite,
             CancellationToken ct)
         {
+            // check for valid license
+            UaUtilities.Licensing.LicenseHandler
+                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
+
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Write);
 
             try
@@ -1476,6 +1430,10 @@ namespace Technosoftware.UaServer
             ExtensionObjectCollection historyUpdateDetails,
             CancellationToken ct)
         {
+            // check for valid license
+            UaUtilities.Licensing.LicenseHandler
+                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
+
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.HistoryUpdate);
 
             try
@@ -1530,7 +1488,7 @@ namespace Technosoftware.UaServer
         /// <returns>
         /// Returns a <see cref="CreateSubscriptionResponse"/> object
         /// </returns>
-        public override Task<CreateSubscriptionResponse> CreateSubscriptionAsync(
+        public override async Task<CreateSubscriptionResponse> CreateSubscriptionAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             double requestedPublishingInterval,
@@ -1548,7 +1506,7 @@ namespace Technosoftware.UaServer
 
             try
             {
-                ServerInternal.SubscriptionManager.CreateSubscription(
+                CreateSubscriptionResponse response = await ServerInternal.SubscriptionManager.CreateSubscriptionAsync(
                     context,
                     requestedPublishingInterval,
                     requestedLifetimeCount,
@@ -1556,19 +1514,11 @@ namespace Technosoftware.UaServer
                     maxNotificationsPerPublish,
                     publishingEnabled,
                     priority,
-                    out uint subscriptionId,
-                    out double revisedPublishingInterval,
-                    out uint revisedLifetimeCount,
-                    out uint revisedMaxKeepAliveCount);
+                    ct).ConfigureAwait(false);
 
-                return Task.FromResult(new CreateSubscriptionResponse
-                {
-                    ResponseHeader = CreateResponse(requestHeader, context.StringTable),
-                    SubscriptionId = subscriptionId,
-                    RevisedPublishingInterval = revisedPublishingInterval,
-                    RevisedLifetimeCount = revisedLifetimeCount,
-                    RevisedMaxKeepAliveCount = revisedMaxKeepAliveCount
-                });
+                response.ResponseHeader = CreateResponse(requestHeader, context.StringTable);
+
+                return response;
             }
             catch (ServiceResultException e)
             {
@@ -1598,7 +1548,7 @@ namespace Technosoftware.UaServer
         /// <param name="subscriptionIds">The list of Subscriptions to transfer.</param>
         /// <param name="sendInitialValues">If the initial values should be sent.</param>
         /// <param name="ct">The cancellation token.</param>
-        public override Task<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
+        public override async Task<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             UInt32Collection subscriptionIds,
@@ -1614,19 +1564,15 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(subscriptionIds);
 
-                ServerInternal.SubscriptionManager.TransferSubscriptions(
+                TransferSubscriptionsResponse response = await ServerInternal.SubscriptionManager.TransferSubscriptionsAsync(
                     context,
                     subscriptionIds,
                     sendInitialValues,
-                    out TransferResultCollection results,
-                    out DiagnosticInfoCollection diagnosticInfos);
+                    ct).ConfigureAwait(false);
 
-                return Task.FromResult(new TransferSubscriptionsResponse
-                {
-                    ResponseHeader = CreateResponse(requestHeader, context.StringTable),
-                    Results = results,
-                    DiagnosticInfos = diagnosticInfos
-                });
+                response.ResponseHeader = CreateResponse(requestHeader, context.StringTable);
+
+                return response;
             }
             catch (ServiceResultException e)
             {
@@ -1658,7 +1604,7 @@ namespace Technosoftware.UaServer
         /// <returns>
         /// Returns a <see cref="DeleteSubscriptionsResponse"/> object
         /// </returns>
-        public override Task<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
+        public override async Task<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             UInt32Collection subscriptionIds,
@@ -1673,18 +1619,14 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(subscriptionIds);
 
-                ServerInternal.SubscriptionManager.DeleteSubscriptions(
+                DeleteSubscriptionsResponse response = await ServerInternal.SubscriptionManager.DeleteSubscriptionsAsync(
                     context,
                     subscriptionIds,
-                    out StatusCodeCollection results,
-                    out DiagnosticInfoCollection diagnosticInfos);
+                    ct).ConfigureAwait(false);
 
-                return Task.FromResult(new DeleteSubscriptionsResponse
-                {
-                    ResponseHeader = CreateResponse(requestHeader, context.StringTable),
-                    Results = results,
-                    DiagnosticInfos = diagnosticInfos
-                });
+                response.ResponseHeader = CreateResponse(requestHeader, context.StringTable);
+
+                return response;
             }
             catch (ServiceResultException e)
             {
@@ -2061,7 +2003,7 @@ namespace Technosoftware.UaServer
         /// <returns>
         /// Returns a <see cref="CreateMonitoredItemsResponse"/> object
         /// </returns>
-        public override Task<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
+        public override async Task<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
@@ -2078,20 +2020,16 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(itemsToCreate, OperationLimits.MaxMonitoredItemsPerCall);
 
-                ServerInternal.SubscriptionManager.CreateMonitoredItems(
+                CreateMonitoredItemsResponse result = await ServerInternal.SubscriptionManager.CreateMonitoredItemsAsync(
                     context,
                     subscriptionId,
                     timestampsToReturn,
                     itemsToCreate,
-                    out MonitoredItemCreateResultCollection results,
-                    out DiagnosticInfoCollection diagnosticInfos);
+                    ct).ConfigureAwait(false);
 
-                return Task.FromResult(new CreateMonitoredItemsResponse
-                {
-                    Results = results,
-                    DiagnosticInfos = diagnosticInfos,
-                    ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                result.ResponseHeader = CreateResponse(requestHeader, context.StringTable);
+
+                return result;
             }
             catch (ServiceResultException e)
             {
@@ -2125,7 +2063,7 @@ namespace Technosoftware.UaServer
         /// <returns>
         /// Returns a <see cref="ModifyMonitoredItemsResponse"/> object
         /// </returns>
-        public override Task<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
+        public override async Task<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
@@ -2142,20 +2080,16 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(itemsToModify, OperationLimits.MaxMonitoredItemsPerCall);
 
-                ServerInternal.SubscriptionManager.ModifyMonitoredItems(
+                ModifyMonitoredItemsResponse response = await ServerInternal.SubscriptionManager.ModifyMonitoredItemsAsync(
                     context,
                     subscriptionId,
                     timestampsToReturn,
                     itemsToModify,
-                    out MonitoredItemModifyResultCollection results,
-                    out DiagnosticInfoCollection diagnosticInfos);
+                    ct).ConfigureAwait(false);
 
-                return Task.FromResult(new ModifyMonitoredItemsResponse
-                {
-                    Results = results,
-                    DiagnosticInfos = diagnosticInfos,
-                    ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                response.ResponseHeader = CreateResponse(requestHeader, context.StringTable);
+
+                return response;
             }
             catch (ServiceResultException e)
             {
@@ -2188,7 +2122,7 @@ namespace Technosoftware.UaServer
         /// <returns>
         /// Returns a <see cref="DeleteMonitoredItemsResponse"/> object
         /// </returns>
-        public override Task<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
+        public override async Task<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
@@ -2204,19 +2138,15 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(monitoredItemIds, OperationLimits.MaxMonitoredItemsPerCall);
 
-                ServerInternal.SubscriptionManager.DeleteMonitoredItems(
+                DeleteMonitoredItemsResponse response = await ServerInternal.SubscriptionManager.DeleteMonitoredItemsAsync(
                     context,
                     subscriptionId,
                     monitoredItemIds,
-                    out StatusCodeCollection results,
-                    out DiagnosticInfoCollection diagnosticInfos);
+                    ct).ConfigureAwait(false);
 
-                return Task.FromResult(new DeleteMonitoredItemsResponse
-                {
-                    Results = results,
-                    DiagnosticInfos = diagnosticInfos,
-                    ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                response.ResponseHeader = CreateResponse(requestHeader, context.StringTable);
+
+                return response;
             }
             catch (ServiceResultException e)
             {
@@ -2356,12 +2286,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// The state object associated with the server.
-        /// It provides the shared components for the Server.
-        /// </summary>
-        /// <value>The current instance.</value>
-        /// <exception cref="ServiceResultException"></exception>
+        /// <inheritdoc/>
         public IUaServerData CurrentInstance
         {
             get
@@ -2415,15 +2340,12 @@ namespace Technosoftware.UaServer
             return RegisterWithDiscoveryServerAsync().AsTask().GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Registers the server with the discovery server.
-        /// </summary>
-        /// <returns>Boolean value.</returns>
+        /// <inheritdoc/>
         public async ValueTask<bool> RegisterWithDiscoveryServerAsync(CancellationToken ct = default)
         {
             var configuration = new ApplicationConfiguration(Configuration)
             {
-            // use a dedicated certificate validator with the registration, but derive behavior from server config
+                // use a dedicated certificate validator with the registration, but derive behavior from server config
                 CertificateValidator = new CertificateValidator(MessageContext.Telemetry)
             };
             await configuration
@@ -2715,16 +2637,6 @@ namespace Technosoftware.UaServer
             ServiceResult result)
         {
             throw new ServiceResultException(result);
-        }
-
-        /// <summary>
-        /// Inspects the software certificates provided by the server.
-        /// </summary>
-        /// <param name="softwareCertificates">The software certificates.</param>
-        protected virtual void ValidateSoftwareCertificates(
-            List<SoftwareCertificate> softwareCertificates)
-        {
-            // always accept valid certificates.
         }
 
         /// <summary>
@@ -3141,6 +3053,11 @@ namespace Technosoftware.UaServer
                 RequestManager requestManager = CreateRequestManager(
                     m_serverInternal,
                     configuration);
+
+                //create the main node manager factory
+                IUaMainNodeManagerFactory mainNodeManagerFactory = CreateMainNodeManagerFactory(m_serverInternal, configuration);
+
+                m_serverInternal.SetMainNodeManagerFactory(mainNodeManagerFactory);
 
                 // create the master node manager.
                 m_logger.LogInformation(Utils.TraceMasks.StartStop, "Server - CreateMasterNodeManager.");
@@ -3748,6 +3665,19 @@ namespace Technosoftware.UaServer
         }
 
         /// <summary>
+        /// Creates the master node manager for the server.
+        /// </summary>
+        /// <param name="server">The server.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <returns>Returns the master node manager for the server, the return type is <seealso cref="MasterNodeManager"/>.</returns>
+        protected virtual IUaMainNodeManagerFactory CreateMainNodeManagerFactory(
+            IUaServerData server,
+            ApplicationConfiguration configuration)
+        {
+            return new MainNodeManagerFactory(configuration, server);
+        }
+
+        /// <summary>
         /// Creates the event manager for the server.
         /// </summary>
         /// <param name="server">The server.</param>
@@ -3833,54 +3763,32 @@ namespace Technosoftware.UaServer
             // may be overridden by the subclass.
         }
 
-        /// <summary>
-        /// The node manager factories that are used on startup of the server.
-        /// </summary>
+        /// <inheritdoc/>
         public IEnumerable<IUaNodeManagerFactory> NodeManagerFactories => m_nodeManagerFactories;
 
-        /// <summary>
-        /// The async node manager factories that are used on startup of the server.
-        /// </summary>
+        /// <inheritdoc/>
         public IEnumerable<IUaAsyncNodeManagerFactory> AsyncNodeManagerFactories
             => m_asyncNodeManagerFactories;
 
-        /// <summary>
-        /// Add a node manager factory which is used on server start
-        /// to instantiate the node manager in the server.
-        /// </summary>
-        /// <param name="nodeManagerFactory">The node manager factory used to create the NodeManager.</param>
+        /// <inheritdoc/>
         public virtual void AddNodeManager(IUaNodeManagerFactory nodeManagerFactory)
         {
             m_nodeManagerFactories.Add(nodeManagerFactory);
         }
 
-        /// <summary>
-        /// Add a node manager factory which is used on server start
-        /// to instantiate the node manager in the server.
-        /// </summary>
-        /// <param name="nodeManagerFactory">The node manager factory used to create the NodeManager.</param>
+        /// <inheritdoc/>
         public virtual void AddNodeManager(IUaAsyncNodeManagerFactory nodeManagerFactory)
         {
             m_asyncNodeManagerFactories.Add(nodeManagerFactory);
         }
 
-        /// <summary>
-        /// Remove a node manager factory from the list of node managers.
-        /// Does not remove a NodeManager from a running server,
-        /// only removes the factory before the server starts.
-        /// </summary>
-        /// <param name="nodeManagerFactory">The node manager factory to remove.</param>
+        /// <inheritdoc/>
         public virtual void RemoveNodeManager(IUaNodeManagerFactory nodeManagerFactory)
         {
             m_nodeManagerFactories.Remove(nodeManagerFactory);
         }
 
-        /// <summary>
-        /// Remove a node manager factory from the list of node managers.
-        /// Does not remove a NodeManager from a running server,
-        /// only removes the factory before the server starts.
-        /// </summary>
-        /// <param name="nodeManagerFactory">The node manager factory to remove.</param>
+        /// <inheritdoc/>
         public virtual void RemoveNodeManager(IUaAsyncNodeManagerFactory nodeManagerFactory)
         {
             m_asyncNodeManagerFactories.Remove(nodeManagerFactory);
@@ -3894,7 +3802,7 @@ namespace Technosoftware.UaServer
         {
             Debug.Assert(eventargs.Reason == SessionEventReason.ChannelKeepAlive);
 
-            IUaSession session = (IUaSession)sender;
+            var session = (IUaSession)sender;
 
             string secureChannelId = session?.SecureChannelId;
             if (!string.IsNullOrEmpty(secureChannelId))

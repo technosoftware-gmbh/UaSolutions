@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -3158,11 +3158,6 @@ namespace Technosoftware.UaServer
                     {
                         argumentsValid = false;
                     }
-                }
-                else
-                {
-                    result.InputArgumentResults.Add(StatusCodes.Good);
-                }
 
                 // only fill in diagnostic info if it is requested.
                 if (systemContext.OperationContext != null &&
@@ -3171,7 +3166,6 @@ namespace Technosoftware.UaServer
                 {
                     if (ServiceResult.IsBad(argumentError))
                     {
-                        argumentsValid = false;
                         result.InputArgumentDiagnosticInfos.Add(
                             new DiagnosticInfo(
                                 argumentError,
@@ -3186,6 +3180,7 @@ namespace Technosoftware.UaServer
                     }
                 }
             }
+            }
 
             // check for validation errors.
             if (!argumentsValid)
@@ -3194,8 +3189,10 @@ namespace Technosoftware.UaServer
                 return result.StatusCode;
             }
 
-            // do not return diagnostics if there are no errors.
+            // Per OPC UA Part 4, Section 5.12: InputArgumentResults must be empty when StatusCode is Good.
+            // Clear diagnostics and argument results if there are no errors.
             result.InputArgumentDiagnosticInfos.Clear();
+            result.InputArgumentResults.Clear();
 
             // return output arguments.
             result.OutputArguments = outputArguments;

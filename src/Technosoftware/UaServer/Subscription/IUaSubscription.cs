@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -143,31 +143,28 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Deletes the monitored items in a subscription.
         /// </summary>
-        void DeleteMonitoredItems(
+        ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             UInt32Collection monitoredItemIds,
-            out StatusCodeCollection results,
-            out DiagnosticInfoCollection diagnosticInfos);
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Modifies monitored items in a subscription.
         /// </summary>
-        void ModifyMonitoredItems(
+        ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemModifyRequestCollection itemsToModify,
-            out MonitoredItemModifyResultCollection results,
-            out DiagnosticInfoCollection diagnosticInfos);
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Adds monitored items to a subscription.
         /// </summary>
-        void CreateMonitoredItems(
+        ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemCreateRequestCollection itemsToCreate,
-            out MonitoredItemCreateResultCollection results,
-            out DiagnosticInfoCollection diagnosticInfos);
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the monitored items for the subscription.
@@ -197,7 +194,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Deletes the subscription.
         /// </summary>
-        void Delete(UaServerOperationContext context);
+        ValueTask DeleteAsync(UaServerOperationContext context, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Verifies that a condition refresh operation is permitted.
@@ -237,7 +234,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="context">The session to which the subscription is transferred.</param>
         /// <param name="sendInitialValues">Whether the first Publish response shall contain current values.</param>
-        void TransferSession(UaServerOperationContext context, bool sendInitialValues);
+        /// <param name="cancellationToken">The cancellation token.</param>
+        ValueTask TransferSessionAsync(UaServerOperationContext context, bool sendInitialValues, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Updates the triggers for the monitored item.

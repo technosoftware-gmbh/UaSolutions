@@ -1,13 +1,13 @@
-#region Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2011-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -29,25 +29,9 @@ using System.Runtime.InteropServices;
 namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Privileged identity which can access the system configuration.
-    /// </summary>
-    public class SystemConfigurationIdentity : RoleBasedIdentity
-    {
-        /// <summary>
-        /// Create a user identity with the privilege
-        /// to modify the system configuration.
-        /// </summary>
-        /// <param name="identity">The user identity.</param>
-        public SystemConfigurationIdentity(IUserIdentity identity)
-            : base(identity, [Role.SecurityAdmin, Role.ConfigureAdmin])
-        {
-        }
-    }
-
-    /// <summary>
     /// The Server Configuration Node Manager.
     /// </summary>
-    public class ConfigurationNodeManager : DiagnosticsNodeManager, IUaCallAsyncNodeManager
+    public class ConfigurationNodeManager : DiagnosticsNodeManager, IUaCallAsyncNodeManager, IUaConfigurationNodeManager
     {
         #region Constructors, Destructor, Initialization
         /// <summary>
@@ -255,9 +239,7 @@ namespace Technosoftware.UaServer
         #endregion IUaNodeManager Members
 
         #region Public methods
-        /// <summary>
-        /// Creates the configuration node for the server.
-        /// </summary>
+        ///<inheritdoc/>
         public void CreateServerConfiguration(
             UaServerContext systemContext,
             ApplicationConfiguration configuration)
@@ -309,7 +291,8 @@ namespace Technosoftware.UaServer
                     certGroup.IssuerStore,
                     new TrustList.SecureAccess(HasApplicationSecureAdminAccess),
                     new TrustList.SecureAccess(HasApplicationSecureAdminAccess),
-                    ServerData.Telemetry);
+                    ServerData.Telemetry,
+                    m_configuration.ServerConfiguration.MaxTrustListSize);
                 certGroup.Node.ClearChangeMasks(systemContext, true);
             }
 
@@ -322,9 +305,7 @@ namespace Technosoftware.UaServer
             }
         }
 
-        /// <summary>
-        /// Gets and returns the <see cref="NamespaceMetadataState"/> node associated with the specified NamespaceUri
-        /// </summary>
+        ///<inheritdoc/>
         public NamespaceMetadataState GetNamespaceMetadataState(string namespaceUri)
         {
             if (namespaceUri == null)
@@ -351,9 +332,7 @@ namespace Technosoftware.UaServer
             return namespaceMetadataState;
         }
 
-        /// <summary>
-        /// Gets or creates the <see cref="NamespaceMetadataState"/> node for the specified NamespaceUri.
-        /// </summary>
+        /// <inheritdoc/>
         public NamespaceMetadataState CreateNamespaceMetadataState(string namespaceUri)
         {
             NamespaceMetadataState namespaceMetadataState = FindNamespaceMetadataState(
@@ -395,24 +374,16 @@ namespace Technosoftware.UaServer
             return namespaceMetadataState;
         }
 
-        /// <summary>
-        /// Determine if the impersonated user has admin access.
-        /// </summary>
-        /// <exception cref="ServiceResultException"/>
-        /// <seealso cref="StatusCodes.BadUserAccessDenied"/>
+        /// <inheritdoc/>
         public void HasApplicationSecureAdminAccess(ISystemContext context)
         {
             HasApplicationSecureAdminAccess(context, null);
         }
 
-        /// <summary>
-        /// Determine if the impersonated user has admin access.
-        /// </summary>
-        /// <exception cref="ServiceResultException"/>
-        /// <seealso cref="StatusCodes.BadUserAccessDenied"/>
+        /// <inheritdoc/>
         public void HasApplicationSecureAdminAccess(
             ISystemContext context,
-            CertificateStoreIdentifier _)
+            CertificateStoreIdentifier trustedStore)
         {
             if (context is SessionSystemContext { OperationContext: UaServerOperationContext operationContext })
             {
