@@ -1,14 +1,24 @@
 # Technosoftware GmbH OPC UA Solutions .NET
 
-The OPC UA Solutions .NET offers smooth and efficient development of OPC UA Client and Server applications.
+The OPC UA Solutions .NET are based on the OPC Foundation stack with several enhancements to make the development smooth and efficient. While we use these solutions mainly in our own services it is also possible to use it in your own development. 
 
 ## OPC UA Client .NET
 
-The OPC UA Client .NET offers a fast and easy access to the OPC Unified Architecture (UA) technology. Develop OPC UA compliant Clients with C# targeting .NET 9.0, or .NET 8.0. For backward compatibility we also provide .NET 4.8 and .NET 4.7.2 support.
+Develop OPC UA compliant Clients with C# targeting .NET 10.0, .NET 9.0 and .NET 8.0. For backward compatibility we also provide .NET 4.8 and .NET 4.7.2 support.
+
+.NET 10.0, .NET 9.0 and .NET 8.0 allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
+
+The OPC UA Client .NET API defines classes which can be used to implement an OPC client capable to access OPC servers supporting different profiles with the same API. These classes manage client side state information; provide higher level abstractions for OPC tasks such as managing sessions and subscriptions or saving and restoring connection information for later use.
 
 ## OPC UA Server .NET
 
-The OPC UA Server NET offers a fast and easy access to the OPC Unified Architecture (UA) technology. Develop OPC UA compliant Servers with C# targeting NET 9.0, or .NET 8.0. For backward compatibility we also provide .NET 4.8 and .NET 4.7.2 support.
+The OPC UA Server .NET offers a fast and easy access to the OPC Unified Architecture (UA) technology.
+
+Develop OPC UA compliant Servers with C# targeting .NET 10.0, .NET 9.0 or .NET 8.0. For backward compatibility we also provide .NET 4.8 and .NET 4.7.2 support.
+
+.NET 10.0, .NET 9.0 or .NET 8.0 allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
+
+The OPC UA Server .NET API is easy to use and many OPC specific functions are handled by the framework. The included Model Compiler can be used to create the necessary C# classes of Information Model’s specified in XML and CSV based files. 
  
 ## Supported Frameworks
 
@@ -36,7 +46,7 @@ We provide an online help for the following versions:
 
 You can also use the PDFs provided from our Workshop available [here](./Workshop).
 
-##	Redistributable
+## Redistributable
 
 - The Redistributable of the OPC UA Local Discovery Server are available [here](https://opcfoundation.org/developer-tools/samples-and-tools-unified-architecture/local-discovery-server-lds/).
 - We used the version 1.04.405 for our tests
