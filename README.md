@@ -36,11 +36,11 @@ The OPC UA Server .NET API is easy to use and many OPC specific functions are ha
 
 # Getting Started / Online Help
  
-We provide an online help for the following versions: 
+We provide an online help for download as ZIP file for the following versions: 
 
- * [V5.0 Development Version (DEV)](https://technosoftware.com/help/UaSolutions/50/)
- * [V4.2 Mainline Version (ML)](https://technosoftware.com/help/UaSolutions/42/)
- * [V3.4 Long Term Support (LTS)](https://technosoftware.com/help/UaSolutions/34/)
+ * [V5.0 Development Version (DEV)](./help/UaSolutionsHelp50.zip)
+ * [V4.2 Mainline Version (ML)](./help/UaSolutionsHelp42.zip)
+ * [V3.4 Long Term Support (LTS)](./help/UaSolutionsHelp34.zip)
 
 ## Workshop
 
@@ -61,7 +61,7 @@ Without an evaluation license the run-time of an application using the solutions
 
 An evaluation license is available from:
 
- * [UA Solutions Evaluation](https://technosoftware.com/product/ua-solutions/)
+ * [UA Solutions Evaluation](https://technosoftware.com/contact/)
 
 Included in the evaluation are:
 
@@ -84,7 +84,7 @@ Included in the support subscription:
  * Also included is technical support via direct Email contact or remote sessions.
  * It is also possible to hire us for consulting on a weekly base. 
 
-By purchasing support, you agree to our [Support Services Agreement](https://technosoftware.com/documents/Support_Services_Agreement.pdf).
+By purchasing support, you agree to our [Support Services Agreement](https://technosoftware.com/s/Support_Services_Agreement.pdf).
 
 The Support Subscription is available [here](https://technosoftware.com/product/opc-ua-support-subscription/).
 
