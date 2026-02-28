@@ -8,10 +8,10 @@ Our products, especially software, go through different stages during their life
 
 The Mainline is the most current version of a product. It’s the version we actively develop, enhance, and maintain. All new features, improvements, and components are added here. As a new customer, you’ll always receive the latest mainline version. Ordering of one of the following products/services is always for the latest mainline version:
 
- * [OPC UA Client .NET](https://technosoftware.com/product/opc-ua-client-net/)
- * [OPC UA Server .NET](https://technosoftware.com/product/opc-ua-server-net/)
- * [OPC UA Bundle .NET](https://technosoftware.com/product/opc-ua-bundle-net/)
- * [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/)
+ * [OPC UA Client .NET](https://technosoftware.com/solutions/)
+ * [OPC UA Server .NET](https://technosoftware.com/solutions/)
+ * [OPC UA Bundle .NET](https://technosoftware.com/solutions/)
+ * [OPC Support Subscription](https://technosoftware.com/solutions/)
 
 ## Long Term Support (LTS)
 
@@ -23,10 +23,10 @@ During the LTS phase:
  * Bug fixes are provided if needed
  * The standard LTS period lasts one year (365 days) starting from the release of the next mainline version
 	
-This gives customers with a valid [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/) at least one year of transition time to update your application.
+This gives customers with a valid [OPC Support Subscription](https://technosoftware.com/solutions/) at least one year of transition time to update your application.
 
-Customers with a valid [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/) at the time a version enters the LTS phase can request support and/or bug fixes for the LTS version. All other customers needs to upgrade to the MLS first. 
-New purchases of a [OPC UA Support Subscription](https://technosoftware.com/product/opc-ua-support-subscription/) are always for the MLS.
+Customers with a valid [OPC Support Subscription](https://technosoftware.com/solutions/) at the time a version enters the LTS phase can request support and/or bug fixes for the LTS version. All other customers needs to upgrade to the MLS first. 
+New purchases of a [OPC Support Subscription](https://technosoftware.com/solutions/) are always for the MLS.
 
 If you need more time, we also offer Extended Support for up to an additional year. This option includes bug fixes but no new features and is available upon request (usually with an additional fee).
 
@@ -34,4 +34,4 @@ If you need more time, we also offer Extended Support for up to an additional ye
 
 When a product’s LTS period ends, it enters End of Life (EOL). From that point on, no further updates, fixes, or support are provided.
 
-If your application relies on a version that is nearing EOL, we strongly recommend upgrading to the latest mainline release. If upgrading is not possible, you may choose the source code edition of the [OPC UA Bundle .NET](https://technosoftware.com/product/opc-ua-bundle-net/) product, which allows you to maintain and fix it yourself.
+If your application relies on a version that is nearing EOL, we strongly recommend upgrading to the latest mainline release. If upgrading is not possible, you may choose the source code edition of the [OPC UA Bundle .NET](https://technosoftware.com/solutions/) product, which allows you to maintain and fix it yourself.
