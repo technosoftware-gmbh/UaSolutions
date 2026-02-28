@@ -1,7 +1,5 @@
 # Server Development
 
-[TOC]
-
 ## OPC UA Server .NET
 
 The **OPC UA Server NET** offers a fast and easy access to the OPC Unified Architecture (UA) technology.

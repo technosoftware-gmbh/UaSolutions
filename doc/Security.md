@@ -1,7 +1,5 @@
 # Security
 
-[TOC]
-
 This chapter is based on the [Whitepaper The OPC UA Security Model for Administrators, Version 1.00 from July, 2010](https://opcfoundation.org/wp-content/uploads/2014/05/OPC-UA_Security_Model_for_Administrators_V1.00.pdf) and should be used as reference. 
 
 ## Background

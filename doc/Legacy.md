@@ -1,7 +1,5 @@
 # Legacy
 
-[TOC]
-
 ## OPC UA Server .NET
 
 The support for the features described in this chapter will only be guaranteed up to version 4.2. From version 5.0 on they will no longer be supported. 
