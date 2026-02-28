@@ -16,4 +16,4 @@ The documentation is divided into the following chapters:
  - [Server Development](./ServerDevelopment.md)
  - [Legacy](./Legacy.md)
  - [Changelog](./Changelog.md)
- - [License Agreement](./LicenseAgreement.md)
+ - [License Agreement](../LICENSE.md)
