@@ -1,7 +1,5 @@
 # Solutions
 
-[TOC]
-
 ## OPC UA Client
 
 ![](images/OPCUAClientNET.png)

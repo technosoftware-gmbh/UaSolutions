@@ -1,7 +1,5 @@
 # Basics
 
-[TOC]
-
 This chapter describes the base concepts of the OPC UA specification. It is not intended to replace studying the OPC UA specification; its purpose is to introduce the base concepts of the OPC UA specification.
 
 ## Overview

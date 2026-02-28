@@ -1,7 +1,5 @@
 # Supported Platforms
 
-[TOC]
-
 ## Supported OS versions
 
 ### Apple

@@ -1,7 +1,5 @@
 # Licensing
 
-[TOC]
-
 ## Licensing the Solution
 
 After purchasing one of the OPC UA Solutions you will receive a license file with the information on how to use it.

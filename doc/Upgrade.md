@@ -1,7 +1,5 @@
 # Upgrade from 4.2 to 5.0
 
-[TOC]
-
 ## General Upgrades
 
 ### Support .NET versions

@@ -1,7 +1,5 @@
 # Installation and Administration
 
-[TOC]
-
 ## Installation .NET
 
 Please follow instructions in this [article](https://dotnet.microsoft.com/en-us/learn/dotnet/hello-world-tutorial/intro) to setup the dotnet command line environment for your platform.

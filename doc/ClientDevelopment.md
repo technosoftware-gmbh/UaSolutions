@@ -1,7 +1,5 @@
 # Client Development
 
-[TOC]
-
 ## OPC UA Client .NET
 
 The **OPC UA Client .NET** offers a fast and easy access to the OPC Unified Architecture (UA) technology. 

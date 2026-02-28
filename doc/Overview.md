@@ -1,8 +1,4 @@
-# OPC UA Solutions .NET
-
-[TOC]
-
-## Overview
+# Overview
 
 If your application requires access to the OPC technology, you must decide which of the OPC Specifications you want to support. The decision depends on many factors like the used OPC specifications supported by third party solutions or the system architecture you want to use. Technosoftware GmbH specializes in software consulting and development services for technical and industrial applications based on OPC and the founder of Technosoftware GmbH was involved in the design and development of many software solutions with OPC connectivity with more than 22 years extensive knowledge about OPC.
 
@@ -10,15 +6,15 @@ The OPC Unified Architecture (UA) is **THE** next generation OPC standard that p
 
 **It's time to adapt** this specification for use in your applications, keeping in mind that you may need to support other OPC specifications as well. The Classic OPC specifications are widely used, and it is important that your application can support these specifications. We recommend that you design your application to use the OPC Unified Architecture in the first place, with the option to have access to the Classic OPC Specifications in the second place. A short overview of the mainly used Classic OPC Specifications should give you an understanding of the requirements your application design has to fulfill.
 
-### OPC Technology
+## OPC Technology
 
-#### Classic OPC Specifications
+### Classic OPC Specifications
 
 The Classic OPC specifications are DCOM based specifications like OPC Data Access (DA), OPC Alarms&Events (AE) and OPC Historical Access (HDA). Each of these specifications is a separate specification and several more exist.
 
 According to the different requirements within industrial applications, three majors Classic OPC specifications have been developed. Support of one or more of these specifications should be provided by most of the OPC Client or OPC Server applications.
 
-##### Data Access (DA)
+#### Data Access (DA)
 
 An OPC DA Server allows OPC DA Clients to retrieve information about several objects: the server, the group and the items.  
  - The OPC server object maintains information about the server and acts as a container for OPC group objects. 
@@ -33,7 +29,7 @@ In all cases the OPC DA Server gives the client access to current values of the 
 
 For such cases, there exist two more OPC specifications, the OPC Alarms&Events and the OPC Historical Data Access Specification.
 
-##### Alarms&Events (AE)
+#### Alarms&Events (AE)
 
 The OPC AE interface provides a mechanism for OPC AE clients to be notified when a specified event and/or alarm condition occurs. The browser interface also allows OPC AE clients to determine the list of events and conditions supported by an OPC AE Server as well as to get their status.
 
@@ -46,7 +42,7 @@ The OPC AE specification provides methods enabling the OPC AE client to:
  - Enter subscriptions to specified events so that OPC AE clients can receive notifications of their occurrences. Filters may be used to define a subset of desired events.
  - Access and manipulate conditions implemented by the OPC AE server.
 
-##### Historical Data Access (HDA)
+#### Historical Data Access (HDA)
 
 Historical engines today produce an added source of information that should be distributed to users and software clients that are interested in this information. Currently most historical systems use their own proprietary interfaces for dissemination of data. There is no capability to augment or use existing historical solutions with other capabilities in a plug-and-play environment. This requires the developer to recreate the same infrastructure for their solutions, as all other vendors have had to develop independently with no interoperability with any other systems.
 
@@ -58,19 +54,19 @@ There are several types of Historian servers. Some key types supported by the HD
  - Complex data compression and analysis servers.  
  These servers provide data compression as well as raw data storage. They can provide summary data or data analysis functions, such as average values, minimums, maximums etc.  They can support data updates and the history of the updates.  They can support storage of annotations along with the actual historical data storage.
  
-#### OPC XML-DA Specification
+### OPC XML-DA Specification
 
 The OPC XML-DA specification is a web services-based specification and is a step between Classic OPC and OPC Unified Architecture. The functionality is restricted to OPC DA.
 
 Technosoftware GmbH does not offer any solutions supporting the OPC XML-DA Specification.
 
-##### OPC .NET 4.0 (WCF)
+### OPC .NET 4.0 (WCF)
 
 OPC .NET 4.0 (WCF) is not a specification like the others mentioned here, it bridges the gap between Microsoft.NET and the world of Classic OPC. OPC .NET 4.0 is an OPC standard C# Application Programming Interface (API) designed to simplify client access to OPC Classic servers. It also includes a formal WCF Interface; however, there is no compliance or certification program for this interface. The Classic OPC interfaces are still the primary means to ensure multi-vendor interoperability.
 
 Technosoftware GmbH does not offer any solutions supporting the OPC .NET 4.o API. 
 
-#### OPC Unified Architecture Specification
+### OPC Unified Architecture Specification
 
 OPC Unified Architecture (UA) is a platform-independent standard through which various kinds of systems and devices can communicate by sending Messages between Clients and Servers over various types of networks. It supports robust, secure communication that assures the identity of Clients and Servers and resists attacks. OPC UA defines standard sets of Services that Servers may provide, and individual Servers specify to Clients what Service sets they support. Information is conveyed using standard and vendor- defined data types, and Servers define object models that Clients can dynamically discover. Servers can provide access to both current and historical data, as well as Alarms and Events to notify Clients of important changes. OPC UA can be mapped onto a variety of communication protocols and data can be encoded in various ways to trade off portability and efficiency.
 

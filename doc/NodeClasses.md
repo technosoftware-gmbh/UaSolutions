@@ -1,7 +1,5 @@
 # Node Classes
 
-[TOC]
-
 OPC UA defines the NodeClasses used to define Nodes in the OPC UA AddressSpace. NodeClasses are derived from a common, Base NodeClass. This NodeClass is defined first, followed by those used to organise the AddressSpace and then by the NodeClasses used to represent Objects.
 
 The NodeClasses defined to represent Objects fall into three categories: those used to define instances, those used to define types for those instances and those used to define data types. This chapter gives an introduction in the mappings from OPC UA related objects to .NET classes. As specified in [OPC 10000-3] the following NodeClasses exists:
