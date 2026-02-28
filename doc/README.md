@@ -13,7 +13,7 @@ The documentation is divided into the following chapters:
  - [Upgrade from 4.2 to 5.0](./Upgrade.md)
  - [Distribution](./Distribution.md)
  - [Client Development](./ClientDevelopment.md)
- - [Client Development](./ClientDevelopment.md)
+ - [Server Development](./ServerDevelopment.md)
  - [Legacy](./Legacy.md)
  - [Changelog](./Changelog.md)
  - [License Agreement](./LicenseAgreement.md)
