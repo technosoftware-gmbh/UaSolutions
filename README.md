@@ -10,7 +10,7 @@ Develop OPC UA compliant Clients and Servers with C# targeting .NET 10.0, .NET 9
 
 ### Documentation
 
-The documentation is available [here](./doc/README.MD).
+The documentation is available [here](./doc/README.md).
 
 ### Workshop
 
@@ -18,7 +18,7 @@ You can also use the PDFs provided from our Workshop available [here](./Workshop
 
 ### Changelog
 
-A changelog is available [here](./CHANGELOG.MD).
+A changelog is available [here](./CHANGELOG.md).
 
 ## Build Status
 
