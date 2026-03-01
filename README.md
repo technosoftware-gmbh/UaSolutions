@@ -10,7 +10,7 @@ Develop OPC UA compliant Clients and Servers with C# targeting .NET 10.0, .NET 9
 
 ### Documentation
 
-The documentation is available [here](./doc/README.md).
+The documentation is available [here](https://technosoftware-gmbh.github.io/UaSolutions/).
 
 ### Workshop
 
