@@ -189,7 +189,7 @@ The OPC UA Client .NET contains two sample client applications, you can find it 
 
 The OPC UA CLient .NET is divided into several DLL’s as shown in the picture below:
 
-![](images/OPCUANETArchitecture.png)
+![](../images/OPCUANETArchitecture.png)
 
 The DLLs are delivered as local NuGet Packages. The OPC UA Client .NET uses the following packages:
 
@@ -369,7 +369,7 @@ The Client API is designed to ease client development by handling the standard t
 
 The figure below shows the main classes a client developer can use:
 
-![](images/UaClientDesign.png)
+![](../images/UaClientDesign.png)
 
 **ApplicationInstance**
 

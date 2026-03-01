@@ -72,7 +72,7 @@ OPC Unified Architecture (UA) is a platform-independent standard through which v
 
 The OPC Foundation provides deliverables for its member companies. These include a .NET based OPC UA Stack, an ANSI C based OPC UA Stack and a Java based OPC UA Stack. The .NET based OPC UA Stack is the base of all Technosoftware GmbH's .NET based solutions.
 
-![](images/OPCUAServices.png)
+![](../images/OPCUAServices.png)
 
 OPC Unified Architecture (UA) is a platform-independent standard through which various kinds of systems and devices can communicate by sending Messages between Clients and Servers over various types of networks. It supports robust, secure communication that assures the identity of Clients and Servers and resists attacks. OPC UA defines standard sets of Services that Servers may provide, and individual Servers specify to Clients what Service sets they support. Information is conveyed using standard and vendor-defined data types, and Servers define object models that Clients can dynamically discover. Servers can provide access to both current and historical data, as well as Alarms and Events to notify Clients of important changes. OPC UA can be mapped onto a variety of communication protocols and data can be encoded in various ways to trade off portability and efficiency.
 
