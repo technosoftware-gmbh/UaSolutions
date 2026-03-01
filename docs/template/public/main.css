@@ -1,0 +1,12 @@
+#logo {
+  width: 150px;
+  height: 50px;
+}
+
+#breadcrumb {
+  display: none;
+}
+
+.affix {
+  display: none !important;
+}
