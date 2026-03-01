@@ -101,7 +101,7 @@ Browse returned 19 results:
 
 We concentrate in this tutorial on the simple *SampleServer*, a console-based application for testing the server specific features. This tutorial will refer to that code while explaining the different steps to take to accomplish the main tasks of an OPC UA server.
 
-![](images/UaBaseServerAPIInterface.png)
+![](../images/UaBaseServerAPIInterface.png)
 
 Note: a downloadable PDF of this overview is available [here](pdf/UaBaseServerAPIInterface.pdf).
 
@@ -118,7 +118,7 @@ The Core Layer classes are used in user applications and tools and should not be
 Implementations based on these examples allows the creation of one node tree under the root like shown below:
 
 
-![](images/SampleAddressSpace.png)
+![](../images/SampleAddressSpace.png)
 
 “My Data” is the only tree you can create with this Base OPC UA Server Implementation.
 
@@ -656,7 +656,7 @@ Replace the CreateAddressSpace with the one shown below:
 
 You should now be able to build and start your first OPC UA server. Using the Unified Automation UaExpert you can use to connect to the OPC UA server and should see the following address space:
 
-![](images/SimpleServerAddressSpace.png)
+![](../images/SimpleServerAddressSpace.png)
 
 You can drag&drop the variables “Double”, “Enabled” and “Interval” to the Data Access View and see the value of the “Double” variable changing. By changing the “Interval” the update interval of the “Double” should chang and with setting “Enabled” to false no more changes should happen to the “Double” variable.
 

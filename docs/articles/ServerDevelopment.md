@@ -189,7 +189,7 @@ The OPC UA Server .NET contains a sample Server application, you can find it in
 
 The OPC UA Server .NET is divided into several DLL’s as shown in the picture below:
 
-![](images/OPCUANETArchitecture.png)
+![](../images/OPCUANETArchitecture.png)
 
 The DLLs are delivered as local NuGet Packages. The OPC UA Server .NET uses the following packages:
 
@@ -273,7 +273,7 @@ Browse returned 19 results:
 
 We concentrate in this tutorial on the simple *SampleServer*, a console-based application for testing the server specific features. This tutorial will refer to that code while explaining the different steps to take to accomplish the main tasks of an OPC UA server.
 
-![](images/UaStandardServerAPIInterface.png)
+![](../images/UaStandardServerAPIInterface.png)
 
 Note: a downloadable PDF of this overview is available [here](pdf/UaStandardServerAPIInterface.pdf).
 
@@ -521,7 +521,7 @@ Using more than one node namager is easy, for each node manager you have to impl
 
 You should now be able to build and start your first OPC UA server. Using the Unified Automation UaExpert you can use to connect to the OPC UA server and should see the following address space:
 
-![](images/SampleServerAddressSpace.png)
+![](../images/SampleServerAddressSpace.png)
 
 #### SampleServer project
 

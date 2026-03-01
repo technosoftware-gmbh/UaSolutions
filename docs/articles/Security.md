@@ -4,7 +4,7 @@ This chapter is based on the [Whitepaper The OPC UA Security Model for Administr
 
 ## Background
 
-![](images/CertificateHandling.png)
+![](../images/CertificateHandling.png)
 
 A security model is an architecture that allows developers, administrators and end users to use applications in a distributed environment while ensuring that the applications, the computers they run on, and the information exchanged is not compromised.  A complete security model has several facets including application security, transport security, user authorization and authentication and traceability.  This white paper describes how to use the OPC UA security model to ensure application and transport security. The target audience for this document are systems administrators and end users. A second whitepaper will discuss the security model from the perspective of a software developer. 
 
