@@ -4,7 +4,7 @@
 
 Please follow instructions in this [article](https://dotnet.microsoft.com/en-us/learn/dotnet/hello-world-tutorial/intro) to setup the dotnet command line environment for your platform.
 
-As of today, .NET 9.0, or .NET 8.0 is required. The article describes the installation of .NET 8.0.101 for Windows, Linux and macOS. This version also works with the OPC UA Client and Server Solutions we provide in this GitHub repositories.
+As of today, .NET 10.0, .NET 9.0, or .NET 8.0 is required. The article describes the installation of .NET 10.0 for Windows, Linux and macOS. This version also works with the OPC UA Client and Server Solutions we provide in this GitHub repositories.
 
 Please follow at least the sections:
 
@@ -17,33 +17,13 @@ to install the .NET SDK. You find the different .NET versions also [here](https:
 
 This GitHub repository is automatically built with the following environments:
 
-- Linux Ubuntu 24.04.2 LTS
-  - .NET 9.0.x
-- Mac OS X 14.7.4
-  - .NET 9.0.x
-- Microsoft Windows Server 2022 10.0.20348
-  - .NET 9.0.x
+- Linux Ubuntu
+  - .NET 10.0.x
+- Microsoft Windows Server
+  - .NET 10.0.x
 
-##  Directory Structure
+##  Documentation
 The repository contains the following basic directory layout:
-
-- documentation/
-  - Installation.md
-
-    Installation and Administration of .NET based OPC UA Applications
-  
-    Additional documentation:
-    - OPC_UA_Solution_NET_Introduction.pdf
-
-      Introduction in Developing OPC UA Clients and OPC UA Servers with C# / VB.NET
-
-- examples/
-  
-  Sample server applications based on the UaBaseServer library using the nuget packages
-
-- licenses/
-  
-  Licenses applying
 
 - nuget/
 
@@ -64,10 +44,11 @@ The repository contains the following basic directory layout:
 
 The solution consists of the following main components:
 
+- Technosoftware.UaSolutions.UaUtilities.dll
+- Technosoftware.UaSolutions.UaTypes.dll
 - Technosoftware.UaSolutions.UaCore.dll
 - Technosoftware.UaSolutions.UaBindings.Https.dll
 - Technosoftware.UaSolutions.UaConfiguration.dll
-- Technosoftware.UaSolutions.UaUtilities.dll
   
 These DLLs are used by all applications using the solution. In addition, one or several of the following DLL’s might be required:
 
@@ -77,18 +58,6 @@ These DLLs are used by all applications using the solution. In addition, one or 
 - Technosoftware.UaSolutions.UaServer.dll
   
   Server Applications require this DLL.
-- Technosoftware.UaSolutions.UaPubSub.dll
-  
-  PubSub Applications require this DLL.
-  
-Depending on which features server applications uses you also need to use one of the following DLLs:
-
-- Technosoftware.UaSolutions.UaBaseServer.dll
-  
-  Server Applications using the original features from V2.x require this DLL. See **[here](tutorials/SampleCompany/Simple)**.
-- Technosoftware.UaSolutions.UaStandardServer.dll
-  
-  Advanced server Applications with more than one node manager require this DLL. See **[here](tutorials/SampleCompany/Advanced)**.
 
 These DLLs are delivered via NuGet Packages available [here](/nuget/packages):
 
@@ -98,9 +67,6 @@ These DLLs are delivered via NuGet Packages available [here](/nuget/packages):
 - Technosoftware.UaSolutions.UaConfiguration
 - Technosoftware.UaSolutions.UaClient
 - Technosoftware.UaSolutions.UaServer
-- Technosoftware.UaSolutions.UaPubSub
-- Technosoftware.UaSolutions.UaBaseServer
-- Technosoftware.UaSolutions.UaStandardServer
 
 ## OPC UA Local Discovery Server
   
@@ -108,12 +74,12 @@ The Local Discovery Server (LDS) is a DiscoveryServer that maintains a list of a
 An LDS is a service that runs in the background. UA Servers will periodically connect to the LDS and Register themselves as being available. This periodic activity means that the list of available UA servers is always current and means that a client can immediately connect to any of them (security permissions pending).
 The OPC UA Local Discovery Server is an installation from the OPC Foundation and delivered as installation executable and as merge module. You can download it [here](https://opcfoundation.org/developer-tools/samples-and-tools-unified-architecture/local-discovery-server-lds/).
 
-## Test your installation with .NET 9.0
+## Test your installation with .NET 10.0
 The main OPC UA Solution can be found in the root of the repository and is named.
 
 - Tutorials.sln
 
-The solution contains a sample client, as well as a sample server used by this client for both the simple and advanced examples.
+The solution contains a sample client, as well as a sample server used by this client.
 
 ###  Prerequisites
 
@@ -124,7 +90,7 @@ This command restores the tree of dependencies.
 ### Start the server
 
 1. Open a command prompt.
-2. Navigate to the folder **tutorials/SampleCompany/Advanced/SampleServer**.
+2. Navigate to the folder **tutorials/SampleCompany/v5/SampleServer**.
 3. To run the server sample type
 
    `dotnet run --no-restore --framework net9.0 --project SampleCompany.SampleServer.csproj --autoaccept`
@@ -134,7 +100,7 @@ This command restores the tree of dependencies.
 
 ### Start the client
 1. Open a command prompt.
-2. Navigate to the folder **tutorials/SampleCompany/Advanced/SampleClient**.
+2. Navigate to the folder **tutorials/SampleCompany/v5/SampleClient**.
 3. To run the client sample type
    `dotnet run --no-restore --framework net9.0 --project SampleCompany.SampleClient.csproj --autoaccept`
    
@@ -147,7 +113,7 @@ This command restores the tree of dependencies.
 If everything was done correctly the client should show the following lines:
 
 ```
-OPC UA Advanced Console Sample Client
+OPC UA Console Sample Client
 WARNING: No valid license applied.
 Connecting to... opc.tcp://localhost:62555/SampleServer
 New Session Created with SessionName = SampleCompany OPC UA Sample Client

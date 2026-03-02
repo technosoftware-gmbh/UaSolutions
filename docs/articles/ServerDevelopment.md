@@ -275,8 +275,6 @@ We concentrate in this tutorial on the simple *SampleServer*, a console-based ap
 
 ![](../images/UaStandardServerAPIInterface.png)
 
-Note: a downloadable PDF of this overview is available [here](pdf/UaStandardServerAPIInterface.pdf).
-
 The main differences between an OPC UA Server using UaStandardServer compared to UaBaseServer are:
 
 1. It is possible to use several node managers, each handling one node tree under the root tree.
@@ -290,7 +288,7 @@ This chapter describes how to create your first OPC UA server based on the Simul
 
 The example OPC UA Server is splitted into two projects, a main project which handles the start and stop of an OPC UA server and a project containing one or more node managers.
 
-The main project at /tutorials/SampleCompany/SampleServer consists at least of the following C\# files:
+The main project at /tutorials/SampleCompany/v5/SampleServer consists at least of the following C\# files:
 
 | **Name**                   | **Description**                                                                                                                                                                                                                                                                                      |
 |:---------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -302,7 +300,7 @@ The main project at /tutorials/SampleCompany/SampleServer consists at least of t
 | MyUaServer.cs              | Contains the main class of the UA server and is based on UaStandardServer.                                                                                                                                                                                                                           |
 | *.Config.xml               | Contains the configuration of the OPC UA Server, e.g. ApplicationName. For the empty server it is named:   Technosoftware.SampleServer.Config.xml                                                                                                                                                    |
 
-The node manager project at /tutorials/SampleCompany/NodeManagers consists one main node manager, each node manager located within a subdirectory with at least the following C\# files:
+The node manager project at /tutorials/SampleCompany/v5/NodeManagers consists one main node manager, each node manager located within a subdirectory with at least the following C\# files:
 
 | **Name**                   | **Description**                                                                                                                                                                                                                                                                                      |
 |:---------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -325,8 +323,8 @@ The sample server implements one main node manager in the subdirectory Simulatio
 
 You need the following files to be able to develop your own OPC UA Server:
 
-1. Copy the directoy with the Sample OPC UA Server at /tutorials/SampleCompany/SampleServer, to your development directory, e.g., /solutions/SampleServer
-2. Copy the directoy with the Sample OPC UA Nodemanager at /tutorials/SampleCompany/NodeManagers, to your development directory, e.g., /solutions/NodeManagers
+1. Copy the directoy with the Sample OPC UA Server at /tutorials/SampleCompany/v5/SampleServer, to your development directory, e.g., /solutions/SampleServer
+2. Copy the directoy with the Sample OPC UA Nodemanager at /tutorials/SampleCompany/v5/NodeManagers, to your development directory, e.g., /solutions/NodeManagers
 3. Copy /Directory.Build.props and /targets.props to /solutions
 4. Rename the folder to your needs.
 
@@ -409,7 +407,7 @@ Please ensure that the application name and config section name fits your config
 
 The UA server handling itself can be found in *MyUaServer.cs* which will be explained later, in Program.cs just the creation, configuration, certificate checking, creating and adding the node manager(s), start and stop of the server is done. 
 
-First the server must be created, for this the MyUaServer class uses the reference to the server class which must be based on [UaStandardServer class](#Technosoftware.UaServer.UaStandardServer), in the sample it is the [SimulationServer class](#SampleCompany.NodeManagers.Simulation.SimulationServer):
+First the server must be created, for this the MyUaServer class uses the reference to the server class which must be based on [UaStandardServer class](../api/Technosoftware.UaServer.UaStandardServer.yml), in the sample it is the SimulationServer class:
 
 ```
     // create the UA server
@@ -431,7 +429,7 @@ First the server must be created, for this the MyUaServer class uses the referen
     await server.CheckCertificateAsync(renewCertificate).ConfigureAwait(false);
 ```
 
-The [NodeManagerUtils class](#SampleCompany.NodeManagers.NodeManagerUtils) is a helper class to get all implemented Node Managers in a library by reflection. If you only have one manager this is not used because the main nodemanager is created in the overriden method [CreateMasterNodeManager](#Technosoftware.UaServer.UaStandardServer.CreateMasterNodeManager), in the sample this is done in [CreateMasterNodeManager](#SampleCompany.NodeManagers.Simulation.SimulationServer.CreateMasterNodeManager).
+The NodeManagerUtils class is a helper class to get all implemented Node Managers in a library by reflection. If you only have one manager this is not used because the main nodemanager is created in the overriden method [CreateMasterNodeManager](#Technosoftware.UaServer.UaStandardServer.CreateMasterNodeManager), in the sample this is done in [CreateMasterNodeManager](#SampleCompany.NodeManagers.Simulation.SimulationServer.CreateMasterNodeManager).
 
 The usage of more then one node manager is explained later in this chapter. In the example it looks like:
 
@@ -461,7 +459,7 @@ The MyUaServer class is a template cincluding some basic functionality needed fo
 
 ##### Server class based on the UaStandardServer
 
-The [SimulationServer class](#SampleCompany.NodeManagers.Simulation.SimulationServer) is based on the [UaStandardServer class](#Technosoftware.UaServer.UaStandardServer) and overrides several methods. The most used ones are:
+The SimulationServer class is based on the [UaStandardServer class](../api/Technosoftware.UaServer.UaStandardServer.yml) and overrides several methods. The most used ones are:
 
 - [CreateMasterNodeManager](#Technosoftware.UaServer.UaStandardServer.CreateMasterNodeManager)
 - [CreateMonitoredItemQueueFactory](#Technosoftware.UaServer.UaStandardServer.CreateMonitoredItemQueueFactory)

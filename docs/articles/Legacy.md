@@ -14,7 +14,7 @@ The support for the features described in this chapter will only be guaranteed u
 
 The sample Server applications based on the UaBaseServer assembly will be no longer available with the next major release:
 
-- [Simple Sample Application](/tutorials/SampleCompany/Simple/SampleServer)
+- [Simple Sample Application](/tutorials/SampleCompany/v4/Simple/SampleServer)
   This sample Server shows the basics of a Server application.
 
 ### Required NuGet packages
@@ -103,8 +103,6 @@ We concentrate in this tutorial on the simple *SampleServer*, a console-based ap
 
 ![](../images/UaBaseServerAPIInterface.png)
 
-Note: a downloadable PDF of this overview is available [here](pdf/UaBaseServerAPIInterface.pdf).
-
 The Server API is designed to ease the server development by handling the standard tasks which all servers need to do and provides APIs that allow users to add their own functionality. These APIs fall into the following categories:
 
 - The first level, the Core Layer (Technosoftware.UaServer namespace), implements all common code necessary for an OPC UA Server and manages communication connection infrastructure like UaGenericServer, UaGenericNodeManager, GenericServerData, MasterNodeManager, ResourceManager, SubscriptionManager, SessionManager, EventManager and RequestManager.
@@ -118,7 +116,7 @@ The Core Layer classes are used in user applications and tools and should not be
 Implementations based on these examples allows the creation of one node tree under the root like shown below:
 
 
-![](../images/SampleAddressSpace.png)
+![](../images/SimpleServerAddressSpace.png)
 
 “My Data” is the only tree you can create with this Base OPC UA Server Implementation.
 
