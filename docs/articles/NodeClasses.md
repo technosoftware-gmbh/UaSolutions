@@ -15,11 +15,11 @@ The NodeClasses defined to represent Objects fall into three categories: those u
 
 ## Base NodeClass
 
-The OPC UA Address Space Model defines a Base NodeClass from which all other NodeClasses are derived. The derived NodeClasses represent the various components of the OPC UA Object Model. The Attributes of the Base NodeClass are specified in [OPC 10000-3] of the OPC UA specification. There are no References specified for the Base NodeClass. The [Base NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.2) is represented by the [NodeState class](#Opc.Ua.NodeState)) in .NET.
+The OPC UA Address Space Model defines a Base NodeClass from which all other NodeClasses are derived. The derived NodeClasses represent the various components of the OPC UA Object Model. The Attributes of the Base NodeClass are specified in [OPC 10000-3] of the OPC UA specification. There are no References specified for the Base NodeClass. The [Base NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.2) is represented by the NodeState class in .NET.
 
 ## ReferenceType NodeClass
 
-References are defined as instances of ReferenceType Nodes. ReferenceType Nodes are visible in the AddressSpace and are defined using the [ReferenceType NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.3) and represented in .NET using the [ReferenceTypeState class](#Opc.Ua.ReferenceTypeState). In contrast, a Reference is an inherent part of a Node and no NodeClass is used to represent References. 
+References are defined as instances of ReferenceType Nodes. ReferenceType Nodes are visible in the AddressSpace and are defined using the [ReferenceType NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.3) and represented in .NET using the ReferenceTypeState class. In contrast, a Reference is an inherent part of a Node and no NodeClass is used to represent References. 
 
 This standard defines a set of ReferenceTypes provided as an inherent part of the OPC UA Address Space Model. These ReferenceTypes are defined in [Clause 7](https://reference.opcfoundation.org/Core/Part3/v105/docs/7#_Ref192918160) and their representation in the AddressSpace is defined in [OPC 10000-5]. Servers may also define ReferenceTypes. In addition, [OPC 10000-4] defines NodeManagement Services that allow Clients to add ReferenceTypes to the AddressSpace
 
@@ -27,7 +27,7 @@ This standard defines a set of ReferenceTypes provided as an inherent part of th
 
 Underlying systems are often large, and Clients often have an interest in only a specific subset of the data. They do not need, or want, to be burdened with viewing Nodes in the AddressSpace for which they have no interest. 
 
-To address this problem, this standard defines the concept of a View. Each View defines a subset of the Nodes in the AddressSpace. The entire AddressSpace is the default View. Each Node in a View may contain only a subset of its References, as defined by the creator of the View. The View Node acts as the root for the Nodes in the View. Views are defined using the [View NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.4) and represented by the [ViewState class](#Opc.Ua.ViewState) in .NET.
+To address this problem, this standard defines the concept of a View. Each View defines a subset of the Nodes in the AddressSpace. The entire AddressSpace is the default View. Each Node in a View may contain only a subset of its References, as defined by the creator of the View. The View Node acts as the root for the Nodes in the View. Views are defined using the [View NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.4) and represented by the ViewState class in .NET.
 
 All Nodes contained in a View shall be accessible starting from the View Node when browsing in the context of the View. It is not expected that all containing Nodes can be browsed directly from the View Node but rather browsed from other Nodes contained in the View. 
 
@@ -37,11 +37,11 @@ A View Node may not only be used as additional entry point into the AddressSpace
 
 ### Objects NodeClass
 
-Objects are used to represent systems, system components, real-world objects and software objects. Objects are defined using the [Object NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.5) and represented in .NET using the [BaseObjectState class](#Opc.Ua.BaseObjectState).
+Objects are used to represent systems, system components, real-world objects and software objects. Objects are defined using the [Object NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.5) and represented in .NET using the BaseObjectState class.
 
 ### ObjectType NodeClass
 
-ObjectTypes provide definitions for Objects. ObjectTypes are defined using the [ObjectType NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.5.2) and represented in .NET using the [BaseObjectTypeState class](#Opc.Ua.BaseObjectTypeState).
+ObjectTypes provide definitions for Objects. ObjectTypes are defined using the [ObjectType NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.5.2) and represented in .NET using the BaseObjectTypeState class.
 
 ## Variables
 
@@ -51,21 +51,21 @@ Variables are used to represent values. Two types of Variables are defined, Prop
 
 Variables are used to represent values which may be simple or complex. Variables are defined by VariableTypes. 
 
-Variables are always defined as Properties or DataVariables of other Nodes in the AddressSpace. They are never defined by themselves. A Variable is always part of at least one other Node but may be related to any number of other Nodes. Variables are defined using the [Variable NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.2) and represented in .NET using the [BaseVariableState class](#Opc.Ua.BaseDataVariableState).
+Variables are always defined as Properties or DataVariables of other Nodes in the AddressSpace. They are never defined by themselves. A Variable is always part of at least one other Node but may be related to any number of other Nodes. Variables are defined using the [Variable NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.2) and represented in .NET using the BaseVariableState class].
 
 ### VariableType NodeClass
 
-VariableTypes are used to provide type definitions for Variables. VariableTypes are defined using the [VariableType NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.5) and represented in .NET using the [BaseVariableTypeState class](#Opc.Ua.BaseDataVariableTypeState).
+VariableTypes are used to provide type definitions for Variables. VariableTypes are defined using the [VariableType NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.5) and represented in .NET using the BaseVariableTypeState class.
 
 ## Method NodeClass
 
-Methods define callable functions. Methods are invoked using the Call Service defined in [OPC 10000-4]. Method invocations are not represented in the AddressSpace. Method invocations always run to completion and always return responses when complete. Methods are defined using the [Method NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.7.1) and represented in .NET using the [MethodState class](#Opc.Ua.MethodState).
+Methods define callable functions. Methods are invoked using the Call Service defined in [OPC 10000-4]. Method invocations are not represented in the AddressSpace. Method invocations always run to completion and always return responses when complete. Methods are defined using the [Method NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.7.1) and represented in .NET using the MethodState class.
 
 ## DataTypes
 
 ### DataType NodeClass
 
-The DataType NodeClass describes the syntax of a Variable Value. DataTypes are defined using the [DataType NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.8.3) and represented in .NET using the [DataTypeState class](#Opc.Ua.DataTypeState).
+The DataType NodeClass describes the syntax of a Variable Value. DataTypes are defined using the [DataType NodeClass](https://reference.opcfoundation.org/Core/Part3/v105/docs/5.8.3) and represented in .NET using the DataTypeState class.
 
 
 [OPC 10000-1]: https://reference.opcfoundation.org/Core/Part1/v105/docs/

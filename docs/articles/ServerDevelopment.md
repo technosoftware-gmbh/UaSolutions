@@ -429,7 +429,7 @@ First the server must be created, for this the MyUaServer class uses the referen
     await server.CheckCertificateAsync(renewCertificate).ConfigureAwait(false);
 ```
 
-The NodeManagerUtils class is a helper class to get all implemented Node Managers in a library by reflection. If you only have one manager this is not used because the main nodemanager is created in the overriden method [CreateMasterNodeManager](#Technosoftware.UaServer.UaStandardServer.CreateMasterNodeManager), in the sample this is done in [CreateMasterNodeManager](#SampleCompany.NodeManagers.Simulation.SimulationServer.CreateMasterNodeManager).
+The NodeManagerUtils class is a helper class to get all implemented Node Managers in a library by reflection. If you only have one manager this is not used because the main nodemanager is created in the overriden method CreateMasterNodeManager, in the sample this is done in CreateMasterNodeManager.
 
 The usage of more then one node manager is explained later in this chapter. In the example it looks like:
 
@@ -461,27 +461,27 @@ The MyUaServer class is a template cincluding some basic functionality needed fo
 
 The SimulationServer class is based on the [UaStandardServer class](../api/Technosoftware.UaServer.UaStandardServer.yml) and overrides several methods. The most used ones are:
 
-- [CreateMasterNodeManager](#Technosoftware.UaServer.UaStandardServer.CreateMasterNodeManager)
-- [CreateMonitoredItemQueueFactory](#Technosoftware.UaServer.UaStandardServer.CreateMonitoredItemQueueFactory)
-- [CreateSubscriptionStore](#Technosoftware.UaServer.UaStandardServer.CreateSubscriptionStore)
-- [CreateResourceManager](#Technosoftware.UaServer.UaStandardServer.CreateResourceManager)
-- [OnServerStarting](#Technosoftware.UaServer.UaStandardServer.OnServerStarting)
-- [OnServerStarted](#Technosoftware.UaServer.UaStandardServer.OnServerStarted)
+- CreateMasterNodeManager
+- CreateMonitoredItemQueueFactory
+- CreateSubscriptionStore
+- CreateResourceManager
+- OnServerStarting
+- OnServerStarted
 
-but also several from the [ServerBase class](#Opc.Ua.ServerBase) of the OPC UA Stack itself:
+but also several from the ServerBase class of the OPC UA Stack itself:
 
-- [LoadServerProperties](#Opc.Ua.ServerBase.LoadServerProperties)
-- [GetUserTokenPolicies](#Opc.Ua.ServerBase.GetUserTokenPolicies)
+- LoadServerProperties
+- GetUserTokenPolicies
 
 ##### Node manager class based on the UaStandardNodeManager
 
-The [SimulationServerNodeManager class](#SampleCompany.NodeManagers.Simulation.SimulationServerNodeManager) is based on the [UaStandardNodeManager class](#Technosoftware.UaServer.UaStandardNodeManager) and overrides several methods. The most important one is createing the address space:
+The SimulationServerNodeManager class is based on the [UaStandardNodeManager class](../api/Technosoftware.UaServer.UaStandardNodeManager.yml) and overrides several methods. The most important one is createing the address space:
 
-- [CreateAddressSpace](#Technosoftware.UaServer.UaStandardNodeManager.CreateAddressSpace)
+- CreateAddressSpace
 
 ##### Using more than one Node manager
 
-Using more than one node namager is easy, for each node manager you have to implement an additional class based on the [IUaNodeManagerFactory](#Technosoftware.UaServer.IUaNodeManagerFactory), e.g.:
+Using more than one node namager is easy, for each node manager you have to implement an additional class based on the [IUaNodeManagerFactory](../api/Technosoftware.UaServer.IUaNodeManagerFactory.yml), e.g.:
 
 ```
     /// <summary>
@@ -525,4 +525,4 @@ You should now be able to build and start your first OPC UA server. Using the Un
 
 For your convenience, the resulting sample server is also available in the distribution at
 
-/tutorials/SampleCompany/SampleServer
+/tutorials/SampleCompany/v5/SampleServer
