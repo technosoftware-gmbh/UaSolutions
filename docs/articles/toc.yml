@@ -12,8 +12,6 @@
   href: SupportedPlatforms.md
 - name: Product Lifecycle
   href: ProductLifeCycle.md
-- name: Supported Platforms
-  href: SupportedPlatforms.md
 - name: Installation and Administration
   href: Installation.md
 - name: Upgrade from 4.2 to 5.0
