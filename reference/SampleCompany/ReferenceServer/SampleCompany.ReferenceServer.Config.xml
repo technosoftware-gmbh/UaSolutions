@@ -1,19 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ApplicationConfiguration
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
-  xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
+xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
 >
   <!-- A human readable but not necessarily unique name for the application instance -->
   <ApplicationName>SampleCompany OPC UA Reference Server</ApplicationName>
-
   <!-- A globally unique identifier for the application instance.
        This is overridden with the value contained in the application certificate. -->
   <ApplicationUri>urn:localhost:SampleCompany:ReferenceServer</ApplicationUri>
 
   <!-- A globally unique URI for the product (usually assigned by the product vendor) -->
   <ProductUri>uri:samplecompany.com:ReferenceServer</ProductUri>
-
   <!-- Indicates the type of application (Server_0, Client_1, ClientAndServer_2 or DiscoveryServer_3). -->
   <ApplicationType>Server_0</ApplicationType>
   <!-- Specifies security related configuration information -->
@@ -97,7 +95,7 @@
     <!-- Value indicating which minimum certificate key strength is accepted -->
     <MinimumCertificateKeySize>2048</MinimumCertificateKeySize>
 
-    <!-- Value indicating whether the application cert should be copied to the trusted store -->
+<!-- Value indicating whether the application cert should be copied to the trusted store -->
     <AddAppCertToTrustedStore>false</AddAppCertToTrustedStore>
 
     <!-- Specifies whether the complete certificate chain should be sent for CA signed certificates. -->
