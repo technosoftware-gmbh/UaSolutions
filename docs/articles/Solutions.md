@@ -26,5 +26,5 @@ The OPC UA Client Gateway .NET allows any OPC UA Clients to access Classic OPC D
 
 The OPC UA Client Gateway .NET can be configured with an integrated configuration tool. With this tool you can specify the Classic OPC Server to be used as well as starting node (folder) within the UA address space to be used for mapping the Classic OPC Server address space.
 
-![](../images/OPCUAClientGateway.png.png)
+![](../images/OPCUAClientGateway.png)
 
