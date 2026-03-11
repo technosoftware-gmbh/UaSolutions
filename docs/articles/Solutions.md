@@ -19,3 +19,12 @@ The OPC UA Server NET offers a fast and easy access to the OPC Unified Architect
 The server API is easy to use and many OPC specific functions are handled by the framework. The included Model Compiler can be used to create the necessary C# classes of Information Model’s specified in XML and CSV based files.
 
 ![](../images/OPCUAServerNET.png)
+
+## OPC UA Client Gateway
+
+The OPC UA Client Gateway .NET allows any OPC UA Clients to access Classic OPC DA, AE and HDA servers.
+
+The OPC UA Client Gateway .NET can be configured with an integrated configuration tool. With this tool you can specify the Classic OPC Server to be used as well as starting node (folder) within the UA address space to be used for mapping the Classic OPC Server address space.
+
+![](../images/OPCUAClientGateway.png.png)
+
