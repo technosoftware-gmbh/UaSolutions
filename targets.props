@@ -137,6 +137,7 @@
       <PropertyGroup>
         <AppTargetFrameworks>net10.0;net9.0;net8.0;net48</AppTargetFrameworks>
         <AppTargetFramework>net10.0</AppTargetFramework>
+        <UaClientGatewayTargets>net48</UaClientGatewayTargets>		
         <TestsTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</TestsTargetFrameworks>
         <LibTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibTargetFrameworks>
         <LibCoreTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibCoreTargetFrameworks>
