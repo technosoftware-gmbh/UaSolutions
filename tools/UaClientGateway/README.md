@@ -10,6 +10,7 @@ The OPC UA Client Gateway .NET can be configured with an integrated configuratio
 
 The configuration is done in the Config.xml file as an extension, e.g.:
 
+```
   <Extensions>
     <ua:XmlElement>
       <ComWrapperServerConfiguration xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://opcfoundation.org/UA/SDK/COMInterop">
@@ -34,5 +35,5 @@ The configuration is done in the Config.xml file as an extension, e.g.:
       </ComWrapperServerConfiguration>
     </ua:XmlElement>
   </Extensions>
-
+```
 
