@@ -1,3 +1,3 @@
-REM collect a trace using the EventSource provider OPC-UA-Core
+REM collect a trace using the EventSource provider Technosoftware.UaCore,Technosoftware.UaClient
 dotnet tool install --global dotnet-trace
-dotnet-trace collect --name consolereferenceclient --providers OPC-UA-Core,OPC-UA-Client
+dotnet-trace collect --name SampleCompany.ReferenceClient --providers Technosoftware.UaCore,Technosoftware.UaClient
