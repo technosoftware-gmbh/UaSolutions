@@ -17,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
-using Technosoftware.Client;
+using Technosoftware.ClientGateway;
 #endregion Using Directives
 
 namespace Technosoftware.UaClientGateway

@@ -5,6 +5,10 @@
 
 ### New features:
 
+#### Client Gateway
+
+- Added Technosoftware.ClientGateway package allowing UA clients to access data from OPC DA/AE/HDA servers.
+
 #### Server
 
 - Support for async method calls by implementing IAsyncNodeManager interface
