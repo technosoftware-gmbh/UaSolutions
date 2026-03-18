@@ -121,7 +121,7 @@ namespace SampleCompany.NodeManagers.Alarms
                     const string alarmsName = "Alarms";
                     const string alarmsNodeName = alarmsName;
 
-                    var alarmControllerType = Type.GetType("Alarms.AlarmController");
+                    var alarmControllerType = Type.GetType("SampleCompany.NodeManagers.Alarms.AlarmController");
                     const int interval = 1000;
                     string intervalString = interval.ToString(CultureInfo.InvariantCulture);
 

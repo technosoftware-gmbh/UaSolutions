@@ -33,7 +33,7 @@ namespace Technosoftware.UaClientGateway
         /// <param name="args">The arguments.</param>
         public static async Task<int> Main(string[] args)
         {
-            Console.WriteLine("OPC UA Console Reference Server");
+            Console.WriteLine("OPC UA Client Gateway Server");
 
             #region License validation
             //const string licenseData =
