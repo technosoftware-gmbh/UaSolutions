@@ -33,7 +33,7 @@
     <AnalysisMode>all</AnalysisMode>
     <AnalysisModeStyle>default</AnalysisModeStyle>
   </PropertyGroup>
-  <ItemGroup Condition="$(NO_RCS) == ''">
+  <ItemGroup Condition="'$(NoRoslynatorAnalzers)' == ''">
     <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" Version="4.15.0" />
     <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" Version="4.15.0" />
   </ItemGroup>

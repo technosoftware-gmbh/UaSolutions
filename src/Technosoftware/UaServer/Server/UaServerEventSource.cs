@@ -12,6 +12,7 @@
 #region Using Directives
 using System;
 using System.Diagnostics.Tracing;
+using System.Runtime.InteropServices;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -30,7 +31,7 @@ namespace Technosoftware.UaServer
     /// <summary>
     /// Event source for high performance logging.
     /// </summary>
-    [EventSource(Name = "OPC-UA-Server", Guid = "86FF2AAB-8FF6-46CB-8CE3-E0211950B30C")]
+    [EventSource(Name = "Technosoftware.UaServer", Guid = "C99C4CD3-A6A9-44F2-9E2D-590ABF06CF3E")]
     internal sealed class UaServerEventSource : EventSource
     {
         /// <summary>

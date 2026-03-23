@@ -384,9 +384,9 @@ namespace Technosoftware.UaClient
                 uint operationLimit,
                 CancellationToken ct)
             {
-                LicenseHandler.ValidateFeatures(
-                    Technosoftware.UaUtilities.Licensing.ApplicationType.Client,
-                    UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
+                UaUtilities.LicenseHandler.Instance.ValidateFeatures(
+                    UaUtilities.ApplicationType.Client,
+                    UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
 
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
@@ -440,9 +440,9 @@ namespace Technosoftware.UaClient
             HistoryReadValueIdCollection nodesToRead,
             CancellationToken ct)
         {
-            LicenseHandler.ValidateFeatures(
-                Technosoftware.UaUtilities.Licensing.ApplicationType.Client,
-                UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
+            UaUtilities.LicenseHandler.Instance.ValidateFeatures(
+                UaUtilities.ApplicationType.Client,
+                UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
 
             uint operationLimit = OperationLimits.MaxNodesPerHistoryReadData;
             if (historyReadDetails?.TypeId == DataTypeIds.ReadEventDetails ||
@@ -479,9 +479,9 @@ namespace Technosoftware.UaClient
                 uint operationLimit,
                 CancellationToken ct)
             {
-            LicenseHandler.ValidateFeatures(
-                Technosoftware.UaUtilities.Licensing.ApplicationType.Client,
-                UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
+                UaUtilities.LicenseHandler.Instance.ValidateFeatures(
+                UaUtilities.ApplicationType.Client,
+                UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
 
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
@@ -533,9 +533,9 @@ namespace Technosoftware.UaClient
             WriteValueCollection nodesToWrite,
             CancellationToken ct)
         {
-            LicenseHandler.ValidateFeatures(
-                Technosoftware.UaUtilities.Licensing.ApplicationType.Client,
-                UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
+            UaUtilities.LicenseHandler.Instance.ValidateFeatures(
+                UaUtilities.ApplicationType.Client,
+                UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
 
             uint operationLimit = OperationLimits.MaxNodesPerWrite;
             if (operationLimit == 0 || operationLimit >= nodesToWrite.Count)
@@ -553,9 +553,9 @@ namespace Technosoftware.UaClient
                 uint operationLimit,
                 CancellationToken ct)
             {
-            LicenseHandler.ValidateFeatures(
-                Technosoftware.UaUtilities.Licensing.ApplicationType.Client,
-                UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
+                UaUtilities.LicenseHandler.Instance.ValidateFeatures(
+                UaUtilities.ApplicationType.Client,
+                UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
 
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
@@ -604,9 +604,9 @@ namespace Technosoftware.UaClient
             ExtensionObjectCollection historyUpdateDetails,
             CancellationToken ct)
         {
-            LicenseHandler.ValidateFeatures(
-                Technosoftware.UaUtilities.Licensing.ApplicationType.Client,
-                UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
+            UaUtilities.LicenseHandler.Instance.ValidateFeatures(
+                UaUtilities.ApplicationType.Client,
+                UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
 
             uint operationLimit = OperationLimits.MaxNodesPerHistoryUpdateData;
             if (historyUpdateDetails.Count > 0 &&
@@ -630,9 +630,9 @@ namespace Technosoftware.UaClient
                 uint operationLimit,
                 CancellationToken ct)
             {
-            LicenseHandler.ValidateFeatures(
-                Technosoftware.UaUtilities.Licensing.ApplicationType.Client,
-                UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
+                UaUtilities.LicenseHandler.Instance.ValidateFeatures(
+                UaUtilities.ApplicationType.Client,
+                UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
 
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();

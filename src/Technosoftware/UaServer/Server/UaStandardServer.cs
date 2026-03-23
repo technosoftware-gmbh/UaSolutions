@@ -1025,8 +1025,8 @@ namespace Technosoftware.UaServer
             CancellationToken ct)
         {
             // check for valid license
-            UaUtilities.Licensing.LicenseHandler
-                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.None);
+            UaUtilities.LicenseHandler.Instance
+                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.None, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.BrowseNext);
 
@@ -1086,8 +1086,8 @@ namespace Technosoftware.UaServer
             CancellationToken ct)
         {
             // check for valid license
-            UaUtilities.Licensing.LicenseHandler
-                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.None);
+            UaUtilities.LicenseHandler.Instance
+                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.None, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.RegisterNodes);
 
@@ -1141,8 +1141,8 @@ namespace Technosoftware.UaServer
             CancellationToken ct)
         {
             // check for valid license
-            UaUtilities.Licensing.LicenseHandler
-                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.None);
+            UaUtilities.LicenseHandler.Instance
+                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.None, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.UnregisterNodes);
 
@@ -1252,8 +1252,8 @@ namespace Technosoftware.UaServer
             CancellationToken ct)
         {
             // check for valid license
-            UaUtilities.Licensing.LicenseHandler
-                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
+            UaUtilities.LicenseHandler.Instance
+                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Read);
 
@@ -1311,8 +1311,8 @@ namespace Technosoftware.UaServer
             CancellationToken ct)
         {
             // check for valid license
-            UaUtilities.Licensing.LicenseHandler
-                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
+            UaUtilities.LicenseHandler.Instance
+                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.HistoryRead);
 
@@ -1380,8 +1380,8 @@ namespace Technosoftware.UaServer
             CancellationToken ct)
         {
             // check for valid license
-            UaUtilities.Licensing.LicenseHandler
-                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.DataAccess);
+            UaUtilities.LicenseHandler.Instance
+                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Write);
 
@@ -1431,8 +1431,8 @@ namespace Technosoftware.UaServer
             CancellationToken ct)
         {
             // check for valid license
-            UaUtilities.Licensing.LicenseHandler
-                .ValidateFeatures(UaUtilities.Licensing.ApplicationType.Server, UaUtilities.Licensing.LicenseHandler.ProductFeature.HistoricalAccess);
+            UaUtilities.LicenseHandler.Instance
+                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.HistoryUpdate);
 
