@@ -16,6 +16,7 @@
 #region Using Directives
 using System;
 using System.Diagnostics.Tracing;
+using System.Runtime.InteropServices;
 using Opc.Ua;
 #endregion Using Directives
 
@@ -35,7 +36,7 @@ namespace Technosoftware.UaClient
     /// <summary>
     /// Event source for high performance logging.
     /// </summary>
-    [EventSource(Name = "Technosoftware.UaClient", Guid = "70A02853-C24D-4C36-8A3B-0AD181BE7D46")]
+    [EventSource(Name = "Technosoftware.UaClient", Guid = "220229E4-35D0-4B35-916B-166FF9651F04")]
     internal class UaClientEventSource : EventSource
     {
         internal const int SubscriptionStateId = 1;

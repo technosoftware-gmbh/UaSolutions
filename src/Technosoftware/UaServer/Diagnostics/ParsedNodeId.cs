@@ -28,6 +28,7 @@ namespace Technosoftware.UaServer
     /// </remarks>
     public class ParsedNodeId
     {
+        #region Public Interface
         /// <summary>
         /// The namespace index that qualified the NodeId.
         /// </summary>
@@ -239,6 +240,9 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Constructs the node identifier for a component.
         /// </summary>
+        /// <param name="component">The component.</param>
+        /// <param name="namespaceIndex">Index of the namespace.</param>
+        /// <returns>The node identifier for a component.</returns>
         public static NodeId CreateIdForComponent(NodeState component, ushort namespaceIndex)
         {
             if (component == null)
@@ -279,5 +283,107 @@ namespace Technosoftware.UaServer
             // return the node identifier.
             return new NodeId(buffer.ToString(), namespaceIndex);
         }
+
+        /// <summary>
+        /// Extracts a number from the string.
+        /// </summary>
+        /// <param name="identifier">The identifier.</param>
+        /// <param name="start">The start. Set the first non-digit character.</param>
+        /// <returns>The number</returns>
+        protected static uint ExtractNumber(string identifier, ref int start)
+        {
+            uint number = 0;
+
+            for (int ii = start; ii < identifier.Length; ii++)
+            {
+                if (!Char.IsDigit(identifier[ii]))
+                {
+                    start = ii;
+                    return number;
+                }
+
+                number *= 10;
+                number += (byte)(identifier[ii] - '0');
+            }
+
+            start = identifier.Length;
+            return number;
+        }
+
+        /// <summary>
+        /// Escapes and appends a string.
+        /// </summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="text">The text.</param>
+        /// <param name="specialChars">The special chars.</param>
+        protected static void EscapeAndAppendString(StringBuilder buffer, string text, params char[] specialChars)
+        {
+            // add the root identifier.
+            if (text != null)
+            {
+                for (int ii = 0; ii < text.Length; ii++)
+                {
+                    char ch = text[ii];
+
+                    // escape any special characters.
+                    for (int jj = 0; jj < specialChars.Length; jj++)
+                    {
+                        if (specialChars[jj] == ch)
+                        {
+                            buffer.Append(specialChars[0]);
+                        }
+                    }
+
+                    buffer.Append(ch);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Extracts the and unescapes a string.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="start">The start.</param>
+        /// <param name="specialChars">The special chars.</param>
+        /// <returns></returns>
+        protected static string ExtractAndUnescapeString(string text, ref int start, params char[] specialChars)
+        {
+            StringBuilder buffer = new StringBuilder();
+
+            int index = start;
+            bool escaped = false;
+
+            while (index < text.Length)
+            {
+                char ch = text[index++];
+
+                if (!escaped)
+                {
+                    // skip any escape character but keep the one after it.
+                    if (ch == specialChars[0])
+                    {
+                        escaped = true;
+                        continue;
+                    }
+
+                    // terminate on any special char other than the escape char.
+                    for (int jj = 1; jj < specialChars.Length; jj++)
+                    {
+                        if (specialChars[jj] == ch)
+                        {
+                            start = index-1;
+                            return buffer.ToString();
+                        }
+                    }
+                }
+
+                buffer.Append(ch);
+                escaped = false;
+            }
+
+            start = text.Length;
+            return buffer.ToString();
+        }
+        #endregion
     }
 }

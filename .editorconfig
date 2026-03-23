@@ -439,6 +439,11 @@ dotnet_diagnostic.CA1724.severity                                             = 
 dotnet_diagnostic.CA2326.severity = none
 dotnet_diagnostic.CA2327.severity = none
 
+dotnet_diagnostic.CA5390.severity = none
+dotnet_diagnostic.CA5403.severity = none
+dotnet_code_quality.CA5390.excluded_symbol_names = Initializers
+dotnet_code_quality.CA5403.excluded_symbol_names = Initializers
+
 # TODO Fix as P1:
 
 # CA2213: Disposable fields should be disposed
@@ -1049,6 +1054,47 @@ dotnet_diagnostic.RCS1266.severity                                            = 
 # in future updates. Suppress this diagnostic to proceed.
 #
 dotnet_diagnostic.UA_NETStandard_1.severity = none
+
+# Allow public members in fixtures
+dotnet_diagnostic.NUnit1028.severity = none
+
+# Use new assert style
+dotnet_diagnostic.NUnit2001.severity = suggestion
+dotnet_diagnostic.NUnit2002.severity = suggestion
+dotnet_diagnostic.NUnit2003.severity = suggestion
+dotnet_diagnostic.NUnit2004.severity = suggestion
+dotnet_diagnostic.NUnit2005.severity = suggestion
+dotnet_diagnostic.NUnit2006.severity = suggestion
+dotnet_diagnostic.NUnit2010.severity = suggestion
+dotnet_diagnostic.NUnit2015.severity = suggestion
+dotnet_diagnostic.NUnit2016.severity = suggestion
+dotnet_diagnostic.NUnit2017.severity = suggestion
+dotnet_diagnostic.NUnit2018.severity = suggestion
+dotnet_diagnostic.NUnit2019.severity = suggestion
+dotnet_diagnostic.NUnit2027.severity = suggestion
+dotnet_diagnostic.NUnit2028.severity = suggestion
+dotnet_diagnostic.NUnit2029.severity = suggestion
+dotnet_diagnostic.NUnit2030.severity = suggestion
+dotnet_diagnostic.NUnit2031.severity = suggestion
+dotnet_diagnostic.NUnit2032.severity = suggestion
+dotnet_diagnostic.NUnit2033.severity = suggestion
+dotnet_diagnostic.NUnit2034.severity = suggestion
+dotnet_diagnostic.NUnit2035.severity = suggestion
+dotnet_diagnostic.NUnit2035.severity = suggestion
+dotnet_diagnostic.NUnit2036.severity = suggestion
+dotnet_diagnostic.NUnit2037.severity = suggestion
+dotnet_diagnostic.NUnit2038.severity = suggestion
+dotnet_diagnostic.NUnit2039.severity = suggestion
+dotnet_diagnostic.NUnit2045.severity = silent
+dotnet_diagnostic.NUnit2048.severity = suggestion
+dotnet_diagnostic.NUnit2049.severity = suggestion
+dotnet_diagnostic.NUnit2051.severity = suggestion
+dotnet_diagnostic.NUnit2052.severity = suggestion
+dotnet_diagnostic.NUnit2053.severity = suggestion
+dotnet_diagnostic.NUnit2054.severity = suggestion
+dotnet_diagnostic.NUnit2055.severity = suggestion
+dotnet_diagnostic.NUnit2056.severity = silent
+dotnet_diagnostic.NUnit2057.severity = suggestion
 
 # exclude generated code
 
