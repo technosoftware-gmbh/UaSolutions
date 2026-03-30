@@ -72,7 +72,7 @@ jobs:
       if: ${{ always() }}
 
     - name: Upload to Codecov
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       with:
         name: codecov-umbrella
         token: ${{ secrets.CODECOV_TOKEN }}
@@ -85,13 +85,13 @@ jobs:
       if: ${{ always() }}
       
     - name: Upload Coverage
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         report_type: coverage # Or just let it default
 
     - name: Upload Test Results
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         report_type: test_results # Explicitly for tests
