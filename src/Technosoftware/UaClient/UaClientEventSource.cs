@@ -13,12 +13,10 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -83,11 +81,11 @@ namespace Technosoftware.UaClient
             NotificationId,
             Message = "Notification: ClientHandle={0}, Value={1}",
             Level = EventLevel.Verbose)]
-        public void Notification(int clientHandle, Variant value)
+        public void Notification(int clientHandle, string value)
         {
             if (IsEnabled())
             {
-                WriteEvent(NotificationId, clientHandle, value.ToString());
+                WriteEvent(NotificationId, clientHandle, value);
             }
         }
 

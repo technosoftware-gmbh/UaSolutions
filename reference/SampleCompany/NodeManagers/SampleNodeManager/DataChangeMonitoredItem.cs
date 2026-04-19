@@ -522,7 +522,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     StatusCode = StatusCodes.Good,
                     RevisedSamplingInterval = m_samplingInterval,
                     RevisedQueueSize = 0,
-                    FilterResult = null
+                    FilterResult = default
                 };
 
                 if (m_queue != null)
@@ -546,7 +546,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     StatusCode = StatusCodes.Good,
                     RevisedSamplingInterval = m_samplingInterval,
                     RevisedQueueSize = 0,
-                    FilterResult = null
+                    FilterResult = default
                 };
 
                 if (m_queue != null)
@@ -822,10 +822,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             // set semantics changed bit.
             if (m_semanticsChanged)
             {
-                if (value != null)
-                {
-                    value.StatusCode = value.StatusCode.SetSemanticsChanged(true);
-                }
+                value?.StatusCode = value.StatusCode.SetSemanticsChanged(true);
 
                 m_semanticsChanged = false;
             }
@@ -833,10 +830,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             // set structure changed bit.
             if (m_structureChanged)
             {
-                if (value != null)
-                {
-                    value.StatusCode = value.StatusCode.SetStructureChanged(true);
-                }
+                value?.StatusCode = value.StatusCode.SetStructureChanged(true);
 
                 m_structureChanged = false;
             }

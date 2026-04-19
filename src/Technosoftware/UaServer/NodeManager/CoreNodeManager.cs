@@ -1378,10 +1378,9 @@ namespace Technosoftware.UaServer
                     // final check for initial value
                     ServiceResult error = ReadInitialValue(context, node, monitoredItem);
                     if (ServiceResult.IsBad(error) &&
-                        error.StatusCode.Code
-                            is StatusCodes.BadAttributeIdInvalid
-                                or StatusCodes.BadDataEncodingInvalid
-                                or StatusCodes.BadDataEncodingUnsupported)
+                        (error.StatusCode == StatusCodes.BadAttributeIdInvalid ||
+                            error.StatusCode == StatusCodes.BadDataEncodingInvalid ||
+                            error.StatusCode == StatusCodes.BadDataEncodingUnsupported))
                     {
                         errors[ii] = error;
                         continue;
@@ -2001,7 +2000,7 @@ namespace Technosoftware.UaServer
             {
                 if (GetManagerHandle(sourceId) is not ILocalNode source)
                 {
-                    return null;
+                    return default;
                 }
 
                 foreach (ReferenceNode reference in source.References.OfType<ReferenceNode>())
@@ -2030,7 +2029,7 @@ namespace Technosoftware.UaServer
                     }
                 }
 
-                return null;
+                return default;
             }
         }
 
@@ -2046,7 +2045,7 @@ namespace Technosoftware.UaServer
                 return targets[0];
             }
 
-            return null;
+            return default;
         }
 
         /// <summary>
@@ -2874,7 +2873,7 @@ namespace Technosoftware.UaServer
 
             if (referencesToDelete.Count > 0)
             {
-                Task.Run(() => OnDeleteReferencesAsync(referencesToDelete));
+                _ = Task.Run(() => OnDeleteReferencesAsync(referencesToDelete));
             }
         }
 
@@ -3142,7 +3141,7 @@ namespace Technosoftware.UaServer
                 lock (Server.DiagnosticsLock)
                 {
                     NodeState state = Server.DiagnosticsNodeManager
-                        .FindPredefinedNode(source.NodeId, null);
+                        .FindPredefinedNode<NodeState>(source.NodeId);
 
                     if (state != null)
                     {

@@ -13,13 +13,11 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {

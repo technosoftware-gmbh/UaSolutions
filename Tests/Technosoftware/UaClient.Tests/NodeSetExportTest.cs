@@ -33,7 +33,7 @@ namespace Technosoftware.UaClient.Tests
     [TestFixtureSource(nameof(FixtureArgs))]
     public class NodeSetExportTest : ClientTestFramework
     {
-        public static readonly new object[] FixtureArgs =
+        public static new readonly object[] FixtureArgs =
         [
             new object[] { Utils.UriSchemeOpcTcp }
         ];
@@ -129,7 +129,7 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 // Verify the file was created and has content
-                FileInfo fileInfo = new FileInfo(tempFile);
+                var fileInfo = new FileInfo(tempFile);
                 Assert.IsTrue(fileInfo.Exists, "NodeSet2 file should exist");
                 Assert.Greater(fileInfo.Length, 0, "NodeSet2 file should not be empty");
 
@@ -300,7 +300,7 @@ namespace Technosoftware.UaClient.Tests
         /// Test exporting nodes with default options (no values).
         /// </summary>
         [Test]
-        public async Task ExportNodesToNodeSet2_DefaultOptions()
+        public async Task ExportNodesToNodeSet2_DefaultOptionsAsync()
         {
             var allNodes = new List<INode>();
 
@@ -341,17 +341,16 @@ namespace Technosoftware.UaClient.Tests
                     var nodeSet = UANodeSet.Read(stream);
                     Assert.IsNotNull(nodeSet, "Should be able to read the exported NodeSet2");
                     Assert.IsNotNull(nodeSet.Items, "NodeSet2 should contain items");
-                    
+
                     // Check that variables don't have values
-                    var variables = nodeSet.Items.OfType<Opc.Ua.Export.UAVariable>().ToList();
-                    foreach (var variable in variables)
+                    foreach (UAVariable variable in nodeSet.Items.OfType<UAVariable>())
                     {
                         Assert.IsNull(variable.Value, "Value should not be exported with Default options");
                     }
                 }
 
                 // Verify default file is smaller or equal to complete
-                FileInfo defaultFile = new FileInfo(tempFile);
+                var defaultFile = new FileInfo(tempFile);
                 long defaultSize = defaultFile.Length;
 
                 // Export with complete options
@@ -369,12 +368,17 @@ namespace Technosoftware.UaClient.Tests
                         UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream, NodeSetExportOptions.Complete);
                     }
 
-                    FileInfo completeFile = new FileInfo(tempFileComplete);
+                    var completeFile = new FileInfo(tempFileComplete);
                     long completeSize = completeFile.Length;
 
                     // Default should be smaller or equal to complete
                     // (Equal if nodes don't have values to export)
-                    Assert.LessOrEqual(defaultSize, completeSize, "Default export should not be larger than Complete");
+                    if (completeSize < defaultSize)
+                    {
+                        TestContext.AddTestAttachment(tempFileComplete, "Complete export file");
+                        TestContext.AddTestAttachment(tempFile, "Default export file");
+                        Assert.LessOrEqual(defaultSize, completeSize, "Default export should not be larger than Complete");
+                    }
                 }
                 finally
                 {
@@ -397,7 +401,7 @@ namespace Technosoftware.UaClient.Tests
         /// Test exporting nodes with complete options (all metadata).
         /// </summary>
         [Test]
-        public async Task ExportNodesToNodeSet2_CompleteOptions()
+        public async Task ExportNodesToNodeSet2_CompleteOptionsAsync()
         {
             var allNodes = new List<INode>();
 
@@ -446,7 +450,7 @@ namespace Technosoftware.UaClient.Tests
         /// Test exporting nodes with custom options.
         /// </summary>
         [Test]
-        public async Task ExportNodesToNodeSet2_CustomOptions()
+        public async Task ExportNodesToNodeSet2_CustomOptionsAsync()
         {
             var allNodes = new List<INode>();
 
@@ -481,7 +485,7 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 // Verify the file was created and has content
-                FileInfo fileInfo = new FileInfo(tempFile);
+                var fileInfo = new FileInfo(tempFile);
                 Assert.IsTrue(fileInfo.Exists, "NodeSet2 file should exist");
                 Assert.Greater(fileInfo.Length, 0, "NodeSet2 file should not be empty");
             }
@@ -498,7 +502,7 @@ namespace Technosoftware.UaClient.Tests
         /// Test that default export options preserve backward compatibility.
         /// </summary>
         [Test]
-        public async Task ExportNodesToNodeSet2_BackwardCompatibility()
+        public async Task ExportNodesToNodeSet2_BackwardCompatibilityAsync()
         {
             var allNodes = new List<INode>();
 
@@ -513,7 +517,7 @@ namespace Technosoftware.UaClient.Tests
 
             string tempFile1 = Path.GetTempFileName();
             string tempFile2 = Path.GetTempFileName();
-            
+
             try
             {
                 var systemContext = new SystemContext(Telemetry)
@@ -564,7 +568,7 @@ namespace Technosoftware.UaClient.Tests
         /// Test exporting with user context option.
         /// </summary>
         [Test]
-        public async Task ExportNodesToNodeSet2_UserContextOptions()
+        public async Task ExportNodesToNodeSet2_UserContextOptionsAsync()
         {
             var allNodes = new List<INode>();
 
@@ -644,21 +648,21 @@ namespace Technosoftware.UaClient.Tests
                     }
 
                     // Verify that methods in the context version have UserExecutable
-                    var methodsNoContext = nodeSetNoContext.Items?.OfType<Opc.Ua.Export.UAMethod>().ToList() ?? new List<Opc.Ua.Export.UAMethod>();
-                    var methodsWithContext = nodeSetWithContext.Items?.OfType<Opc.Ua.Export.UAMethod>().ToList() ?? new List<Opc.Ua.Export.UAMethod>();
-                    
+                    List<UAMethod> methodsNoContext = nodeSetNoContext.Items?.OfType<UAMethod>().ToList() ?? [];
+                    List<UAMethod> methodsWithContext = nodeSetWithContext.Items?.OfType<UAMethod>().ToList() ?? [];
+
                     Assert.AreEqual(methodsNoContext.Count, methodsWithContext.Count, "Should have same number of methods");
 
                     // Variables with context should potentially have UserAccessLevel if different from AccessLevel
-                    var variablesNoContext = nodeSetNoContext.Items?.OfType<Opc.Ua.Export.UAVariable>().ToList() ?? new List<Opc.Ua.Export.UAVariable>();
-                    var variablesWithContext = nodeSetWithContext.Items?.OfType<Opc.Ua.Export.UAVariable>().ToList() ?? new List<Opc.Ua.Export.UAVariable>();
-                    
+                    List<UAVariable> variablesNoContext = nodeSetNoContext.Items?.OfType<UAVariable>().ToList() ?? [];
+                    List<UAVariable> variablesWithContext = nodeSetWithContext.Items?.OfType<UAVariable>().ToList() ?? [];
+
                     Assert.AreEqual(variablesNoContext.Count, variablesWithContext.Count, "Should have same number of variables");
 
                     // File with user context should be larger or equal
-                    FileInfo fileNoContext = new FileInfo(tempFileNoContext);
-                    FileInfo fileWithContext = new FileInfo(tempFileWithContext);
-                    
+                    var fileNoContext = new FileInfo(tempFileNoContext);
+                    var fileWithContext = new FileInfo(tempFileWithContext);
+
                     // Note: Sizes might be equal if UserAccessLevel == AccessLevel for all variables
                     // The important part is that export completes successfully with both options
                     Assert.IsTrue(fileWithContext.Length > 0, "Export with user context should produce a valid file");

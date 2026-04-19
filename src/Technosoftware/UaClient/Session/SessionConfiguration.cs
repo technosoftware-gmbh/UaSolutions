@@ -13,14 +13,12 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using System.Xml;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {

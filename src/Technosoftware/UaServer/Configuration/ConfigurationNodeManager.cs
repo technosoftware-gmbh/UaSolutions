@@ -298,7 +298,7 @@ namespace Technosoftware.UaServer
 
             // find ServerNamespaces node and subscribe to StateChanged
 
-            if (FindPredefinedNode(ObjectIds.Server_Namespaces, typeof(NamespacesState))
+            if (FindPredefinedNode<NamespacesState>(ObjectIds.Server_Namespaces)
                 is NamespacesState serverNamespacesNode)
             {
                 serverNamespacesNode.StateChanged += ServerNamespacesChanged;
@@ -341,7 +341,7 @@ namespace Technosoftware.UaServer
             if (namespaceMetadataState == null)
             {
                 // find ServerNamespaces node
-                if (FindPredefinedNode(ObjectIds.Server_Namespaces, typeof(NamespacesState))
+                if (FindPredefinedNode<NamespacesState>(ObjectIds.Server_Namespaces)
                     is not NamespacesState serverNamespacesNode)
                 {
                     m_logger.LogError(
@@ -357,7 +357,7 @@ namespace Technosoftware.UaServer
                 };
                 namespaceMetadataState.Create(
                     SystemContext,
-                    null,
+                    default,
                     namespaceMetadataState.BrowseName,
                     null,
                     true);
@@ -559,7 +559,7 @@ namespace Technosoftware.UaServer
                 var updateCertificate = new UpdateCertificateData
                 {
                     IssuerCollection = newIssuerCollection,
-                    SessionId = (context as ISessionSystemContext)?.SessionId
+                    SessionId = (context as ISessionSystemContext)?.SessionId ?? default
                 };
                 try
                 {
@@ -750,8 +750,7 @@ namespace Technosoftware.UaServer
                     {
                         if (appStore == null)
                         {
-                            throw new ServiceResultException(
-                                StatusCodes.BadConfigurationError,
+                            throw ServiceResultException.ConfigurationError(
                                 "Failed to open application certificate store.");
                         }
 
@@ -794,8 +793,7 @@ namespace Technosoftware.UaServer
                     {
                         if (issuerStore == null)
                         {
-                            throw new ServiceResultException(
-                                StatusCodes.BadConfigurationError,
+                            throw ServiceResultException.ConfigurationError(
                                 "Failed to open issuer certificate store.");
                         }
 
@@ -1000,7 +998,7 @@ namespace Technosoftware.UaServer
                 // all channels and reevaluate sessions, this needs to be implemented in
                 // Transport side presumably.
 
-                Task.Run(async () =>
+                _ = Task.Run(async () =>
                 {
                     m_logger.LogInformation(
                         Utils.TraceMasks.Security,
@@ -1150,7 +1148,7 @@ namespace Technosoftware.UaServer
             try
             {
                 // find ServerNamespaces node
-                if (FindPredefinedNode(ObjectIds.Server_Namespaces, typeof(NamespacesState))
+                if (FindPredefinedNode<NamespacesState>(ObjectIds.Server_Namespaces)
                     is not NamespacesState serverNamespacesNode)
                 {
                     m_logger.LogError("Cannot find ObjectIds.Server_Namespaces node.");

@@ -13,7 +13,6 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +22,6 @@ using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -32,7 +30,6 @@ namespace Technosoftware.UaClient
     /// </summary>
     public class Browser
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Creates new instance of a browser and attaches it to a session.
         /// </summary>
@@ -84,7 +81,6 @@ namespace Technosoftware.UaClient
             Session = template.Session;
             ContinueUntilDone = template.ContinueUntilDone;
         }
-        #endregion Constructors, Destructor, Initialization
 
         /// <summary>
         /// Browwser state
@@ -288,7 +284,7 @@ namespace Technosoftware.UaClient
             }
 
             // fetch initial set of references.
-            byte[] continuationPoint = results[0].ContinuationPoint;
+            byte[]? continuationPoint = results[0].ContinuationPoint;
             ReferenceDescriptionCollection references = results[0].References;
 
             try
@@ -565,10 +561,7 @@ namespace Technosoftware.UaClient
             int nodeClassMask,
             CancellationToken ct = default)
         {
-            if (requestHeader != null)
-            {
-                requestHeader.RequestHandle = 0;
-            }
+            requestHeader?.RequestHandle = 0;
 
             var result = new List<ReferenceDescriptionCollection>(nodeIds.Count);
             (
@@ -616,10 +609,7 @@ namespace Technosoftware.UaClient
             }
             while (nextContinuationPoints.Count > 0)
             {
-                if (requestHeader != null)
-                {
-                    requestHeader.RequestHandle = 0;
-                }
+                requestHeader?.RequestHandle = 0;
                 (
                     _,
                     ByteStringCollection revisedContinuationPoints,
@@ -673,7 +663,7 @@ namespace Technosoftware.UaClient
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The next batch of references</returns>
         /// <exception cref="ServiceResultException"></exception>
-        private static async ValueTask<(ReferenceDescriptionCollection, byte[])> BrowseNextAsync(
+        private static async ValueTask<(ReferenceDescriptionCollection, byte[]?)> BrowseNextAsync(
             ISessionClient session,
             byte[] continuationPoint,
             bool cancel,

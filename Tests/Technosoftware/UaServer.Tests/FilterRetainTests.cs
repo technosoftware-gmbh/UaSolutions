@@ -288,7 +288,7 @@ namespace Technosoftware.UaServer.Tests
                 SelectClauses = GetSelectFields(),
                 WhereClause = GetStateFilter()
             };
-            filter.Validate(filterContext);
+            _ = filter.Validate(filterContext);
 
             UaMonitoredItem monitoredItem = CreateMonitoredItem(filter, telemetry);
 
@@ -424,8 +424,9 @@ namespace Technosoftware.UaServer.Tests
             ITelemetryContext telemetry)
         {
             var alarm = new ExclusiveLevelAlarmState(null);
+            SystemContext context = GetSystemContext(telemetry);
             alarm.Create(
-                GetSystemContext(telemetry),
+                context,
                 new NodeId(12345, 1),
                 new QualifiedName("AnyAlarm", 1),
                 new LocalizedText(string.Empty, "AnyAlarm"),
@@ -502,7 +503,7 @@ namespace Technosoftware.UaServer.Tests
                 filter.SelectClauses = GetSelectFields();
                 filter.WhereClause = GetHighOnlyFilter();
             }
-            filter.Validate(GetFilterContext(telemetry));
+            _ = filter.Validate(GetFilterContext(telemetry));
             return filter;
         }
 
@@ -540,7 +541,7 @@ namespace Technosoftware.UaServer.Tests
             var notOutOfServiceState = new SimpleAttributeOperand
             {
                 AttributeId = Attributes.Value,
-                TypeDefinitionId = null,
+                TypeDefinitionId = default,
                 BrowsePath = [.. new QualifiedName[] { BrowseNames.OutOfServiceState }]
             };
 
@@ -553,7 +554,7 @@ namespace Technosoftware.UaServer.Tests
             var notSuppressed = new SimpleAttributeOperand
             {
                 AttributeId = Attributes.Value,
-                TypeDefinitionId = null,
+                TypeDefinitionId = default,
                 BrowsePath = [.. new QualifiedName[] { BrowseNames.SuppressedState }]
             };
 
@@ -566,7 +567,7 @@ namespace Technosoftware.UaServer.Tests
             var activeState = new SimpleAttributeOperand
             {
                 AttributeId = Attributes.Value,
-                TypeDefinitionId = null,
+                TypeDefinitionId = default,
                 BrowsePath = [.. new QualifiedName[] { BrowseNames.ActiveState }]
             };
 
@@ -590,7 +591,7 @@ namespace Technosoftware.UaServer.Tests
                 m_systemContext = new SystemContext(telemetry) { NamespaceUris = new NamespaceTable() };
                 m_systemContext.NamespaceUris.Append(Opc.Ua.Namespaces.OpcUa);
                 var typeTable = new TypeTable(m_systemContext.NamespaceUris);
-                typeTable.AddSubtype(ObjectTypeIds.BaseObjectType, null);
+                typeTable.AddSubtype(ObjectTypeIds.BaseObjectType, default);
                 typeTable.AddSubtype(ObjectTypeIds.BaseEventType, ObjectTypeIds.BaseObjectType);
                 typeTable.AddSubtype(ObjectTypeIds.ConditionType, ObjectTypeIds.BaseEventType);
                 typeTable.AddSubtype(

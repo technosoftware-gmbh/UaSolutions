@@ -73,17 +73,15 @@ xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
       <StoreType>Directory</StoreType>
       <StorePath>%LocalApplicationData%/OPC Foundation/pki/trusted</StorePath>
     </TrustedPeerCertificates>
-
     <!-- The directory used to store invalid certificates for later review by the administrator. -->
     <RejectedCertificateStore>
       <StoreType>Directory</StoreType>
       <StorePath>%LocalApplicationData%/OPC Foundation/pki/rejected</StorePath>
     </RejectedCertificateStore>
-
+    <MaxRejectedCertificates>5</MaxRejectedCertificates>
     <!-- WARNING: The following setting (to automatically accept untrusted certificates) should be used
     for easy debugging purposes ONLY and turned off for production deployments! -->
     <AutoAcceptUntrustedCertificates>false</AutoAcceptUntrustedCertificates>
-
     <!-- WARNING: SHA1 signed certificates are by default rejected and should be phased out. 
     The setting below to allow them is only required for UACTT (1.02.336.244) which uses SHA-1 signed certs. -->
     <RejectSHA1SignedCertificates>true</RejectSHA1SignedCertificates>

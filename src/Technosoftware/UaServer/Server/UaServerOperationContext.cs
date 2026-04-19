@@ -213,7 +213,7 @@ namespace Technosoftware.UaServer
                     return Session.Id;
                 }
 
-                return null;
+                return default;
             }
         }
 

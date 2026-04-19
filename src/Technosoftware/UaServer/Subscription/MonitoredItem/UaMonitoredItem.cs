@@ -224,7 +224,7 @@ namespace Technosoftware.UaServer
             ManagerHandle = null;
             SubscriptionId = 0;
             Id = 0;
-            NodeId = null;
+            NodeId = default;
             AttributeId = 0;
             m_indexRange = null;
             m_parsedIndexRange = NumericRange.Empty;
@@ -935,9 +935,10 @@ namespace Technosoftware.UaServer
         /// </summary>
         private void AddValueToQueue(DataValue value, ServiceResult error)
         {
+            bool overflow = false;
             if (QueueSize > 1)
             {
-                m_dataChangeQueueHandler.QueueValue(value, error);
+                overflow = m_dataChangeQueueHandler.QueueValue(value, error);
             }
 
             if (m_lastValue != null)
@@ -950,14 +951,17 @@ namespace Technosoftware.UaServer
             m_lastError = error;
             m_readyToPublish = true;
 
-            m_logger.LogTrace(
-                Utils.TraceMasks.OperationDetail,
-                "QUEUE VALUE[{MonitoredItemId}]: Value={Value} CODE={Code}<{Code:X8}> OVERFLOW={Overflow}",
-                Id,
-                m_lastValue.WrappedValue,
-                m_lastValue.StatusCode.Code,
-                m_lastValue.StatusCode.Code,
-                m_lastValue.StatusCode.Overflow);
+            if (m_logger.IsEnabled(LogLevel.Trace))
+            {
+                m_logger.LogTrace(
+                    Utils.TraceMasks.OperationDetail,
+                    "QUEUE VALUE[{MonitoredItemId}]: Value={Value} CODE={Code}<{Code:X8}> OVERFLOW={Overflow}",
+                    Id,
+                    m_lastValue.WrappedValue,
+                    m_lastValue.StatusCode.Code,
+                    m_lastValue.StatusCode.Code,
+                    overflow);
+            }
         }
 
         /// <summary>
@@ -1103,7 +1107,7 @@ namespace Technosoftware.UaServer
             bool passedFilter = filter.WhereClause.Evaluate(context, instance);
 
             ConditionState alarmCondition = null;
-            NodeId conditionId = null;
+            NodeId conditionId = default;
             if (instance is InstanceStateSnapshot instanceStateSnapshot)
             {
                 alarmCondition = instanceStateSnapshot.Handle as ConditionState;
@@ -1433,10 +1437,7 @@ namespace Technosoftware.UaServer
             // set semantics changed bit.
             if (m_semanticsChanged)
             {
-                if (value != null)
-                {
-                    value.StatusCode = value.StatusCode.SetSemanticsChanged(true);
-                }
+                value?.StatusCode = value.StatusCode.SetSemanticsChanged(true);
 
                 if (error != null)
                 {
@@ -1454,10 +1455,7 @@ namespace Technosoftware.UaServer
             // set structure changed bit.
             if (m_structureChanged)
             {
-                if (value != null)
-                {
-                    value.StatusCode = value.StatusCode.SetStructureChanged(true);
-                }
+                value?.StatusCode = value.StatusCode.SetStructureChanged(true);
 
                 if (error != null)
                 {

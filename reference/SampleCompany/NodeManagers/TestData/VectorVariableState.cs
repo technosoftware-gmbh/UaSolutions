@@ -35,9 +35,6 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         protected void InitializeVariable(ISystemContext context, BaseVariableState variable)
         {
-            // set a valid initial value.
-            _ = context.SystemHandle as TestDataSystem;
-
             // copy access level to childs
             variable.AccessLevel = AccessLevel;
             variable.UserAccessLevel = UserAccessLevel;

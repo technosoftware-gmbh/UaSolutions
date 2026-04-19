@@ -13,7 +13,6 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -21,7 +20,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -384,10 +382,6 @@ namespace Technosoftware.UaClient
                 uint operationLimit,
                 CancellationToken ct)
             {
-                UaUtilities.LicenseHandler.Instance.ValidateFeatures(
-                    UaUtilities.ApplicationType.Client,
-                    UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
-
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 ReadResponse? response = null;
@@ -440,10 +434,6 @@ namespace Technosoftware.UaClient
             HistoryReadValueIdCollection nodesToRead,
             CancellationToken ct)
         {
-            UaUtilities.LicenseHandler.Instance.ValidateFeatures(
-                UaUtilities.ApplicationType.Client,
-                UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
-
             uint operationLimit = OperationLimits.MaxNodesPerHistoryReadData;
             if (historyReadDetails?.TypeId == DataTypeIds.ReadEventDetails ||
                 historyReadDetails?.Body is ReadEventDetails)
@@ -479,10 +469,6 @@ namespace Technosoftware.UaClient
                 uint operationLimit,
                 CancellationToken ct)
             {
-                UaUtilities.LicenseHandler.Instance.ValidateFeatures(
-                UaUtilities.ApplicationType.Client,
-                UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
-
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 HistoryReadResponse? response = null;
@@ -533,10 +519,6 @@ namespace Technosoftware.UaClient
             WriteValueCollection nodesToWrite,
             CancellationToken ct)
         {
-            UaUtilities.LicenseHandler.Instance.ValidateFeatures(
-                UaUtilities.ApplicationType.Client,
-                UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
-
             uint operationLimit = OperationLimits.MaxNodesPerWrite;
             if (operationLimit == 0 || operationLimit >= nodesToWrite.Count)
             {
@@ -553,10 +535,6 @@ namespace Technosoftware.UaClient
                 uint operationLimit,
                 CancellationToken ct)
             {
-                UaUtilities.LicenseHandler.Instance.ValidateFeatures(
-                UaUtilities.ApplicationType.Client,
-                UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
-
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 WriteResponse? response = null;
@@ -604,10 +582,6 @@ namespace Technosoftware.UaClient
             ExtensionObjectCollection historyUpdateDetails,
             CancellationToken ct)
         {
-            UaUtilities.LicenseHandler.Instance.ValidateFeatures(
-                UaUtilities.ApplicationType.Client,
-                UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
-
             uint operationLimit = OperationLimits.MaxNodesPerHistoryUpdateData;
             if (historyUpdateDetails.Count > 0 &&
                 (historyUpdateDetails[0].TypeId == DataTypeIds.UpdateEventDetails ||
@@ -630,10 +604,6 @@ namespace Technosoftware.UaClient
                 uint operationLimit,
                 CancellationToken ct)
             {
-                UaUtilities.LicenseHandler.Instance.ValidateFeatures(
-                UaUtilities.ApplicationType.Client,
-                UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
-
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 HistoryUpdateResponse? response = null;

@@ -40,6 +40,7 @@ namespace Technosoftware.UaServer
         /// The current state of the Server
         /// </summary>
         ServerState CurrentState { get; }
+
         /// <summary>
         /// The node manager factories that are used on startup of the server.
         /// </summary>

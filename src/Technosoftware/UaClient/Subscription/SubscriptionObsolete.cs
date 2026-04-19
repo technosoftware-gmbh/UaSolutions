@@ -15,11 +15,9 @@
 
 #nullable disable
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {

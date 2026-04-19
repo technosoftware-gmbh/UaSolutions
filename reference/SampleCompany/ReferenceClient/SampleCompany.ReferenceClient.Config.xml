@@ -17,39 +17,44 @@ xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
   <SecurityConfiguration>
 
     <!-- Where the application instance certificate is stored (MachineDefault) -->
-    <ApplicationCertificate>
-      <!-- The type of store. -->
-      <StoreType>Directory</StoreType>
-      <!-- The location of the store. 
-           Windows store must start with LocalMachine, CurrentUser or CurrentService
-           The name of the store is appended.
-           Note that the names used in code are difference from what appears in the control panel.
-           e.g. My == "Personal", Root == "Trusted Root Certification Authorities" -->
-      <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
-      <!-- The subject for the certificate 
-           Note that subject names are complex structures. Only text that appears here is treated as the CommonName component.
-           The first certificate found is used if multiple certificates with the same CommonName and a matching hostname exist.
-           Also a complete distinguished name can be specified here: 'CN=SampleCompany OPC UA Reference Client, DC=localhost'.
-           In this case the first certificate matching the complete distinguished name is used. localhost is replaced with the hostname.
-           If no certificate is found, a new self signed application certificate is created.
-           The Thumbprint should be specified if the CN or DN does not uniquely identify a certificate. -->
-      <SubjectName>CN=SampleCompany OPC UA Reference Client, C=CH, S=Aargau, O=SampleCompany, DC=localhost</SubjectName>
-      <!-- The SHA1 thumbprint for the certificate.
-           The thumbprint uniquely identifies a certificate.
-           It should be specified in this file, however, the samples rely on quick and 
-           dirty scripts to create new certificate on each machine. A commercial application 
-           would generate the initial certificate itself and update the thumbprint accordingly -->
-      <!--<Thumbprint>3a35fb798fc6dee8a7e7e4652b0e28fc14c6ee0f</Thumbprint>-->
-    </ApplicationCertificate>
+    <ApplicationCertificates>
+      <CertificateIdentifier>
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=Quickstart Reference Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost</SubjectName>
+        <CertificateTypeString>RsaSha256</CertificateTypeString>
+      </CertificateIdentifier>
+      <CertificateIdentifier>
+        <!-- <TypeId>NistP256</TypeId> -->
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=Quickstart Reference Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost</SubjectName>
+        <CertificateTypeString>NistP256</CertificateTypeString>
+      </CertificateIdentifier>
+      <CertificateIdentifier>
+        <!-- <TypeId>NistP384</TypeId> -->
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=SampleCompany OPC UA Reference Client, C=CH, S=Aargau, O=SampleCompany, DC=localhost</SubjectName>
+        <CertificateTypeString>NistP384</CertificateTypeString>
+      </CertificateIdentifier>
+      <CertificateIdentifier>
+        <!-- <TypeId>BrainpoolP256r1</TypeId> -->
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=Quickstart Reference Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost</SubjectName>
+        <CertificateTypeString>BrainpoolP256r1</CertificateTypeString>
+      </CertificateIdentifier>
+      <CertificateIdentifier>
+        <!-- <TypeId>BrainpoolP384r1</TypeId> -->
+        <StoreType>Directory</StoreType>
+        <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+        <SubjectName>CN=Quickstart Reference Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost</SubjectName>
+        <CertificateTypeString>BrainpoolP384r1</CertificateTypeString>
+      </CertificateIdentifier>
+    </ApplicationCertificates>
+    <!-- Where the issuer certificate are stored (certificate authorities) -->
 
-    <!-- Where the issuer certificate are stored (certificate authorities) 
-    
-         Typical web browsing applications trust any certificate issued by a CA in the 
-         "Trusted Root Certification Authorities" certificate store. However, this approach is 
-         not appropriate for UA because Administrators have no control over the CAs that get
-         placed in that Root store to facilitate web browsing. This means Administrators must
-         specify a different store that is used only for UA related CAs and/or they must explicitly
-         specify the certificate for each trusted certification authority. -->
     <TrustedIssuerCertificates>
       <StoreType>Directory</StoreType>
       <StorePath>%LocalApplicationData%/OPC Foundation/pki/issuer</StorePath>
@@ -73,19 +78,17 @@ xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
       <StoreType>Directory</StoreType>
       <StorePath>%LocalApplicationData%/OPC Foundation/pki/trusted</StorePath>
     </TrustedPeerCertificates>
-
     <!-- The directory used to store invalid certificates for later review by the administrator. -->
     <RejectedCertificateStore>
       <StoreType>Directory</StoreType>
       <StorePath>%LocalApplicationData%/OPC Foundation/pki/rejected</StorePath>
     </RejectedCertificateStore>
-
+    <MaxRejectedCertificates>5</MaxRejectedCertificates>
     <!-- WARNING: The following setting (to automatically accept untrusted certificates) should be used
     for easy debugging purposes ONLY and turned off for production deployments! -->
     <AutoAcceptUntrustedCertificates>false</AutoAcceptUntrustedCertificates>
-
     <!-- WARNING: SHA1 signed certificates are by default rejected and should be phased out. 
-    The setting below to allow them is only required for UACTT (1.02.336.244) which uses SHA-1 signed certs. -->
+       only nano and embedded profiles are allowed to use sha1 signed certificates. -->
     <RejectSHA1SignedCertificates>true</RejectSHA1SignedCertificates>
 
     <!-- Value indicating whether certificates with unavailable revocation lists are not accepted -->
@@ -181,8 +184,7 @@ xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
       <MaxNodesPerNodeManagement>2500</MaxNodesPerNodeManagement>
       <MaxMonitoredItemsPerCall>2500</MaxMonitoredItemsPerCall>
     </OperationLimits>
-    
-<ReverseConnect>
+    <ReverseConnect>
       <ClientEndpoints>
         <ClientEndpoint>
           <!--<EndpointUrl>opc.tcp://localhost:55555</EndpointUrl>-->

@@ -113,10 +113,7 @@ namespace Technosoftware.UaServer
 
                 m_values[m_start] = value;
 
-                if (m_errors != null)
-                {
-                    m_errors[m_start] = error;
-                }
+                m_errors?[m_start] = error;
 
                 return;
             }
@@ -132,10 +129,7 @@ namespace Technosoftware.UaServer
             // add value.
             m_values[next] = value;
 
-            if (m_errors != null)
-            {
-                m_errors[next] = error;
-            }
+            m_errors?[next] = error;
 
             m_end = next + 1;
         }
@@ -173,10 +167,7 @@ namespace Technosoftware.UaServer
             // replace last value and error.
             m_values[last] = value;
 
-            if (m_errors != null)
-            {
-                m_errors[last] = error;
-            }
+            m_errors?[last] = error;
         }
 
         /// <inheritdoc/>

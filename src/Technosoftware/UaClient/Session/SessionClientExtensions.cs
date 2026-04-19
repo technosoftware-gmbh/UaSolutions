@@ -13,7 +13,6 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,7 +21,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -214,7 +212,7 @@ namespace Technosoftware.UaClient
                     [nodeId],
                     0,
                     BrowseDirection.Both,
-                    null,
+                    default,
                     true,
                     0,
                     ct)
@@ -244,7 +242,7 @@ namespace Technosoftware.UaClient
                 nodeIds,
                 0,
                 BrowseDirection.Both,
-                null,
+                default,
                 true,
                 0,
                 ct);
@@ -373,7 +371,7 @@ namespace Technosoftware.UaClient
                     NodeId = nodeIds[ii],
                     AttributeId = Attributes.DisplayName,
                     IndexRange = null,
-                    DataEncoding = null
+                    DataEncoding = QualifiedName.Null
                 };
 
                 valuesToRead.Add(valueToRead);
@@ -718,7 +716,7 @@ namespace Technosoftware.UaClient
                             // Range is inclusive and starts at 0. Therefore
                             // to read 5 bytes you need to specify 0-4.
                             offset + maxByteStringLength - 1).ToString(),
-                        DataEncoding = null
+                        DataEncoding = QualifiedName.Null
                     };
                     var readValueIds = new ReadValueIdCollection { valueToRead };
 

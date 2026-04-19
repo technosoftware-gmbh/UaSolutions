@@ -300,7 +300,7 @@ namespace Technosoftware.UaServer
                 {
                     if (Session == null)
                     {
-                        return null;
+                        return default;
                     }
 
                     return Session.Id;
@@ -630,7 +630,7 @@ namespace Technosoftware.UaServer
 
             lock (DiagnosticsWriteLock)
             {
-                Diagnostics.SessionId = null;
+                Diagnostics.SessionId = default;
             }
         }
 

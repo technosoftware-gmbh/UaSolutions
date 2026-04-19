@@ -13,32 +13,27 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
-    #region Delegates
     /// <summary>
     /// Used to handle renews of user identity tokens before reconnect.
     /// </summary>
     public delegate IUserIdentity RenewUserIdentityEventHandler(
         IUaSession session,
         IUserIdentity identity);
-    #endregion Delegates
 
     /// <summary>
     /// Manages a session with a server.
     /// </summary>
     public interface IUaSession : ISessionClient
     {
-        #region Events
         /// <summary>
         /// Raised when a keep alive arrives from the server or an error is detected.
         /// </summary>
@@ -98,9 +93,7 @@ namespace Technosoftware.UaClient
         /// a new server nonce, a new locale etc.
         /// </remarks>
         event EventHandler SessionConfigurationChanged;
-        #endregion Events
 
-        #region Obsolete Events
         /// <summary>
         /// Raised when a keep alive arrives from the server or an error is detected.
         /// </summary>
@@ -167,9 +160,7 @@ namespace Technosoftware.UaClient
         /// </remarks>
         [Obsolete("Use SessionConfigurationChanged")]
         event EventHandler SessionConfigurationChangedEvent;
-        #endregion Obsolete Events
 
-        #region Public Properties
         /// <summary>
         /// The factory which was used to create the session.
         /// </summary>
@@ -370,16 +361,12 @@ namespace Technosoftware.UaClient
         /// Continuation Points in the ManagedBrowse(Async) methods
         /// </summary>
         ContinuationPointPolicy ContinuationPointPolicy { get; set; }
-        #endregion Public Properties
 
-        #region Delegates and Events
         /// <summary>
         /// Raised before a reconnect operation completes.
         /// </summary>
         event RenewUserIdentityEventHandler RenewUserIdentity;
-        #endregion Delegates and Events
 
-        #region Public Methods
         /// <summary>
         /// Reconnects to the server after a network failure using
         /// a waiting connection or channel which either is provided.
@@ -557,9 +544,7 @@ namespace Technosoftware.UaClient
             SubscriptionCollection subscriptions,
             bool sendInitialValues,
             CancellationToken ct = default);
-        #endregion Public Methods
 
-        #region Publish Methods
         /// <summary>
         /// Sends an additional publish request.
         /// </summary>
@@ -577,6 +562,5 @@ namespace Technosoftware.UaClient
             uint subscriptionId,
             uint sequenceNumber,
             CancellationToken ct = default);
-        #endregion Publish Methods
     }
 }

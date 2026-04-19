@@ -199,7 +199,7 @@ namespace SampleCompany.ReferenceServer
                     // Auto-accept is required in provisioning mode
                     if (!autoAccept)
                     {
-                        logger.LogInformation("Auto-accept enabled for provisioning mode.");
+                        Console.WriteLine("Auto-accept enabled for provisioning mode.");
                         autoAccept = true;
                         server.AutoAccept = autoAccept;
                     }

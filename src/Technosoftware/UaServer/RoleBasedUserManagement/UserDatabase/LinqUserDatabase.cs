@@ -259,28 +259,19 @@ namespace Technosoftware.UaServer.UserDatabase
             try
             {
                 byte[] salt = new byte[kSaltSize + sizeof(uint)];
-#if NETSTANDARD2_0 || NETFRAMEWORK
+#if NETFRAMEWORK
                 using (var random = RandomNumberGenerator.Create())
                 {
                     random.GetNonZeroBytes(salt);
                 }
-#else // !NETSTANDARD2_0 && !NETFRAMEWORK
+#else // !NETFRAMEWORK
                 RandomNumberGenerator.Fill(salt.AsSpan(0, kSaltSize));
 #endif
-#if NETSTANDARD2_0 || NET462
-#pragma warning disable CA5379 // Ensure Key Derivation Function algorithm is sufficiently strong
-                using var algorithm = new Rfc2898DeriveBytes(
-                    tmpPassword,
-                    salt,
-                    kIterations);
-#pragma warning restore CA5379 // Ensure Key Derivation Function algorithm is sufficiently strong
-#else // !NETSTANDARD2_0 && !NET462
                 using var algorithm = new Rfc2898DeriveBytes(
                     tmpPassword,
                     salt,
                     kIterations,
                     HashAlgorithmName.SHA512);
-#endif
                 string keyBase64 = Convert.ToBase64String(algorithm.GetBytes(kKeySize));
                 string saltBase64 = Convert.ToBase64String(algorithm.Salt);
                 return $"{kIterations}.{saltBase64}.{keyBase64}";
@@ -297,8 +288,7 @@ namespace Technosoftware.UaServer.UserDatabase
 #if NET6_0_OR_GREATER
             string[] parts = hash.Split('.', 3, StringSplitOptions.TrimEntries);
 #else
-            char[] separator = ['.'];
-            string[] parts = hash.Split(separator, 3);
+            string[] parts = hash.Split(['.'], 3);
 #endif
 
             if (parts.Length != 3)
@@ -323,20 +313,11 @@ namespace Technosoftware.UaServer.UserDatabase
             byte[] tmpPassword = password.ToArray();
             try
             {
-#if NETSTANDARD2_0 || NET462
-#pragma warning disable CA5379 // Ensure Key Derivation Function algorithm is sufficiently strong
-                using var algorithm = new Rfc2898DeriveBytes(
-                    tmpPassword,
-                    salt,
-                    iterations);
-#pragma warning restore CA5379 // Ensure Key Derivation Function algorithm is sufficiently strong
-#else
                 using var algorithm = new Rfc2898DeriveBytes(
                     tmpPassword,
                     salt,
                     iterations,
                     HashAlgorithmName.SHA512);
-#endif
                 byte[] keyToCheck = algorithm.GetBytes(kKeySize);
                 return keyToCheck.SequenceEqual(key);
             }
