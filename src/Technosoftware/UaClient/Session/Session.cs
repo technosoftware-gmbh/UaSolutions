@@ -13,7 +13,6 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,7 +27,6 @@ using System.Xml;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Bindings;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -38,16 +36,13 @@ namespace Technosoftware.UaClient
     public partial class Session : SessionClientBatched, IUaSession,
         ISnapshotRestore<SessionState>, ISnapshotRestore<SessionConfiguration>
     {
-        #region Constants
         private const int kReconnectTimeout = 15000;
         private const int kMinPublishRequestCountMax = 100;
         private const int kMaxPublishRequestCountMax = ushort.MaxValue;
         private const int kDefaultPublishRequestCount = 1;
         private const int kPublishRequestSequenceNumberOutOfOrderThreshold = 10;
         private const int kPublishRequestSequenceNumberOutdatedThreshold = 100;
-        #endregion Constants
 
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Constructs a new instance of the <see cref="Session"/> class.
         /// </summary>
@@ -170,9 +165,7 @@ namespace Technosoftware.UaClient
                 AddSubscription(subscription.CloneSubscription(copyEventHandlers));
             }
         }
-        #endregion Constructors, Destructor, Initialization
 
-        #region Private Methods
         /// <summary>
         /// Initializes the session.
         /// </summary>
@@ -258,7 +251,7 @@ namespace Technosoftware.UaClient
                 ServerUris = ServerUris,
                 TypeTable = TypeTree,
                 PreferredLocales = null,
-                SessionId = null,
+                SessionId = default,
                 UserIdentity = null
             };
         }
@@ -292,9 +285,9 @@ namespace Technosoftware.UaClient
                 return;
             }
 
-            throw new ServiceResultException(
-                StatusCodes.BadConfigurationError,
-                $"The client configuration does not specify the {configurationField}.");
+            throw ServiceResultException.ConfigurationError(
+                "The client configuration does not specify the configuration field {0}.",
+                configurationField);
         }
 
         /// <summary>
@@ -360,9 +353,7 @@ namespace Technosoftware.UaClient
                 }
             }
         }
-        #endregion Private Methods
 
-        #region IDisposable Members
         /// <summary>
         /// Closes the session and the underlying channel.
         /// </summary>
@@ -412,9 +403,7 @@ namespace Technosoftware.UaClient
                 Debug.Assert(Disposed);
             }
         }
-        #endregion IDisposable Members
 
-        #region Events
         /// <summary>
         /// Raised when a keep alive arrives from the server or an error is detected.
         /// </summary>
@@ -490,9 +479,7 @@ namespace Technosoftware.UaClient
             add => m_SessionConfigurationChanged += value;
             remove => m_SessionConfigurationChanged -= value;
         }
-        #endregion Events
 
-        #region Public Properties
         /// <summary>
         /// A session factory that was used to create the session.
         /// </summary>
@@ -842,7 +829,6 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public ContinuationPointPolicy ContinuationPointPolicy { get; set; }
             = ContinuationPointPolicy.Default;
-        #endregion Public Properties
 
         /// <inheritdoc/>
         public event RenewUserIdentityEventHandler RenewUserIdentity
@@ -1099,7 +1085,7 @@ namespace Technosoftware.UaClient
 
             // validate the server certificate /certificate chain.
             X509Certificate2? serverCertificate = null;
-            byte[] certificateData = m_endpoint.Description.ServerCertificate;
+            byte[]? certificateData = m_endpoint.Description.ServerCertificate;
 
             if (certificateData != null && certificateData.Length > 0)
             {
@@ -1212,8 +1198,8 @@ namespace Technosoftware.UaClient
             }
             NodeId sessionId = response.SessionId;
             NodeId sessionCookie = response.AuthenticationToken;
-            byte[] serverNonce = response.ServerNonce;
-            byte[] serverCertificateData = response.ServerCertificate;
+            byte[]? serverNonce = response.ServerNonce;
+            byte[]? serverCertificateData = response.ServerCertificate;
             SignatureData serverSignature = response.ServerSignature;
             EndpointDescriptionCollection serverEndpoints = response.ServerEndpoints;
 
@@ -1261,7 +1247,7 @@ namespace Technosoftware.UaClient
                     dataToSign);
 
                 // select the security policy for the user token.
-                string tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
+                string? tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
 
                 if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
                 {
@@ -1278,6 +1264,8 @@ namespace Technosoftware.UaClient
                     tokenSecurityPolicyUri,
                     previousServerNonce,
                     m_endpoint.Description.SecurityMode);
+
+                m_userTokenSecurityPolicyUri = tokenSecurityPolicyUri;
 
                 // sign data with user token.
                 SignatureData userTokenSignature = identityToken.Sign(
@@ -1306,12 +1294,11 @@ namespace Technosoftware.UaClient
                 ActivateSessionResponse activateResponse = await ActivateSessionAsync(
                         null,
                         clientSignature,
-                        null,
+                    [],
                         m_preferredLocales,
                         new ExtensionObject(identityToken),
                         userTokenSignature,
-                        ct)
-                    .ConfigureAwait(false);
+                    ct).ConfigureAwait(false);
 
                 //  process additional header
                 ProcessResponseAdditionalHeader(activateResponse.ResponseHeader, serverCertificate);
@@ -1378,7 +1365,7 @@ namespace Technosoftware.UaClient
                 {
                     lock (m_lock)
                     {
-                        SessionCreated(null, null);
+                        SessionCreated(default, default);
                     }
                 }
                 if (closeChannel)
@@ -1424,7 +1411,8 @@ namespace Technosoftware.UaClient
             }
 
             // get the identity token.
-            string securityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
+            string securityPolicyUri =
+                m_endpoint.Description.SecurityPolicyUri ?? SecurityPolicies.None;
 
             // create the client signature.
             byte[] dataToSign = Utils.Append(m_serverCertificate?.RawData, serverNonce);
@@ -1443,15 +1431,14 @@ namespace Technosoftware.UaClient
                     identity.IssuedTokenType,
                     securityPolicyUri)
                 ?? throw ServiceResultException.Create(
-                    StatusCodes.BadIdentityTokenRejected,
+                    StatusCodes.BadIdentityTokenInvalid,
                     "Endpoint does not support the user identity type provided.");
 
             // select the security policy for the user token.
-            string tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
-
+            string? tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
             if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
             {
-                tokenSecurityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
+                tokenSecurityPolicyUri = securityPolicyUri;
             }
 
             bool requireEncryption = tokenSecurityPolicyUri != SecurityPolicies.None;
@@ -1461,7 +1448,9 @@ namespace Technosoftware.UaClient
                 requireEncryption &&
                 identity.TokenType != UserTokenType.Anonymous)
             {
-                await m_configuration.CertificateValidator.ValidateAsync(m_serverCertificate, ct).ConfigureAwait(false);
+                await m_configuration.CertificateValidator.ValidateAsync(
+                    m_serverCertificate,
+                    ct).ConfigureAwait(false);
             }
 
             // validate server nonce and security parameters for user identity.
@@ -1496,7 +1485,7 @@ namespace Technosoftware.UaClient
             ActivateSessionResponse response = await ActivateSessionAsync(
                 null,
                 clientSignature,
-                null,
+                [],
                 preferredLocales,
                 new ExtensionObject(identityToken),
                 userTokenSignature,
@@ -2230,7 +2219,7 @@ namespace Technosoftware.UaClient
                         // raised notification indicating the session is closed.
                         lock (m_lock)
                         {
-                            SessionCreated(null, null);
+                            SessionCreated(default, default);
                         }
                     }
                 }
@@ -2321,7 +2310,7 @@ namespace Technosoftware.UaClient
                 UserTokenPolicy identityPolicy = endpoint.FindUserTokenPolicy(
                     m_identity.TokenType,
                     m_identity.IssuedTokenType,
-                    endpoint.SecurityPolicyUri);
+                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri);
 
                 if (identityPolicy == null)
                 {
@@ -2329,24 +2318,30 @@ namespace Technosoftware.UaClient
                         "Reconnect: Endpoint does not support the user identity type provided.");
 
                     throw ServiceResultException.Create(
-                        StatusCodes.BadIdentityTokenRejected,
+                        StatusCodes.BadIdentityTokenInvalid,
                         "Endpoint does not support the user identity type provided.");
                 }
 
                 // select the security policy for the user token.
-                string tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
-
-                if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
+                if (m_userTokenSecurityPolicyUri == null)
                 {
-                    tokenSecurityPolicyUri = endpoint.SecurityPolicyUri;
+                    string? tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
+                    if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
+                    {
+                        tokenSecurityPolicyUri = endpoint.SecurityPolicyUri;
+                    }
+
+                    m_userTokenSecurityPolicyUri = tokenSecurityPolicyUri;
                 }
-                m_userTokenSecurityPolicyUri = tokenSecurityPolicyUri;
+
+                string userTokenSecurityPolicyUri =
+                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri;
 
                 // validate server nonce and security parameters for user identity.
                 ValidateServerNonce(
                     m_identity,
                     m_serverNonce,
-                    tokenSecurityPolicyUri,
+                    userTokenSecurityPolicyUri,
                     m_previousServerNonce,
                     m_endpoint.Description.SecurityMode);
 
@@ -2355,7 +2350,7 @@ namespace Technosoftware.UaClient
                 identityToken.PolicyId = identityPolicy.PolicyId;
                 SignatureData userTokenSignature = identityToken.Sign(
                     dataToSign,
-                    tokenSecurityPolicyUri,
+                    userTokenSecurityPolicyUri,
                     m_telemetry);
 
                 // encrypt token.
@@ -2445,13 +2440,13 @@ namespace Technosoftware.UaClient
                     ActivateSessionResponse activateResult = await ActivateSessionAsync(
                         header,
                         clientSignature,
-                        null,
+                        [],
                         m_preferredLocales,
                         new ExtensionObject(identityToken),
                         userTokenSignature,
                         timeout.Token).ConfigureAwait(false);
 
-                    byte[] serverNonce = activateResult.ServerNonce;
+                    byte[]? serverNonce = activateResult.ServerNonce;
                     StatusCodeCollection certificateResults = activateResult.Results;
                     DiagnosticInfoCollection certificateDiagnosticInfos = activateResult.DiagnosticInfos;
 
@@ -2697,7 +2692,7 @@ namespace Technosoftware.UaClient
                 {
                     NodeId = Variables.Server_ServerStatus_State,
                     AttributeId = Attributes.Value,
-                    DataEncoding = null,
+                    DataEncoding = QualifiedName.Null,
                     IndexRange = null
                 }
             };
@@ -2710,17 +2705,14 @@ namespace Technosoftware.UaClient
 
                 if (m_keepAliveWorker == null)
                 {
-                    m_keepAliveCancellation = new CancellationTokenSource();
+                    var keepAliveCancellation = new CancellationTokenSource();
 
-                    // start timer
-                    m_keepAliveWorker = Task
-                        .Factory.StartNew(
-                            () => OnSendKeepAliveAsync(
-                                nodesToRead,
-                                m_keepAliveCancellation.Token),
-                            m_keepAliveCancellation.Token,
-                            TaskCreationOptions.LongRunning,
-                            TaskScheduler.Default);
+                    m_keepAliveWorker = Task.Run(
+                        () => OnSendKeepAliveAsync(nodesToRead, keepAliveCancellation.Token),
+                        keepAliveCancellation.Token);
+
+                    m_keepAliveCancellation?.Dispose();
+                    m_keepAliveCancellation = keepAliveCancellation;
                 }
 
                 // send initial keep alive.
@@ -3304,14 +3296,12 @@ namespace Technosoftware.UaClient
             string[] namespaceArray = (string[])values[0].Value;
             if (namespaceArray.Length == 0)
             {
-                throw ServiceResultException.Create(
-                    StatusCodes.BadUnexpectedError,
+                throw ServiceResultException.Unexpected(
                     "Retrieved namespace list contain no entries.");
             }
             if (namespaceArray[0] != Namespaces.OpcUa)
             {
-                throw ServiceResultException.Create(
-                    StatusCodes.BadUnexpectedError,
+                throw ServiceResultException.Unexpected(
                     "Retrieved namespaces are missing OPC UA namespace at index 0.");
             }
 
@@ -3643,51 +3633,54 @@ namespace Technosoftware.UaClient
 
                 // don't send another publish for these errors,
                 // or throttle to avoid server overload.
-                switch (error.Code)
+                if (error.StatusCode == StatusCodes.BadTooManyPublishRequests)
                 {
-                    case StatusCodes.BadTooManyPublishRequests:
-                        int tooManyPublishRequests = GoodPublishRequestCount;
-                        if (BelowPublishRequestLimit(tooManyPublishRequests))
-                        {
-                            m_tooManyPublishRequests = tooManyPublishRequests;
-                            m_logger.LogInformation(
-                                "PUBLISH - Too many requests, set limit to GoodPublishRequestCount={GoodRequestCount}.",
-                                m_tooManyPublishRequests);
-                        }
-                        return;
-                    case StatusCodes.BadNoSubscription:
-                    case StatusCodes.BadSessionClosed:
-                    case StatusCodes.BadSecurityChecksFailed:
-                    case StatusCodes.BadCertificateInvalid:
-                    case StatusCodes.BadServerHalted:
-                        return;
-                    // may require a reconnect or activate to recover
-                    case StatusCodes.BadSessionIdInvalid:
-                    case StatusCodes.BadSecureChannelIdInvalid:
-                    case StatusCodes.BadSecureChannelClosed:
-                        OnKeepAliveError(error);
-                        return;
-                    // Servers may return this error when overloaded
-                    case StatusCodes.BadTooManyOperations:
-                    case StatusCodes.BadTcpServerTooBusy:
-                    case StatusCodes.BadServerTooBusy:
-                        // throttle the next publish to reduce server load
-                        _ = Task.Run(async () =>
-                        {
-                            await Task.Delay(100).ConfigureAwait(false);
-                            QueueBeginPublish();
-                        });
-                        return;
-                    case StatusCodes.BadTimeout:
-                    case StatusCodes.BadRequestTimeout:
-                        break;
-                    default:
+                    int tooManyPublishRequests = GoodPublishRequestCount;
+                    if (BelowPublishRequestLimit(tooManyPublishRequests))
+                    {
+                        m_tooManyPublishRequests = tooManyPublishRequests;
+                        m_logger.LogInformation(
+                            "PUBLISH - Too many requests, set limit to GoodPublishRequestCount={GoodRequestCount}.",
+                            m_tooManyPublishRequests);
+                    }
+                    return;
+                }
+                if (error.StatusCode == StatusCodes.BadNoSubscription ||
+                    error.StatusCode == StatusCodes.BadSessionClosed ||
+                    error.StatusCode == StatusCodes.BadSecurityChecksFailed ||
+                    error.StatusCode == StatusCodes.BadCertificateInvalid ||
+                    error.StatusCode == StatusCodes.BadServerHalted)
+                {
+                    return;
+                }
+                if (error.StatusCode == StatusCodes.BadSessionIdInvalid ||
+                    error.StatusCode == StatusCodes.BadSecureChannelIdInvalid ||
+                    error.StatusCode == StatusCodes.BadSecureChannelClosed)
+                {
+                    OnKeepAliveError(error);
+                    return;
+                }
+                // Servers may return this error when overloaded
+                if (error.StatusCode != StatusCodes.BadTimeout &&
+                    error.StatusCode != StatusCodes.BadRequestTimeout)
+                {
+                    if (error.StatusCode != StatusCodes.BadTooManyOperations &&
+                        error.StatusCode != StatusCodes.BadTcpServerTooBusy &&
+                        error.StatusCode != StatusCodes.BadServerTooBusy)
+                    {
                         m_logger.LogError(
                             e,
                             "PUBLISH #{RequestHandle} - Unhandled error {StatusCode} during Publish.",
                             requestHeader.RequestHandle,
                             error.StatusCode);
-                        goto case StatusCodes.BadServerTooBusy;
+                    }
+                    // throttle the next publish to reduce server load
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(100).ConfigureAwait(false);
+                        QueueBeginPublish();
+                    });
+                    return;
                 }
             }
 
@@ -3764,7 +3757,7 @@ namespace Technosoftware.UaClient
                 }
             }
 
-            securityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
+            securityPolicyUri = m_endpoint.Description.SecurityPolicyUri ?? SecurityPolicies.None;
 
             // catch security policies which are not supported by core
             if (SecurityPolicies.GetDisplayName(securityPolicyUri) == null)
@@ -3795,7 +3788,7 @@ namespace Technosoftware.UaClient
                 if (identityPolicy == null)
                 {
                     throw ServiceResultException.Create(
-                        StatusCodes.BadIdentityTokenRejected,
+                        StatusCodes.BadIdentityTokenInvalid,
                         "Endpoint does not support the user identity type provided.");
                 }
 
@@ -3839,7 +3832,7 @@ namespace Technosoftware.UaClient
         /// Validates the server certificate returned.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        private void ValidateServerCertificateData(byte[] serverCertificateData)
+        private void ValidateServerCertificateData(byte[]? serverCertificateData)
         {
             if (serverCertificateData != null &&
                 m_endpoint.Description.ServerCertificate != null &&
@@ -4119,35 +4112,35 @@ namespace Technosoftware.UaClient
             var error = new ServiceResult(e);
 
             bool result = true;
-            switch (error.StatusCode.Code)
+            if (error.StatusCode == StatusCodes.BadSubscriptionIdInvalid ||
+                error.StatusCode == StatusCodes.BadMessageNotAvailable)
             {
-                case StatusCodes.BadSubscriptionIdInvalid:
-                case StatusCodes.BadMessageNotAvailable:
-                    m_logger.LogWarning(
-                        "Message {SubscriptionId}-{SequenceNumber} no longer available.",
-                        subscriptionId,
-                        sequenceNumber);
-                    break;
+                m_logger.LogWarning(
+                    "Message {SubscriptionId}-{SequenceNumber} no longer available.",
+                    subscriptionId,
+                    sequenceNumber);
+            }
+            else if (error.StatusCode == StatusCodes.BadEncodingLimitsExceeded)
+            {
                 // if encoding limits are exceeded, the issue is logged and
                 // the published data is acknowledged to prevent the endless republish loop.
-                case StatusCodes.BadEncodingLimitsExceeded:
-                    m_logger.LogError(
-                        e,
-                        "Message {SubscriptionId}-{SequenceNumber} exceeded size limits, ignored.",
+                m_logger.LogError(
+                    e,
+                    "Message {SubscriptionId}-{SequenceNumber} exceeded size limits, ignored.",
+                    subscriptionId,
+                    sequenceNumber);
+                lock (m_acknowledgementsToSendLock)
+                {
+                    AddAcknowledgementToSend(
+                        m_acknowledgementsToSend,
                         subscriptionId,
                         sequenceNumber);
-                    lock (m_acknowledgementsToSendLock)
-                    {
-                        AddAcknowledgementToSend(
-                            m_acknowledgementsToSend,
-                            subscriptionId,
-                            sequenceNumber);
-                    }
-                    break;
-                default:
-                    result = false;
-                    m_logger.LogError(e, "Unexpected error sending republish request.");
-                    break;
+                }
+            }
+            else
+            {
+                result = false;
+                m_logger.LogError(e, "Unexpected error sending republish request.");
             }
 
             EventHandler<PublishErrorEventArgs>? callback = m_PublishError;
@@ -4398,7 +4391,7 @@ namespace Technosoftware.UaClient
                         notificationMessage,
                         responseHeader.StringTable);
 
-                    Task.Run(() => OnRaisePublishNotification(publishEventHandler, args));
+                    _ = Task.Run(() => OnRaisePublishNotification(publishEventHandler, args));
                 }
             }
             else if (DeleteSubscriptionsOnClose && !Reconnecting && !subscriptionCreationInProgress)
@@ -4408,7 +4401,7 @@ namespace Technosoftware.UaClient
                     "Received Publish Response for Unknown SubscriptionId={SubscriptionId}. Deleting abandoned subscription from server.",
                     subscriptionId);
 
-                Task.Run(() => DeleteSubscriptionAsync(subscriptionId));
+                _ = Task.Run(() => DeleteSubscriptionAsync(subscriptionId));
             }
             else
             {
@@ -4492,6 +4485,7 @@ namespace Technosoftware.UaClient
             bool throwIfConfigurationChangedFromLastLoad,
             CancellationToken ct = default)
         {
+            m_endpoint.Description.SecurityPolicyUri ??= SecurityPolicies.None;
             if (m_endpoint.Description.SecurityPolicyUri == SecurityPolicies.None)
             {
                 // No need to load instance certificates
@@ -4507,7 +4501,7 @@ namespace Technosoftware.UaClient
                     // Updating a live session must be prevented unless the session was
                     // closed. Therefore we need to throw here to catch this case during any
                     // reconnect or other activation operation
-                    throw ServiceResultException.Create(StatusCodes.BadConfigurationError,
+                    throw ServiceResultException.ConfigurationError(
                         "Configuration was changed for an active session.");
                 }
                 // If the configured endpoint was updated while we are closed we reload.
@@ -4524,8 +4518,7 @@ namespace Technosoftware.UaClient
                     .ConfigureAwait(false);
                 if (m_instanceCertificate == null)
                 {
-                    throw new ServiceResultException(
-                        StatusCodes.BadConfigurationError,
+                    throw ServiceResultException.ConfigurationError(
                         "The client configuration does not specify an application instance certificate.");
                 }
                 m_effectiveEndpoint = m_endpoint;
@@ -4535,8 +4528,7 @@ namespace Technosoftware.UaClient
             // check for private key.
             if (!m_instanceCertificate.HasPrivateKey)
             {
-                throw ServiceResultException.Create(
-                    StatusCodes.BadConfigurationError,
+                throw ServiceResultException.ConfigurationError(
                     "Client certificate configured for security policy {0} is missing a private key.",
                     m_endpoint.Description.SecurityPolicyUri);
             }
@@ -4563,8 +4555,7 @@ namespace Technosoftware.UaClient
                 privateKey: true,
                 telemetry,
                 ct).ConfigureAwait(false)
-                ?? throw ServiceResultException.Create(
-                    StatusCodes.BadConfigurationError,
+                ?? throw ServiceResultException.ConfigurationError(
                     "ApplicationCertificate for the security profile {0} cannot be found.",
                     securityProfile);
         }
@@ -4768,11 +4759,11 @@ namespace Technosoftware.UaClient
         /// for the ecc user token security policy, if needed.
         /// </summary>
         private RequestHeader CreateRequestHeaderPerUserTokenPolicy(
-            string identityTokenSecurityPolicyUri,
-            string endpointSecurityPolicyUri)
+            string? identityTokenSecurityPolicyUri,
+            string? endpointSecurityPolicyUri)
         {
             var requestHeader = new RequestHeader();
-            string userTokenSecurityPolicyUri = identityTokenSecurityPolicyUri;
+            string? userTokenSecurityPolicyUri = identityTokenSecurityPolicyUri;
             if (string.IsNullOrEmpty(userTokenSecurityPolicyUri))
             {
                 userTokenSecurityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
@@ -4829,7 +4820,7 @@ namespace Technosoftware.UaClient
                         }
 
                         if (!EccUtils.Verify(
-                                new ArraySegment<byte>(key.PublicKey),
+                                new ArraySegment<byte>(key.PublicKey ?? []),
                                 key.Signature,
                                 serverCertificate,
                                 m_userTokenSecurityPolicyUri))
@@ -4945,6 +4936,7 @@ namespace Technosoftware.UaClient
         private Subscription? m_defaultSubscription;
         private readonly EndpointDescriptionCollection? m_discoveryServerEndpoints;
         private readonly StringCollection? m_discoveryProfileUris;
+        private new readonly ILogger m_logger;
 
         private sealed class AsyncRequestState : IDisposable
         {
@@ -4970,7 +4962,6 @@ namespace Technosoftware.UaClient
         private event EventHandler? m_SessionClosing;
         private event EventHandler? m_SessionConfigurationChanged;
 
-        #region Obsolete Events
         #pragma warning disable 67
         /// <summary>
         ///     Raised when a keep alive arrives from the server or an error is detected.
@@ -5113,7 +5104,6 @@ namespace Technosoftware.UaClient
         [Obsolete]
         private event EventHandler<PublishSequenceNumbersToAcknowledgeEventArgs>? m_PublishSequenceNumbersToAcknowledgeEvent;
         #pragma warning restore 67
-        #endregion Obsolete Events
     }
 
     /// <summary>
@@ -5121,7 +5111,6 @@ namespace Technosoftware.UaClient
     /// </summary>
     public class KeepAliveEventArgs : EventArgs
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Creates a new instance.
         /// </summary>
@@ -5134,9 +5123,7 @@ namespace Technosoftware.UaClient
             CurrentState = currentState;
             CurrentTime = currentTime;
         }
-        #endregion Constructors, Destructor, Initialization
 
-        #region Public Properties
         /// <summary>
         /// Gets the status associated with the keep alive operation.
         /// </summary>
@@ -5156,7 +5143,6 @@ namespace Technosoftware.UaClient
         /// Gets or sets a flag indicating whether the session should send another keep alive.
         /// </summary>
         public bool CancelKeepAlive { get; set; }
-        #endregion Public Properties
     }
 
     /// <summary>
@@ -5164,7 +5150,6 @@ namespace Technosoftware.UaClient
     /// </summary>
     public class NotificationEventArgs : EventArgs
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Creates a new instance.
         /// </summary>
@@ -5177,9 +5162,7 @@ namespace Technosoftware.UaClient
             NotificationMessage = notificationMessage;
             StringTable = stringTable;
         }
-        #endregion Constructors, Destructor, Initialization
 
-        #region Public Properties
         /// <summary>
         /// Gets the subscription that the notification applies to.
         /// </summary>
@@ -5194,7 +5177,6 @@ namespace Technosoftware.UaClient
         /// Gets the string table returned with the notification message.
         /// </summary>
         public IList<string> StringTable { get; }
-        #endregion Public Properties
     }
 
     /// <summary>
@@ -5202,7 +5184,6 @@ namespace Technosoftware.UaClient
     /// </summary>
     public class PublishErrorEventArgs : EventArgs
     {
-        #region Constructors, Destructor, Initialization
         /// <summary>
         /// Creates a new instance.
         /// </summary>
@@ -5223,9 +5204,7 @@ namespace Technosoftware.UaClient
             SubscriptionId = subscriptionId;
             SequenceNumber = sequenceNumber;
         }
-        #endregion Constructors, Destructor, Initialization
 
-        #region Public Properties
         /// <summary>
         /// Gets the status associated with the keep alive operation.
         /// </summary>
@@ -5240,7 +5219,6 @@ namespace Technosoftware.UaClient
         /// Gets the sequence number for the message that could not be republished.
         /// </summary>
         public uint SequenceNumber { get; }
-        #endregion Public Properties
     }
 
     /// <summary>
@@ -5255,7 +5233,6 @@ namespace Technosoftware.UaClient
     /// </remarks>
     public class PublishSequenceNumbersToAcknowledgeEventArgs : EventArgs
     {
-        #region Constructors
         /// <summary>
         /// Creates a new instance.
         /// </summary>
@@ -5266,9 +5243,7 @@ namespace Technosoftware.UaClient
             AcknowledgementsToSend = acknowledgementsToSend;
             DeferredAcknowledgementsToSend = deferredAcknowledgementsToSend;
         }
-        #endregion Constructors
 
-        #region Public Properties
         /// <summary>
         /// The acknowledgements which are sent with the next publish request.
         /// </summary>
@@ -5286,6 +5261,5 @@ namespace Technosoftware.UaClient
         /// to this list to defer the acknowledge of a sequence number to the next publish request.
         /// </remarks>
         public SubscriptionAcknowledgementCollection DeferredAcknowledgementsToSend { get; }
-        #endregion Public Properties
     }
 }

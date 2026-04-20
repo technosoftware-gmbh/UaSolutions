@@ -13,8 +13,6 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
-#endregion Using Directives
 
 [assembly: CLSCompliant(false)]

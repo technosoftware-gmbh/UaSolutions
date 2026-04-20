@@ -13,7 +13,6 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -21,7 +20,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -126,7 +124,7 @@ namespace Technosoftware.UaClient
             ClientHandle = state.ClientId;
             ServerId = state.ServerId;
             TriggeringItemId = state.TriggeringItemId;
-            TriggeredItems = state.TriggeredItems != null ? new UInt32Collection(state.TriggeredItems) : null;
+            TriggeredItems = state.TriggeredItems != null ? [.. state.TriggeredItems] : null;
             CacheQueueSize = state.CacheQueueSize < 1 ? 1 : state.CacheQueueSize;
         }
 
@@ -138,7 +136,7 @@ namespace Technosoftware.UaClient
                 ServerId = Status.Id,
                 ClientId = ClientHandle,
                 TriggeringItemId = TriggeringItemId,
-                TriggeredItems = TriggeredItems != null ? new UInt32Collection(TriggeredItems) : null,
+                TriggeredItems = TriggeredItems != null ? [.. TriggeredItems] : null,
                 CacheQueueSize = CacheQueueSize
             };
         }
@@ -1173,7 +1171,7 @@ namespace Technosoftware.UaClient
             {
                 UaClientUtils.EventLog.Notification(
                     (int)notification.ClientHandle,
-                    LastValue.WrappedValue);
+                    LastValue.WrappedValue.ToString());
             }
 
             if (m_logger.IsEnabled(LogLevel.Debug))

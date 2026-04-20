@@ -292,7 +292,6 @@ namespace Technosoftware.UaServer
         /// Transfers a set of monitored items.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-
         ValueTask TransferMonitoredItemsAsync(
             UaServerOperationContext context,
             bool sendInitialValues,

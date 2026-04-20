@@ -1572,35 +1572,35 @@ namespace Technosoftware.UaClient.Tests
 
             // Simulate concurrent CreateItemsAsync calls
             // Use 3 concurrent tasks to ensure at least 2 will race with each other
-            const int ConcurrentTasks = 3;
+            const int concurrentTasks = 3;
             var tasks = new List<Task<IList<MonitoredItem>>>();
-            for (int i = 0; i < ConcurrentTasks; i++)
+            for (int i = 0; i < concurrentTasks; i++)
             {
                 tasks.Add(Task.Run(() =>
                     subscription.CreateItemsAsync(CancellationToken.None)));
             }
 
-            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+            IList<MonitoredItem>[] results = await Task.WhenAll(tasks).ConfigureAwait(false);
 
             // Verify that all items were created exactly once
             int totalCreated = 0;
-            foreach (var item in items)
+            foreach (MonitoredItem item in items)
             {
                 if (item.Status.Created)
                 {
                     totalCreated++;
-                    Assert.That(item.Status.Id, Is.GreaterThan(0u), 
+                    Assert.That(item.Status.Id, Is.GreaterThan(0u),
                         $"Item {item.DisplayName} should have a server-assigned ID");
                 }
             }
 
-            Assert.That(totalCreated, Is.EqualTo(10), 
+            Assert.That(totalCreated, Is.EqualTo(10),
                 "All 10 items should be created exactly once");
 
             // Verify that each result list contains only the items that were actually created
             // by that specific call (should be empty for concurrent calls after the first)
             int nonEmptyResults = 0;
-            foreach (var result in results)
+            foreach (IList<MonitoredItem> result in results)
             {
                 if (result.Count > 0)
                 {

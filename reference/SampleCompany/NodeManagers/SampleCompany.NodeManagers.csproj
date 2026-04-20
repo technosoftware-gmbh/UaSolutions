@@ -8,7 +8,7 @@
     <Company>SampleCompany</Company>
     <Product>OPC UA Solutions .NET</Product>
     <Description>SampleCompany NodeManagers Library</Description>
-    <Copyright>Copyright © 2018 - 2025 SampleCompany</Copyright>
+    <Copyright>Copyright © 2018 - 2026 SampleCompany</Copyright>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <NoWarn>CS1591;CS1573;RCS1139</NoWarn>
     <IsPackable>true</IsPackable>

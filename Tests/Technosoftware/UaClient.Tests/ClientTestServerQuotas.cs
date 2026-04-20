@@ -135,7 +135,7 @@ namespace Technosoftware.UaClient.Tests
 
             int namespaceIndex = theSession.NamespaceUris.GetIndex(
                 "http://samplecompany.com/SampleServer/NodeManagers/Reference");
-            var nodeId = new NodeId($"ns={namespaceIndex};s=Scalar_Static_ByteString");
+            var nodeId = NodeId.Parse($"ns={namespaceIndex};s=Scalar_Static_ByteString");
 
             byte[] chunk = new byte[MaxByteStringLengthForTest];
             UnsecureRandom.Shared.NextBytes(chunk);

@@ -157,7 +157,7 @@ namespace SampleCompany.SampleClient
                     ct).ConfigureAwait(false);
                 if (success)
                 {
-                    m_logger.LogInformation("Subscriptions transferred.");
+                    Console.WriteLine("Subscriptions transferred.");
                 }
             }
 

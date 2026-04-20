@@ -654,8 +654,8 @@ namespace Technosoftware.UaClient.Tests
             ActivitySource.AddActivityListener(new ActivityListener
             {
                 ShouldListenTo = a => a.Name == activitySource.Name,
-                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
-                SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllData
+                Sample = (ref _) => ActivitySamplingResult.AllData,
+                SampleUsingParentId = (ref _) => ActivitySamplingResult.AllData
             });
             Assert.That(activitySource.HasListeners(), Is.True);
             sessionMock.ActivityTraceFlags = ClientTraceFlags.Traces;

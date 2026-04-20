@@ -303,7 +303,7 @@ namespace Technosoftware.UaServer
                 }
             }
 
-            return null;
+            return default;
         }
 
         /// <summary>

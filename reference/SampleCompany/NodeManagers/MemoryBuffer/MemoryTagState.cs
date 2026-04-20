@@ -41,7 +41,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             TypeDefinitionId = new NodeId(
                 VariableTypes.MemoryTagType,
                 parent.TypeDefinitionId.NamespaceIndex);
-            ModellingRuleId = null;
+            ModellingRuleId = default;
             NumericId = offet;
             DataType = new NodeId((uint)parent.ElementType);
             ValueRank = ValueRanks.Scalar;

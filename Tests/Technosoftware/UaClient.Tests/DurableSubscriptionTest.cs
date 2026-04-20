@@ -625,11 +625,11 @@ namespace Technosoftware.UaClient.Tests
             var serverDiags = new NodeId(
                 Variables.Server_ServerDiagnostics_SubscriptionDiagnosticsArray);
 
-            NodeId monitoredItemCountNodeId = null;
-            NodeId maxLifetimeCountNodeId = null;
-            NodeId maxKeepAliveCountNodeId = null;
-            NodeId currentLifetimeCountNodeId = null;
-            NodeId publishingIntervalNodeId = null;
+            NodeId monitoredItemCountNodeId = default;
+            NodeId maxLifetimeCountNodeId = default;
+            NodeId maxKeepAliveCountNodeId = default;
+            NodeId currentLifetimeCountNodeId = default;
+            NodeId publishingIntervalNodeId = default;
 
             (_, _, ReferenceDescriptionCollection references) = await Session.BrowseAsync(
                 null,
@@ -684,7 +684,7 @@ namespace Technosoftware.UaClient.Tests
 
                     foreach (ReferenceDescription referenceDescription in desiredReferences)
                     {
-                        NodeId recreated = null;
+                        NodeId recreated = default;
                         if (referenceDescription.NodeId.IsNull)
                         {
                             TestContext.Out.WriteLine(
@@ -797,7 +797,7 @@ namespace Technosoftware.UaClient.Tests
                         BrowsePath = [.. new QualifiedName[] { "EventType" }]
                     },
                     new LiteralOperand {
-                        Value = new Variant(new NodeId(ObjectTypeIds.BaseEventType)) }
+                        Value = new Variant(ObjectTypeIds.BaseEventType) }
                 ]);
 
             return new MonitoredItem(Session.MessageContext.Telemetry)

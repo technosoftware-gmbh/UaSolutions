@@ -51,13 +51,13 @@ namespace SampleCompany.SampleClient
             );
 
             #region License validation
-            const string licenseData =
-                    @"";
-            bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Client, licenseData);
-            if (!licensed)
-            {
-                Console.WriteLine("WARNING: No valid license applied.");
-            }
+            //const string licenseData =
+            //        @"";
+            // bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Client, licenseData);
+            // if (!licensed)
+            // {
+            //    Console.WriteLine("WARNING: No valid license applied.");
+            //}
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
             Console.WriteLine(licensedString);
@@ -434,6 +434,10 @@ namespace SampleCompany.SampleClient
                 int waitTime = int.MaxValue;
                 do
                 {
+                    if (LicenseHandler.Instance.IsRestartRequired || LicenseHandler.Instance.IsExpired)
+                    {
+                        break;
+                    }
                     if (timeout > 0)
                     {
                         waitTime = timeout - (int)DateTime.UtcNow.Subtract(start).TotalMilliseconds;
@@ -458,7 +462,7 @@ namespace SampleCompany.SampleClient
                         application.ApplicationConfiguration,
                         reverseConnectManager,
                         telemetry,
-                        ClientBase.ValidateResponse
+                        null
                     )
                     {
                         AutoAccept = autoAccept,
@@ -485,7 +489,7 @@ namespace SampleCompany.SampleClient
                         uaClient.Session.TransferSubscriptionsOnReconnect = true;
                         var samples = new ClientFunctions(
                             telemetry,
-                            ClientBase.ValidateResponse,
+                            null,
                             quitEvent,
                             verbose);
 
@@ -722,14 +726,14 @@ namespace SampleCompany.SampleClient
                                     if (waitCounters == closeSessionTime &&
                                         uaClient.Session.SubscriptionCount == 1)
                                     {
-                                        Console.WriteLine($"Closing Session (CurrentTime: {DateTime.Now.ToLongTimeString()})");
+                                        Console.WriteLine($"Closing Session (CurrentTime: {DateTime.Now:T})");
                                         await uaClient.Session.CloseAsync(closeChannel: false, ct: ct)
                                             .ConfigureAwait(false);
                                     }
 
                                     if (waitCounters == restartSessionTime)
                                     {
-                                        Console.WriteLine($"Restarting Session (CurrentTime: {DateTime.Now.ToLongTimeString()})");
+                                        Console.WriteLine($"Restarting Session (CurrentTime: {DateTime.Now:T})");
                                         await uaClient
                                             .DurableSubscriptionTransferAsync(
                                                 serverUrl.ToString(),

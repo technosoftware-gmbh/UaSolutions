@@ -17,7 +17,6 @@
 
 #nullable enable
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,7 +27,6 @@ using BitFaster.Caching;
 using BitFaster.Caching.Lfu;
 using BitFaster.Caching.Lru;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -498,7 +496,8 @@ namespace Technosoftware.UaClient
                 {
                     ReferenceDescriptionCollection references =
                         await context.ctx.FetchReferencesAsync(null, nodeId, context.ct)
-                            .ConfigureAwait(false);
+                            .ConfigureAwait(false) ??
+                        [];
                     foreach (ReferenceDescription? reference in references)
                     {
                         // transform absolute identifiers.

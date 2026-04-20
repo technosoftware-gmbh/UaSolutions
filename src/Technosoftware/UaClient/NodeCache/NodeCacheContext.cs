@@ -13,7 +13,6 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -21,7 +20,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -796,7 +794,8 @@ namespace Technosoftware.UaClient
 
                     if (value != null)
                     {
-                        dataTypeNode.DataTypeDefinition = value.Value as ExtensionObject;
+                        dataTypeNode.DataTypeDefinition =
+                            value.Value is ExtensionObject eo ? eo : default;
                     }
 
                     node = dataTypeNode;

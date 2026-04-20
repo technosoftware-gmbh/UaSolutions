@@ -323,11 +323,13 @@ namespace Technosoftware.UaServer.Tests
                             null) // preferredLocales
                             .ConfigureAwait(false);
                     }
-                    catch (ServiceResultException e) when ((e.StatusCode is
-                        StatusCodes.BadServerHalted or
-                        StatusCodes.BadSecureChannelClosed or
-                        StatusCodes.BadNoCommunication or
-                        StatusCodes.BadNotConnected) &&
+                    catch (ServiceResultException e) when (
+                    (
+                        e.StatusCode == StatusCodes.BadServerHalted ||
+                        e.StatusCode == StatusCodes.BadSecureChannelClosed ||
+                        e.StatusCode == StatusCodes.BadNoCommunication ||
+                        e.StatusCode == StatusCodes.BadNotConnected
+                    ) &&
                         attempt < maxAttempts)
                     {
                         // Retry for transient connection errors (can happen on busy CI environments)
@@ -366,7 +368,7 @@ namespace Technosoftware.UaServer.Tests
             IList<string> applicationUris,
             string subjectName,
             IList<string> domainNames,
-            NodeId certificateType = null)
+            NodeId certificateType = default)
         {
             DateTime notBefore = DateTime.Today.AddDays(-1);
             DateTime notAfter = DateTime.Today.AddYears(1);

@@ -128,7 +128,6 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Changes the monitoring mode for a set of items.
         /// </summary>
-
         ValueTask<(StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos)> SetMonitoringModeAsync(
             UaServerOperationContext context,
             MonitoringMode monitoringMode,

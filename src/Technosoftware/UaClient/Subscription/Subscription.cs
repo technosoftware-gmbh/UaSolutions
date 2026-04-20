@@ -13,7 +13,6 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -24,7 +23,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -35,8 +33,12 @@ namespace Technosoftware.UaClient
     {
         private const int kMinKeepAliveTimerInterval = 1000;
         private const int kKeepAliveTimerMargin = 1000;
-        private const int kRepublishMessageTimeout = 2500;
         private const int kRepublishMessageExpiredTimeout = 10000;
+
+        /// <summary>
+        /// Duration to wait before republishing missed notification
+        /// </summary>
+        public const int RepublishMessageTimeout = 2500;
 
         /// <summary>
         /// Create subscription
@@ -1154,7 +1156,7 @@ namespace Technosoftware.UaClient
             lock (m_cache)
             {
                 // Group monitored items by their triggering item
-                triggeringGroups = new Dictionary<uint, List<uint>>();
+                triggeringGroups = [];
                 foreach (MonitoredItem item in m_monitoredItems.Values)
                 {
                     if (item.TriggeredItems != null && item.TriggeredItems.Count > 0)
@@ -1185,7 +1187,7 @@ namespace Technosoftware.UaClient
             }
 
             // Call SetTriggering for each triggering item
-            foreach (var kvp in triggeringGroups)
+            foreach (KeyValuePair<uint, List<uint>> kvp in triggeringGroups)
             {
                 uint triggeringItemId = kvp.Key;
                 var linksToAdd = new UInt32Collection(kvp.Value);
@@ -1197,7 +1199,7 @@ namespace Technosoftware.UaClient
                         Id,
                         triggeringItemId,
                         linksToAdd,
-                        null,
+                        [],
                         ct).ConfigureAwait(false);
 
                     m_logger.LogInformation(
@@ -1358,7 +1360,7 @@ namespace Technosoftware.UaClient
             lock (m_cache)
             {
                 // Initialize the triggered items collection if needed
-                triggeringItem.TriggeredItems ??= new UInt32Collection();
+                triggeringItem.TriggeredItems ??= [];
 
                 // Add new links
                 if (clientHandlesToAdd.Count > 0)
@@ -1608,9 +1610,33 @@ namespace Technosoftware.UaClient
 
                 // fill in any gaps in the queue
                 LinkedListNode<IncomingMessage>? node = m_incomingMessages.First;
+                if (node is not null)
+                {
+                    //gaps between m_lastSequenceNumberProcessed and starting node
+                    LinkedListNode<IncomingMessage> currentNode = node;
+                    for (uint i = node.Value.SequenceNumber; i > (m_lastSequenceNumberProcessed + 1); i--)
+                    {
+                        var placeholder = new IncomingMessage
+                        {
+                            SequenceNumber = i - 1,
+                            Timestamp = now,
+                            TickCount = tickCount
+                        };
+                        currentNode = m_incomingMessages.AddBefore(currentNode, placeholder);
+
+                        m_logger.LogInformation(
+                            "Session {SessionId}, subscription {SubscriptionName} ({SubscriptionId}): " +
+                            "added placeholder for missing incoming message with sequence number {MissingSequenceNumber}",
+                            Session?.SessionId,
+                            DisplayName,
+                            Id,
+                            placeholder.SequenceNumber);
+                    }
+                }
 
                 while (node != null)
                 {
+                    //gaps between neighbouring nodes
                     entry = node.Value;
                     LinkedListNode<IncomingMessage>? next = node.Next;
 
@@ -1958,8 +1984,8 @@ namespace Technosoftware.UaClient
                     // only republish consecutive sequence numbers
                     // triggers the republish mechanism immediately,
                     // if event is in the past
-                    DateTime now = DateTime.UtcNow.AddMilliseconds(-kRepublishMessageTimeout * 2);
-                    int tickCount = HiResClock.TickCount - (kRepublishMessageTimeout * 2);
+                    DateTime now = DateTime.UtcNow.AddMilliseconds(-RepublishMessageTimeout * 2);
+                    int tickCount = HiResClock.TickCount - (RepublishMessageTimeout * 2);
                     uint lastSequenceNumberToRepublish = m_lastSequenceNumberProcessed - 1;
                     int availableNumbers = availableSequenceNumbers.Count;
                     int republishMessages = 0;
@@ -2494,7 +2520,7 @@ namespace Technosoftware.UaClient
                             // tolerate if a single request was received out of order
                             if (ii.Next.Next != null &&
                                 (HiResClock.TickCount -
-                                    ii.Value.TickCount) > kRepublishMessageTimeout)
+                                    ii.Value.TickCount) > RepublishMessageTimeout)
                             {
                                 ii.Value.Republished = true;
                                 publishStateChangedMask |= PublishStateChangedMask.Republish;
@@ -2981,7 +3007,7 @@ namespace Technosoftware.UaClient
             {
                 MonitoredItemNotification notification = notifications.MonitoredItems[ii];
 
-                if (!m_monitoredItems.TryGetValue(notification.ClientHandle, out var monitoredItem))
+                if (!m_monitoredItems.TryGetValue(notification.ClientHandle, out MonitoredItem? monitoredItem))
                 {
                     m_logger.LogWarning(
                         "Publish response contains invalid MonitoredItem. " +

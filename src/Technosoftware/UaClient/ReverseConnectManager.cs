@@ -13,7 +13,6 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +22,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -185,7 +183,6 @@ namespace Technosoftware.UaClient
         {
         }
 
-        #region Constructors
         /// <summary>
         /// Initializes the object with default values.
         /// </summary>
@@ -198,9 +195,7 @@ namespace Technosoftware.UaClient
             m_endpointUrls = [];
             m_cts = new CancellationTokenSource();
         }
-        #endregion Constructors
 
-        #region IDisposable Members
         /// <summary>
         /// Dispose implementation.
         /// </summary>
@@ -228,9 +223,7 @@ namespace Technosoftware.UaClient
             }
             DisposeHosts();
         }
-        #endregion IDisposable Members
 
-        #region Protected Members
         /// <summary>
         /// Raised when the configuration changes.
         /// </summary>
@@ -315,7 +308,6 @@ namespace Technosoftware.UaClient
                 }
             }
         }
-        #endregion Protected Members
 
         /// <summary>
         /// Open host ports.

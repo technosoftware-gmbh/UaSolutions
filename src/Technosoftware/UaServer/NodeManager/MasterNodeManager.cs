@@ -570,6 +570,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
+        [Obsolete("Use GetManagerHandleAsync instead.")]
         public virtual object GetManagerHandle(NodeId nodeId, out IUaStandardAsyncNodeManager nodeManager)
         {
             (object handle, IUaStandardAsyncNodeManager nodeManager) result =
@@ -1348,11 +1349,11 @@ namespace Technosoftware.UaServer
             for (int i = 0; i < nodesCollection.Count; i++)
             {
                 Type listType = typeof(T);
-                NodeId nodeId = null;
+                NodeId nodeId = default;
 
                 if (listType == typeof(ReadValueId))
                 {
-                    nodeId = (nodesCollection[i] as ReadValueId)?.NodeId;
+                    nodeId = (nodesCollection[i] as ReadValueId)?.NodeId ?? default;
                 }
 
                 if (nodeId == null)

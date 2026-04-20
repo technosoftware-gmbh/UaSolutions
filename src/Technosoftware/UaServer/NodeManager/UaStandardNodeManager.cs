@@ -402,7 +402,7 @@ namespace Technosoftware.UaServer
                     parent.AddChild(instance);
                 }
 
-                instance.Create(contextToUse, null, browseName, null, true);
+                instance.Create(contextToUse, default, browseName, null, true);
                 AddPredefinedNode(contextToUse, instance);
 
                 return instance.NodeId;
@@ -550,11 +550,6 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             NodeState predefinedNode)
         {
-            if (predefinedNode is not BaseObjectState)
-            {
-                return predefinedNode;
-            }
-
             return predefinedNode;
         }
 
@@ -845,6 +840,7 @@ namespace Technosoftware.UaServer
         /// Finds the specified and checks if it is of the expected type.
         /// </summary>
         /// <returns>Returns null if not found or not of the correct type.</returns>
+        [Obsolete("Use FindPredefinedNode<T> instead.")]
         public NodeState FindPredefinedNode(NodeId nodeId, Type expectedType)
         {
             if (nodeId == null)
@@ -863,6 +859,31 @@ namespace Technosoftware.UaServer
             }
 
             return node;
+        }
+
+        /// <summary>
+        /// Finds the specified and checks if it is of the expected type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>Returns null if not found or not of the correct type.</returns>
+        public T FindPredefinedNode<T>(NodeId nodeId) where T : NodeState
+        {
+            if (nodeId == null)
+            {
+                return null;
+            }
+
+            if (!PredefinedNodes.TryGetValue(nodeId, out NodeState node))
+            {
+                return null;
+            }
+
+            if (typeof(T) != null && !typeof(T).IsInstanceOfType(node))
+            {
+                return null;
+            }
+
+            return node is T typedNode ? typedNode : null;
         }
 
         /// <summary>
@@ -1068,7 +1089,7 @@ namespace Technosoftware.UaServer
                         ((uint)values[1]));
                 }
 
-                metadata.DataType = (NodeId)values[2];
+                metadata.DataType = values[2] is NodeId nodeId ? nodeId : default;
 
                 if (values[3] != null)
                 {
@@ -1315,7 +1336,7 @@ namespace Technosoftware.UaServer
             }
 
             _ =
-                (ViewState)FindPredefinedNode(view.ViewId, typeof(ViewState))
+                FindPredefinedNode<ViewState>(view.ViewId)
                 ?? throw new ServiceResultException(StatusCodes.BadViewIdUnknown);
 
             if (view.Timestamp != DateTime.MinValue)
@@ -1353,7 +1374,7 @@ namespace Technosoftware.UaServer
             NodeId viewId,
             NodeState node)
         {
-            var view = (ViewState)FindPredefinedNode(viewId, typeof(ViewState));
+            ViewState view = FindPredefinedNode<ViewState>(viewId);
 
             return view != null;
         }
@@ -1448,7 +1469,7 @@ namespace Technosoftware.UaServer
             }
 
             // look up the type definition.
-            NodeId typeDefinition = null;
+            NodeId typeDefinition = default;
 
             if (target is BaseInstanceState instance)
             {
@@ -2254,7 +2275,7 @@ namespace Technosoftware.UaServer
                     // create an initial result.
                     HistoryReadResult result = results[ii] = new HistoryReadResult();
 
-                    result.HistoryData = null;
+                    result.HistoryData = default;
                     result.ContinuationPoint = null;
                     result.StatusCode = StatusCodes.Good;
 
@@ -3056,9 +3077,8 @@ namespace Technosoftware.UaServer
                             false,
                             methodToCall.MethodId))
                         {
-                            method = (MethodState)FindPredefinedNode(
-                                methodToCall.MethodId,
-                                typeof(MethodState));
+                            method = FindPredefinedNode<MethodState>(
+                                methodToCall.MethodId);
                         }
 
                         if (method == null)
@@ -3927,10 +3947,9 @@ namespace Technosoftware.UaServer
             error = ReadInitialValue(context, handle, dataChangeMonitoredItem);
             if (ServiceResult.IsBad(error))
             {
-                if (error.StatusCode.Code
-                    is StatusCodes.BadAttributeIdInvalid
-                        or StatusCodes.BadDataEncodingInvalid
-                        or StatusCodes.BadDataEncodingUnsupported)
+                if (error.StatusCode == StatusCodes.BadAttributeIdInvalid ||
+                    error.StatusCode == StatusCodes.BadDataEncodingInvalid ||
+                    error.StatusCode == StatusCodes.BadDataEncodingUnsupported)
                 {
                     return error;
                 }
@@ -4029,8 +4048,8 @@ namespace Technosoftware.UaServer
             IUaEventMonitoredItem monitoredItem,
             IFilterTarget filterTarget)
         {
-            NodeId eventTypeId = null;
-            NodeId sourceNodeId = null;
+            NodeId eventTypeId = default;
+            NodeId sourceNodeId = default;
             var baseEventState = filterTarget as BaseEventState;
 
             if (baseEventState == null && filterTarget is InstanceStateSnapshot snapshot)
@@ -4041,8 +4060,8 @@ namespace Technosoftware.UaServer
 
             if (baseEventState != null)
             {
-                eventTypeId = baseEventState.EventType?.Value;
-                sourceNodeId = baseEventState.SourceNode?.Value;
+                eventTypeId = baseEventState.EventType?.Value ?? default;
+                sourceNodeId = baseEventState.SourceNode?.Value ?? default;
             }
 
             var operationContext = new UaServerOperationContext(monitoredItem);
@@ -4230,7 +4249,7 @@ namespace Technosoftware.UaServer
             if (filterToUse.AggregateConfiguration.UseServerCapabilitiesDefaults)
             {
                 filterToUse.AggregateConfiguration = ServerData.AggregateManager
-                    .GetDefaultConfiguration(null);
+                    .GetDefaultConfiguration(default);
             }
 
             return StatusCodes.Good;

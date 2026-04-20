@@ -13,14 +13,12 @@
 //-----------------------------------------------------------------------------
 #endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
 
-#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
-#endregion Using Directives
 
 namespace Technosoftware.UaClient
 {
@@ -243,19 +241,17 @@ namespace Technosoftware.UaClient
 
             X509Certificate2? clientCertificate = null;
             X509Certificate2Collection? clientCertificateChain = null;
-            if (endpointDescription.SecurityPolicyUri != SecurityPolicies.None)
+            if (endpointDescription.SecurityPolicyUri is not null and not SecurityPolicies.None)
             {
                 clientCertificate = await Session.LoadInstanceCertificateAsync(
                     configuration,
                     endpointDescription.SecurityPolicyUri,
                     messageContext.Telemetry,
-                    ct)
-                    .ConfigureAwait(false);
+                    ct).ConfigureAwait(false);
                 clientCertificateChain = await Session.LoadCertificateChainAsync(
                     configuration,
                     clientCertificate,
-                    ct)
-                    .ConfigureAwait(false);
+                    ct).ConfigureAwait(false);
             }
 
             // initialize the channel which will be created with the server.

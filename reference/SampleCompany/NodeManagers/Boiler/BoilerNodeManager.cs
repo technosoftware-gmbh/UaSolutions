@@ -106,9 +106,8 @@ namespace SampleCompany.NodeManagers.Boiler
 
             boiler.Create(context, null, new QualifiedName(name, m_namespaceIndex), null, true);
 
-            NodeState folder = FindPredefinedNode(
-                ExpandedNodeId.ToNodeId(ObjectIds.Boilers, Server.NamespaceUris),
-                typeof(NodeState));
+            NodeState folder = FindPredefinedNode<NodeState>(
+                ExpandedNodeId.ToNodeId(ObjectIds.Boilers, Server.NamespaceUris));
 
             folder.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, false, boiler.NodeId);
             boiler.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, folder.NodeId);

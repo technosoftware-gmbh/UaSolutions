@@ -49,16 +49,11 @@ namespace Technosoftware.UaServer
             kServerCallId,
             Message = "Server Call={0}, Id={1}",
             Level = EventLevel.Informational)]
-        public void ServerCall(RequestType requestType, uint requestId)
+        public void ServerCall(string requestType, uint requestId)
         {
-            string requestTypeString = Enum.GetName(
-#if !NET8_0_OR_GREATER
-                typeof(RequestType),
-#endif
-                requestType);
             if (IsEnabled())
             {
-                WriteEvent(kServerCallId, requestTypeString, requestId);
+                WriteEvent(kServerCallId, requestType, requestId);
             }
         }
 
@@ -76,13 +71,16 @@ namespace Technosoftware.UaServer
             string secureChannelId,
             string identity)
         {
-            WriteEvent(
-                kSessionStateId,
-                context,
-                sessionId,
-                sessionName,
-                secureChannelId,
-                identity);
+            if (IsEnabled())
+            {
+                WriteEvent(
+                    kSessionStateId,
+                    context,
+                    sessionId,
+                    sessionName,
+                    secureChannelId,
+                    identity);
+            }
         }
 
         /// <summary>
@@ -94,7 +92,10 @@ namespace Technosoftware.UaServer
             Level = EventLevel.Verbose)]
         public void MonitoredItemReady(uint id, string state)
         {
-            WriteEvent(kMonitoredItemReadyId, id, state);
+            if (IsEnabled())
+            {
+                WriteEvent(kMonitoredItemReadyId, id, state);
+            }
         }
     }
 }

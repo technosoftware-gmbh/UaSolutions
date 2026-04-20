@@ -517,7 +517,7 @@ namespace Technosoftware.UaServer.Tests
                     {
                         ClientHandle = ++handleCounter,
                         SamplingInterval = -1,
-                        Filter = null,
+                        Filter = default,
                         DiscardOldest = true,
                         QueueSize = queueSize
                     }
@@ -870,7 +870,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.AreEqual(1, publishResponse.NotificationMessage.NotificationData.Count);
             string statusMessage = publishResponse.NotificationMessage.NotificationData[0].ToString();
             // Should contain GoodSubscriptionTransferred status code
-            Assert.AreEqual("{0x002D0000 | }", statusMessage);
+            Assert.AreEqual("{GoodSubscriptionTransferred [0x002D0000] | }", statusMessage);
 
             // static node, do not acknowledge
             if (publishResponse.AvailableSequenceNumbers != null)
@@ -930,15 +930,19 @@ namespace Technosoftware.UaServer.Tests
         {
             var itemsToCreate = new MonitoredItemCreateRequestCollection {
                 // add item
-                new MonitoredItemCreateRequest {
-                    ItemToMonitor = new ReadValueId {
+                new MonitoredItemCreateRequest
+                {
+                    ItemToMonitor = new ReadValueId
+                    {
                         AttributeId = Attributes.Value,
-                        NodeId = nodeId },
+                        NodeId = nodeId
+                    },
                     MonitoringMode = MonitoringMode.Reporting,
-                    RequestedParameters = new MonitoringParameters {
+                    RequestedParameters = new MonitoringParameters
+                    {
                         ClientHandle = clientHandle,
                         SamplingInterval = samplingInterval,
-                        Filter = null,
+                        Filter = default,
                         DiscardOldest = true,
                         QueueSize = queueSize
                     }

@@ -91,7 +91,7 @@ namespace Technosoftware.UaServer
             DateTime now = DateTime.UtcNow;
             SessionDiagnostics = new SessionDiagnosticsDataType
             {
-                SessionId = null,
+                SessionId = default,
                 SessionName = sessionName,
                 ClientDescription = clientDescription,
                 ServerUri = null,
