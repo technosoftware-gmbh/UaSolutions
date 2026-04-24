@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Test;
 
+using Technosoftware.UaUtilities;
 using Technosoftware.UaServer;
 using Technosoftware.UaServer.NodeManager;
 using Technosoftware.UaServer.Server;
@@ -319,7 +320,7 @@ namespace Technosoftware.UaBaseServer
         ///     Indicates whether the server must be restarted. This is mainly the case if the server is used in evaluation mode
         ///     and the 90 minutes evaluation time expired.
         /// </summary>
-        public bool RestartRequired => Technosoftware.UaUtilities.Licensing.LicenseHandler.IsRestartRequired;
+        public bool RestartRequired => LicenseHandler.Instance.IsRestartRequired;
 
         /// <summary>
         ///     The default context to use.

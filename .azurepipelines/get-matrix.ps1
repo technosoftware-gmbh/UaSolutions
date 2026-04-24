@@ -30,7 +30,7 @@ Param(
 )
 
 if ([string]::IsNullOrEmpty($BuildRoot)) {
-    $BuildRoot = & (Join-Path $PSScriptRoot "get-root.ps1") -fileName "*.slnx"
+    $BuildRoot = & (Join-Path $PSScriptRoot "get-root.ps1") -fileName "*.sln"
 }
 
 if ([string]::IsNullOrEmpty($FileName)) {

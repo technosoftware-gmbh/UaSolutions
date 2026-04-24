@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using Opc.Ua;
 using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer;
+using Technosoftware.UaUtilities;
 #endregion
 
 namespace Technosoftware.UaBaseServer
@@ -103,7 +104,7 @@ namespace Technosoftware.UaBaseServer
                     return;
                 }
 
-                var application = new ApplicationInstance { ApplicationType = ApplicationType.Server, CertificatePasswordProvider = passwordProvider };
+                var application = new ApplicationInstance { ApplicationType = Opc.Ua.ApplicationType.Server, CertificatePasswordProvider = passwordProvider };
 
                 var useReverseConnect = false;
 
@@ -116,7 +117,7 @@ namespace Technosoftware.UaBaseServer
                 }
 
                 uaServerPlugin_.OnGetLicenseInformation(out var serialNumber);
-                Technosoftware.UaServer.LicenseHandler.Validate(serialNumber);
+                LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Server, serialNumber);
 
                 // check the application certificate.
                 await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
@@ -146,7 +147,7 @@ namespace Technosoftware.UaBaseServer
                     BaseServer = new UaBaseServer(uaServerPlugin_, useReverseConnect);
                 }
                 BaseServer.Application = application;
-                BaseServer.Product = Technosoftware.UaUtilities.Licensing.LicenseHandler.ProductInformation;
+                BaseServer.Product = string.Empty;
 
                 if (!BaseServer.RestartRequired)
                 {
@@ -190,7 +191,7 @@ namespace Technosoftware.UaBaseServer
                     return;
                 }
 
-                var application = new ApplicationInstance { ApplicationType = ApplicationType.Server, CertificatePasswordProvider = passwordProvider };
+                var application = new ApplicationInstance { ApplicationType = Opc.Ua.ApplicationType.Server, CertificatePasswordProvider = passwordProvider };
 
                 var useReverseConnect = false;
 
@@ -203,7 +204,7 @@ namespace Technosoftware.UaBaseServer
                 }
 
                 uaServerPlugin_.OnGetLicenseInformation(out var serialNumber);
-                Technosoftware.UaServer.LicenseHandler.Validate(serialNumber);
+                LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Server, serialNumber);
 
                 // check the application certificate.
                 await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
@@ -233,7 +234,7 @@ namespace Technosoftware.UaBaseServer
                     BaseServer = new UaBaseServer(uaServerPlugin_, useReverseConnect);
                 }
                 BaseServer.Application = application;
-                BaseServer.Product = Technosoftware.UaUtilities.Licensing.LicenseHandler.ProductInformation;
+                BaseServer.Product = string.Empty;
 
                 if (!BaseServer.RestartRequired)
                 {
