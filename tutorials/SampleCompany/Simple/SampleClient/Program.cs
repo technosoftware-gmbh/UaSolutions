@@ -33,12 +33,10 @@ using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Opc.Ua;
-
-using Technosoftware.UaConfiguration;
-
 using SampleCompany.Common;
+using Technosoftware.UaConfiguration;
+using Technosoftware.UaUtilities;
 #endregion Using Directives
 
 namespace SampleCompany.SimpleClient
@@ -57,14 +55,46 @@ namespace SampleCompany.SimpleClient
             await output.WriteLineAsync("OPC UA Simple Console Sample Client").ConfigureAwait(false);
 
             #region License validation
-            const string licenseData =
-                    @"";
-            var licensed = Technosoftware.UaClient.LicenseHandler.Validate(licenseData);
-            if (!licensed)
+            //const string licenseData =
+            //        @"";
+            //bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Client, licenseData);
+            //if (!licensed)
+            //{
+            //    Console.WriteLine("WARNING: No valid license applied.");
+            //}
+
+            string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+            licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.IsEvaluation)
             {
-                await output.WriteLineAsync("WARNING: No valid license applied.").ConfigureAwait(false);
+                licensedString = $"   Evaluation expires at: {LicenseHandler.Instance.LicenseExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.LicenseExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.Support != Technosoftware.UaUtilities.SupportType.None)
+            {
+                licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.SupportExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            if (LicenseHandler.Instance.IsEvaluation)
+            {
+                licensedString = $"   Evaluation Period    : {LicenseHandler.Instance.EvaluationPeriod} minutes.";
+                Console.WriteLine(licensedString);
+            }
+
+            if (!LicenseHandler.Instance.IsLicensed && !LicenseHandler.Instance.IsEvaluation)
+            {
+                Console.WriteLine("ERROR: No valid license applied.");
             }
             #endregion License validation
+
 
             // The application name and config file names
             const string applicationName = "SampleCompany.SimpleSampleClient";
@@ -124,7 +154,7 @@ namespace SampleCompany.SimpleClient
                 var passwordProvider = new CertificatePasswordProvider(password);
                 var application = new ApplicationInstance {
                     ApplicationName = applicationName,
-                    ApplicationType = ApplicationType.Client,
+                    ApplicationType = Opc.Ua.ApplicationType.Client,
                     ConfigSectionName = configSectionName,
                     CertificatePasswordProvider = passwordProvider
                 };
