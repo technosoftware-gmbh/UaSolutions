@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Technosoftware.UaClient;
 using Technosoftware.UaConfiguration;
+using Technosoftware.UaUtilities;
 using SampleCompany.Common;
 #endregion Using Directives
 

@@ -16,7 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
-using Technosoftware.UaUtilities.Licensing;
+using Technosoftware.UaUtilities;
 using SampleCompany.Common;
 using SampleCompany.NodeManagers;
 #endregion Using Directives
