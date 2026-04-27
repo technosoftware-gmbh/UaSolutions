@@ -78,7 +78,7 @@ namespace SampleCompany.SimpleClient
             }
             licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
             Console.WriteLine(licensedString);
-            if (LicenseHandler.Instance.Support != Technosoftware.UaUtilities.SupportType.None)
+            if (LicenseHandler.Instance.Support != SupportLevel.None)
             {
                 licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
                 Console.WriteLine(licensedString);
