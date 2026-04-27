@@ -11,7 +11,6 @@
 
 #region Using Directives
 using System;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,8 +37,8 @@ namespace Technosoftware.UaClientGateway
 
             #region License validation
             const string licenseData =
-                    @"";
-            bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.ClientGateway, licenseData);
+                    "";
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.ClientGateway, licenseData);
             if (!licensed)
             {
                 Console.WriteLine("WARNING: No valid license applied.");
@@ -58,7 +57,7 @@ namespace Technosoftware.UaClientGateway
             }
             licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
             Console.WriteLine(licensedString);
-            if (LicenseHandler.Instance.Support != Technosoftware.UaUtilities.SupportType.None)
+            if (LicenseHandler.Instance.Support != SupportLevel.None)
             {
                 licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
                 Console.WriteLine(licensedString);
@@ -106,7 +105,7 @@ namespace Technosoftware.UaClientGateway
                 { "p|password=", "optional password for private key", p => password = p.ToCharArray() },
                 { "r|renew", "renew application certificate", r => renewCertificate = r != null },
                 { "t|timeout=", "timeout in seconds to exit application", (int t) => timeout = t * 1000 },
-                { "s|shadowconfig", "create configuration in pki root", s => shadowConfig = s != null },
+                { "s|shadowconfig", "create configuration in pki root", s => shadowConfig = s != null }
             };
 
             using var telemetry = new ConsoleTelemetry();

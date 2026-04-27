@@ -23,6 +23,7 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Bindings;
 using KeyValuePair = Opc.Ua.KeyValuePair;
+using Technosoftware.UaUtilities;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -1026,7 +1027,7 @@ namespace Technosoftware.UaServer
         {
             // check for valid license
             UaUtilities.LicenseHandler.Instance
-                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.None, m_logger);
+                .ValidateFeatures(ProductType.Server, UaUtilities.ProductFeature.None, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.BrowseNext);
 
@@ -1087,7 +1088,7 @@ namespace Technosoftware.UaServer
         {
             // check for valid license
             UaUtilities.LicenseHandler.Instance
-                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.None, m_logger);
+                .ValidateFeatures(ProductType.Server, ProductFeature.None, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.RegisterNodes);
 
@@ -1142,7 +1143,7 @@ namespace Technosoftware.UaServer
         {
             // check for valid license
             UaUtilities.LicenseHandler.Instance
-                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.None, m_logger);
+                .ValidateFeatures(ProductType.Server, ProductFeature.None, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.UnregisterNodes);
 
@@ -1253,7 +1254,7 @@ namespace Technosoftware.UaServer
         {
             // check for valid license
             UaUtilities.LicenseHandler.Instance
-                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
+                .ValidateFeatures(ProductType.Server, ProductFeature.DataAccess, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Read);
 
@@ -1312,7 +1313,7 @@ namespace Technosoftware.UaServer
         {
             // check for valid license
             UaUtilities.LicenseHandler.Instance
-                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
+                .ValidateFeatures(ProductType.Server, ProductFeature.HistoricalAccess, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.HistoryRead);
 
@@ -1381,7 +1382,7 @@ namespace Technosoftware.UaServer
         {
             // check for valid license
             UaUtilities.LicenseHandler.Instance
-                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.DataAccess, m_logger);
+                .ValidateFeatures(ProductType.Server, ProductFeature.DataAccess, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Write);
 
@@ -1432,7 +1433,7 @@ namespace Technosoftware.UaServer
         {
             // check for valid license
             UaUtilities.LicenseHandler.Instance
-                .ValidateFeatures(UaUtilities.ApplicationType.Server, UaUtilities.LicenseHandler.ProductFeature.HistoricalAccess, m_logger);
+                .ValidateFeatures(ProductType.Server, ProductFeature.HistoricalAccess, m_logger);
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.HistoryUpdate);
 
