@@ -117,7 +117,7 @@ namespace Technosoftware.UaBaseServer
                 }
 
                 uaServerPlugin_.OnGetLicenseInformation(out var serialNumber);
-                LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Server, serialNumber);
+                LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ProductType.Server, serialNumber);
 
                 // check the application certificate.
                 await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
@@ -204,7 +204,7 @@ namespace Technosoftware.UaBaseServer
                 }
 
                 uaServerPlugin_.OnGetLicenseInformation(out var serialNumber);
-                LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Server, serialNumber);
+                LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ProductType.Server, serialNumber);
 
                 // check the application certificate.
                 await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);

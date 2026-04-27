@@ -55,15 +55,17 @@ namespace SampleCompany.SimpleClient
             await output.WriteLineAsync("OPC UA Simple Console Sample Client").ConfigureAwait(false);
 
             #region License validation
-            //const string licenseData =
-            //        @"";
-            //bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Client, licenseData);
-            //if (!licensed)
-            //{
-            //    Console.WriteLine("WARNING: No valid license applied.");
-            //}
+            const string licenseData =
+                    @"";
+            bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ProductType.Client, licenseData);
+            if (!licensed)
+            {
+                Console.WriteLine("WARNING: No valid license applied.");
+            }
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+            licensedString = $"   Licensed Type        : {LicenseHandler.Instance.LicensedType}";
             Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);
@@ -94,7 +96,6 @@ namespace SampleCompany.SimpleClient
                 Console.WriteLine("ERROR: No valid license applied.");
             }
             #endregion License validation
-
 
             // The application name and config file names
             const string applicationName = "SampleCompany.SimpleSampleClient";

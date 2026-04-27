@@ -38,15 +38,17 @@ namespace SampleCompany.SampleServer
             await output.WriteLineAsync("OPC UA Console Sample Server").ConfigureAwait(false);
 
             #region License validation
-            //const string licenseData =
-            //        @"";
-            //bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Server, licenseData);
-            //if (!licensed)
-            //{
-            //    Console.WriteLine("WARNING: No valid license applied.");
-            //}
+            const string licenseData =
+                    @"";
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.Server, licenseData);
+            if (!licensed)
+            {
+                Console.WriteLine("WARNING: No valid license applied.");
+            }
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+            licensedString = $"   Licensed Type        : {LicenseHandler.Instance.LicensedType}";
             Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);

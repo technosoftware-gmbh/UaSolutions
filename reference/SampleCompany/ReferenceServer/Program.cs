@@ -40,7 +40,7 @@ namespace SampleCompany.ReferenceServer
             #region License validation
             const string licenseData =
                     @"";
-            bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Server, licenseData);
+            bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ProductType.Server, licenseData);
             if (!licensed)
             {
                 Console.WriteLine("WARNING: No valid license applied.");
@@ -59,7 +59,7 @@ namespace SampleCompany.ReferenceServer
             }
             licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
             Console.WriteLine(licensedString);
-            if (LicenseHandler.Instance.Support != Technosoftware.UaUtilities.SupportType.None)
+            if (LicenseHandler.Instance.Support != SupportLevel.None)
             {
                 licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
                 Console.WriteLine(licensedString);
@@ -78,7 +78,7 @@ namespace SampleCompany.ReferenceServer
             }
             #endregion License validation
 
-            // The application name and config file names
+            // The application name and config file name
             const string applicationName = "SampleCompany.ReferenceServer";
             const string configSectionName = "SampleCompany.ReferenceServer";
 
