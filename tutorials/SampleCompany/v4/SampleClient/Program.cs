@@ -1,13 +1,13 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -43,41 +43,41 @@ namespace SampleCompany.SampleClient
             await output.WriteLineAsync("OPC UA Console Sample Client").ConfigureAwait(false);
 
             #region License validation
-            //const string licenseData =
-            //        @"";
-            //bool licensed = Technosoftware.UaClient.LicenseHandler.Validate(licenseData);
-            //if (!licensed)
-            //{
-            //    Console.WriteLine("WARNING: No valid license applied.");
-            //}
-
-            string licensedString = $"   Licensed Product     : {Technosoftware.UaUtilities.Licensing.LicenseHandler.LicensedProduct}";
-            Console.WriteLine(licensedString);
-            licensedString = $"   Licensed Features    : {Technosoftware.UaUtilities.Licensing.LicenseHandler.LicensedFeatures}";
-            Console.WriteLine(licensedString);
-            if (Technosoftware.UaUtilities.Licensing.LicenseHandler.IsEvaluation)
+            const string licenseData =
+                    @"";
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
+            if (!licensed)
             {
-                licensedString = $"   Evaluation expires at: {Technosoftware.UaUtilities.Licensing.LicenseHandler.LicenseExpirationDate}";
-                Console.WriteLine(licensedString);
-                licensedString = $"   Days until Expiration: {Technosoftware.UaUtilities.Licensing.LicenseHandler.LicenseExpirationDays}";
-                Console.WriteLine(licensedString);
-            }
-            licensedString = $"   Support Included     : {Technosoftware.UaUtilities.Licensing.LicenseHandler.Support}";
-            Console.WriteLine(licensedString);
-            if (Technosoftware.UaUtilities.Licensing.LicenseHandler.Support != Technosoftware.UaUtilities.Licensing.SupportType.None)
-            {
-                licensedString = $"   Support expire at    : {Technosoftware.UaUtilities.Licensing.LicenseHandler.SupportExpirationDate}";
-                Console.WriteLine(licensedString);
-                licensedString = $"   Days until Expiration: {Technosoftware.UaUtilities.Licensing.LicenseHandler.SupportExpirationDays}";
-                Console.WriteLine(licensedString);
-            }
-            if (Technosoftware.UaUtilities.Licensing.LicenseHandler.IsEvaluation)
-            {
-                licensedString = $"   Evaluation Period    : {Technosoftware.UaUtilities.Licensing.LicenseHandler.EvaluationPeriod} minutes.";
-                Console.WriteLine(licensedString);
+                Console.WriteLine("WARNING: No valid license applied.");
             }
 
-            if (!Technosoftware.UaUtilities.Licensing.LicenseHandler.IsLicensed && !Technosoftware.UaUtilities.Licensing.LicenseHandler.IsEvaluation)
+            string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+            licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.IsEvaluation)
+            {
+                licensedString = $"   Evaluation expires at: {LicenseHandler.Instance.LicenseExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.LicenseExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.Support != SupportLevel.None)
+            {
+                licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.SupportExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            if (LicenseHandler.Instance.IsEvaluation)
+            {
+                licensedString = $"   Evaluation Period    : {LicenseHandler.Instance.EvaluationPeriod} minutes.";
+                Console.WriteLine(licensedString);
+            }
+
+            if (!LicenseHandler.Instance.IsLicensed && !LicenseHandler.Instance.IsEvaluation)
             {
                 Console.WriteLine("ERROR: No valid license applied.");
             }
@@ -223,6 +223,10 @@ namespace SampleCompany.SampleClient
                 int waitTime = int.MaxValue;
                 do
                 {
+                    if (LicenseHandler.Instance.IsRestartRequired || LicenseHandler.Instance.IsExpired)
+                    {
+                        break;
+                    }
                     if (timeout > 0)
                     {
                         waitTime = timeout - (int)DateTime.UtcNow.Subtract(start).TotalMilliseconds;

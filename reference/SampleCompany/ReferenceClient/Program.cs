@@ -51,13 +51,13 @@ namespace SampleCompany.ReferenceClient
             );
 
             #region License validation
-            //const string licenseData =
-            //        @"";
-            // bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Client, licenseData);
-            // if (!licensed)
-            // {
-            //    Console.WriteLine("WARNING: No valid license applied.");
-            //}
+            const string licenseData =
+                    @"";
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
+            if (!licensed)
+            {
+                Console.WriteLine("WARNING: No valid license applied.");
+            }
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
             Console.WriteLine(licensedString);

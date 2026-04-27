@@ -51,13 +51,13 @@ namespace SampleCompany.SampleClient
             );
 
             #region License validation
-            //const string licenseData =
-            //        @"";
-            // bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Client, licenseData);
-            // if (!licensed)
-            // {
-            //    Console.WriteLine("WARNING: No valid license applied.");
-            //}
+            const string licenseData =
+                    @"";
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
+            if (!licensed)
+            {
+                Console.WriteLine("WARNING: No valid license applied.");
+            }
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
             Console.WriteLine(licensedString);
@@ -72,7 +72,7 @@ namespace SampleCompany.SampleClient
             }
             licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
             Console.WriteLine(licensedString);
-            if (LicenseHandler.Instance.Support != Technosoftware.UaUtilities.SupportLevel.None)
+            if (LicenseHandler.Instance.Support != SupportLevel.None)
             {
                 licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
                 Console.WriteLine(licensedString);
