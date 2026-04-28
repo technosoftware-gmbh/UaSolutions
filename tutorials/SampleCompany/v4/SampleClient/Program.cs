@@ -37,6 +37,7 @@ namespace SampleCompany.SampleClient
         /// </summary>
         /// <param name="args">The arguments given on commandline.</param>
         /// <returns></returns>
+        /// <exception cref="ErrorExitException"></exception>
         public static async Task<int> Main(string[] args)
         {
             TextWriter output = Console.Out;
@@ -53,7 +54,7 @@ namespace SampleCompany.SampleClient
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
             Console.WriteLine(licensedString);
-                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
+            licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
             Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);
@@ -170,7 +171,7 @@ namespace SampleCompany.SampleClient
                 var application = new ApplicationInstance
                 {
                     ApplicationName = applicationName,
-                    ApplicationType = ApplicationType.Client,
+                    ApplicationType = Opc.Ua.ApplicationType.Client,
                     ConfigSectionName = configSectionName,
                     CertificatePasswordProvider = passwordProvider
                 };
