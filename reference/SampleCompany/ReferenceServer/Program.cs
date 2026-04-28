@@ -1,13 +1,13 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -16,9 +16,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Technosoftware.UaUtilities;
 using SampleCompany.Common;
 using SampleCompany.NodeManagers;
-using Technosoftware.UaUtilities.Licensing;
 #endregion Using Directives
 
 namespace SampleCompany.ReferenceServer
@@ -40,14 +40,47 @@ namespace SampleCompany.ReferenceServer
             #region License validation
             const string licenseData =
                     @"";
-            bool licensed = Technosoftware.UaServer.LicenseHandler.Validate(licenseData);
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.Server, licenseData);
             if (!licensed)
             {
-                await output.WriteLineAsync("WARNING: No valid license applied.").ConfigureAwait(false);
+                Console.WriteLine("WARNING: No valid license applied.");
+            }
+
+            string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
+            Console.WriteLine(licensedString);
+            licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.IsEvaluation)
+            {
+                licensedString = $"   Evaluation expires at: {LicenseHandler.Instance.LicenseExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.LicenseExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.Support != SupportLevel.None)
+            {
+                licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.SupportExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            if (LicenseHandler.Instance.IsEvaluation)
+            {
+                licensedString = $"   Evaluation Period    : {LicenseHandler.Instance.EvaluationPeriod} minutes.";
+                Console.WriteLine(licensedString);
+            }
+
+            if (!LicenseHandler.Instance.IsLicensed && !LicenseHandler.Instance.IsEvaluation)
+            {
+                Console.WriteLine("ERROR: No valid license applied.");
             }
             #endregion License validation
 
-            // The application name and config file names
+            // The application name and config file name
             const string applicationName = "SampleCompany.ReferenceServer";
             const string configSectionName = "SampleCompany.ReferenceServer";
 
@@ -83,37 +116,6 @@ namespace SampleCompany.ReferenceServer
             {
                 // parse command line and set options
                 ConsoleUtils.ProcessCommandLine(output, args, options, ref showHelp, "REFSERVER");
-
-                string licensedString = $"   Licensed Product     : {LicenseHandler.LicensedProduct}";
-                await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                licensedString = $"   Licensed Features    : {LicenseHandler.LicensedFeatures}";
-                await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                if (LicenseHandler.IsEvaluation)
-                {
-                    licensedString = $"   Evaluation expires at: {LicenseHandler.LicenseExpirationDate}";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                    licensedString = $"   Days until Expiration: {LicenseHandler.LicenseExpirationDays}";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                }
-                licensedString = $"   Support Included     : {LicenseHandler.Support}";
-                await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                if (LicenseHandler.Support != SupportType.None)
-                {
-                    licensedString = $"   Support expire at    : {LicenseHandler.SupportExpirationDate}";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                    licensedString = $"   Days until Expiration: {LicenseHandler.SupportExpirationDays}";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                }
-                if (LicenseHandler.IsEvaluation)
-                {
-                    licensedString = $"   Evaluation Period    : {LicenseHandler.EvaluationPeriod} minutes.";
-                    await output.WriteLineAsync(licensedString).ConfigureAwait(false);
-                }
-
-                if (!LicenseHandler.IsLicensed && !LicenseHandler.IsEvaluation)
-                {
-                    await output.WriteLineAsync("ERROR: No valid license applied.").ConfigureAwait(false);
-                }
 
                 if (logConsole && appLog)
                 {

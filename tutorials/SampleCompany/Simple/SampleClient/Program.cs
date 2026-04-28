@@ -1,6 +1,6 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com
 //
 // License:
@@ -25,7 +25,7 @@
 //
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -33,12 +33,10 @@ using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Opc.Ua;
-
-using Technosoftware.UaConfiguration;
-
 using SampleCompany.Common;
+using Technosoftware.UaConfiguration;
+using Technosoftware.UaUtilities;
 #endregion Using Directives
 
 namespace SampleCompany.SimpleClient
@@ -59,10 +57,43 @@ namespace SampleCompany.SimpleClient
             #region License validation
             const string licenseData =
                     @"";
-            var licensed = Technosoftware.UaClient.LicenseHandler.Validate(licenseData);
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
             if (!licensed)
             {
-                await output.WriteLineAsync("WARNING: No valid license applied.").ConfigureAwait(false);
+                Console.WriteLine("WARNING: No valid license applied.");
+            }
+
+            string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
+            Console.WriteLine(licensedString);
+            licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.IsEvaluation)
+            {
+                licensedString = $"   Evaluation expires at: {LicenseHandler.Instance.LicenseExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.LicenseExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.Support != SupportLevel.None)
+            {
+                licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.SupportExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            if (LicenseHandler.Instance.IsEvaluation)
+            {
+                licensedString = $"   Evaluation Period    : {LicenseHandler.Instance.EvaluationPeriod} minutes.";
+                Console.WriteLine(licensedString);
+            }
+
+            if (!LicenseHandler.Instance.IsLicensed && !LicenseHandler.Instance.IsEvaluation)
+            {
+                Console.WriteLine("ERROR: No valid license applied.");
             }
             #endregion License validation
 
@@ -124,7 +155,7 @@ namespace SampleCompany.SimpleClient
                 var passwordProvider = new CertificatePasswordProvider(password);
                 var application = new ApplicationInstance {
                     ApplicationName = applicationName,
-                    ApplicationType = ApplicationType.Client,
+                    ApplicationType = Opc.Ua.ApplicationType.Client,
                     ConfigSectionName = configSectionName,
                     CertificatePasswordProvider = passwordProvider
                 };

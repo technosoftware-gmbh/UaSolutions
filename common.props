@@ -2,9 +2,9 @@
   <PropertyGroup>
     <Product>OPC UA Solutions .NET</Product>
     <RepositoryUrl>https://github.com/technosoftware-gmbh/UaSolutions</RepositoryUrl>
-    <VersionPrefix>4.2.0</VersionPrefix>
+    <VersionPrefix>4.3.0</VersionPrefix>
     <VersionSuffix>rc-$([System.DateTime]::Now.ToString("yyyyMMdd"))</VersionSuffix>
-    <Copyright>Copyright © 2011 - 2025 Technosoftware GmbH</Copyright>
+    <Copyright>Copyright © 2011 - 2026 Technosoftware GmbH</Copyright>
     <PackagePrefix>Technosoftware.UaSolutions</PackagePrefix>
     <AssemblyPrefix>Technosoftware</AssemblyPrefix>
     <Company>Technosoftware GmbH</Company>
@@ -18,13 +18,12 @@
     <LangVersion>13.0</LangVersion>
     <EnablePackageValidation>true</EnablePackageValidation>
     <!-- to check the package validation on a release build, uncomment here -->
-    <!--<PackageValidationBaselineVersion>4.2.0</PackageValidationBaselineVersion>-->
+    <!--<PackageValidationBaselineVersion>4.3.0</PackageValidationBaselineVersion>-->
     <!-- to regenerate the compatibility suppression file, uncomment here -->
     <!--<GenerateCompatibilitySuppressionFile>true</GenerateCompatibilitySuppressionFile>-->
     <NuGetAuditMode>all</NuGetAuditMode>
     <NuGetAudit>true</NuGetAudit>
   </PropertyGroup>
-
   <PropertyGroup>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
