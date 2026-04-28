@@ -49,6 +49,8 @@ namespace SampleCompany.ReferenceServer
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
             Console.WriteLine(licensedString);
+                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
+            Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);
             if (LicenseHandler.Instance.IsEvaluation)

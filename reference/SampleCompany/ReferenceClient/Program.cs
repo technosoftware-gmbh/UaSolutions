@@ -44,7 +44,7 @@ namespace SampleCompany.ReferenceClient
             Console.WriteLine("OPC UA Console Reference Client");
 
             Console.WriteLine(
-                "OPC UA library: {0} @ {1} -- {2}",
+                "OPC UA Solutions: {0} @ {1} -- {2}",
                 Utils.GetAssemblyBuildNumber(),
                 Utils.GetAssemblyTimestamp().ToString("G", CultureInfo.InvariantCulture),
                 Utils.GetAssemblySoftwareVersion()
@@ -60,6 +60,8 @@ namespace SampleCompany.ReferenceClient
             }
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
             Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);
