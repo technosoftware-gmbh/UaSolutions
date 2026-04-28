@@ -47,13 +47,14 @@ namespace SampleCompany.ReferenceClient
             const string licenseData =
                     @"";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
-
             if (!licensed)
             {
                 Console.WriteLine("WARNING: No valid license applied.");
             }
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
             Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);

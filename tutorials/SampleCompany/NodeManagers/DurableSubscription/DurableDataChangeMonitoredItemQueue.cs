@@ -1,13 +1,13 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -26,6 +26,13 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         #region Constants
         private const uint kBatchSize = 1000;
         #endregion Constants
+
+        #region Events
+        /// <summary>
+        /// Invoked when the queue is disposed
+        /// </summary>
+        public event EventHandler Disposed;
+        #endregion Events
 
         #region Constructors
         /// <summary>
@@ -63,7 +70,6 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         }
         #endregion Constructors
 
-
         #region IDisposable Members
         /// <inheritdoc/>
         public void Dispose()
@@ -83,14 +89,6 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             }
         }
         #endregion IDisposable Members
-
-
-        #region Events
-        /// <summary>
-        /// Invoked when the queue is disposed
-        /// </summary>
-        public event EventHandler Disposed;
-        #endregion Events
 
         #region Public Methods
         /// <inheritdoc/>
@@ -291,7 +289,6 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     m_enqueueBatch = new DataChangeBatch(new List<(DataValue, ServiceResult)>(), kBatchSize, MonitoredItemId);
                 }
             }
-
         }
 
         /// <summary>
@@ -336,15 +333,21 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         private readonly IBatchPersistor m_batchPersistor;
         #endregion
     }
+
     /// <summary>
     /// Batch of Datachanges and corresponding errors
     /// </summary>
     public class DataChangeBatch : BatchBase
     {
-        public DataChangeBatch(List<(DataValue, ServiceResult)> values, uint batchSize, uint monitoredItemId) : base(batchSize, monitoredItemId)
+        public DataChangeBatch(
+            List<(DataValue, ServiceResult)> values,
+            uint batchSize,
+            uint monitoredItemId)
+            : base(batchSize, monitoredItemId)
         {
             Values = values;
         }
+
         public List<(DataValue, ServiceResult)> Values { get; set; }
 
         public override void SetPersisted()
@@ -365,11 +368,17 @@ namespace SampleCompany.NodeManagers.DurableSubscription
     public class StorableDataChangeQueue
     {
         public bool IsDurable { get; set; }
+
         public uint MonitoredItemId { get; set; }
+
         public int ItemsInQueue { get; set; }
+
         public uint QueueSize { get; set; }
+
         public DataChangeBatch EnqueueBatch { get; set; }
+
         public List<DataChangeBatch> DataChangeBatches { get; set; }
+
         public DataChangeBatch DequeueBatch { get; set; }
     }
 }

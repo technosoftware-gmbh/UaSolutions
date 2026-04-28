@@ -1,6 +1,6 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com
 //
 // License:
@@ -25,7 +25,7 @@
 //
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -57,7 +57,7 @@ namespace SampleCompany.SimpleClient
             #region License validation
             const string licenseData =
                     @"";
-            bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ProductType.Client, licenseData);
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
             if (!licensed)
             {
                 Console.WriteLine("WARNING: No valid license applied.");
@@ -65,7 +65,7 @@ namespace SampleCompany.SimpleClient
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
             Console.WriteLine(licensedString);
-            licensedString = $"   Licensed Type        : {LicenseHandler.Instance.LicensedType}";
+                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
             Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);

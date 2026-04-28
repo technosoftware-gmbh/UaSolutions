@@ -36,6 +36,7 @@ namespace SampleCompany.SampleClient
         /// The main entry point for the application.
         /// </summary>
         /// <param name="args">The arguments given on commandline.</param>
+        /// <returns></returns>
         /// <exception cref="ErrorExitException"></exception>
         public static async Task<int> Main(string[] args)
         {
@@ -53,7 +54,7 @@ namespace SampleCompany.SampleClient
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
             Console.WriteLine(licensedString);
-            licensedString = $"   Licensed Type        : {LicenseHandler.Instance.LicensedType}";
+            licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
             Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);
@@ -225,6 +226,10 @@ namespace SampleCompany.SampleClient
                 int waitTime = int.MaxValue;
                 do
                 {
+                    if (LicenseHandler.Instance.IsRestartRequired || LicenseHandler.Instance.IsExpired)
+                    {
+                        break;
+                    }
                     if (timeout > 0)
                     {
                         waitTime = timeout - (int)DateTime.UtcNow.Subtract(start).TotalMilliseconds;

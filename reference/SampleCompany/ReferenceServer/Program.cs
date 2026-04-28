@@ -1,13 +1,13 @@
-#region Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 //-----------------------------------------------------------------------------
-// Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 // Web: https://technosoftware.com 
 //
 // The Software is based on the OPC Foundation MIT License. 
 // The complete license agreement for that can be found here:
 // http://opcfoundation.org/License/MIT/1.00/
 //-----------------------------------------------------------------------------
-#endregion Copyright (c) 2022-2025 Technosoftware GmbH. All rights reserved
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
 using System;
@@ -40,13 +40,15 @@ namespace SampleCompany.ReferenceServer
             #region License validation
             const string licenseData =
                     @"";
-            bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ProductType.Server, licenseData);
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.Server, licenseData);
             if (!licensed)
             {
                 Console.WriteLine("WARNING: No valid license applied.");
             }
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
             Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);
