@@ -12,9 +12,13 @@ Add the following to your application code, the best place would be the start of
 
 ```
   #region License validation
-  var licenseData =
+  const string licenseData =
           @"";
-            LicenseHandler.Validate(licenseData);
+  bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
+  if (!licensed)
+  {
+      Console.WriteLine("WARNING: No valid license applied.");
+  }
   #endregion
 ```
 
@@ -38,9 +42,9 @@ This is similar as for the Client Solution. Add the following to your applicatio
 
 ```
   #region License validation
-  var licenseData =
+  const string licenseData =
           @"";
-            LicenseHandler.Validate(licenseData);
+  bool licensed = LicenseHandler.Instance.Validate(ProductType.Server, licenseData);
   #endregion
 ```
 
@@ -49,13 +53,40 @@ You have to change the value of licenseData with the information you received in
 
 ## Checking the license state
 
-You can use the following code as an example on how to check if the provided license is valid:
+You can use the following code as an example on how to get information about the license and check if the provided license is valid:
 
 ```
-            if (!Technosoftware.UaUtilities.Licensing.LicenseHandler.IsLicensed && !Technosoftware.UaUtilities.Licensing.LicenseHandler.IsEvaluation)
+            string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
+            Console.WriteLine(licensedString);
+            licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.IsEvaluation)
             {
-                await output.WriteLineAsync("ERROR: No valid license applied.").ConfigureAwait(false);
-                return;
+                licensedString = $"   Evaluation expires at: {LicenseHandler.Instance.LicenseExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.LicenseExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
+            Console.WriteLine(licensedString);
+            if (LicenseHandler.Instance.Support != SupportLevel.None)
+            {
+                licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
+                Console.WriteLine(licensedString);
+                licensedString = $"   Days until Expiration: {LicenseHandler.Instance.SupportExpirationDays}";
+                Console.WriteLine(licensedString);
+            }
+            if (LicenseHandler.Instance.IsEvaluation)
+            {
+                licensedString = $"   Evaluation Period    : {LicenseHandler.Instance.EvaluationPeriod} minutes.";
+                Console.WriteLine(licensedString);
+            }
+
+            if (!LicenseHandler.Instance.IsLicensed && !LicenseHandler.Instance.IsEvaluation)
+            {
+                Console.WriteLine("ERROR: No valid license applied.");
             }
 ```
 

@@ -44,22 +44,24 @@ namespace SampleCompany.ReferenceClient
             Console.WriteLine("OPC UA Console Reference Client");
 
             Console.WriteLine(
-                "OPC UA library: {0} @ {1} -- {2}",
+                "OPC UA Solutions: {0} @ {1} -- {2}",
                 Utils.GetAssemblyBuildNumber(),
                 Utils.GetAssemblyTimestamp().ToString("G", CultureInfo.InvariantCulture),
                 Utils.GetAssemblySoftwareVersion()
             );
 
             #region License validation
-            //const string licenseData =
-            //        @"";
-            // bool licensed = LicenseHandler.Instance.Validate(Technosoftware.UaUtilities.ApplicationType.Client, licenseData);
-            // if (!licensed)
-            // {
-            //    Console.WriteLine("WARNING: No valid license applied.");
-            //}
+            const string licenseData =
+                    @"";
+            bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
+            if (!licensed)
+            {
+                Console.WriteLine("WARNING: No valid license applied.");
+            }
 
             string licensedString = $"   Licensed Product     : {LicenseHandler.Instance.LicensedProduct}";
+            Console.WriteLine(licensedString);
+                   licensedString = $"   Licensed Product Type: {LicenseHandler.Instance.LicensedProductType}";
             Console.WriteLine(licensedString);
             licensedString = $"   Licensed Features    : {LicenseHandler.Instance.LicensedFeatures}";
             Console.WriteLine(licensedString);
@@ -72,7 +74,7 @@ namespace SampleCompany.ReferenceClient
             }
             licensedString = $"   Support Included     : {LicenseHandler.Instance.Support}";
             Console.WriteLine(licensedString);
-            if (LicenseHandler.Instance.Support != Technosoftware.UaUtilities.SupportType.None)
+            if (LicenseHandler.Instance.Support != SupportLevel.None)
             {
                 licensedString = $"   Support expire at    : {LicenseHandler.Instance.SupportExpirationDate}";
                 Console.WriteLine(licensedString);

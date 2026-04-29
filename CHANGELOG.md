@@ -67,6 +67,12 @@ Detailed release notes are available [here](https://github.com/OPCFoundation/UA-
 - All obsolete Methods removed
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 4.3.0
+
+### Fixes
+- Reworked license handling. IsLicensed showed false even a valid license was used
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 4.2.0
 
 ### Breaking Changes:
