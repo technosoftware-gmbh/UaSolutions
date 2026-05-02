@@ -34,7 +34,9 @@
     <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
     <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
     <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="5.0.0-rc" />
-    <PackageReference Include="Technosoftware.UaSolutions.ClientGateway" Version="5.0.0-rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Technosoftware\ClientGateway\Technosoftware.ClientGateway.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Technosoftware.UaClientGateway.Config.xml">

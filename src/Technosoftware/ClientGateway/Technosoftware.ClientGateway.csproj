@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>$(AssemblyPrefix).ClientGateway</AssemblyName>
+    <TargetFrameworks>$(UaClientGatewayTargets)</TargetFrameworks>
+    <PackageId>$(PackagePrefix).ClientGateway</PackageId>
+    <RootNamespace>Technosoftware.ClientGateway</RootNamespace>
+    <Company>Technosoftware GmbH</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>OPC UA Solutions .NET Client Gateway Library</Description>
+    <Copyright>Copyright © 2011 - 2026 Technosoftware GmbH</Copyright>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Technosoftware.ClientGateway.Tests" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="Common\BuildDesign.bat" />
+    <None Include="Common\ModelDesign.csv" />
+    <EmbeddedResource Include="Common\Technosoftware.Common.PredefinedNodes.uanodes" />
+    <None Include="Technosoftware.snk" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="5.0.0-rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceProcess" />
+  </ItemGroup>
+  <Target Name="GetPackagingOutputs" />
+</Project>
