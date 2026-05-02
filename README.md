@@ -20,15 +20,6 @@ You can also use the PDFs provided from our Workshop available [here](./Workshop
 
 A changelog is available [here](./CHANGELOG.md).
 
-## Build Status
-
-[![Build and Test .NET 9.0](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/buildandtest.yml/badge.svg)](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/buildandtest.yml)
-
-## Code Quality
-
-[![CodeQL](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/technosoftware-gmbh/UaSolutions/actions/workflows/codeql-analysis.yml)
-[![codecov](https://codecov.io/gh/technosoftware-gmbh/UaSolutions/graph/badge.svg?token=M927HKMQ3B)](https://codecov.io/gh/technosoftware-gmbh/UaSolutions)
-
 ## Purchasing
 
 ### Evaluation license
