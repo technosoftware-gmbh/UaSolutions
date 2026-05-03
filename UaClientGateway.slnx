@@ -1,4 +1,3 @@
 <Solution>
-  <Project Path="src/Technosoftware/ClientGateway/Technosoftware.ClientGateway.csproj" />
   <Project Path="tools/UaClientGateway/Technosoftware.UaClientGateway.csproj" />
 </Solution>
