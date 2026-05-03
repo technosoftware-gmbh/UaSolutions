@@ -31,13 +31,13 @@
     <PackageReference Update="Roslynator.Formatting.Analyzers" Version="4.15.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
-    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaBindings.Https" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0-rc" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0-rc" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0-rc" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" Version="5.0.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.0" />
+    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.0" />
     <ProjectReference Include="..\..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
   </ItemGroup>
   <Target Name="GetPackagingOutputs" />
