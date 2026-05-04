@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Product>OPC UA Solutions .NET</Product>
     <RepositoryUrl>https://github.com/technosoftware-gmbh/UaSolutions</RepositoryUrl>
-    <VersionPrefix>5.0.0c</VersionPrefix>
+    <VersionPrefix>5.0.0</VersionPrefix>
     <VersionSuffix>rc-$([System.DateTime]::Now.ToString("yyyyMMdd"))</VersionSuffix>
     <Copyright>Copyright © 2011 - 2026 Technosoftware GmbH</Copyright>
     <PackagePrefix>Technosoftware.UaSolutions</PackagePrefix>
