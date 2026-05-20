@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/V5/">
+    <Project Path="tutorials/SampleCompany/v5/SampleClient/SampleCompany.SampleClient.csproj" />
+    <Project Path="tutorials/SampleCompany/v5/SampleServer/SampleCompany.SampleServer.csproj" />
+  </Folder>
+  <Folder Name="/V5/NodeManagers/">
+    <Project Path="tutorials/SampleCompany/v5/NodeManagers/SampleCompany.NodeManagers.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
+    <PackageId>$(PackagePrefix).UaServer</PackageId>
+    <AssemblyName>$(AssemblyPrefix).UaServer</AssemblyName>
+    <RootNamespace>Technosoftware.UaServer</RootNamespace>
+    <Company>Technosoftware GmbH</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>OPC UA Solutions .NET Server Library</Description>
+    <Copyright>Copyright © 2018 - 2026 Technosoftware GmbH</Copyright>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Technosoftware.UaServer.Tests" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Types" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
+  </ItemGroup> 
+  <ItemGroup>
+    <ProjectReference Include="..\UaConfiguration\Technosoftware.UaConfiguration.csproj" />
+  </ItemGroup>
+  <Target Name="GetPackagingOutputs" />
+</Project>

@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+    <AssemblyName>SampleCompany.NodeManagers</AssemblyName>
+    <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
+    <PackageId>SampleCompany.NodeManagers</PackageId>
+    <RootNamespace>SampleCompany.NodeManagers</RootNamespace>
+    <Company>SampleCompany</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>SampleCompany NodeManagers Library</Description>
+    <Copyright>Copyright © 2018 - 2026 SampleCompany</Copyright>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <NoWarn>CS1591;CS1573;RCS1139</NoWarn>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Boiler\Generated\SampleCompany.NodeManagers.Boiler.PredefinedNodes.uanodes" />
+    <EmbeddedResource Include="TestData\Generated\SampleCompany.NodeManagers.TestData.PredefinedNodes.uanodes" />
+    <EmbeddedResource Include="MemoryBuffer\Generated\SampleCompany.NodeManagers.MemoryBuffer.PredefinedNodes.uanodes" />
+    <EmbeddedResource Include="SampleDataTypes\Generated\SampleCompany.NodeManagers.SampleDataTypes.PredefinedNodes.uanodes" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Alarms\Alarms.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Types" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
+  </ItemGroup>   
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaConfiguration\Technosoftware.UaConfiguration.csproj" />
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
+  </ItemGroup>
+  <Target Name="GetPackagingOutputs" />
+</Project>

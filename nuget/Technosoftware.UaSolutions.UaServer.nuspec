@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Technosoftware.UaSolutions.UaServer</id>
+    <version>6.0.0</version>
+    <title>OPC UA Solutions .NET Server Library</title>
+    <description>OPC UA Solutions .NET Server Library</description>
+    <readme>README.md</readme>
+    <authors>Technosoftware GmbH</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="file">licenses/LICENSE.md</license>
+    <projectUrl>https://github.com/technosoftware-gmbh/UaSolutions</projectUrl>
+    <icon>images/TechnosoftwareGmbH.png</icon>
+    <releaseNotes>https://github.com/technosoftware-gmbh/UaSolutions/releases</releaseNotes>
+    <copyright>Copyright © 2026 Technosoftware GmbH</copyright>
+    <tags>Technosoftware OPC UA Solutions .NET 10.0 macOS linux dotnet netcore</tags>
+    <repository type="git" url="https://github.com/technosoftware-gmbh/UaSolutions" />
+    <dependencies>
+      <group targetFramework="net10.0">
+        <dependency id="Nerdbank.GitVersioning" version="3.9.50" exclude="Build,Analyzers" />
+        <dependency id="Roslynator.Analyzers" version="4.15.0" exclude="Build,Analyzers" />
+        <dependency id="Roslynator.Formatting.Analyzers" version="4.15.0" exclude="Build,Analyzers" />
+        <dependency id="OPCFoundation.NetStandard.Opc.Ua.Types" version="1.5.378.134" exclude="Build,Analyzers" />
+        <dependency id="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" version="1.5.378.134" exclude="Build,Analyzers" />
+        <dependency id="OPCFoundation.NetStandard.Opc.Ua.Core" version="1.5.378.134" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="../README.md" target="/" />
+    <file src="../CHANGELOG.md" target="/" />
+    <file src="../nuget/TechnosoftwareGmbH.png" target="images/" />
+    <file src="../LICENSE.md" target="licenses/LICENSE.md"/>
+    <file src="../lib/net10.0/Technosoftware.UaServer.dll" target="lib/net10.0/" />
+    <file src="../lib/net10.0/Technosoftware.UaServer.xml" target="lib/net10.0/" />
+  </files>
+</package>

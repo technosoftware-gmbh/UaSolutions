@@ -1,0 +1,362 @@
+#region Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com 
+//
+// The Software is based on the OPC Foundation MIT License. 
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2022-2026 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
+using System;
+using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+using Opc.Ua;
+#endregion Using Directives
+
+namespace SampleCompany.NodeManagers.Alarms
+{
+    public abstract class AlarmHolder
+    {
+        protected AlarmHolder(
+            ILogger logger,
+            AlarmNodeManager alarmNodeManager,
+            FolderState parent,
+            SourceController trigger,
+            Type controllerType,
+            int interval)
+        {
+            m_alarmNodeManager = alarmNodeManager;
+            m_logger = logger;
+            m_parent = parent;
+            m_trigger = trigger.Source;
+            m_alarmController = trigger.Controller;
+            m_alarmControllerType = trigger.Controller.GetType();
+            m_interval = interval;
+        }
+
+        protected void Initialize(uint alarmTypeIdentifier, string name)
+        {
+            m_alarmTypeIdentifier = alarmTypeIdentifier;
+            m_alarmTypeName = GetAlarmTypeName(m_alarmTypeIdentifier);
+
+            string extraName = string.Empty;
+            if (name.Length > 0)
+            {
+                extraName = "." + name;
+            }
+
+            m_alarmRootName = m_alarmTypeName + extraName;
+            m_mapName = (string)m_parent.NodeId.Identifier + "." + m_alarmRootName;
+
+            InitializeInternal(m_alarm);
+        }
+
+        public bool HasBranches()
+        {
+            bool hasBranches = false;
+
+            if (m_alarm is ConditionState alarm)
+            {
+                hasBranches = alarm.GetBranchCount() > 0;
+            }
+
+            return hasBranches;
+        }
+
+        public BaseEventState GetBranch(byte[] eventId)
+        {
+            BaseEventState state = null;
+
+            if (m_alarm is ConditionState alarm)
+            {
+                state = alarm.GetBranch(eventId);
+            }
+
+            return state;
+        }
+
+        public void ClearBranches()
+        {
+            if (m_alarm is ConditionState alarm)
+            {
+                alarm.ClearBranches();
+                m_alarmController.SetBranchCount(0);
+            }
+        }
+
+        public void GetBranchesForConditionRefresh(List<IFilterTarget> events)
+        {
+            if (m_alarm is ConditionState alarm)
+            {
+                Dictionary<string, ConditionState> branches = alarm.GetBranches();
+                events.AddRange(branches.Values);
+            }
+        }
+
+        protected virtual void CreateBranch()
+        {
+        }
+
+        private void InitializeInternal(BaseEventState alarm, NodeId branchId = null)
+        {
+            string alarmName = AlarmName;
+            string alarmNodeId = (string)m_parent.NodeId.Identifier + "." + AlarmName;
+
+            alarm.SymbolicName = alarmName;
+            var createQualifiedName = new QualifiedName(alarmName, NamespaceIndex);
+
+            bool isBranch = IsBranch(branchId);
+            var createNodeId = new NodeId(alarmNodeId, NamespaceIndex);
+            var createLocalizedText = new LocalizedText(alarmName);
+            alarm.ReferenceTypeId = ReferenceTypeIds.HasComponent;
+            alarm.Create(
+                SystemContext,
+                createNodeId,
+                createQualifiedName,
+                createLocalizedText,
+                true);
+
+            if (!isBranch)
+            {
+                m_trigger.AddReference(ReferenceTypes.HasCondition, false, m_alarm.NodeId);
+                m_parent.AddChild(alarm);
+            }
+        }
+
+        private static bool IsBranch(NodeId branchId)
+        {
+            bool isBranch = false;
+            if (branchId != null && !branchId.IsNullNodeId)
+            {
+                isBranch = true;
+            }
+            return isBranch;
+        }
+
+        public NodeId GetNewBranchId()
+        {
+            return new NodeId(++m_branchCounter, NamespaceIndex);
+        }
+
+        public virtual void Update(bool updated)
+        {
+            DelayedEvents();
+            if (updated)
+            {
+                SetValue();
+            }
+        }
+
+        public virtual void DelayedEvents()
+        {
+            // Method calls are done by the core.
+            // Delayed events are expected events to be logged to file.
+            while (m_delayedMessages.Count > 0)
+            {
+                m_logger.LogWarning(
+                    "Delayed:{Message} Event Time: {EventTime}",
+                    m_delayedMessages[0],
+                    m_alarm.Time.Value);
+                m_delayedMessages.RemoveAt(0);
+            }
+        }
+
+        protected void Log(string caller, string message, BaseEventState alarm = null)
+        {
+            LogMessage(LogLevel.Information, caller, message);
+        }
+
+        protected void LogError(string caller, string message, BaseEventState alarm = null)
+        {
+            LogMessage(LogLevel.Error, caller, message);
+        }
+
+        protected void LogMessage(LogLevel logLevel, string caller, string message)
+        {
+            m_logger.Log(
+                logLevel,
+                "{Caller}: {MapName} EventId {EventIdHex} {Message}",
+                caller,
+                m_mapName,
+                Utils.ToHexString(m_alarm.EventId.Value),
+                message);
+        }
+
+        public virtual void SetValue(string message = "")
+        {
+            m_logger.LogError("AlarmHolder.SetValue() - Should not be called");
+        }
+
+        public void Start(uint seconds)
+        {
+            ClearBranches();
+            m_alarmController.Start(seconds);
+        }
+
+        public void Stop()
+        {
+            ClearBranches();
+            m_alarmController.Stop();
+        }
+
+        protected virtual bool UpdateShelving()
+        {
+            m_logger.LogError("AlarmHolder.UpdateShelving() - Should not be called");
+            return false;
+        }
+
+        protected virtual bool UpdateSuppression()
+        {
+            m_logger.LogError("AlarmHolder.UpdateSuppression() - Should not be called");
+            return false;
+        }
+
+        protected virtual void SetActive(BaseEventState state, bool activeState)
+        {
+        }
+
+        public ServiceResult OnWriteAlarmTrigger(
+            ISystemContext context,
+            NodeState node,
+            NumericRange indexRange,
+            QualifiedName dataEncoding,
+            ref object value,
+            ref StatusCode statusCode,
+            ref DateTime timestamp)
+        {
+            if (Trigger.Value != value)
+            {
+                Trigger.Value = value;
+                SetValue("Manual Write to trigger " + value);
+            }
+
+            return StatusCodes.Good;
+        }
+
+        public ISystemContext SystemContext => GetNodeManager().SystemContext;
+
+        public ushort NamespaceIndex => GetNodeManager().NamespaceIndex;
+
+        public BaseEventState Alarm => m_alarm;
+
+        public AlarmController Controller => m_alarmController;
+
+        public BaseDataVariableState Trigger => m_trigger;
+
+        public string MapName => m_mapName;
+
+        public string TriggerName => m_alarmRootName + AlarmDefines.TRIGGER_EXTENSION;
+
+        public string AlarmName => m_alarmRootName + AlarmDefines.ALARM_EXTENSION;
+
+        public string AlarmNodeName => m_alarm.NodeId.ToString();
+
+        public bool Analog => m_analog;
+        public bool Optional => m_optional;
+
+        public bool SupportsBranching => m_supportsBranching;
+
+        public virtual void SetBranching(bool value)
+        {
+        }
+
+        public PropertyState<NodeId> GetEventType()
+        {
+            return m_alarm.EventType;
+        }
+
+        protected AlarmNodeManager GetNodeManager()
+        {
+            return m_alarmNodeManager;
+        }
+
+        protected string GetAlarmTypeName(uint alarmTypeIdentifier)
+        {
+            switch (alarmTypeIdentifier)
+            {
+                case ObjectTypes.ConditionType:
+                    return "ConditionType";
+                case ObjectTypes.DialogConditionType:
+                    return "DialogConditionType";
+                case ObjectTypes.AcknowledgeableConditionType:
+                    return "AcknowledgeableConditionType";
+                case ObjectTypes.AlarmConditionType:
+                    return "AlarmConditionType";
+                case ObjectTypes.AlarmGroupType:
+                    return "AlarmGroupType";
+                case ObjectTypes.ShelvedStateMachineType:
+                    return "ShelvedStateMachineType";
+                case ObjectTypes.LimitAlarmType:
+                    return "LimitAlarmType";
+                case ObjectTypes.ExclusiveLimitStateMachineType:
+                    return "ExclusiveLimitStateMachineType";
+                case ObjectTypes.ExclusiveLimitAlarmType:
+                    return "ExclusiveLimitAlarmType";
+                case ObjectTypes.NonExclusiveLimitAlarmType:
+                    return "NonExclusiveLimitAlarmType";
+                case ObjectTypes.NonExclusiveLevelAlarmType:
+                    return "NonExclusiveLevelAlarmType";
+                case ObjectTypes.ExclusiveLevelAlarmType:
+                    return "ExclusiveLevelAlarmType";
+                case ObjectTypes.NonExclusiveDeviationAlarmType:
+                    return "NonExclusiveDeviationAlarmType";
+                case ObjectTypes.NonExclusiveRateOfChangeAlarmType:
+                    return "NonExclusiveRateOfChangeAlarmType";
+                case ObjectTypes.ExclusiveDeviationAlarmType:
+                    return "ExclusiveDeviationAlarmType";
+                case ObjectTypes.ExclusiveRateOfChangeAlarmType:
+                    return "ExclusiveRateOfChangeAlarmType";
+                case ObjectTypes.DiscreteAlarmType:
+                    return "DiscreteAlarmType";
+                case ObjectTypes.OffNormalAlarmType:
+                    return "OffNormalAlarmType";
+                case ObjectTypes.SystemOffNormalAlarmType:
+                    return "SystemOffNormalAlarmType";
+                case ObjectTypes.TripAlarmType:
+                    return "TripAlarmType";
+                case ObjectTypes.InstrumentDiagnosticAlarmType:
+                    return "InstrumentDiagnosticAlarmType";
+                case ObjectTypes.SystemDiagnosticAlarmType:
+                    return "SystemDiagnosticAlarmType";
+                case ObjectTypes.CertificateExpirationAlarmType:
+                    return "CertificateExpirationAlarmType";
+                case ObjectTypes.DiscrepancyAlarmType:
+                    return "DiscrepancyAlarmType";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Function is to modify the namespace if this is a derived type.
+        /// If no derived types, it's 0
+        /// </summary>
+        /// <returns>ushort namespaceindex</returns>
+        protected ushort GetNameSpaceIndex(uint alarmTypeIdentifier)
+        {
+            return 0;
+        }
+
+        protected ILogger m_logger;
+        protected AlarmNodeManager m_alarmNodeManager;
+        protected BaseEventState m_alarm;
+        protected Type m_alarmControllerType;
+        protected AlarmController m_alarmController;
+        protected BaseDataVariableState m_trigger;
+        protected string m_alarmRootName = string.Empty;
+        protected string m_mapName = string.Empty;
+        protected bool m_analog = true;
+        protected bool m_optional;
+        protected int m_interval;
+        protected uint m_branchCounter;
+        protected bool m_supportsBranching;
+        protected FolderState m_parent;
+        protected uint m_alarmTypeIdentifier;
+        protected string m_alarmTypeName = string.Empty;
+        protected SupportedAlarmConditionType m_alarmConditionType;
+        protected List<string> m_delayedMessages = [];
+    }
+}

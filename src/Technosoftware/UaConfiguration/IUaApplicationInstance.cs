@@ -1,0 +1,142 @@
+#region Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com
+//
+// The Software is subject to the Technosoftware GmbH Software License
+// Agreement, which can be found here:
+// https://technosoftware.com/documents/Source_License_Agreement.pdf
+//
+// The Software is based on the OPC Foundation MIT License.
+// The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2011-2026 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
+using System;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
+using Opc.Ua;
+#endregion Using Directives
+
+namespace Technosoftware.UaConfiguration
+{
+    /// <summary>
+    /// A class that installs, configures and runs a UA application.
+    /// </summary>
+    public interface IUaApplicationInstance
+    {
+        /// <summary>
+        /// Gets the application configuration used when the Start() method was called.
+        /// </summary>
+        /// <value>The application configuration.</value>
+        ApplicationConfiguration ApplicationConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the application.
+        /// </summary>
+        /// <value>The name of the application.</value>
+        string ApplicationName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of the application.
+        /// </summary>
+        /// <value>The type of the application.</value>
+        ApplicationType ApplicationType { get; set; }
+
+        /// <summary>
+        /// Get or set the certificate password provider.
+        /// </summary>
+        ICertificatePasswordProvider CertificatePasswordProvider { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the config section containing the path
+        /// to the application configuration file.
+        /// </summary>
+        /// <value>The name of the config section.</value>
+        string ConfigSectionName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of configuration file.
+        /// </summary>
+        /// <value>The type of configuration file.</value>
+        Type ConfigurationType { get; set; }
+
+        /// <summary>
+        /// Get or set bool which indicates if the auto creation
+        /// of a new application certificate during startup is disabled.
+        /// Default is enabled./>
+        /// </summary>
+        /// <remarks>
+        /// Prevents auto self signed cert creation in use cases
+        /// where an expired certificate should not be automatically
+        /// renewed or where it is required to only use certificates
+        /// provided by the user.
+        /// </remarks>
+        bool DisableCertificateAutoCreation { get; set; }
+
+        /// <summary>
+        /// Gets the server.
+        /// </summary>
+        /// <value>The server.</value>
+        ServerBase Server { get; }
+
+        /// <summary>
+        /// Adds a Certificate to the Trusted Store of the Application, needed e.g. for the GDS to trust it´s own CA
+        /// </summary>
+        /// <param name="certificate">The certificate to add to the store</param>
+        /// <param name="ct">The cancellation token</param>
+        Task AddOwnCertificateToTrustedStoreAsync(X509Certificate2 certificate, CancellationToken ct);
+
+        /// <summary>
+        /// Create a builder for a UA application configuration.
+        /// </summary>
+        public IUaApplicationConfigurationTypes CreateApplicationConfigurationManager(string applicationUri, string productUri);
+
+        /// <summary>
+        /// Checks for a valid application instance certificate.
+        /// </summary>
+        /// <param name="silent">if set to <c>true</c> no dialogs will be displayed.</param>
+        /// <param name="lifeTimeInMonths">The lifetime in months.</param>
+        /// <param name="ct">Cancellation token to cancel operation with</param>
+        /// <exception cref="ServiceResultException"></exception>
+        ValueTask<bool> CheckApplicationInstanceCertificatesAsync(bool silent, ushort? lifeTimeInMonths = null, CancellationToken ct = default);
+
+        /// <summary>
+        /// Deletes all application certificates.
+        /// </summary>
+        /// <exception cref="ArgumentException"></exception>
+        ValueTask DeleteApplicationInstanceCertificateAsync(string[] profileIds = null, CancellationToken ct = default);
+
+        /// <summary>
+        /// Loads the application configuration.
+        /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
+        ValueTask<ApplicationConfiguration> LoadApplicationConfigurationAsync(bool silent, CancellationToken ct = default);
+
+        /// <summary>
+        /// Loads the application configuration.
+        /// </summary>
+        /// <exception cref="ServiceResultException"></exception>
+        Task<ApplicationConfiguration> LoadApplicationConfigurationAsync(Stream stream, bool silent, CancellationToken ct = default);
+
+        /// <summary>
+        /// Loads the application configuration.
+        /// </summary>
+        ValueTask<ApplicationConfiguration> LoadApplicationConfigurationAsync(string filePath, bool silent, CancellationToken ct = default);
+
+        /// <summary>
+        /// Starts the UA server.
+        /// </summary>
+        /// <param name="server">The server.</param>
+        Task StartAsync(ServerBase server);
+
+        /// <summary>
+        /// Stops the UA server.
+        /// </summary>
+        ValueTask StopAsync();
+    }
+}
