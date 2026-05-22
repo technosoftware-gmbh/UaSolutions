@@ -1,5 +1,5 @@
 /* ========================================================================
- * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
+ * Copyright (c) 2005-2025 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
  *
@@ -318,7 +318,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.ScalarStructureDataType_Encoding_DefaultXml;
                     
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.ScalarStructureDataType_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.ScalarStructureDataType; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -438,13 +438,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (ScalarStructureDataType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -519,11 +517,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfScalarStructureDataType", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "ScalarStructureDataType")]
-    #if !NET_STANDARD
     public partial class ScalarStructureDataTypeCollection : List<ScalarStructureDataType>, ICloneable
-    #else
-    public partial class ScalarStructureDataTypeCollection : List<ScalarStructureDataType>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -560,7 +554,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -568,7 +561,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (ScalarStructureDataTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -1193,7 +1185,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.ArrayValueDataType_Encoding_DefaultXml;
                     
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.ArrayValueDataType_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.ArrayValueDataType; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -1313,13 +1305,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (ArrayValueDataType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -1394,11 +1384,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfArrayValueDataType", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "ArrayValueDataType")]
-    #if !NET_STANDARD
     public partial class ArrayValueDataTypeCollection : List<ArrayValueDataType>, ICloneable
-    #else
-    public partial class ArrayValueDataTypeCollection : List<ArrayValueDataType>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -1435,7 +1421,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -1443,7 +1428,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (ArrayValueDataTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -1699,7 +1683,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.UserScalarValueDataType_Encoding_DefaultXml;
                     
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.UserScalarValueDataType_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.UserScalarValueDataType; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -1804,13 +1788,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (UserScalarValueDataType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -1875,11 +1857,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfUserScalarValueDataType", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "UserScalarValueDataType")]
-    #if !NET_STANDARD
     public partial class UserScalarValueDataTypeCollection : List<UserScalarValueDataType>, ICloneable
-    #else
-    public partial class UserScalarValueDataTypeCollection : List<UserScalarValueDataType>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -1916,7 +1894,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -1924,7 +1901,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (UserScalarValueDataTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -2444,7 +2420,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.UserArrayValueDataType_Encoding_DefaultXml;
                     
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.UserArrayValueDataType_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.UserArrayValueDataType; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -2549,13 +2525,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (UserArrayValueDataType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -2620,11 +2594,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfUserArrayValueDataType", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "UserArrayValueDataType")]
-    #if !NET_STANDARD
     public partial class UserArrayValueDataTypeCollection : List<UserArrayValueDataType>, ICloneable
-    #else
-    public partial class UserArrayValueDataTypeCollection : List<UserArrayValueDataType>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -2661,7 +2631,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -2669,7 +2638,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (UserArrayValueDataTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -2754,7 +2722,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.Vector_Encoding_DefaultXml;
                     
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.Vector_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.Vector; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -2802,13 +2770,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (Vector)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -2835,11 +2801,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfVector", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "Vector")]
-    #if !NET_STANDARD
     public partial class VectorCollection : List<Vector>, ICloneable
-    #else
-    public partial class VectorCollection : List<Vector>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -2876,7 +2838,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -2884,7 +2845,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (VectorCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -2988,7 +2948,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.VectorUnion_Encoding_DefaultXml;
 
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.VectorUnion_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.VectorUnion; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -3053,13 +3013,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (VectorUnion)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -3092,11 +3050,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfVectorUnion", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "VectorUnion")]
-    #if !NET_STANDARD
     public partial class VectorUnionCollection : List<VectorUnion>, ICloneable
-    #else
-    public partial class VectorUnionCollection : List<VectorUnion>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -3133,7 +3087,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -3141,7 +3094,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (VectorUnionCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -3169,11 +3121,11 @@ namespace SampleCompany.NodeManagers.TestData
     {   
         None = 0,
         /// <remarks />
-        X = 1,
+        X = 0x1,
         /// <remarks />
-        Y = 2,
+        Y = 0x2,
         /// <remarks />
-        Z = 3
+        Z = 0x4
     }
         
     /// <remarks />
@@ -3245,7 +3197,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.VectorWithOptionalFields_Encoding_DefaultXml;
             
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.VectorWithOptionalFields_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.VectorWithOptionalFields; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -3298,13 +3250,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (VectorWithOptionalFields)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -3333,11 +3283,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfVectorWithOptionalFields", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "VectorWithOptionalFields")]
-    #if !NET_STANDARD
     public partial class VectorWithOptionalFieldsCollection : List<VectorWithOptionalFields>, ICloneable
-    #else
-    public partial class VectorWithOptionalFieldsCollection : List<VectorWithOptionalFields>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -3374,7 +3320,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -3382,7 +3327,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (VectorWithOptionalFieldsCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -3566,7 +3510,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.MultipleVectors_Encoding_DefaultXml;
                     
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.MultipleVectors_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.MultipleVectors; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -3623,13 +3567,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (MultipleVectors)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -3662,11 +3604,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfMultipleVectors", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "MultipleVectors")]
-    #if !NET_STANDARD
     public partial class MultipleVectorsCollection : List<MultipleVectors>, ICloneable
-    #else
-    public partial class MultipleVectorsCollection : List<MultipleVectors>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -3703,7 +3641,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -3711,7 +3648,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (MultipleVectorsCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -3796,7 +3732,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.WorkOrderStatusType_Encoding_DefaultXml;
                     
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.WorkOrderStatusType_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.WorkOrderStatusType; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -3844,13 +3780,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (WorkOrderStatusType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -3877,11 +3811,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfWorkOrderStatusType", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "WorkOrderStatusType")]
-    #if !NET_STANDARD
     public partial class WorkOrderStatusTypeCollection : List<WorkOrderStatusType>, ICloneable
-    #else
-    public partial class WorkOrderStatusTypeCollection : List<WorkOrderStatusType>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -3918,7 +3848,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -3926,7 +3855,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (WorkOrderStatusTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -4032,7 +3960,7 @@ namespace SampleCompany.NodeManagers.TestData
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.WorkOrderType_Encoding_DefaultXml;
                     
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.WorkOrderType_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => DataTypeIds.WorkOrderType; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -4083,13 +4011,11 @@ namespace SampleCompany.NodeManagers.TestData
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (WorkOrderType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -4118,11 +4044,7 @@ namespace SampleCompany.NodeManagers.TestData
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfWorkOrderType", Namespace = SampleCompany.NodeManagers.TestData.Namespaces.TestData, ItemName = "WorkOrderType")]
-    #if !NET_STANDARD
     public partial class WorkOrderTypeCollection : List<WorkOrderType>, ICloneable
-    #else
-    public partial class WorkOrderTypeCollection : List<WorkOrderType>
-    #endif
     {
         #region Constructors
         /// <remarks />
@@ -4159,7 +4081,6 @@ namespace SampleCompany.NodeManagers.TestData
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
         /// <remarks />
         public object Clone()
@@ -4167,7 +4088,6 @@ namespace SampleCompany.NodeManagers.TestData
             return (WorkOrderTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
