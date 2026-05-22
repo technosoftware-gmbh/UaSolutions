@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>Technosoftware.UaSolutions.UaConfiguration</id>
-    <version>6.0.0</version>
+    <version>6.0.1</version>
     <title>OPC UA Solutions .NET Configuration Library</title>
     <description>OPC UA Solutions .NET Configuration Library</description>
     <readme>README.md</readme>
@@ -13,7 +13,7 @@
     <icon>images/TechnosoftwareGmbH.png</icon>
     <releaseNotes>https://github.com/technosoftware-gmbh/UaSolutions/releases</releaseNotes>
     <copyright>Copyright © 2026 Technosoftware GmbH</copyright>
-    <tags>Technosoftware OPC UA Solutions .NET 10.0 macOS linux dotnet netcore</tags>
+    <tags>Technosoftware OPC UA Solutions .NET 10.0 windows macOS linux dotnet netcore</tags>
     <repository type="git" url="https://github.com/technosoftware-gmbh/UaSolutions" />
     <dependencies>
       <group targetFramework="net10.0">
@@ -21,9 +21,9 @@
         <dependency id="Microsoft.Extensions.Logging" version="10.0.8" exclude="Build,Analyzers" />
         <dependency id="Roslynator.Analyzers" version="4.15.0" exclude="Build,Analyzers" />
         <dependency id="Roslynator.Formatting.Analyzers" version="4.15.0" exclude="Build,Analyzers" />
-        <dependency id="OPCFoundation.NetStandard.Opc.Ua.Types" version="1.5.378.134" exclude="Build,Analyzers" />
-        <dependency id="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" version="1.5.378.134" exclude="Build,Analyzers" />
-        <dependency id="OPCFoundation.NetStandard.Opc.Ua.Core" version="1.5.378.134" exclude="Build,Analyzers" />
+        <dependency id="OPCFoundation.NetStandard.Opc.Ua.Types" version="1.5.378.145" exclude="Build,Analyzers" />
+        <dependency id="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" version="1.5.378.145" exclude="Build,Analyzers" />
+        <dependency id="OPCFoundation.NetStandard.Opc.Ua.Core" version="1.5.378.145" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
