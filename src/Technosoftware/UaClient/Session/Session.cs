@@ -3337,6 +3337,12 @@ namespace Technosoftware.UaClient
                 return false;
             }
 
+            if (KeepAliveStopped)
+            {
+                m_logger.LogWarning("Publish skipped due to session lost connection. Last successfull keepalive: {LastKeepAlive}", LastKeepAliveTime);
+                return false;
+            }
+
             // get event handler to modify ack list
             EventHandler<PublishSequenceNumbersToAcknowledgeEventArgs>? callback
                 = m_PublishSequenceNumbersToAcknowledge;
