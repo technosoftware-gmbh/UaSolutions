@@ -21,7 +21,6 @@
     <EmbeddedResource Include="Boiler\Generated\SampleCompany.NodeManagers.Boiler.PredefinedNodes.uanodes" />
     <EmbeddedResource Include="TestData\Generated\SampleCompany.NodeManagers.TestData.PredefinedNodes.uanodes" />
     <EmbeddedResource Include="MemoryBuffer\Generated\SampleCompany.NodeManagers.MemoryBuffer.PredefinedNodes.uanodes" />
-    <EmbeddedResource Include="SampleDataTypes\Generated\SampleCompany.NodeManagers.SampleDataTypes.PredefinedNodes.uanodes" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Alarms\Alarms.cs" />
