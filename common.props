@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Product>OPC UA Solutions .NET</Product>
     <RepositoryUrl>https://github.com/technosoftware-gmbh/UaSolutions</RepositoryUrl>
-    <VersionPrefix>6.0.0</VersionPrefix>
+    <VersionPrefix>6.0.1</VersionPrefix>
     <VersionSuffix>rc-$([System.DateTime]::Now.ToString("yyyyMMdd"))</VersionSuffix>
     <Copyright>Copyright © 2011 - 2026 Technosoftware GmbH</Copyright>
     <PackagePrefix>Technosoftware.UaSolutions</PackagePrefix>
@@ -46,7 +46,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   	<Documentation>README.md</Documentation>
     <PackageReleaseNotes>$(RepositoryUrl)/releases</PackageReleaseNotes>
-    <PackageTags>Technosoftware OPC UA .NET 10.0 .NET 9.0 .NET 8.0 .NET 4.8 .NET 4.7.2 macOS linux dotnet</PackageTags>
+    <PackageTags>Technosoftware OPC UA .NET 10.0 windows macOS linux dotnet</PackageTags>
   </PropertyGroup>
   <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
     <!-- Technosoftware GmbH Strong Name Public Key -->
