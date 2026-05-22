@@ -31,7 +31,6 @@ namespace Technosoftware.UaClient
     /// </summary>
     public class Subscription : ISnapshotRestore<SubscriptionState>, IDisposable, ICloneable
     {
-        private const int kMinKeepAliveTimerInterval = 1000;
         private const int kKeepAliveTimerMargin = 1000;
         private const int kRepublishMessageExpiredTimeout = 10000;
 
@@ -39,6 +38,11 @@ namespace Technosoftware.UaClient
         /// Duration to wait before republishing missed notification
         /// </summary>
         public const int RepublishMessageTimeout = 2500;
+
+        /// <summary>
+        /// Minimum keep alive interval
+        /// </summary>
+        public const int MinKeepAliveTimerInterval = 1000;
 
         /// <summary>
         /// Creates a empty object.
@@ -2103,7 +2107,9 @@ namespace Technosoftware.UaClient
 
             if (session != null &&
                 session.Connected &&
-                !session.Reconnecting)
+                !session.Reconnecting &&
+                !session.KeepAliveStopped
+                )
             {
                 TraceState("PUBLISHING STOPPED");
 
@@ -2197,7 +2203,7 @@ namespace Technosoftware.UaClient
         {
             return Math.Max(
                 Math.Min(m_keepAliveInterval * 3, int.MaxValue),
-                kMinKeepAliveTimerInterval);
+                MinKeepAliveTimerInterval);
         }
 
         /// <summary>
@@ -2311,12 +2317,12 @@ namespace Technosoftware.UaClient
         {
             int keepAliveInterval = (int)
                 Math.Min(CurrentPublishingInterval * (CurrentKeepAliveCount + 1), int.MaxValue);
-            if (keepAliveInterval < kMinKeepAliveTimerInterval)
+            if (keepAliveInterval < MinKeepAliveTimerInterval)
             {
                 keepAliveInterval = (int)Math.Min(
                     PublishingInterval * (KeepAliveCount + 1),
                     int.MaxValue);
-                keepAliveInterval = Math.Max(kMinKeepAliveTimerInterval, keepAliveInterval);
+                keepAliveInterval = Math.Max(MinKeepAliveTimerInterval, keepAliveInterval);
             }
             return keepAliveInterval;
         }
