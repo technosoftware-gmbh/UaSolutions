@@ -1,5 +1,20 @@
 # Supported Platforms
 
+**Document Control**
+
+| **Version** | **Date**    | **Comment**                          |
+|-------------|-------------|--------------------------------------|
+| 6.0         | 23-MAY-2026 | Updated to cover version 6.0         |
+
+**Supported in the following product versions**
+
+| **Version** | **Current State** | **Retirement Date**     | **Available Support**                                                         |
+|:------------|:------------------|:------------------------|:------------------------------------------------------------------------------|
+| 3.4         | EOL               | 31-MAY-2026             |                                                                               |
+| 4.3         | EOL               | 31-MAY-2026             |                                                                               |
+| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and valid support subscription                            |
+| 6.0         | ML                | In Support              | Yes, with a valid support subscription                                        |
+
 ## .NET 10.0 - Supported OS versions
 
 Last Updated: 08-MAY-2026

@@ -1,11 +1,14 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
-## OPC UA Solutions .NET - 6.0.0 (Under Development)
+## OPC UA Solutions .NET - 6.0.0
+
+Version 6.0 has the same functionality as version 5.0 and uses also the same OPC Foundation Stack Version 1.5.378.134.
 
 ### Breaking Changes:
 
 - Use of the original OPC Foundation Stack Version 1.5.378.134
+- Removed Obsolete classes and functions
 
 #### No longer used DLLs:
 
