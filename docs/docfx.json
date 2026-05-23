@@ -30,8 +30,14 @@
         "files": [
           "articles/**.md",
           "articles/**/toc.yml",
+          "client/**.md",
+          "client/**/toc.yml",
+          "server/**.md",
+          "server/**/toc.yml",
           "changelog/toc.yml",
           "changelog/*.md",
+          "lifecycle/**.md",
+          "lifecycle/**/toc.yml",		  
           "toc.yml",
           "*.md"
         ]
