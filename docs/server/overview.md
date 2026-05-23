@@ -1,14 +1,16 @@
 # Overview
 
-The **OPC UA Client .NET** offers a fast and easy access to the OPC Unified Architecture (UA) technology. 
+The **OPC UA Server NET** offers a fast and easy access to the OPC Unified Architecture (UA) technology.
 
-Develop OPC UA compliant Clients with C# targeting .NET 10.0. Up to versin 5 we also support .NET 9.0, .NET 8.0 and .NET 4.8 and .NET 4.7.2 support for backward compatibility.
+Develop OPC UA compliant Servers with C# targeting .NET 10.0. Up to versin 5 we also support .NET 9.0, .NET 8.0 and .NET 4.8 and .NET 4.7.2 support for backward compatibility.
 
 .NET allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
 
-The **OPC UA Client .NET API** defines classes which can be used to implement an OPC client capable to access OPC servers supporting different profiles with the same API. These classes manage client side state information; provide higher level abstractions for OPC tasks such as managing sessions and subscriptions or saving and restoring connection information for later use.
+The **OPC UA Server NET** API is easy to use and many OPC specific functions are handled by the framework. The included Model Compiler can be used to create the necessary C# classes of Information Model’s specified in XML and CSV based files. 
 
-The **OPC UA Client .NET** is based on the OPC Foundation stack with several enhancements to make the development smooth and efficient. While we use the **OPC UA Client .NET** mainly in our own services it is also possible to use it in your own development. 
+The **OPC UA Server NET** is based on the OPC Foundation stack with several enhancements to make the development smooth and efficient. While we use the **OPC UA Server NET** mainly in our own services it is also possible to use it in your own development. 
+
+Documentation of the Model Compiler can be found [here](https://github.com/OPCFoundation/UA-ModelCompiler).
 
 ## Purpose and audience of document
 
