@@ -67,7 +67,7 @@ Depending on the version you are coming from you should compare the changes made
 
 #### Breaking changes in some methods
 
-### Upgrade server application to 5.0
+### Upgrade server application to 6.0
 
 #### Changes in the project (csproj) file
 
