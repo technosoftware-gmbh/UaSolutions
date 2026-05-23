@@ -4,7 +4,7 @@
 
 The next generation of the OPC UA Solutions .NET uses the original OPC Foundation Stack and only Configuration, Client and Server libraries will be the same as for version 5 and before. 
 
-There are only minimal breaking changes because of that which are described in the [changelog](./CHANGELOG.md).
+There are only minimal breaking changes because of that which are described in the [changelog](https://technosoftware-gmbh.github.io/UaSolutions/changelog/index.html).
 
 Configuration, Client and Server libraries are provided as source code and are not compiled into a separate library. This allows you to easily modify the code if needed and also to use the latest OPC Foundation Stack without having to wait for us to update it.
 
