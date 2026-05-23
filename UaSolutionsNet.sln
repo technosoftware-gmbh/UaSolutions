@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.37203.1 d17.14
+VisualStudioVersion = 17.14.37203.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Technosoftware.UaConfiguration", "src\Technosoftware\UaConfiguration\Technosoftware.UaConfiguration.csproj", "{63BEB4B6-E96D-478E-B41D-B42CED6F8E7B}"
 EndProject
@@ -26,12 +26,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nuget", "nuget", "{F69ABCC3
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{683ED3F2-8703-4211-943C-61E910DE31FB}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation", "documentation", "{217FC2CF-B876-47D8-AA89-C568DF3189E3}"
-	ProjectSection(SolutionItems) = preProject
-		documentation\index.md = documentation\index.md
-		documentation\Installation.md = documentation\Installation.md
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Technosoftware.UaClient", "src\Technosoftware\UaClient\Technosoftware.UaClient.csproj", "{37BEA80B-DD24-2010-E8C0-319DEB387158}"
 EndProject

@@ -30,6 +30,18 @@
     <File Path="docs/changelog/index.md" />
     <File Path="docs/changelog/toc.yml" />
   </Folder>
+  <Folder Name="/docs/client/">
+    <File Path="docs/client/index.md" />
+    <File Path="docs/client/toc.yml" />
+  </Folder>
+  <Folder Name="/docs/lifecycle/">
+    <File Path="docs/lifecycle/index.md" />
+    <File Path="docs/lifecycle/toc.yml" />
+  </Folder>
+  <Folder Name="/docs/server/">
+    <File Path="docs/server/index.md" />
+    <File Path="docs/server/toc.yml" />
+  </Folder>
   <Folder Name="/Libraries/">
     <Project Path="src/Technosoftware/UaClient/Technosoftware.UaClient.csproj" />
     <Project Path="src/Technosoftware/UaConfiguration/Technosoftware.UaConfiguration.csproj" />
@@ -47,7 +59,6 @@
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
-    <File Path="CHANGELOG.md" />
     <File Path="common.props" />
     <File Path="Directory.Build.props" />
     <File Path="README.md" />
