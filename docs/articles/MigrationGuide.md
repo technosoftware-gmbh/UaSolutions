@@ -26,7 +26,7 @@ Please be aware that only the following versions are supported:
 
 - .NET 4.7.2, .NET 4.8, .NET 8.0, .NET 9.0, .NET 10.0
 
-Please check the targets.props file for changes required for the sammple projects.
+Please check the targets.props file for changes required for the sample projects.
 
 ### Upgrade client application to 5.0
 
@@ -87,7 +87,7 @@ Please be aware that only the following versions are supported:
 
 - .NET 10.0
 
-Please check the targets.props file for changes required for the sammple projects.
+Please check the targets.props file for changes required for the sample projects.
 
 Version 6 uses a Directory.Packages.props file to manage package versions.
 
