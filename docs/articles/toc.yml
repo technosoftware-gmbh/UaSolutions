@@ -6,8 +6,8 @@
   href: Basics.md
 - name: Security
   href: Security.md
-- name: Certificate and Certificate Stores
-  href: Certificat.md  
+- name: Certificates and Certificate Stores
+  href: Certificates.md  
 - name: Node Classes
   href: NodeClasses.md
 - name: Supported Platforms
@@ -16,7 +16,7 @@
   href: ProductLifeCycle.md
 - name: Installation and Administration
   href: Installation.md
-- name: Migration Guid
+- name: Migration Guide
   href: MigrationGuide.md
 - name: Distribution
   href: Distribution.md
