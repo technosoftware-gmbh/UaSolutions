@@ -5,28 +5,28 @@
 | **Version** | **Date**    | **Comment**                          |
 |-------------|-------------|--------------------------------------|
 | 3.1         | 28-APR-2023 | Initial version based on version 3.1 |
-| 3.3         | 02-FEB-2024 | Updated to new sample server         |
+| 3.3         | 02-FEB-2024 | Updated to new sample client         |
 | 3.4         | 10-SEP-2025 | Updated to OPC UA Core 1.5.376.244   |
 | 4.0         | 23-SEP-2025 | Initial version based on version 4.0 |
-| 4.2         | 01-NOV-2025 | Documented UaStandardServer usage    |
 | 5.0         | 04-MAY-2026 | Updated to cover version 4.3 and 5.0 |
-| 6.0         | 13-MAY-2026 | Updated to cover version 6.0         |
+| 6.0         | 23-MAY-2026 | Updated to cover version 6.0         |
 
 **Supported in the following product versions**
 
-| **Version** | **Comment**                                        |
-|-------------|----------------------------------------------------|
-| 4.3         | Long Term Support (LTS) until 31-MAY-2027          |
-| 5.0         | Mainline Version (ML)                              |
-| 6.0         | Development Version (DV)                           |
+| **Version** | **Current State** | **Retirement Date**     | **Available Support**                                                         |
+|:------------|:------------------|:------------------------|:------------------------------------------------------------------------------|
+| 3.4         | EOL               | 31-MAY-2026             |                                                                               |
+| 4.3         | EOL               | 31-MAY-2026             |                                                                               |
+| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and valid support subscription                            |
+| 6.0         | ML                | In Support              | Yes, with a valid support subscription                                        |
 
 ## OPC UA Server .NET
 
 The **OPC UA Server NET** offers a fast and easy access to the OPC Unified Architecture (UA) technology.
 
-Develop OPC UA compliant Servers with C# targeting .NET 10.0, .NET 9.0 or .NET 8.0. Up to version 5.0 we also provide .NET 4.8 and .NET 4.7.2 support for backward compatibility.
+Develop OPC UA compliant Servers with C# targeting .NET 10.0. Uo to versin 5 we also support .NET 9.0, .NET 8.0 and .NET 4.8 and .NET 4.7.2 support for backward compatibility.
 
-.NET 10.0, .NET 9.0 or .NET 8.0 allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
+.NET allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
 
 The **OPC UA Server NET** API is easy to use and many OPC specific functions are handled by the framework. The included Model Compiler can be used to create the necessary C# classes of Information Model’s specified in XML and CSV based files. 
 

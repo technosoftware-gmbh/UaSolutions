@@ -4,13 +4,20 @@
 
 | **Version** | **Date**    | **Comment**                          |
 |-------------|-------------|--------------------------------------|
-| 6.0         | 13-MAY-2026 | Updated to cover version 6.0         |
+| 6.0         | 23-MAY-2026 | Updated to cover version 6.0         |
 
 **Supported in the following product versions**
 
-| **Version** | **Comment**                                        |
-|-------------|----------------------------------------------------|
-| 6.0         | Development Version (DV)                           |
+| **Version** | **Current State** | **Retirement Date**     | **Available Support**                                                         |
+|:------------|:------------------|:------------------------|:------------------------------------------------------------------------------|
+| 3.4         | EOL               | 31-MAY-2026             |                                                                               |
+| 4.3         | EOL               | 31-MAY-2026             |                                                                               |
+| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and valid support subscription                            |
+| 6.0         | ML                | In Support              | Yes, with a valid support subscription                                        |
+
+**Important Notice**
+
+The MIT license is only valid for version 6.0 of the software. For versions 3.4, 4.3 and 5.0, the software is provided under a different license agreement, which has different terms and conditions. Please refer to the specific license agreement for those versions for more information.
 
 ## MIT License
 

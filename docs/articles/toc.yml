@@ -6,6 +6,8 @@
   href: Basics.md
 - name: Security
   href: Security.md
+- name: Certificate and Certificate Stores
+  href: Certificat.md  
 - name: Node Classes
   href: NodeClasses.md
 - name: Supported Platforms
@@ -14,10 +16,8 @@
   href: ProductLifeCycle.md
 - name: Installation and Administration
   href: Installation.md
-- name: Upgrade from 4.3 to 5.0
-  href: Upgradeto50.md
-- name: Upgrade from 5.0 to 6.0
-  href: Upgradeto60.md
+- name: Migration Guid
+  href: MigrationGuide.md
 - name: Distribution
   href: Distribution.md
 - name: Licensing
@@ -26,8 +26,6 @@
   href: ClientDevelopment.md
 - name: Server Development
   href: ServerDevelopment.md
-- name: Legacy
-  href: Legacy.md
 - name: License
   href: license.md
   

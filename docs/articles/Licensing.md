@@ -7,14 +7,15 @@
 | 4.2         | 01-NOV-2025 | Initial version based on version 4.2 |
 | 4.3         | 30-APR-2026 | Updated to version 4.3               |
 | 5.0         | 04-MAY-2025 | Updated to cover version 4.3 and 5.0 |
-| 6.0         | 13-MAY-2026 | No licensing needed for version 6.0  |
+| 6.0         | 23-MAY-2026 | No licensing needed for version 6.0  |
 
 **Supported in the following product versions**
 
-| **Version** | **Comment**                                        |
-|-------------|----------------------------------------------------|
-| 4.3         | Long Term Support (LTS) until 31-MAY-2027          |
-| 5.0         | Mainline Version (ML)                              |
+| **Version** | **Current State** | **Retirement Date**     | **Available Support**                                                         |
+|:------------|:------------------|:------------------------|:------------------------------------------------------------------------------|
+| 3.4         | EOL               | 31-MAY-2026             |                                                                               |
+| 4.3         | EOL               | 31-MAY-2026             |                                                                               |
+| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and valid support subscription                            |
 
 ## Licensing the Solution
 

@@ -14,17 +14,16 @@
     <File Path="docs/articles/Solutions.md" />
     <File Path="docs/articles/Basics.md" />
     <File Path="docs/articles/Security.md" />
+    <File Path="docs/articles/MigrationGuide.md" />
     <File Path="docs/articles/NodeClasses.md" />
     <File Path="docs/articles/SupportedPlatforms.md" />
     <File Path="docs/articles/ProductLifeCycle.md" />
     <File Path="docs/articles/Installation.md" />
-    <File Path="docs/articles/Upgradeto50.md" />
-    <File Path="docs/articles/Upgradeto60.md" />
     <File Path="docs/articles/Distribution.md" />
     <File Path="docs/articles/Licensing.md" />
+    <File Path="docs/articles/Certificates.md" />
     <File Path="docs/articles/ClientDevelopment.md" />
     <File Path="docs/articles/ServerDevelopment.md" />
-    <File Path="docs/articles/Legacy.md" />
     <File Path="docs/articles/license.md" />
   </Folder>
   <Folder Name="/docs/changelog/">
@@ -37,13 +36,13 @@
     <Project Path="src/Technosoftware/UaServer/Technosoftware.UaServer.csproj" />
   </Folder>
   <Folder Name="/Tutorials/">
-    <Project Path="tutorials/SampleCompany/SampleNodeManagers/SampleCompany.SampleNodeManagers.csproj" />
     <Project Path="tutorials/SampleCompany/SampleClient/SampleCompany.SampleClient.csproj" />
+    <Project Path="tutorials/SampleCompany/SampleNodeManagers/SampleCompany.SampleNodeManagers.csproj" />
     <Project Path="tutorials/SampleCompany/SampleServer/SampleCompany.SampleServer.csproj" />
   </Folder>
   <Folder Name="/Reference Applications/">
-    <Project Path="tutorials/SampleCompany/ReferenceNodeManagers/SampleCompany.ReferenceNodeManagers.csproj" />
     <Project Path="tutorials/SampleCompany/ReferenceClient/SampleCompany.ReferenceClient.csproj" />
+    <Project Path="tutorials/SampleCompany/ReferenceNodeManagers/SampleCompany.ReferenceNodeManagers.csproj" />
     <Project Path="tutorials/SampleCompany/ReferenceServer/SampleCompany.ReferenceServer.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">

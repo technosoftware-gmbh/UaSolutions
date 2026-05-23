@@ -1,5 +1,20 @@
 # Distribution
 
+**Document Control**
+
+| **Version** | **Date**    | **Comment**                          |
+|-------------|-------------|--------------------------------------|
+| 6.0         | 23-MAY-2026 | Updated to cover version 6.0         |
+
+**Supported in the following product versions**
+
+| **Version** | **Current State** | **Retirement Date**     | **Available Support**                                                         |
+|:------------|:------------------|:------------------------|:------------------------------------------------------------------------------|
+| 3.4         | EOL               | 31-MAY-2026             |                                                                               |
+| 4.3         | EOL               | 31-MAY-2026             |                                                                               |
+| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and valid support subscription                            |
+| 6.0         | ML                | In Support              | Yes, with a valid support subscription                                        |
+
 ## NuGet packages for version 4 and 5
 
 The OPC UA Solutions .NET is delivered as a set of [NuGet packages](https://github.com/orgs/technosoftware-gmbh/packages). Depending on the targeted .NET Framework you have the following packages available:
