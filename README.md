@@ -24,7 +24,7 @@ The documentation is available [here](https://technosoftware-gmbh.github.io/UaSo
 
 ## Changelog
 
-A changelog is available [here](./CHANGELOG.md).
+A changelog is available [here](https://technosoftware-gmbh.github.io/UaSolutions/changelog/index.html).
 
 ## Purchasing
 
