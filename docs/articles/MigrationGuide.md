@@ -8,13 +8,19 @@
 
 - [Migration Guide](#migration-guide)
   - [Migrating from 4.3 to 5.0](#migrating-from-43-to-50)
+    - [General Upgrades to 5.0](#general-upgrades-to-50)
+    - [Upgrade client application to 5.0](#upgrade-client-application-to-50)
+    - [Upgrade server application to 5.0](#upgrade-server-application-to-50)
   - [Migrating from 5.0 to 6.0](#migrating-from-50-to-60)
+    - [General Upgrades to 6.0](#general-upgrades-to-60)
+    - [Upgrade client application to 6.0](#upgrade-client-application-to-60)
+    - [Upgrade server application to 6.0](#upgrade-server-application-to-60)
 
 ## Migrating from 4.3 to 5.0
 
-### General Upgrades
+### General Upgrades to 5.0
 
-#### Support .NET versions
+#### Supported .NET versions
 
 Please be aware that only the following versions are supported:
 
@@ -22,7 +28,7 @@ Please be aware that only the following versions are supported:
 
 Please check the targets.props file for changes required for the sammple projects.
 
-### Upgrade client application
+### Upgrade client application to 5.0
 
 #### Changes in the project (csproj) file
 
@@ -46,7 +52,7 @@ Depending on the version you are coming from you should compare the changes made
 
 #### Breaking changes in some methods
 
-### Upgrade server application
+### Upgrade server application to 5.0
 
 #### Changes in the project (csproj) file
 
@@ -73,9 +79,9 @@ Depending on the version you are coming from you should compare the changes made
 
 ## Migrating from 5.0 to 6.0
 
-### General Upgrades
+### General Upgrades to 6.0
 
-#### Support .NET versions
+#### Supported .NET versions
 
 Please be aware that only the following versions are supported:
 
@@ -98,7 +104,7 @@ The important part of the props file:
 
 For the UaConfiguration, UaClient and UaServer the source code is included in the solution and not referenced as a package.
 
-### Upgrade client application
+### Upgrade client application to 6.0
 
 #### Changes in the project (csproj) file
 
@@ -122,7 +128,7 @@ Depending on the version you are coming from you should compare the changes made
 
 #### Breaking changes in some methods
 
-### Upgrade server application
+### Upgrade server application to 5.0
 
 #### Changes in the project (csproj) file
 
