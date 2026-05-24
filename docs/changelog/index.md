@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.0
 
-Version 6.0 has the same functionality as version 5.0 and uses also the same OPC Foundation Stack Version 1.5.378.134.
+Version 6.0 has the same functionality as version 5.0.0 and uses also the same OPC Foundation Stack Version 1.5.378.134.
 
 ### Breaking Changes:
 
@@ -20,6 +20,32 @@ Version 6.0 has the same functionality as version 5.0 and uses also the same OPC
 #### Server
 
 - Node Manager public override NodeId Create(ISystemContext context, NodeState node) must be changed to public override NodeId New(ISystemContext context, NodeState node)
+
+-------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 5.0.1
+
+### Fixes:
+
+#### Server
+
+- Filter certificate validation StatusCodes and Fix 'moreNotifications' handling
+
+#### Client
+
+- Fixed excessive tasks spawning during session connection loss
+
+### Integrated OPC UA Stack Version
+
+The following OPC UA Foundation releases of the OPC UA Stack were integrated:
+
+- 1.5.378.145
+
+Detailed release notes are available [here](https://github.com/OPCFoundation/UA-.NETStandard/releases/tag/1.5.378.145). Some of the changes are listed below.
+
+#### Fixes:
+
+- Fix a bug where a Task.Delay is left over infinitely.
+- Fix for crash when processing invalid eventFilter: WhereClause does not contain operand
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 5.0.0
@@ -45,7 +71,7 @@ Version 6.0 has the same functionality as version 5.0 and uses also the same OPC
 
 #### Server
 
-- UaServer: All classes are now under one namespacer (Technosoftware.UaServer)
+- UaServer: All classes are now under one namespace (Technosoftware.UaServer)
 - IUaMonitoredItem Interface extended & used instead of UaMonitoredItem Class
 - New IUaSession Interface instead of Session Class
 - IUaSesssionManager, IUaSubscriptionManager, IUaSubscription & IuaServerData interfaces extended
