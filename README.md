@@ -16,7 +16,7 @@ Develop OPC UA compliant Clients and Servers with C# targeting .NET 10.0.
 
 Version 6.0 has the same functionality as version 5.0 and uses also the same OPC Foundation Stack Version 1.5.378.134. The only differences are that version 6.0 only supports .NET 10.0 and uses the original OPC Foundation Stack instead of a slightly modified version.
 
-If you need support for .NET 9.0, .NET 8.0, .NET 4.8, .NET 4.72 or want to use the UA Client Gateway please use version 5. You find them in the subdirectory [legacy](./legacy). Version 5 will be supported for customers with license and valid support subscription until 31-MAY-2027.
+If you need support for .NET 9.0, .NET 8.0, .NET 4.8, .NET 4.72 or want to use the UA Client Gateway please use version 5. You find them in the subdirectory [legacy](https://github.com/technosoftware-gmbh/UaSolutions/tree/main/legacy). Version 5 will be supported for customers with license and valid support subscription until 31-MAY-2027.
 
 ## Documentation
 

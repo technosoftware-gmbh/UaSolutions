@@ -37,6 +37,7 @@
   <Folder Name="/docs/lifecycle/">
     <File Path="docs/lifecycle/index.md" />
     <File Path="docs/lifecycle/toc.yml" />
+    <File Path="docs/lifecycle/versioning.md" />
   </Folder>
   <Folder Name="/docs/server/">
     <File Path="docs/server/index.md" />
