@@ -22,6 +22,15 @@ Version 6.0 has the same functionality as version 5.0.0 and uses also the same O
 - Node Manager public override NodeId Create(ISystemContext context, NodeState node) must be changed to public override NodeId New(ISystemContext context, NodeState node)
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 5.0.2
+
+### Enhancements
+
+#### Client Gateway
+
+- Now supports .NET 10.0, .NET 9.0, .NET 8.0 and .NET 4.8, .NET 4.72 build for x64 applications
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 5.0.1
 
 ### Fixes:

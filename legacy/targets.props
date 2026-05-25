@@ -1,7 +1,9 @@
 <Project>
   <!-- 
-    Supported frameworks (included in NuGet packages):
-       .NET Core 10 until 14-NOV-2028 (coming with version 5.0.0)
+    Supported frameworks:
+       .NET Core 10 until 14-NOV-2028
+
+    Only supported in UASolutions version 5:
        .NET Core 9 until 10-NOV-2026
        .NET Core 8 until 10-NOV-2026
        .NET 4.8
@@ -33,11 +35,11 @@
   A build with all custom targets which are not part of a regular build
   is scheduled once a week in the DevOps build pipeline.
   Uncomment the following lines to test a custom test target
-  supported values: netstandard2.0, netstandard2.1, net472, net48, net8.0, net9.0, net10.0
+  supported values: net472, net48, net8.0, net9.0, net10.0
    -->
   <!--
   <PropertyGroup>
-    <CustomTestTarget>netstandard2.1</CustomTestTarget>
+    <CustomTestTarget>net10.0</CustomTestTarget>
   </PropertyGroup>
   -->
   <Choose>
@@ -137,7 +139,7 @@
       <PropertyGroup>
         <AppTargetFrameworks>net10.0;net9.0;net8.0;net48</AppTargetFrameworks>
         <AppTargetFramework>net10.0</AppTargetFramework>
-        <UaClientGatewayTargets>net472;net48</UaClientGatewayTargets>		
+        <UaClientGatewayTargets>net10.0;net9.0;net8.0;net472;net48</UaClientGatewayTargets>		
         <TestsTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</TestsTargetFrameworks>
         <LibTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibTargetFrameworks>
         <LibCoreTargetFrameworks>net472;net48;net8.0;net9.0;net10.0</LibCoreTargetFrameworks>

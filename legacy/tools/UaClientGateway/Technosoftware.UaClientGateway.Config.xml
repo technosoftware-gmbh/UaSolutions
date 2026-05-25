@@ -414,7 +414,7 @@
       <ComWrapperServerConfiguration xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://opcfoundation.org/UA/SDK/COMInterop">
         <WrappedServers>
           <ComClientConfiguration i:type="ComDaClientConfiguration">
-            <ServerUrl>opc.com://localhost/Technosoftware.DaSample</ServerUrl>
+            <ServerUrl>opc.com://localhost/SampleCompany.DaSample</ServerUrl>
             <ServerName>DA</ServerName>
             <MaxReconnectWait>100000</MaxReconnectWait>
             <SeperatorChars></SeperatorChars>
@@ -422,7 +422,7 @@
             <BrowseToSupported>false</BrowseToSupported>
           </ComClientConfiguration>
           <ComClientConfiguration i:type="ComAeClientConfiguration">
-            <ServerUrl>opc.com://localhost/Technosoftware.AeSample</ServerUrl>
+            <ServerUrl>opc.com://localhost/SampleCompany.AeSample</ServerUrl>
             <ServerName>AE</ServerName>
             <MaxReconnectWait>100000</MaxReconnectWait>
             <SeperatorChars></SeperatorChars>
