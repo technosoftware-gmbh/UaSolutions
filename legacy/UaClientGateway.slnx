@@ -1,3 +1,8 @@
 <Solution>
-  <Project Path="tools/UaClientGateway/Technosoftware.UaClientGateway.csproj" />
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="tools/UaClientGateway/Technosoftware.UaClientGateway.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
 </Solution>

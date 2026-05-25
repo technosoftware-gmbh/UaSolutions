@@ -9,6 +9,8 @@
     <Product>Technosoftware GmbH UA Client Gateway</Product>
     <Description>Technosoftware GmbH ReferenceServer</Description>
     <Copyright>Copyright © 2011 - 2026 Technosoftware GmbH</Copyright>
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Update="Roslynator.Analyzers" Version="4.15.0" />
@@ -34,7 +36,7 @@
     <PackageReference Include="Technosoftware.UaSolutions.UaCore" Version="5.0.1" />
     <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" Version="5.0.1" />
     <PackageReference Include="Technosoftware.UaSolutions.UaServer" Version="5.0.1" />
-    <PackageReference Include="Technosoftware.UaSolutions.ClientGateway" Version="5.0.1" />
+    <PackageReference Include="Technosoftware.UaSolutions.ClientGateway" Version="5.0.2" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Technosoftware.UaClientGateway.Config.xml">
