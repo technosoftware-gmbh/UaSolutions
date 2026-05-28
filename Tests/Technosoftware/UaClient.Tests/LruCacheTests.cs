@@ -1,8 +1,19 @@
-// ------------------------------------------------------------
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
-// ------------------------------------------------------------
+#region Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com
+//
+// The Software is subject to the Technosoftware GmbH MIT License, which can
+// be found here:
+// https://technosoftware.com/license/mit/
+//
+// The Software is based on the OPC Foundation UA Stack and the OPC Foundation
+// MIT License. The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
 
+#region Using Directives
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +24,7 @@ using NUnit.Framework;
 using Opc.Ua;
 using Technosoftware.Tests;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
+#endregion Using Directives
 
 namespace Technosoftware.UaClient.Tests
 {
