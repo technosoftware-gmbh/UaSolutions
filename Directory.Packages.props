@@ -33,7 +33,7 @@
     <PackageVersion Include="Mono.Options" Version="6.12.0.148" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="MQTTnet" Version="5.0.1.1416" />
-    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.9.50" />
+    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.85" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="NUnit" Version="4.6.1" />
     <PackageVersion Include="NUnit.Console" Version="3.22.0" />
