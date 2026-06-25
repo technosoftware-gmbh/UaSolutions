@@ -21,6 +21,7 @@ using Moq;
 using NUnit.Framework;
 using Opc.Ua;
 using Technosoftware.Tests;
+using Technosoftware.UaServer;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer.Tests
@@ -30,19 +31,19 @@ namespace Technosoftware.UaServer.Tests
     [Parallelizable]
     public class SubscriptionTests
     {
-        private Mock<IServerInternal> m_serverMock;
-        private Mock<ISession> m_sessionMock;
+        private Mock<IUaServerData> m_serverMock;
+        private Mock<IUaSession> m_sessionMock;
         private DiagnosticsNodeManager m_diagnosticsNodeManager;
-        private Mock<IMonitoredItemQueueFactory> m_queueFactoryMock;
+        private Mock<IUaMonitoredItemQueueFactory> m_queueFactoryMock;
         private ITelemetryContext m_telemetry;
 
         [SetUp]
         public void SetUp()
         {
             m_telemetry = NUnitTelemetryContext.Create();
-            m_serverMock = new Mock<IServerInternal>();
-            m_sessionMock = new Mock<ISession>();
-            m_queueFactoryMock = new Mock<IMonitoredItemQueueFactory>();
+            m_serverMock = new Mock<IUaServerData>();
+            m_sessionMock = new Mock<IUaSession>();
+            m_queueFactoryMock = new Mock<IUaMonitoredItemQueueFactory>();
 
             m_serverMock.Setup(s => s.Telemetry).Returns(m_telemetry);
             m_serverMock.Setup(s => s.MonitoredItemQueueFactory).Returns(m_queueFactoryMock.Object);
@@ -54,7 +55,7 @@ namespace Technosoftware.UaServer.Tests
             m_serverMock.Setup(s => s.Factory).Returns(new Mock<IEncodeableFactory>().Object);
 
             // ServerSystemContext requires invoked server mock to have properties setup.
-            m_serverMock.Setup(s => s.DefaultSystemContext).Returns(new ServerSystemContext(m_serverMock.Object));
+            m_serverMock.Setup(s => s.DefaultSystemContext).Returns(new UaServerContext(m_serverMock.Object));
 
             m_diagnosticsNodeManager = new DiagnosticsNodeManager(
                 m_serverMock.Object,
@@ -96,11 +97,11 @@ namespace Technosoftware.UaServer.Tests
             field.SetValue(subscription, (uint)0);
         }
 
-        private static void AddMonitoredItem(Subscription subscription, IMonitoredItem item)
+        private static void AddMonitoredItem(Subscription subscription, IUaMonitoredItem item)
         {
             // Subscription has:
-            // private readonly Dictionary<uint, LinkedListNode<IMonitoredItem>> m_monitoredItems;
-            // private readonly LinkedList<IMonitoredItem> m_itemsToCheck;
+            // private readonly Dictionary<uint, LinkedListNode<IUaMonitoredItem>> m_monitoredItems;
+            // private readonly LinkedList<IUaMonitoredItem> m_itemsToCheck;
 
             FieldInfo monitoredItemsField = typeof(Subscription).GetField("m_monitoredItems", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?? throw new InvalidOperationException("Field m_monitoredItems not found");
@@ -108,15 +109,15 @@ namespace Technosoftware.UaServer.Tests
                 ?? throw new InvalidOperationException("Field m_itemsToCheck not found");
 
             var monitoredItems = (System.Collections.IDictionary)monitoredItemsField.GetValue(subscription);
-            var itemsToCheck = (LinkedList<IMonitoredItem>)itemsToCheckField.GetValue(subscription);
+            var itemsToCheck = (LinkedList<IUaMonitoredItem>)itemsToCheckField.GetValue(subscription);
 
             // Add to itemsToCheck first to get the node
-            LinkedListNode<IMonitoredItem> node = itemsToCheck.AddLast(item);
+            LinkedListNode<IUaMonitoredItem> node = itemsToCheck.AddLast(item);
             // Add to dictionary
             monitoredItems.Add(item.Id, node);
         }
 
-        private static void AddTriggerLink(Subscription subscription, uint triggeringId, ITriggeredMonitoredItem triggeredItem)
+        private static void AddTriggerLink(Subscription subscription, uint triggeringId, IUaTriggeredMonitoredItem triggeredItem)
         {
             // private readonly Dictionary<uint, List<ITriggeredMonitoredItem>> m_itemsToTrigger;
             FieldInfo itemsToTriggerField = typeof(Subscription).GetField("m_itemsToTrigger", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -125,9 +126,9 @@ namespace Technosoftware.UaServer.Tests
 
             if (!itemsToTrigger.Contains(triggeringId))
             {
-                itemsToTrigger.Add(triggeringId, new List<ITriggeredMonitoredItem>());
+                itemsToTrigger.Add(triggeringId, new List<IUaTriggeredMonitoredItem>());
             }
-            var list = (List<ITriggeredMonitoredItem>)itemsToTrigger[triggeringId];
+            var list = (List<IUaTriggeredMonitoredItem>)itemsToTrigger[triggeringId];
             list.Add(triggeredItem);
         }
 
@@ -135,7 +136,7 @@ namespace Technosoftware.UaServer.Tests
         {
             FieldInfo itemsToPublishField = typeof(Subscription).GetField("m_itemsToPublish", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?? throw new InvalidOperationException("Field m_itemsToPublish not found");
-            var itemsToPublish = (LinkedList<IMonitoredItem>)itemsToPublishField.GetValue(subscription);
+            var itemsToPublish = (LinkedList<IUaMonitoredItem>)itemsToPublishField.GetValue(subscription);
             return itemsToPublish.Count;
         }
 
@@ -174,7 +175,7 @@ namespace Technosoftware.UaServer.Tests
             SetExpiryTime(subscription, HiResClock.TickCount64 - 100);
 
             // Mock Monitored Item
-            var itemMock = new Mock<IMonitoredItem>();
+            var itemMock = new Mock<IUaMonitoredItem>();
             itemMock.Setup(i => i.Id).Returns(1);
             itemMock.Setup(i => i.IsReadyToPublish).Returns(true);
 
@@ -194,7 +195,7 @@ namespace Technosoftware.UaServer.Tests
             SetExpiryTime(subscription, HiResClock.TickCount64 - 100);
 
             // Mock Monitored Item
-            var itemMock = new Mock<IMonitoredItem>();
+            var itemMock = new Mock<IUaMonitoredItem>();
             itemMock.Setup(i => i.Id).Returns(1);
             itemMock.Setup(i => i.IsReadyToPublish).Returns(false);
 
@@ -228,16 +229,16 @@ namespace Technosoftware.UaServer.Tests
             SetExpiryTime(subscription, HiResClock.TickCount64 - 100);
 
             // Item A: Triggering item. Ready to publish, Ready to trigger.
-            var itemAMock = new Mock<IMonitoredItem>();
+            var itemAMock = new Mock<IUaMonitoredItem>();
             itemAMock.Setup(i => i.Id).Returns(1);
             itemAMock.Setup(i => i.IsReadyToPublish).Returns(true);
             itemAMock.SetupProperty(i => i.IsReadyToTrigger, true); // Use property behavior so it can be set to false by Subscription
 
             // Item B: Triggered item. Initially NOT ready to publish.
             // B must implement ITriggeredMonitoredItem as well.
-            var itemBMock = new Mock<IMonitoredItem>();
-            itemBMock.As<ITriggeredMonitoredItem>();
-            Mock<ITriggeredMonitoredItem> triggeredItemB = itemBMock.As<ITriggeredMonitoredItem>();
+            var itemBMock = new Mock<IUaMonitoredItem>();
+            itemBMock.As<IUaTriggeredMonitoredItem>();
+            Mock<IUaTriggeredMonitoredItem> triggeredItemB = itemBMock.As<IUaTriggeredMonitoredItem>();
 
             itemBMock.Setup(i => i.Id).Returns(2);
             triggeredItemB.Setup(i => i.Id).Returns(2);
@@ -274,11 +275,11 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(itemAMock.Object.IsReadyToTrigger, Is.False, "IsReadyToTrigger should be reset");
         }
 
-        private static void AddMonitoredItemToPublish(Subscription subscription, IMonitoredItem item)
+        private static void AddMonitoredItemToPublish(Subscription subscription, IUaMonitoredItem item)
         {
             FieldInfo itemsToPublishField = typeof(Subscription).GetField("m_itemsToPublish", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?? throw new InvalidOperationException("Field m_itemsToPublish not found");
-            var itemsToPublish = (LinkedList<IMonitoredItem>)itemsToPublishField.GetValue(subscription);
+            var itemsToPublish = (LinkedList<IUaMonitoredItem>)itemsToPublishField.GetValue(subscription);
             itemsToPublish.AddLast(item);
         }
 
@@ -286,7 +287,7 @@ namespace Technosoftware.UaServer.Tests
         public void Publish_MultipleTimes_WithMaxMessageCount()
         {
             using var subscription = new Subscription(m_serverMock.Object, m_sessionMock.Object, 1, 100, 1000, 10, 1, 0, true, 2);
-            var itemMock = new Mock<IDataChangeMonitoredItem2>();
+            var itemMock = new Mock<IUaDataChangeMonitoredItem2>();
 
             var values = new List<MonitoredItemNotification>
             {
@@ -297,12 +298,12 @@ namespace Technosoftware.UaServer.Tests
 
             int counter = 0;
             itemMock.Setup(i => i.Publish(
-                It.IsAny<OperationContext>(),
+                It.IsAny<UaServerOperationContext>(),
                 It.IsAny<Queue<MonitoredItemNotification>>(),
                 It.IsAny<Queue<DiagnosticInfo>>(),
                 It.IsAny<uint>(),
                 It.IsAny<Microsoft.Extensions.Logging.ILogger>()))
-                .Returns<OperationContext, Queue<MonitoredItemNotification>, Queue<DiagnosticInfo>, uint, Microsoft.Extensions.Logging.ILogger>(
+                .Returns<UaServerOperationContext, Queue<MonitoredItemNotification>, Queue<DiagnosticInfo>, uint, Microsoft.Extensions.Logging.ILogger>(
                 (ctx, nq, dq, max, logger) =>
                 {
                     if (counter < values.Count)
@@ -328,7 +329,7 @@ namespace Technosoftware.UaServer.Tests
             var messages = new List<NotificationMessage>();
 
             // First publish
-            var ctx1 = new OperationContext(m_sessionMock.Object, new DiagnosticsMasks());
+            var ctx1 = new UaServerOperationContext(m_sessionMock.Object, new DiagnosticsMasks());
             var message = subscription.Publish(ctx1, out var availableSequenceNumbers, out bool moreNotifications1);
             messages.Add(message);
 
