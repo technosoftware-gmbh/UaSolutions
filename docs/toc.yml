@@ -1,0 +1,18 @@
+- name: Articles
+  href: articles/
+  homepage: articles/index.md
+- name: UA Client .NET
+  href: client/
+  homepage: client/index.md
+- name: UA Server .NET
+  href: server/
+  homepage: server/index.md
+- name: API
+  href: api/
+  homepage: api/index.md
+- name: ChangeLog
+  href: changelog/
+  homepage: changelog/index.md
+- name: Product Lifecycle
+  href: lifecycle/
+  homepage: lifecycle/index.md

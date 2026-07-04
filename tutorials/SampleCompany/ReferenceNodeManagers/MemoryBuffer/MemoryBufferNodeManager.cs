@@ -1,0 +1,537 @@
+#region Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com
+//
+// The Software is subject to the Technosoftware GmbH MIT License, which can
+// be found here:
+// https://technosoftware.com/license/mit/
+//
+// The Software is based on the OPC Foundation UA Stack and the OPC Foundation
+// MIT License. The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
+using Opc.Ua;
+using Technosoftware.UaServer;
+#endregion Using Directives
+
+namespace SampleCompany.NodeManagers.MemoryBuffer
+{
+    /// <summary>
+    /// The factory to create the node manager for memory buffers.
+    /// </summary>
+    public class MemoryBufferNodeManagerFactory : IUaNodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public IUaNodeManager Create(IUaServerData server, ApplicationConfiguration configuration)
+        {
+            return new MemoryBufferNodeManager(server, configuration, [.. NamespacesUris]);
+        }
+
+        /// <inheritdoc/>
+        public StringCollection NamespacesUris
+            => [Namespaces.MemoryBuffer, Namespaces.MemoryBuffer + "/Instance"];
+    }
+
+    /// <summary>
+    /// A node manager for a variety of memory buffers.
+    /// </summary>
+    public class MemoryBufferNodeManager : SampleCompany.NodeManagers.SampleNodeManager.SampleNodeManager
+    {
+        /// <summary>
+        /// Initializes the node manager.
+        /// </summary>
+        public MemoryBufferNodeManager(
+            IUaServerData server,
+            ApplicationConfiguration configuration,
+            string[] namespaceUris)
+            : base(server)
+        {
+            NamespaceUris = namespaceUris;
+
+            AddEncodeableNodeManagerTypes(
+                typeof(MemoryBufferNodeManager).Assembly,
+                typeof(MemoryBufferNodeManager).Namespace);
+
+            // get the configuration for the node manager.
+            m_configuration =
+                configuration.ParseExtension<MemoryBufferConfiguration>() ??
+                new MemoryBufferConfiguration();
+
+            // use suitable defaults if no configuration exists.
+
+            m_buffers = [];
+        }
+
+        /// <summary>
+        /// Does any initialization required before the address space can be used.
+        /// </summary>
+        /// <remarks>
+        /// The externalReferences is an out parameter that allows the node manager to link to nodes
+        /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
+        /// should have a reference to the root folder node(s) exposed by this node manager.
+        /// </remarks>
+        public override void CreateAddressSpace(
+            IDictionary<NodeId, IList<IReference>> externalReferences)
+        {
+            lock (Lock)
+            {
+                base.CreateAddressSpace(externalReferences);
+
+                // create the nodes from configuration.
+                ushort namespaceIndex = Server.NamespaceUris
+                    .GetIndexOrAppend(Namespaces.MemoryBuffer);
+
+                BaseInstanceState root = FindPredefinedNode<BaseInstanceState>(
+                    new NodeId(Objects.MemoryBuffers, namespaceIndex));
+
+                // create the nodes from configuration.
+                namespaceIndex = Server.NamespaceUris
+                    .GetIndexOrAppend(Namespaces.MemoryBuffer + "/Instance");
+
+                if (m_configuration != null && m_configuration.Buffers != null)
+                {
+                    for (int ii = 0; ii < m_configuration.Buffers.Count; ii++)
+                    {
+                        MemoryBufferInstance instance = m_configuration.Buffers[ii];
+
+                        // create a new buffer.
+                        var bufferNode = new MemoryBufferState(SystemContext, instance);
+
+                        // assign node ids.
+                        bufferNode.Create(
+                            SystemContext,
+                            new NodeId(bufferNode.SymbolicName, namespaceIndex),
+                            new QualifiedName(bufferNode.SymbolicName, namespaceIndex),
+                            null,
+                            true);
+
+                        bufferNode.CreateBuffer(instance.DataType, instance.TagCount);
+                        bufferNode.InitializeMonitoring(Server, this);
+
+                        // save the buffers for easy look up later.
+                        m_buffers[bufferNode.SymbolicName] = bufferNode;
+
+                        // link to root.
+                        root.AddChild(bufferNode);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Loads a node set from a file or resource and adds them to the set of predefined nodes.
+        /// </summary>
+        protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
+        {
+            var predefinedNodes = new NodeStateCollection();
+            predefinedNodes.LoadFromBinaryResource(
+                context,
+                "SampleCompany.NodeManagers.MemoryBuffer.Generated.SampleCompany.NodeManagers.MemoryBuffer.PredefinedNodes.uanodes",
+                GetType().GetTypeInfo().Assembly,
+                true);
+            return predefinedNodes;
+        }
+
+        /// <summary>
+        /// Frees any resources allocated for the address space.
+        /// </summary>
+        public override void DeleteAddressSpace()
+        {
+            lock (Lock)
+            {
+                base.DeleteAddressSpace();
+            }
+        }
+
+        /// <summary>
+        /// Returns a unique handle for the node.
+        /// </summary>
+        /// <remarks>
+        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to
+        /// NodeManager it should return a handle that does not require the NodeId to be validated again when
+        /// the handle is passed into other methods such as 'Read' or 'Write'.
+        /// </remarks>
+        protected override object GetManagerHandle(
+            ISystemContext context,
+            NodeId nodeId,
+            IDictionary<NodeId, NodeState> cache)
+        {
+            lock (Lock)
+            {
+                if (!IsNodeIdInNamespace(nodeId))
+                {
+                    return null;
+                }
+
+                if (nodeId.Identifier is string id)
+                {
+                    // check for a reference to the buffer.
+
+                    if (m_buffers.TryGetValue(id, out MemoryBufferState buffer))
+                    {
+                        return buffer;
+                    }
+
+                    // tag ids have the syntax <bufferName>[<address>]
+                    if (id[^1] != ']')
+                    {
+                        return null;
+                    }
+
+                    int index = id.IndexOf('[', StringComparison.Ordinal);
+
+                    if (index == -1)
+                    {
+                        return null;
+                    }
+
+                    string bufferName = id[..index];
+
+                    // verify the buffer.
+                    if (!m_buffers.TryGetValue(bufferName, out buffer))
+                    {
+                        return null;
+                    }
+
+                    // validate the address.
+                    string offsetText = id.Substring(index + 1, id.Length - index - 2);
+
+                    for (int ii = 0; ii < offsetText.Length; ii++)
+                    {
+                        if (!char.IsDigit(offsetText[ii]))
+                        {
+                            return null;
+                        }
+                    }
+
+                    // check range on offset.
+                    uint offset = Convert.ToUInt32(offsetText, CultureInfo.InvariantCulture);
+
+                    if (offset >= buffer.SizeInBytes.Value)
+                    {
+                        return null;
+                    }
+
+                    // the tags contain all of the metadata required to support the UA
+                    // operations and pointers to functions in the buffer object that
+                    // allow the value to be accessed. These tags are ephemeral and are
+                    // discarded after the operation completes. This design pattern allows
+                    // the server to expose potentially millions of UA nodes without
+                    // creating millions of objects that reside in memory.
+                    return new MemoryTagState(buffer, offset);
+                }
+
+                return base.GetManagerHandle(context, nodeId, cache);
+            }
+        }
+
+        /// <summary>
+        /// Creates a new set of monitored items for a set of variables.
+        /// </summary>
+        /// <remarks>
+        /// This method only handles data change subscriptions. Event subscriptions are created by the SDK.
+        /// </remarks>
+        protected override ServiceResult CreateMonitoredItem(
+            ISystemContext context,
+            NodeState source,
+            uint subscriptionId,
+            double publishingInterval,
+            DiagnosticsMasks diagnosticsMasks,
+            TimestampsToReturn timestampsToReturn,
+            MonitoredItemCreateRequest itemToCreate,
+            bool createDurable,
+            MonitoredItemIdFactory monitoredItemIdFactory,
+            out MonitoringFilterResult filterError,
+            out IUaMonitoredItem monitoredItem)
+        {
+            filterError = null;
+            monitoredItem = null;
+
+            // use default behavior for non-tag sources.
+            if (source is not MemoryTagState tag)
+            {
+                return base.CreateMonitoredItem(
+                    context,
+                    source,
+                    subscriptionId,
+                    publishingInterval,
+                    diagnosticsMasks,
+                    timestampsToReturn,
+                    itemToCreate,
+                    createDurable,
+                    monitoredItemIdFactory,
+                    out filterError,
+                    out monitoredItem);
+            }
+
+            // validate parameters.
+            MonitoringParameters parameters = itemToCreate.RequestedParameters;
+
+            // no filters supported at this time.
+            var filter = (MonitoringFilter)ExtensionObject.ToEncodeable(parameters.Filter);
+
+            if (filter != null)
+            {
+                return StatusCodes.BadFilterNotAllowed;
+            }
+
+            // index range not supported.
+            if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Empty)
+            {
+                return StatusCodes.BadIndexRangeInvalid;
+            }
+
+            // data encoding not supported.
+            if (!QualifiedName.IsNull(itemToCreate.ItemToMonitor.DataEncoding))
+            {
+                return StatusCodes.BadDataEncodingUnsupported;
+            }
+
+            // read initial value.
+            var initialValue = new DataValue
+            {
+                Value = null,
+                ServerTimestamp = DateTime.UtcNow,
+                SourceTimestamp = DateTime.MinValue,
+                StatusCode = StatusCodes.Good
+            };
+
+            ServiceResult error = source.ReadAttribute(
+                context,
+                itemToCreate.ItemToMonitor.AttributeId,
+                itemToCreate.ItemToMonitor.ParsedIndexRange,
+                itemToCreate.ItemToMonitor.DataEncoding,
+                initialValue);
+
+            if (ServiceResult.IsBad(error))
+            {
+                return error;
+            }
+
+            // get the monitored node for the containing buffer.
+            if (tag.Parent is not MemoryBufferState buffer)
+            {
+                return StatusCodes.BadInternalError;
+            }
+
+            // determine the sampling interval.
+            double samplingInterval = itemToCreate.RequestedParameters.SamplingInterval;
+
+            if (samplingInterval < 0)
+            {
+                samplingInterval = publishingInterval;
+            }
+
+            // create the item.
+            MemoryBufferMonitoredItem datachangeItem = buffer.CreateDataChangeItem(
+                context as UaServerContext,
+                tag,
+                subscriptionId,
+                monitoredItemIdFactory.GetNextId(),
+                itemToCreate.ItemToMonitor,
+                diagnosticsMasks,
+                timestampsToReturn,
+                itemToCreate.MonitoringMode,
+                itemToCreate.RequestedParameters.ClientHandle,
+                samplingInterval,
+                createDurable);
+
+            // report the initial value.
+            datachangeItem.QueueValue(initialValue, null);
+
+            // update monitored item list.
+            monitoredItem = datachangeItem;
+
+            return ServiceResult.Good;
+        }
+
+        /// <summary>
+        /// Restore a single monitored Item after a restart
+        /// </summary>
+        /// <returns>true if sucesfully restored</returns>
+        protected override bool RestoreMonitoredItem(
+            UaServerContext context,
+            NodeState source,
+            IUaStoredMonitoredItem storedMonitoredItem,
+            out IUaMonitoredItem monitoredItem)
+        {
+            monitoredItem = null;
+
+            // use default behavior for non-tag sources.
+            if (source is not MemoryTagState tag)
+            {
+                return base.RestoreMonitoredItem(
+                    context,
+                    source,
+                    storedMonitoredItem,
+                    out monitoredItem);
+            }
+
+            // get the monitored node for the containing buffer.
+            if (tag.Parent is not MemoryBufferState buffer)
+            {
+                return false;
+            }
+
+            // create the item.
+
+            // update monitored item list.
+            monitoredItem = buffer.RestoreDataChangeItem(context, tag, storedMonitoredItem);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Modifies the parameters for a monitored item.
+        /// </summary>
+        protected override ServiceResult ModifyMonitoredItem(
+            ISystemContext context,
+            DiagnosticsMasks diagnosticsMasks,
+            TimestampsToReturn timestampsToReturn,
+            IUaMonitoredItem monitoredItem,
+            MonitoredItemModifyRequest itemToModify,
+            out MonitoringFilterResult filterError)
+        {
+            filterError = null;
+
+            // check for valid handle.
+            if (monitoredItem.ManagerHandle is not MemoryBufferState)
+            {
+                return base.ModifyMonitoredItem(
+                    context,
+                    diagnosticsMasks,
+                    timestampsToReturn,
+                    monitoredItem,
+                    itemToModify,
+                    out filterError);
+            }
+
+            // owned by this node manager.
+            itemToModify.Processed = true;
+
+            // get the monitored item.
+            if (monitoredItem is not MemoryBufferMonitoredItem datachangeItem)
+            {
+                return StatusCodes.BadMonitoredItemIdInvalid;
+            }
+
+            // validate parameters.
+            MonitoringParameters parameters = itemToModify.RequestedParameters;
+
+            // no filters supported at this time.
+            var filter = (MonitoringFilter)ExtensionObject.ToEncodeable(parameters.Filter);
+
+            if (filter != null)
+            {
+                return StatusCodes.BadFilterNotAllowed;
+            }
+
+            // modify the monitored item parameters.
+            _ = datachangeItem.Modify(
+                diagnosticsMasks,
+                timestampsToReturn,
+                itemToModify.RequestedParameters.ClientHandle,
+                itemToModify.RequestedParameters.SamplingInterval);
+
+            return ServiceResult.Good;
+        }
+
+        /// <summary>
+        /// Deletes a monitored item.
+        /// </summary>
+        protected override ServiceResult DeleteMonitoredItem(
+            ISystemContext context,
+            IUaMonitoredItem monitoredItem,
+            out bool processed)
+        {
+            // check for valid handle.
+            if (monitoredItem.ManagerHandle is not MemoryBufferState buffer)
+            {
+                return base.DeleteMonitoredItem(context, monitoredItem, out processed);
+            }
+
+            // owned by this node manager.
+            processed = true;
+
+            // get the monitored item.
+            if (monitoredItem is not MemoryBufferMonitoredItem datachangeItem)
+            {
+                return StatusCodes.BadMonitoredItemIdInvalid;
+            }
+
+            // delete the item.
+            buffer.DeleteItem(datachangeItem);
+
+            return ServiceResult.Good;
+        }
+
+        /// <summary>
+        /// Changes the monitoring mode for an item.
+        /// </summary>
+        protected override ServiceResult SetMonitoringMode(
+            ISystemContext context,
+            IUaMonitoredItem monitoredItem,
+            MonitoringMode monitoringMode,
+            out bool processed)
+        {
+            // check for valid handle.
+            if (monitoredItem.ManagerHandle is not MemoryBufferState buffer)
+            {
+                return base.SetMonitoringMode(
+                    context,
+                    monitoredItem,
+                    monitoringMode,
+                    out processed);
+            }
+
+            // owned by this node manager.
+            processed = true;
+
+            // get the monitored item.
+            if (monitoredItem is not MemoryBufferMonitoredItem datachangeItem)
+            {
+                return StatusCodes.BadMonitoredItemIdInvalid;
+            }
+
+            // delete the item.
+            MonitoringMode previousMode = datachangeItem.SetMonitoringMode(monitoringMode);
+
+            // need to provide an immediate update after enabling.
+            if (previousMode == MonitoringMode.Disabled &&
+                monitoringMode != MonitoringMode.Disabled)
+            {
+                var initialValue = new DataValue
+                {
+                    Value = null,
+                    ServerTimestamp = DateTime.UtcNow,
+                    SourceTimestamp = DateTime.MinValue,
+                    StatusCode = StatusCodes.Good
+                };
+
+                var tag = new MemoryTagState(buffer, datachangeItem.Offset);
+
+                ServiceResult error = tag.ReadAttribute(
+                    context,
+                    datachangeItem.AttributeId,
+                    NumericRange.Empty,
+                    null,
+                    initialValue);
+
+                datachangeItem.QueueValue(initialValue, error);
+            }
+
+            return ServiceResult.Good;
+        }
+
+        private readonly MemoryBufferConfiguration m_configuration;
+        private readonly Dictionary<string, MemoryBufferState> m_buffers;
+    }
+}

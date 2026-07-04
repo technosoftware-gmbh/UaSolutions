@@ -1,0 +1,72 @@
+#region Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com
+//
+// The Software is subject to the Technosoftware GmbH MIT License, which can
+// be found here:
+// https://technosoftware.com/license/mit/
+//
+// The Software is based on the OPC Foundation UA Stack and the OPC Foundation
+// MIT License. The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
+using System.Runtime.Serialization;
+#endregion Using Directives
+
+namespace SampleCompany.NodeManagers.TestData
+{
+    /// <summary>
+    /// Stores the configuration the test node manager
+    /// </summary>
+    [DataContract(Namespace = Namespaces.TestData)]
+    public class TestDataNodeManagerConfiguration
+    {
+        /// <summary>
+        /// The default constructor.
+        /// </summary>
+        public TestDataNodeManagerConfiguration()
+        {
+            Initialize();
+        }
+
+        /// <summary>
+        /// Initializes the object during deserialization.
+        /// </summary>
+        [OnDeserializing]
+        private void Initialize(StreamingContext context)
+        {
+            Initialize();
+        }
+
+        /// <summary>
+        /// Sets private members to default values.
+        /// </summary>
+        private void Initialize()
+        {
+            SaveFilePath = null;
+            MaxQueueSize = 100;
+        }
+
+        /// <summary>
+        /// The path to the file that stores state of the node manager.
+        /// </summary>
+        [DataMember(Order = 1)]
+        public string SaveFilePath { get; set; }
+
+        /// <summary>
+        /// The maximum length for a monitored item sampling queue.
+        /// </summary>
+        [DataMember(Order = 2)]
+        public uint MaxQueueSize { get; set; }
+
+        /// <summary>
+        /// The next unused value that can be assigned to new nodes.
+        /// </summary>
+        [DataMember(Order = 3)]
+        public uint NextUnusedId { get; set; }
+    }
+}

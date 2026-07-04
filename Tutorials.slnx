@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/Tutorials/">
+    <Project Path="tutorials/SampleCompany/SampleNodeManagers/SampleCompany.SampleNodeManagers.csproj" />
+    <Project Path="tutorials/SampleCompany/SampleClient/SampleCompany.SampleClient.csproj" />
+    <Project Path="tutorials/SampleCompany/SampleServer/SampleCompany.SampleServer.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="docs/changelog/index.md" />
+    <File Path="common.props" />
+    <File Path="Directory.Build.props" />
+    <File Path="README.md" />
+    <File Path="targets.props" />
+    <File Path="version.json" />
+    <File Path="version.props" />
+  </Folder>
+</Solution>

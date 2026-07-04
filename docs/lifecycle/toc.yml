@@ -1,0 +1,12 @@
+- name: Product Lifecycle
+  href: index.md
+- name: Support Dates
+  href: supportdates.md
+- name: Product Versioning Guide
+  href: versioning.md  
+- name: Mainline Version (ML)
+  href: ml.md
+- name: Long Term Support
+  href: lts.md  
+- name: End of Life (EOL)
+  href: eol.md  

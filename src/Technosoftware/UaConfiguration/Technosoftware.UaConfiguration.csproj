@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>$(AssemblyPrefix).UaConfiguration</AssemblyName>
+    <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
+    <PackageId>$(PackagePrefix).UaConfiguration</PackageId>
+    <RootNamespace>Technosoftware.UaConfiguration</RootNamespace>
+    <Company>Technosoftware GmbH</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>OPC UA Solutions .NET Configuration Library</Description>
+    <Copyright>Copyright © 2018 - 2026 Technosoftware GmbH</Copyright>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Technosoftware.UaConfiguration.Tests" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" />  
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Types" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
+  </ItemGroup>   
+  <Target Name="GetPackagingOutputs" />
+</Project>

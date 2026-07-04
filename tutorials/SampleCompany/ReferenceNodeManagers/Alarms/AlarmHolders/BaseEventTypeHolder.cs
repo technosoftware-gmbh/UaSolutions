@@ -1,0 +1,96 @@
+#region Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+//-----------------------------------------------------------------------------
+// Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+// Web: https://technosoftware.com
+//
+// The Software is subject to the Technosoftware GmbH MIT License, which can
+// be found here:
+// https://technosoftware.com/license/mit/
+//
+// The Software is based on the OPC Foundation UA Stack and the OPC Foundation
+// MIT License. The complete license agreement for that can be found here:
+// http://opcfoundation.org/License/MIT/1.00/
+//-----------------------------------------------------------------------------
+#endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
+
+#region Using Directives
+using System;
+using System.Linq;
+using Microsoft.Extensions.Logging;
+using Opc.Ua;
+#endregion Using Directives
+
+namespace SampleCompany.NodeManagers.Alarms
+{
+    public abstract class BaseEventTypeHolder : AlarmHolder
+    {
+        protected BaseEventTypeHolder(
+            ILogger logger,
+            AlarmNodeManager alarmNodeManager,
+            FolderState parent,
+            SourceController trigger,
+            string name,
+            SupportedAlarmConditionType alarmConditionType,
+            Type controllerType,
+            int interval,
+            bool optional)
+            : base(
+                logger,
+                alarmNodeManager,
+                parent,
+                trigger,
+                controllerType,
+                interval)
+        {
+            m_optional = optional;
+        }
+
+        protected new void Initialize(uint alarmTypeIdentifier, string name)
+        {
+            m_alarmTypeIdentifier = alarmTypeIdentifier;
+
+            if (m_alarm != null)
+            {
+                // Call the base class to set parameters
+                base.Initialize(alarmTypeIdentifier, name);
+
+                BaseEventState alarm = GetAlarm();
+
+                alarm.EventId.Value = Guid.NewGuid().ToByteArray();
+                alarm.EventType.Value = new NodeId(
+                    alarmTypeIdentifier,
+                    GetNameSpaceIndex(alarmTypeIdentifier));
+                alarm.SourceNode.Value = m_trigger.NodeId;
+                alarm.SourceName.Value = m_trigger.SymbolicName;
+                alarm.Time.Value = DateTime.UtcNow;
+                alarm.ReceiveTime.Value = alarm.Time.Value;
+                alarm.Message.Value = name + " Initialized";
+                alarm.Severity.Value = AlarmDefines.INACTIVE_SEVERITY;
+
+                // TODO Implement for Optionals - Needs to go to all places where Time is set.
+                alarm.LocalTime = null;
+            }
+        }
+
+        public override void SetValue(string message = "")
+        {
+        }
+
+        private BaseEventState GetAlarm(BaseEventState alarm = null)
+        {
+            alarm ??= m_alarm;
+            return alarm;
+        }
+
+        protected bool IsEvent(byte[] eventId)
+        {
+            bool isEvent = false;
+            if (GetAlarm().EventId.Value.SequenceEqual(eventId))
+            {
+                isEvent = true;
+            }
+
+            return isEvent;
+        }
+    }
+}
