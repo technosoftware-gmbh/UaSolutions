@@ -25,9 +25,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using SampleCompany.Common;
 using Technosoftware.UaClient;
 using Technosoftware.UaConfiguration;
-using SampleCompany.Common;
 #endregion Using Directives
 
 namespace SampleCompany.ReferenceClient

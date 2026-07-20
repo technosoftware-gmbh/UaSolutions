@@ -1,6 +1,13 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 6.0.1
+
+### Integrated OPC UA Stack Version
+
+- Use of the original OPC Foundation Stack Version 1.5.378.156
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.0
 
 Version 6.0 has the same functionality as version 5.0.0 and uses also the same OPC Foundation Stack Version 1.5.378.145.

@@ -3,15 +3,16 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Technosoftware.UaSolutions.UaUtilities" Version="6.0.0" />
-    <PackageVersion Include="Technosoftware.UaSolutions.UaConfiguration" Version="6.0.0" />
-    <PackageVersion Include="Technosoftware.UaSolutions.UaClient" Version="6.0.0" />
-    <PackageVersion Include="Technosoftware.UaSolutions.UaServer" Version="6.0.0" />
-    <PackageVersion Include="Technosoftware.UaSolutions.ClientGateway" Version="6.0.0" />
-    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Types" Version="1.5.378.145" />
-    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.5.378.145" />
-    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.5.378.145" />
-    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.5.378.145" />
+    <PackageVersion Include="MinVer" Version="7.0.0" />
+    <PackageVersion Include="Technosoftware.UaSolutions.UaUtilities" Version="6.0.1" />
+    <PackageVersion Include="Technosoftware.UaSolutions.UaConfiguration" Version="6.0.1" />
+    <PackageVersion Include="Technosoftware.UaSolutions.UaClient" Version="6.0.1" />
+    <PackageVersion Include="Technosoftware.UaSolutions.UaServer" Version="6.0.1" />
+    <PackageVersion Include="Technosoftware.UaSolutions.ClientGateway" Version="6.0.1" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Types" Version="1.5.378.156" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.5.378.156" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.5.378.156" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.5.378.156" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="BitFaster.Caching" Version="2.6.0" />
@@ -28,7 +29,7 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.10" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
     <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
@@ -56,16 +57,17 @@
     <PackageVersion Include="System.Buffers" Version="4.6.1" />
     <PackageVersion Include="System.Composition.AttributedModel" Version="10.0.2" />
     <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="10.0.9" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="10.0.10" />
     <PackageVersion Include="System.Memory" Version="4.6.3" />
-    <PackageVersion Include="System.Formats.Asn1" Version="10.0.9" />
+    <PackageVersion Include="System.Formats.Asn1" Version="10.0.10" />
     <PackageVersion Include="System.IO.Compression" Version="4.3.0" />
     <PackageVersion Include="System.Net.NetworkInformation" Version="4.3.0" />
-    <PackageVersion Include="System.Collections.Immutable" Version="10.0.9" />
-    <PackageVersion Include="System.Text.Json" Version="10.0.9" />
+    <PackageVersion Include="System.Collections.Immutable" Version="10.0.10" />
+    <PackageVersion Include="System.Text.Json" Version="10.0.10" />
     <PackageVersion Include="System.Private.Uri" Version="4.3.2" />
     <PackageVersion Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
     <PackageVersion Include="System.Security.Cryptography.Cng" Version="5.0.0" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
+    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.19.1" />
   </ItemGroup>
 </Project>

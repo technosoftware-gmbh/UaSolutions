@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <Company>Technosoftware GmbH</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>OPC UA Solutions .NET Configuration Library</Description>
+    <Copyright>Copyright © 2026 Technosoftware GmbH</Copyright>
     <AssemblyName>$(AssemblyPrefix).UaConfiguration</AssemblyName>
     <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
     <PackageId>$(PackagePrefix).UaConfiguration</PackageId>
     <RootNamespace>Technosoftware.UaConfiguration</RootNamespace>
-    <Company>Technosoftware GmbH</Company>
-    <Product>OPC UA Solutions .NET</Product>
-    <Description>OPC UA Solutions .NET Configuration Library</Description>
-    <Copyright>Copyright © 2018 - 2026 Technosoftware GmbH</Copyright>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>

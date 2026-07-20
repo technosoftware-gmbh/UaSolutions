@@ -2,9 +2,9 @@
   <PropertyGroup>
     <Product>OPC UA Solutions .NET</Product>
     <RepositoryUrl>https://github.com/technosoftware-gmbh/UaSolutions</RepositoryUrl>
-    <VersionPrefix>6.0.0</VersionPrefix>
+    <VersionPrefix>6.0.1</VersionPrefix>
     <VersionSuffix>rc-$([System.DateTime]::Now.ToString("yyyyMMdd"))</VersionSuffix>
-    <Copyright>Copyright © 2011 - 2026 Technosoftware GmbH</Copyright>
+    <Copyright>Copyright © 2026 Technosoftware GmbH</Copyright>
     <PackagePrefix>Technosoftware.UaSolutions</PackagePrefix>
     <AssemblyPrefix>Technosoftware</AssemblyPrefix>
     <Company>Technosoftware GmbH</Company>
@@ -19,7 +19,7 @@
     <!-- to enable package validation, uncomment here -->
     <!--<EnablePackageValidation>true</EnablePackageValidation>-->
     <!-- to check the package validation on a release build, uncomment here -->
-    <!--<PackageValidationBaselineVersion>6.0.0/PackageValidationBaselineVersion>-->
+    <!--<PackageValidationBaselineVersion>6.0.1/PackageValidationBaselineVersion>-->
     <!-- to regenerate the compatibility suppression file, uncomment here -->
     <!--<GenerateCompatibilitySuppressionFile>true</GenerateCompatibilitySuppressionFile>-->
     <NuGetAuditMode>all</NuGetAuditMode>
@@ -43,10 +43,9 @@
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-  	<Documentation>README.md</Documentation>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageReleaseNotes>$(RepositoryUrl)/releases</PackageReleaseNotes>
-    <PackageTags>Technosoftware OPC UA .NET 10.0 windows macOS linux dotnet</PackageTags>
+    <PackageTags>Technosoftware OPC UA .NET windows macOS linux dotnet net netcore</PackageTags>
   </PropertyGroup>
   <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
     <!-- Technosoftware GmbH Strong Name Public Key -->
@@ -70,8 +69,8 @@
   <ItemGroup Condition="'$(IsPackable)' != 'false'">
     <None Include="$(MSBuildThisFileDirectory)/LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)"/>
     <None Include="$(MSBuildThisFileDirectory)/nuget/TechnosoftwareGmbH.png" Pack="true" PackagePath="$(PackageIcon)"/>
-    <None Include="$(MSBuildThisFileDirectory)/nuget/README.md" Pack="true" PackagePath="$(Documentation)"/>
-    <None Include="$(MSBuildThisFileDirectory)/CHANGELOG.md" Pack="true" PackagePath="/"/>
+    <None Include="$(MSBuildThisFileDirectory)/README.md" Pack="true" PackagePath="$(Documentation)"/>
+    <None Include="$(MSBuildThisFileDirectory)/docs/changelog/index.md" Pack="true" PackagePath="/CHANGELOG.md"/>
   </ItemGroup>
   <ItemGroup Condition="'$(NBGV_PublicRelease)' != ''">
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
