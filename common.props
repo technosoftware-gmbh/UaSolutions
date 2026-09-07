@@ -112,7 +112,7 @@
     The package version is unaffected: NuGet still ships 6.0.2, and
     AssemblyInformationalVersion carries the full version including any prerelease.
   -->
-  <Target Name="SetLicenseSafeFileVersion" AfterTargets="MinVer">
+  <Target Name="SetLicenseSafeFileVersion" AfterTargets="MinVer" Condition="'$(MinVerMajor)' != ''">
     <PropertyGroup>
       <FileVersion>$(MinVerMajor).$(MinVerMinor).0.$(MinVerPatch)</FileVersion>
     </PropertyGroup>

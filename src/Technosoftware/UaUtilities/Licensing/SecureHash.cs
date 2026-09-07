@@ -23,15 +23,13 @@ namespace Technosoftware.UaUtilities
     /// </summary>
     public static class SecureHash
     {
-#pragma warning disable CS1584 // XML comment has syntactically incorrect cref attribute
-#pragma warning disable CS1658 // Warning is overriding an error
         /// <summary>
         /// Compute SHA256 hash of passed string.
         /// </summary>
-        /// <see cref="http://www.fileformat.info/tool/hash.htm"/>
-        /// <see cref="http://stackoverflow.com/questions/18828808/calculating-sha1-from-hex-binary-string-in-c-sharp"/>
-        /// <see cref="https://gist.github.com/kristopherjohnson/3021045"/>
-        /// <see cref="https://hash.online-convert.com/sha1-generator" />
+        /// <seealso href="http://www.fileformat.info/tool/hash.htm" />
+        /// <seealso href="http://stackoverflow.com/questions/18828808/calculating-sha1-from-hex-binary-string-in-c-sharp" />
+        /// <seealso href="https://gist.github.com/kristopherjohnson/3021045" />
+        /// <seealso href="https://hash.online-convert.com/sha1-generator" />
         /// <remarks>
         /// SHA256 provides stronger security than SHA1.
         /// </remarks>
@@ -42,8 +40,6 @@ namespace Technosoftware.UaUtilities
         /// <param name="input">String to be hashed</param>
         /// <returns>String of hex bytes representing the SHA256 hash</returns>
         public static string ComputeSHA256Hash(string input)
-#pragma warning restore CS1658 // Warning is overriding an error
-#pragma warning restore CS1584 // XML comment has syntactically incorrect cref attribute
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(input);
 
