@@ -136,38 +136,53 @@ jobs:
     - name: Build the tutorials solution
       run: dotnet build Tutorials.slnx --configuration Release -p:Licensed=${{ matrix.flavour == 'licensed' }}
 
-  # The whole single-source design rests on TECHNOSOFTWARE_LICENSED appearing in
-  # exactly one source file. If it spreads, the two flavours start to diverge in
-  # ways nobody is tracking.
+  # The whole single-source design rests on the licensing conditionals staying put:
+  # one implementation file each, plus the .csproj that defines the constant. If they
+  # spread, the two flavours start to diverge in ways nobody is tracking.
   guard-conditional-compilation:
     name: Guard the licensing conditional
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
 
-    - name: TECHNOSOFTWARE_LICENSED must live in one file only
+    - name: TECHNOSOFTWARE_LICENSED must stay in the licensing seam
       shell: bash
+      env:
+        LC_ALL: C
       run: |
-        files=$(grep -rl 'TECHNOSOFTWARE_LICENSED' src/ tutorials/ Tests/ || true)
-        echo "$files"
-        count=$(printf '%s\n' "$files" | grep -c . || true)
-        if [ "$count" -gt 2 ]; then
-          echo "::error::TECHNOSOFTWARE_LICENSED appears in $count files; it belongs in"
-          echo "::error::Licensing/LicenseHandlerGate.cs and the ApplicationInstance hook only."
+        expected=$(printf '%s\n' \
+          'src/Technosoftware/UaConfiguration/ApplicationInstance.cs' \
+          'src/Technosoftware/UaConfiguration/Licensing/LicenseHandlerGate.cs' \
+          'src/Technosoftware/UaConfiguration/Technosoftware.UaConfiguration.csproj')
+        actual=$(grep -rl --include='*.cs' --include='*.csproj' \
+          'TECHNOSOFTWARE_LICENSED' src tutorials Tests | sort || true)
+        if [ "$actual" != "$expected" ]; then
+          echo "::error::TECHNOSOFTWARE_LICENSED belongs in LicenseHandlerGate.cs, the"
+          echo "::error::ApplicationInstance hook and the UaConfiguration .csproj only."
+          echo "expected:"; printf '%s\n' "$expected"
+          echo "actual:";   printf '%s\n' "$actual"
           exit 1
         fi
+        echo "OK: $(printf '%s\n' "$actual" | wc -l) expected files."
 
-    - name: LICENSE_TEST_SEAM must live in one file only
+    - name: LICENSE_TEST_SEAM must stay in the UaUtilities seam
       shell: bash
+      env:
+        LC_ALL: C
       run: |
-        files=$(grep -rl 'LICENSE_TEST_SEAM' src/ tutorials/ Tests/ || true)
-        echo "$files"
-        count=$(printf '%s\n' "$files" | grep -c . || true)
-        if [ "$count" -gt 1 ]; then
-          echo "::error::LICENSE_TEST_SEAM appears in $count files; it belongs in"
-          echo "::error::Licensing/LicenseHandler.cs only. See project doc 13."
+        expected=$(printf '%s\n' \
+          'src/Technosoftware/UaUtilities/Licensing/LicenseHandler.cs' \
+          'src/Technosoftware/UaUtilities/Technosoftware.UaUtilities.csproj')
+        actual=$(grep -rl --include='*.cs' --include='*.csproj' \
+          'LICENSE_TEST_SEAM' src tutorials Tests | sort || true)
+        if [ "$actual" != "$expected" ]; then
+          echo "::error::LICENSE_TEST_SEAM belongs in LicenseHandler.cs and the"
+          echo "::error::UaUtilities .csproj only. See project doc 13."
+          echo "expected:"; printf '%s\n' "$expected"
+          echo "actual:";   printf '%s\n' "$actual"
           exit 1
         fi
+        echo "OK: $(printf '%s\n' "$actual" | wc -l) expected files."
 
     - name: A default build must not contain the test seam
       shell: bash
@@ -181,3 +196,23 @@ jobs:
           exit 1
         fi
         echo "OK: no test seam in the default build."
+
+    - name: The seam must not leak into a licensed solution build
+      shell: bash
+      # UaUtilities is built twice in one solution build: the ordinary way for
+      # UaConfiguration, and with LicenseTestSeam=true for UaUtilities.Tests. They are
+      # kept apart by the seam output paths in Directory.Build.props. If that ever
+      # breaks they share obj/ and bin/, the last writer wins, and the seam can reach
+      # the assembly that gets packed. Only the seam folder and the test project's own
+      # output may carry the symbol.
+      run: |
+        dotnet build UaSolutionsSource.slnx -c Release -p:Licensed=true -p:CustomTestTarget=net10.0
+        leaked=$(grep -rla 'PublicKeyOverride' \
+          --include='Technosoftware.UaUtilities.dll' src tutorials Tests \
+          | grep -v '/seam/' | grep -v '/UaUtilities.Tests/' || true)
+        if [ -n "$leaked" ]; then
+          echo "::error::The licence test seam reached a shipped output:"
+          printf '%s\n' "$leaked"
+          exit 1
+        fi
+        echo "OK: the seam stayed in its own output folder."
