@@ -6,6 +6,9 @@
 ### Changes
 
 - Improved license validation.
+- Fixed a rare crash in the client session: when a publish response returned an error
+  while subscriptions were being created or deleted on another thread, the session
+  could throw an unhandled exception on a thread pool thread and terminate the process.
 - The assembly file version now carries the patch number in the revision field: 6.0.2 ships
   as file version 6.0.0.2. The exact patch level is therefore visible in the file properties,
   which is what we ask for when you report an issue.
