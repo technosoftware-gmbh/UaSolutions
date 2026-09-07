@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Company>Technosoftware GmbH</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>OPC UA Solutions .NET Utilities Library</Description>
+    <Copyright>Copyright © 2026 Technosoftware GmbH</Copyright>
+    <AssemblyName>$(AssemblyPrefix).UaUtilities</AssemblyName>
+    <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
+    <PackageId>$(PackagePrefix).UaUtilities</PackageId>
+    <RootNamespace>Technosoftware.UaUtilities</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Technosoftware.UaUtilities.Tests" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+  <!--
+    Test seam, never enabled for a shipped build:
+        dotnet build -p:LicenseTestSeam=true
+    adds LicenseHandler.PublicKeyOverride so fixture licences can be signed with a
+    throw-away key. Without the flag that member does not exist in the assembly at all.
+    release.yml asserts the flag is off. See project doc 13.
+  -->
+  <PropertyGroup Condition="'$(LicenseTestSeam)' == 'true'">
+    <DefineConstants>$(DefineConstants);LICENSE_TEST_SEAM</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" />
+    <PackageReference Include="System.Formats.Asn1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+  <Target Name="GetPackagingOutputs" />
+</Project>

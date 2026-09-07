@@ -46,6 +46,18 @@ namespace SampleCompany.ReferenceClient
         {
             Console.WriteLine("OPC UA Console Reference Client");
 
+            #region License validation
+            // The gate is a no-op in the MIT build and the real license check in the
+            // licensed build; the sample needs no conditional compilation for either.
+            const string licenseData = "";
+            if (!UaLicensing.Gate.TryApplyLicense(licenseData))
+            {
+                Console.WriteLine("WARNING: No valid license applied.");
+            }
+
+            UaLicensing.Gate.WriteLicenseInfo(Console.Out);
+            #endregion License validation
+
             Console.WriteLine(
                 "OPC UA Solutions: {0} @ {1} -- {2}",
                 Utils.GetAssemblyBuildNumber(),

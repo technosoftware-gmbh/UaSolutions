@@ -45,6 +45,7 @@
     <Project Path="src/Technosoftware/UaClient/Technosoftware.UaClient.csproj" />
     <Project Path="src/Technosoftware/UaConfiguration/Technosoftware.UaConfiguration.csproj" />
     <Project Path="src/Technosoftware/UaServer/Technosoftware.UaServer.csproj" />
+    <Project Path="src/Technosoftware/UaUtilities/Technosoftware.UaUtilities.csproj" />
   </Folder>
   <Folder Name="/Tutorials/">
     <Project Path="tutorials/SampleCompany/SampleClient/SampleCompany.SampleClient.csproj" />
@@ -62,12 +63,11 @@
     <File Path="Directory.Build.props" />
     <File Path="README.md" />
     <File Path="targets.props" />
-    <File Path="version.json" />
-    <File Path="version.props" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/Technosoftware/UaClient.Tests/Technosoftware.UaClient.Tests.csproj" />
     <Project Path="Tests/Technosoftware/UaConfiguration.Tests/Technosoftware.UaConfiguration.Tests.csproj" />
     <Project Path="Tests/Technosoftware/UaServer.Tests/Technosoftware.UaServer.Tests.csproj" />
+    <Project Path="Tests/Technosoftware/UaUtilities.Tests/Technosoftware.UaUtilities.Tests.csproj" />
   </Folder>
 </Solution>

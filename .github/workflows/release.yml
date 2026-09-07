@@ -1,0 +1,244 @@
+name: Release
+
+# This repository is the single source of the four Technosoftware.UaSolutions.*
+# libraries and publishes them. ClientGateway is released separately from the
+# private UaSolutionsNet repository, after this one.
+#
+# Packages are built with -p:Licensed=true — the flavour that carries the licence
+# check. A plain build stays MIT and licence-free for anyone who clones the source.
+#
+# Versioning is MinVer: the tag IS the version, so `fetch-depth: 0` is required.
+#
+#   git tag 6.0.2 && git push origin 6.0.2        -> stable  -> GitHub Packages + nuget.org
+#   git tag 6.1.0-preview.1 && git push origin ... -> preview -> GitHub Packages only
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build and pack, but do not push or create a release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # nuget.org publishing is optional: until the account exists there is no
+  # NUGET_API_KEY, and a release should still go out to GitHub Packages rather than
+  # failing on a missing secret. Secrets cannot be read from a job-level `if`, so the
+  # answer is computed here and consumed as an output.
+  check-secrets:
+    name: Check optional secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has_nuget_key: ${{ steps.check.outputs.has_nuget_key }}
+    steps:
+    - id: check
+      shell: bash
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: |
+        if [ -n "${NUGET_API_KEY:-}" ]; then
+          echo "has_nuget_key=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has_nuget_key=false" >> "$GITHUB_OUTPUT"
+          echo "::notice::NUGET_API_KEY is not configured - nuget.org publishing will be skipped."
+        fi
+
+  pack:
+    name: Build, test and pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Make the host name resolvable
+      shell: bash
+      run: |
+        full="$(hostname)"
+        short="${full%%.*}"
+        echo "127.0.0.1 ${full} ${short}" | sudo tee -a /etc/hosts
+        echo "::1 ${full} ${short}" | sudo tee -a /etc/hosts
+
+    - name: Build (licensed flavour — what ships)
+      run: dotnet build UaSolutionsSource.slnx --configuration Release -p:Licensed=true
+
+    - name: Test
+      run: dotnet test UaSolutionsSource.slnx --no-build --configuration Release -p:Licensed=true --logger trx --results-directory TestResults
+
+    - name: Build the tutorials solution
+      run: dotnet build Tutorials.slnx --configuration Release -p:Licensed=true
+
+    - name: Pack
+      run: dotnet pack UaSolutionsSource.slnx --no-build --configuration Release -p:Licensed=true -o ${{ github.workspace }}/artifacts
+
+    - name: The released packages must not contain the licence test seam
+      shell: bash
+      # LicenseHandler.PublicKeyOverride only exists in a -p:LicenseTestSeam=true build.
+      # A package carrying it would accept licences signed with any key. See doc 13.
+      run: |
+        set -euo pipefail
+        found=0
+        mkdir -p "$RUNNER_TEMP/unpack"
+        for pkg in artifacts/Technosoftware.UaSolutions.UaUtilities.*.nupkg; do
+          unzip -o -q "$pkg" -d "$RUNNER_TEMP/unpack"
+        done
+        while IFS= read -r asm; do
+          if grep -qa 'PublicKeyOverride' "$asm"; then
+            echo "::error::$asm contains the licence test seam."
+            found=1
+          fi
+        done < <(find "$RUNNER_TEMP/unpack" -name '*.dll')
+        if [ "$found" -ne 0 ]; then exit 1; fi
+        echo "OK: no test seam in the packages."
+
+    - name: Verify the version matches the tag
+      id: version
+      shell: bash
+      run: |
+        set -euo pipefail
+        pkg="$(ls artifacts/Technosoftware.UaSolutions.UaClient.*.nupkg | head -1)"
+        produced="$(basename "$pkg" .nupkg)"
+        produced="${produced#Technosoftware.UaSolutions.UaClient.}"
+        echo "MinVer produced version: ${produced}"
+        ls artifacts
+        if [ "${{ github.event_name }}" = "push" ] && [ "$produced" != "${GITHUB_REF_NAME}" ]; then
+          echo "::error::Tag is ${GITHUB_REF_NAME} but the packages are ${produced}."
+          echo "::error::Check that the tag is reachable from this commit and that"
+          echo "::error::checkout used fetch-depth: 0 so MinVer can see the tags."
+          exit 1
+        fi
+        echo "version=${produced}" >> "$GITHUB_OUTPUT"
+        if [[ "$produced" == *-* ]]; then
+          echo "prerelease=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "prerelease=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Extract changelog section
+      shell: bash
+      run: |
+        set -euo pipefail
+        version="${{ steps.version.outputs.version }}"
+        base="${version%%-*}"
+        awk -v v="$base" '
+          $0 ~ "^## OPC UA Solutions .NET - " v "$" { found = 1; next }
+          found && /^## OPC UA Solutions .NET - / { exit }
+          found { print }
+        ' docs/changelog/index.md | sed '/^-\{20,\}$/d' > artifacts/RELEASE_NOTES.md
+        if [ ! -s artifacts/RELEASE_NOTES.md ]; then
+          echo "::warning::No changelog section for ${base} in docs/changelog/index.md"
+          echo "See [the changelog](https://technosoftware-gmbh.github.io/UaSolutions/changelog/index.html)." > artifacts/RELEASE_NOTES.md
+        fi
+        cat artifacts/RELEASE_NOTES.md
+
+    - name: Upload packages
+      uses: actions/upload-artifact@v7
+      with:
+        name: nupkg
+        path: artifacts/
+        retention-days: 90
+
+    - name: Upload test results
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: testresults
+        path: TestResults/**
+        retention-days: 90
+
+  publish-github-packages:
+    name: Publish to GitHub Packages
+    needs: pack
+    if: github.event_name == 'push' || inputs.dry_run == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - uses: actions/download-artifact@v7
+      with:
+        name: nupkg
+        path: artifacts
+
+    - uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Push
+      # GitHub Packages does not accept .snupkg; symbols go to nuget.org only.
+      run: |
+        dotnet nuget push "artifacts/*.nupkg" \
+          --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json \
+          --api-key ${{ secrets.GITHUB_TOKEN }} \
+          --skip-duplicate \
+          --no-symbols
+
+  publish-nuget-org:
+    name: Publish to nuget.org
+    needs: [ check-secrets, pack, publish-github-packages ]
+    if: >-
+      (github.event_name == 'push' || inputs.dry_run == false)
+      && needs.pack.outputs.prerelease == 'false'
+      && needs.check-secrets.outputs.has_nuget_key == 'true'
+    runs-on: ubuntu-latest
+    environment: nuget.org
+    steps:
+    - uses: actions/download-artifact@v7
+      with:
+        name: nupkg
+        path: artifacts
+
+    - uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Push
+      run: |
+        dotnet nuget push "artifacts/*.nupkg" \
+          --source https://api.nuget.org/v3/index.json \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --skip-duplicate
+
+  github-release:
+    name: Create GitHub Release
+    needs: pack
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/download-artifact@v7
+      with:
+        name: nupkg
+        path: artifacts
+
+    - name: Create release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: OPC UA Solutions .NET ${{ needs.pack.outputs.version }}
+        body_path: artifacts/RELEASE_NOTES.md
+        prerelease: ${{ needs.pack.outputs.prerelease == 'true' }}
+        files: |
+          artifacts/*.nupkg
+          artifacts/*.snupkg
+        fail_on_unmatched_files: false

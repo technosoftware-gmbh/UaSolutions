@@ -1,6 +1,17 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 6.0.2
+
+### Changes
+
+- Improved license validation.
+- The assembly file version now carries the patch number in the revision field: 6.0.2 ships
+  as file version 6.0.0.2. The exact patch level is therefore visible in the file properties,
+  which is what we ask for when you report an issue.
+- The NuGet packages now show the Technosoftware icon on nuget.org.
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.1
 
 ### Integrated OPC UA Stack Version

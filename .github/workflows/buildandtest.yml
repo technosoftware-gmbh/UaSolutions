@@ -5,18 +5,20 @@ permissions:
 
 on:
   push:
+    branches: [ master, main, develop/*, release/* ]
   pull_request:
     branches: [ master, main, develop/*, release/* ]
-    paths:
-    - '**.cs'
-    - '**.csproj'
+    # Note: do NOT filter on '**.cs' / '**.csproj' here. Dependency updates touch
+    # only Directory.Packages.props, so a path filter of source files means every
+    # Dependabot PR merges without a single test having run.
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
-env:
-  ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
 
 jobs:
   build-and-test:
@@ -26,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-2025-vs2026]
-        csproj: [UaServer, UaClient]
+        csproj: [UaServer, UaClient, UaConfiguration, UaUtilities]
         include:
           - framework: 'net10.0'
             dotnet-version: '10.0.x'
@@ -51,9 +53,18 @@ jobs:
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
 
-    - name: Set Cloud Version
-      shell: pwsh
-      run: ./.azurepipelines/set-version.ps1
+    - name: Make the host name resolvable
+      if: runner.os != 'Windows'
+      shell: bash
+      # ServerFixture publishes endpoint URLs built from Utils.GetHostName(). If
+      # that name does not resolve, TcpMessageSocket.ConnectAsync fails with
+      # SocketException(11) TryAgain and whole client fixtures fail on DNS, not
+      # on anything to do with the code under test.
+      run: |
+        full="$(hostname)"
+        short="${full%%.*}"
+        echo "127.0.0.1 ${full} ${short}" | sudo tee -a /etc/hosts
+        echo "::1 ${full} ${short}" | sudo tee -a /etc/hosts
 
     - name: Build
       run: dotnet build ${{ env.CSPROJECT }} --framework ${{ matrix.framework }} --configuration ${{ matrix.configuration }} /p:CustomTestTarget=${{ matrix.customtesttarget }}
@@ -70,28 +81,103 @@ jobs:
         # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
 
-    - name: Upload to Codecov
+    # One upload per report type. The previous three consecutive codecov-action
+    # steps uploaded the same directory twice and then re-uploaded it with no
+    # directory at all.
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v7
       with:
         name: codecov-umbrella
         token: ${{ secrets.CODECOV_TOKEN }}
+        slug: technosoftware-gmbh/UaSolutions
         directory: ${{ env.TESTRESULTS }}
         env_vars: CSPROJ,OS,DOTNET_VERSION,CONFIGURATION
         fail_ci_if_error: false
-        #path_to_write_report: "./coverage/codecov_report-${{matrix.os}}-${{matrix.framework}}-${{matrix.configuration}}/"
         verbose: true
-      # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
-      
-    - name: Upload Coverage
-      uses: codecov/codecov-action@v7
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        report_type: coverage # Or just let it default
 
-    - name: Upload Test Results
+    - name: Upload test results to Codecov
       uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         slug: technosoftware-gmbh/UaSolutions
-        report_type: test_results # Explicitly for tests
+        directory: ${{ env.TESTRESULTS }}
+        report_type: test_results
+        fail_ci_if_error: false
+      if: ${{ always() }}
+
+  # The samples are the first thing a prospective customer builds. Nothing in CI
+  # compiled them before, so a breaking change in the libraries could ship with
+  # green checks and a Tutorials.slnx that does not build.
+  build-samples:
+    name: samples-${{ matrix.os }}-${{ matrix.flavour }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025-vs2026]
+        # mit      = a plain build: no licensing dependency, no license check
+        # licensed = what the shipped NuGet packages are built with
+        flavour: [mit, licensed]
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Build the full source solution (all TFMs)
+      run: dotnet build UaSolutionsSource.slnx --configuration Release -p:Licensed=${{ matrix.flavour == 'licensed' }}
+
+    - name: Build the tutorials solution
+      run: dotnet build Tutorials.slnx --configuration Release -p:Licensed=${{ matrix.flavour == 'licensed' }}
+
+  # The whole single-source design rests on TECHNOSOFTWARE_LICENSED appearing in
+  # exactly one source file. If it spreads, the two flavours start to diverge in
+  # ways nobody is tracking.
+  guard-conditional-compilation:
+    name: Guard the licensing conditional
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: TECHNOSOFTWARE_LICENSED must live in one file only
+      shell: bash
+      run: |
+        files=$(grep -rl 'TECHNOSOFTWARE_LICENSED' src/ tutorials/ Tests/ || true)
+        echo "$files"
+        count=$(printf '%s\n' "$files" | grep -c . || true)
+        if [ "$count" -gt 2 ]; then
+          echo "::error::TECHNOSOFTWARE_LICENSED appears in $count files; it belongs in"
+          echo "::error::Licensing/LicenseHandlerGate.cs and the ApplicationInstance hook only."
+          exit 1
+        fi
+
+    - name: LICENSE_TEST_SEAM must live in one file only
+      shell: bash
+      run: |
+        files=$(grep -rl 'LICENSE_TEST_SEAM' src/ tutorials/ Tests/ || true)
+        echo "$files"
+        count=$(printf '%s\n' "$files" | grep -c . || true)
+        if [ "$count" -gt 1 ]; then
+          echo "::error::LICENSE_TEST_SEAM appears in $count files; it belongs in"
+          echo "::error::Licensing/LicenseHandler.cs only. See project doc 13."
+          exit 1
+        fi
+
+    - name: A default build must not contain the test seam
+      shell: bash
+      # The seam is what lets a licence signed with a key other than the production one
+      # be accepted. If it ever reaches a shipped assembly, licensing is bypassable.
+      run: |
+        dotnet build src/Technosoftware/UaUtilities/Technosoftware.UaUtilities.csproj \
+          -c Release -p:CustomTestTarget=net10.0 -o "$RUNNER_TEMP/seamcheck"
+        if grep -qa 'PublicKeyOverride' "$RUNNER_TEMP/seamcheck/Technosoftware.UaUtilities.dll"; then
+          echo "::error::The default build of UaUtilities contains PublicKeyOverride."
+          exit 1
+        fi
+        echo "OK: no test seam in the default build."
