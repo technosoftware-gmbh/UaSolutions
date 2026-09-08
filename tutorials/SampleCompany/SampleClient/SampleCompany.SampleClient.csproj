@@ -32,6 +32,7 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Types" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
+    <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" />
     <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" />
     <PackageReference Include="Technosoftware.UaSolutions.UaClient" />	

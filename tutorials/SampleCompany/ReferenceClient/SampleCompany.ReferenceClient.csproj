@@ -32,6 +32,7 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Types" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
+    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>     
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Technosoftware\UaConfiguration\Technosoftware.UaConfiguration.csproj" />
