@@ -330,8 +330,9 @@ namespace Technosoftware.UaConfiguration
             // ensure for a user token policy
             if (ApplicationConfiguration.ServerConfiguration?.UserTokenPolicies.Count == 0)
             {
-                ApplicationConfiguration.ServerConfiguration.UserTokenPolicies.Add(
-                    new UserTokenPolicy(UserTokenType.Anonymous));
+                ApplicationConfiguration.ServerConfiguration.UserTokenPolicies =
+                    [.. ApplicationConfiguration.ServerConfiguration.UserTokenPolicies,
+                        new UserTokenPolicy(UserTokenType.Anonymous)];
             }
 
             // ensure for secure transport profiles
@@ -390,7 +391,8 @@ namespace Technosoftware.UaConfiguration
             // base addresses
             foreach (string baseAddress in baseAddresses)
             {
-                serverConfiguration.BaseAddresses.Add(Utils.ReplaceLocalhost(baseAddress));
+                serverConfiguration.BaseAddresses =
+                    [.. serverConfiguration.BaseAddresses, Utils.ReplaceLocalhost(baseAddress)];
             }
 
             // alternate base addresses
@@ -398,8 +400,9 @@ namespace Technosoftware.UaConfiguration
             {
                 foreach (string alternateBaseAddress in alternateBaseAddresses)
                 {
-                    serverConfiguration.AlternateBaseAddresses
-                        .Add(Utils.ReplaceLocalhost(alternateBaseAddress));
+                    serverConfiguration.AlternateBaseAddresses =
+                        [.. serverConfiguration.AlternateBaseAddresses,
+                            Utils.ReplaceLocalhost(alternateBaseAddress)];
                 }
             }
 
@@ -491,8 +494,9 @@ namespace Technosoftware.UaConfiguration
         public IUaApplicationConfigurationServerSelected AddUserTokenPolicy(
             UserTokenType userTokenType)
         {
-            ApplicationConfiguration.ServerConfiguration.UserTokenPolicies
-                .Add(new UserTokenPolicy(userTokenType));
+            ApplicationConfiguration.ServerConfiguration.UserTokenPolicies =
+                [.. ApplicationConfiguration.ServerConfiguration.UserTokenPolicies,
+                    new UserTokenPolicy(userTokenType)];
             return this;
         }
 
@@ -505,7 +509,8 @@ namespace Technosoftware.UaConfiguration
                 throw new ArgumentNullException(nameof(userTokenPolicy));
             }
 
-            ApplicationConfiguration.ServerConfiguration.UserTokenPolicies.Add(userTokenPolicy);
+            ApplicationConfiguration.ServerConfiguration.UserTokenPolicies =
+                [.. ApplicationConfiguration.ServerConfiguration.UserTokenPolicies, userTokenPolicy];
             return this;
         }
 
@@ -935,7 +940,8 @@ namespace Technosoftware.UaConfiguration
         /// <inheritdoc/>
         public IUaApplicationConfigurationServerOptions AddServerProfile(string serverProfile)
         {
-            ApplicationConfiguration.ServerConfiguration.ServerProfileArray.Add(serverProfile);
+            ApplicationConfiguration.ServerConfiguration.ServerProfileArray =
+                [.. ApplicationConfiguration.ServerConfiguration.ServerProfileArray, serverProfile];
             return this;
         }
 
@@ -950,7 +956,8 @@ namespace Technosoftware.UaConfiguration
         public IUaApplicationConfigurationServerOptions AddServerCapabilities(
             string serverCapability)
         {
-            ApplicationConfiguration.ServerConfiguration.ServerCapabilities.Add(serverCapability);
+            ApplicationConfiguration.ServerConfiguration.ServerCapabilities =
+                [.. ApplicationConfiguration.ServerConfiguration.ServerCapabilities, serverCapability];
             return this;
         }
 
@@ -1025,8 +1032,9 @@ namespace Technosoftware.UaConfiguration
         public IUaApplicationConfigurationClientOptions AddWellKnownDiscoveryUrls(
             string wellKnownDiscoveryUrl)
         {
-            ApplicationConfiguration.ClientConfiguration.WellKnownDiscoveryUrls
-                .Add(wellKnownDiscoveryUrl);
+            ApplicationConfiguration.ClientConfiguration.WellKnownDiscoveryUrls =
+                [.. ApplicationConfiguration.ClientConfiguration.WellKnownDiscoveryUrls,
+                    wellKnownDiscoveryUrl];
             return this;
         }
 
@@ -1034,7 +1042,8 @@ namespace Technosoftware.UaConfiguration
         public IUaApplicationConfigurationClientOptions AddDiscoveryServer(
             EndpointDescription discoveryServer)
         {
-            ApplicationConfiguration.ClientConfiguration.DiscoveryServers.Add(discoveryServer);
+            ApplicationConfiguration.ClientConfiguration.DiscoveryServers =
+                [.. ApplicationConfiguration.ClientConfiguration.DiscoveryServers, discoveryServer];
             return this;
         }
 

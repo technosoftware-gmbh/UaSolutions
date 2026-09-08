@@ -608,7 +608,7 @@ namespace Technosoftware.UaConfiguration
 
             m_logger.LogInformation(
                 "Check application instance certificate {Certificate}.",
-                certificate.AsLogSafeString());
+                certificate);
 
             try
             {
@@ -693,7 +693,7 @@ namespace Technosoftware.UaConfiguration
 
             m_logger.LogInformation(
                 "Certificate {Certificate} validated for ApplicationUri: {ApplicationUri}",
-                certificate.AsLogSafeString(),
+                certificate,
                 configuration.ApplicationUri);
 
             // update configuration.
@@ -1071,7 +1071,7 @@ namespace Technosoftware.UaConfiguration
 
                     m_logger.LogInformation(
                         "Adding application certificate {Certificate} to trusted peer store.",
-                        certificate.AsLogSafeString());
+                        certificate);
 
                     List<string> subjectName = X509Utils.ParseDistinguishedName(
                         certificate.Subject);
@@ -1112,7 +1112,7 @@ namespace Technosoftware.UaConfiguration
                             {
                                 m_logger.LogInformation(
                                     "Delete Certificate {Certificate} from trusted store.",
-                                    certificate.AsLogSafeString());
+                                    certificate);
                                 await store.DeleteAsync(certificates[ii].Thumbprint, ct)
                                     .ConfigureAwait(false);
                                 break;
