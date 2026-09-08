@@ -260,7 +260,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc cref="ServerConfiguration.SupportedPrivateKeyFormats"/>
         IUaApplicationConfigurationServerOptions SetSupportedPrivateKeyFormats(
-            StringCollection supportedPrivateKeyFormats);
+            List<string> supportedPrivateKeyFormats);
 
         /// <inheritdoc cref="ServerConfiguration.MaxTrustListSize"/>
         IUaApplicationConfigurationServerOptions SetMaxTrustListSize(int maxTrustListSize);

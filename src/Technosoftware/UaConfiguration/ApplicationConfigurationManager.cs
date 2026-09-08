@@ -347,7 +347,7 @@ namespace Technosoftware.UaConfiguration
                 .ConfigureAwait(false);
 
             await ApplicationConfiguration
-                .CertificateValidator.UpdateAsync(
+                .CertificateManager.UpdateAsync(
                     ApplicationConfiguration.SecurityConfiguration,
                     applicationUri: null,
                     ct)
@@ -419,7 +419,7 @@ namespace Technosoftware.UaConfiguration
         {
             if (addPolicy)
             {
-                ServerSecurityPolicyCollection policies = ApplicationConfiguration
+                List<ServerSecurityPolicy> policies = ApplicationConfiguration
                     .ServerConfiguration
                     .SecurityPolicies;
                 InternalAddPolicy(policies, MessageSecurityMode.None, SecurityPolicies.None);
@@ -955,7 +955,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc/>
         public IUaApplicationConfigurationServerOptions SetSupportedPrivateKeyFormats(
-            StringCollection supportedPrivateKeyFormats)
+            List<string> supportedPrivateKeyFormats)
         {
             ApplicationConfiguration.ServerConfiguration.SupportedPrivateKeyFormats
                 = supportedPrivateKeyFormats;
@@ -1365,7 +1365,7 @@ namespace Technosoftware.UaConfiguration
             foreach (MessageSecurityMode securityMode in typeof(MessageSecurityMode)
                 .GetEnumValues())
             {
-                ServerSecurityPolicyCollection policies = ApplicationConfiguration
+                List<ServerSecurityPolicy> policies = ApplicationConfiguration
                     .ServerConfiguration
                     .SecurityPolicies;
                 if (policyNone && securityMode == MessageSecurityMode.None)
@@ -1394,7 +1394,7 @@ namespace Technosoftware.UaConfiguration
                 ? MessageSecurityMode.Sign
                 : MessageSecurityMode.SignAndEncrypt;
             {
-                ServerSecurityPolicyCollection policies = ApplicationConfiguration
+                List<ServerSecurityPolicy> policies = ApplicationConfiguration
                     .ServerConfiguration
                     .SecurityPolicies;
                 foreach (string policyUri in defaultPolicyUris)
@@ -1428,7 +1428,7 @@ namespace Technosoftware.UaConfiguration
         /// <param name="policyUri">The security policy Uri.</param>
         /// <exception cref="ArgumentException"><paramref name="securityMode"/></exception>
         private static bool InternalAddPolicy(
-            ServerSecurityPolicyCollection policies,
+            List<ServerSecurityPolicy> policies,
             MessageSecurityMode securityMode,
             string policyUri)
         {

@@ -612,11 +612,11 @@ namespace Technosoftware.UaConfiguration
             try
             {
                 // validate certificate.
-                configuration.CertificateValidator.CertificateValidation += OnCertificateValidation;
+                configuration.CertificateManager.CertificateValidation += OnCertificateValidation;
                 await configuration
-                    .CertificateValidator.ValidateAsync(
+                    .CertificateManager.ValidateAsync(
                         certificate.HasPrivateKey
-                            ? CertificateFactory.Create(certificate.RawData)
+                            ? DefaultCertificateFactory.Instance.Create(certificate.RawData)
                             : certificate,
                         ct)
                     .ConfigureAwait(false);
@@ -633,7 +633,7 @@ namespace Technosoftware.UaConfiguration
             }
             finally
             {
-                configuration.CertificateValidator.CertificateValidation -= OnCertificateValidation;
+                configuration.CertificateManager.CertificateValidation -= OnCertificateValidation;
             }
 
             // check key size
@@ -837,7 +837,7 @@ namespace Technosoftware.UaConfiguration
                     serverDomainNames)
                 .SetLifeTime(lifeTimeInMonths);
 
-            if (id.CertificateType == null ||
+            if (id.CertificateType.IsNull ||
                 id.CertificateType == ObjectTypeIds.ApplicationCertificateType ||
                 id.CertificateType == ObjectTypeIds.RsaMinApplicationCertificateType ||
                 id.CertificateType == ObjectTypeIds.RsaSha256ApplicationCertificateType)
@@ -895,7 +895,7 @@ namespace Technosoftware.UaConfiguration
                 .ConfigureAwait(false);
 
             await configuration
-                .CertificateValidator.UpdateAsync(configuration.SecurityConfiguration, applicationUri: null, ct)
+                .CertificateManager.UpdateAsync(configuration.SecurityConfiguration, applicationUri: null, ct)
                 .ConfigureAwait(false);
 
             m_logger.LogInformation(
@@ -1100,7 +1100,7 @@ namespace Technosoftware.UaConfiguration
                     }
 
                     // add new certificate.
-                    using X509Certificate2 publicKey = CertificateFactory.Create(certificate.RawData);
+                    using X509Certificate2 publicKey = DefaultCertificateFactory.Instance.Create(certificate.RawData);
                     await store.AddAsync(publicKey, ct: ct).ConfigureAwait(false);
 
                     m_logger.LogInformation("Added application certificate to trusted peer store.");
