@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaConfiguration
