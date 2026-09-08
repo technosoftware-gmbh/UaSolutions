@@ -28,7 +28,7 @@ namespace Technosoftware.UaConfiguration
     /// <summary>
     /// An application that is managed by the configuration tool.
     /// </summary>
-    [DataType]
+    [DataType(Namespace = Namespaces.OpcUaConfig)]
     public partial class ManagedApplication 
     {
         /// <summary>

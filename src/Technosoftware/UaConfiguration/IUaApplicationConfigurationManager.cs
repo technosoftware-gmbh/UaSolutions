@@ -210,9 +210,21 @@ namespace Technosoftware.UaConfiguration
         IUaApplicationConfigurationServerOptions SetMaxNotificationsPerPublish(
             int maxNotificationsPerPublish);
 
-        /// <inheritdoc cref="ServerConfiguration.MinMetadataSamplingInterval"/>
-        IUaApplicationConfigurationServerOptions SetMinMetadataSamplingInterval(
-            int minMetadataSamplingInterval);
+        /// <summary>
+        /// Sets the smallest sampling interval the server supports, in milliseconds.
+        /// </summary>
+        /// <remarks>
+        /// This replaces SetMinMetadataSamplingInterval, but it is a different setting
+        /// rather than a rename. MinMetadataSamplingInterval was never read by the stack,
+        /// so whatever was configured had no effect. MinSupportedSamplingInterval is
+        /// applied: it is published as Server.ServerCapabilities.MinSupportedSampleRate
+        /// and acts as a server-wide lower bound when a monitored item's sampling interval
+        /// is revised. Do not carry the old value across without deciding you want that
+        /// floor - clients will see a different revisedSamplingInterval if you do.
+        /// </remarks>
+        /// <inheritdoc cref="ServerConfiguration.MinSupportedSamplingInterval"/>
+        IUaApplicationConfigurationServerOptions SetMinSupportedSamplingInterval(
+            double minSupportedSamplingInterval);
 
         /// <inheritdoc cref="ServerConfiguration.AvailableSamplingRates"/>
         IUaApplicationConfigurationServerOptions SetAvailableSamplingRates(

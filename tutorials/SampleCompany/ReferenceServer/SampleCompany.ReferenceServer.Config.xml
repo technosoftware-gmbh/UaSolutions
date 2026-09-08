@@ -299,7 +299,6 @@ xmlns="http://opcfoundation.org/UA/SDK/Configuration.xsd"
     <MaxNotificationsPerPublish>1000</MaxNotificationsPerPublish>
 
     <!-- The minimum sampling rate for rarely changing metadata information (such as the server status) -->
-    <MinMetadataSamplingInterval>1000</MinMetadataSamplingInterval>
 
     <!-- The set of supported sampling rates -->
     <AvailableSamplingRates>

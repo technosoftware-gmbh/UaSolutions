@@ -853,11 +853,11 @@ namespace Technosoftware.UaConfiguration
         }
 
         /// <inheritdoc/>
-        public IUaApplicationConfigurationServerOptions SetMinMetadataSamplingInterval(
-            int minMetadataSamplingInterval)
+        public IUaApplicationConfigurationServerOptions SetMinSupportedSamplingInterval(
+            double minSupportedSamplingInterval)
         {
-            ApplicationConfiguration.ServerConfiguration.MinMetadataSamplingInterval
-                = minMetadataSamplingInterval;
+            ApplicationConfiguration.ServerConfiguration.MinSupportedSamplingInterval
+                = minSupportedSamplingInterval;
             return this;
         }
 
