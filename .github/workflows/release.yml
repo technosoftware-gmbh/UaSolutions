@@ -192,12 +192,33 @@ jobs:
 
     - name: Push
       # GitHub Packages does not accept .snupkg; symbols go to nuget.org only.
+      # One package per call, spaced out, with a retry. Re-running an already
+      # published tag turns every PUT into a 409, and a burst of those makes the
+      # registry answer 403 "could not be authenticated" on a token that had just
+      # authenticated three times. --skip-duplicate absorbs the 409; only spacing
+      # the requests out absorbs the 403.
+      shell: bash
       run: |
-        dotnet nuget push "artifacts/*.nupkg" \
-          --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json \
-          --api-key ${{ secrets.GITHUB_TOKEN }} \
-          --skip-duplicate \
-          --no-symbols
+        set -euo pipefail
+        for pkg in artifacts/*.nupkg; do
+          for attempt in 1 2 3; do
+            if dotnet nuget push "$pkg" \
+                 --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json \
+                 --api-key ${{ secrets.GITHUB_TOKEN }} \
+                 --skip-duplicate \
+                 --no-symbols
+            then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Could not push $(basename "$pkg") after 3 attempts."
+              exit 1
+            fi
+            echo "::warning::Push of $(basename "$pkg") failed (attempt ${attempt}); retrying."
+            sleep $(( attempt * 15 ))
+          done
+          sleep 2
+        done
 
   publish-nuget-org:
     name: Publish to nuget.org
@@ -231,8 +252,15 @@ jobs:
         user: ${{ secrets.NUGET_USER }}
 
     - name: Push
+      # Only the Technosoftware.UaSolutions.* packages belong on the public
+      # gallery. artifacts/ also holds the SampleCompany tutorial package, which
+      # stays on GitHub Packages: the Trusted Publishing policy is scoped to
+      # Technosoftware.UaSolutions.* and answers anything else with a 403, which
+      # would fail the job - possibly after some real packages had gone up.
+      shell: bash
       run: |
-        dotnet nuget push "artifacts/*.nupkg" \
+        set -euo pipefail
+        dotnet nuget push "artifacts/Technosoftware.UaSolutions.*.nupkg" \
           --source https://api.nuget.org/v3/index.json \
           --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
           --skip-duplicate
