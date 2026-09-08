@@ -361,7 +361,7 @@ namespace Technosoftware.UaUtilities.Tests
         }
 
         [Test]
-        public void ServicePatchandandValidSupportContractCheck()
+        public void LowerMajorLicenseIsNotCarriedOverBySupportContract()
         {
             LicenseHandler.SimulateServicePatch = true;
             const string licenseData =
@@ -399,11 +399,14 @@ namespace Technosoftware.UaUtilities.Tests
   <Signature>MIGIAkIBDt3b8UyXFGchPQ3PbO0wh2eZn/nymNJBPWCzz937RgD3FOoqYEJ2lmetE9LBzrUdzwU23oAsumTtN6nX3W+aQykCQgEF2Og/PP5yw9WnDWz6289d2UkZwXvJ78yDTL4bTijg/B9R6FkiGfrU+b2G7m9hnncAecKiyU624yoLUFxw8+yCEg==</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
-            Assert.IsTrue(licensed);
-            Assert.IsTrue(LicenseHandler.Instance.IsVersionSupported());
-            Assert.IsFalse(LicenseHandler.Instance.IsEvaluation);
-            Assert.IsFalse(LicenseHandler.Instance.IsExpired);
-            Assert.IsTrue(LicenseHandler.Instance.LicensedType == ProductType.ClientAndServer);
+
+            // The license names version 5 and its support contract runs to 2029. Before the
+            // version 7 licensing change that combination licensed the current version, and
+            // this asserted so. A support contract no longer carries a license across a
+            // major version: customers holding one when the new major is released are
+            // issued a new license for it instead, so the run-time answer is no.
+            Assert.IsFalse(licensed);
+            Assert.IsFalse(LicenseHandler.Instance.IsVersionSupported());
         }
         #endregion Test Methods (Support Contract Check)
 

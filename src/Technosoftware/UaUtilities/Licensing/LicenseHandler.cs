@@ -570,14 +570,12 @@ namespace Technosoftware.UaUtilities
                 return false;
             }
 
-            // Handling of old license types
-            if (!IsNewLicenseType && ProductVersion.Major >= 3)
+            // Old license types were only ever issued for versions 3 and 4, both retired.
+            // This source only ever builds as version 5 or later, so there is no product
+            // version an old license can still be valid for.
+            if (!IsNewLicenseType)
             {
-                // Old license types were only ever issued for versions 3 and 4, which are
-                // retired. For those two majors any minor version with build 0 (no service
-                // patch) is supported and a service patch is not. No later major version is
-                // supported.
-                return ProductVersion.Major <= 4 && ProductVersion.Build == 0;
+                return false;
             }
 
             if (LicenseVersion.Major == ProductVersion.Major &&
