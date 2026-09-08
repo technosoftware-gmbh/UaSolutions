@@ -51,6 +51,15 @@
   <ItemGroup Condition="'$(NoUaMigrationAnalyzer)' == ''">
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.MigrationAnalyzer" PrivateAssets="All" />
   </ItemGroup>
+  <!-- TEMPORARY, and only while the migration analyzer is referenced. 2.0 marks the API it
+       replaced [Obsolete] on purpose, so the migration is warning-driven: with warnings as
+       errors the tree cannot be built at all and `dotnet format analyzers` cannot run. The
+       warnings are not suppressed - they are still reported, and each one is work to do.
+       This goes away with the ItemGroup above, and the build returns to warnings-as-errors
+       the moment the analyzer reference is removed. Do not merge 7.0 with this in place. -->
+  <PropertyGroup Condition="'$(NoUaMigrationAnalyzer)' == ''">
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
   <PropertyGroup>
     <NoWarn>$(NoWarn);NU1510</NoWarn>
     <PackageIcon>images/TechnosoftwareGmbH.png</PackageIcon>
