@@ -571,15 +571,13 @@ namespace Technosoftware.UaUtilities
             }
 
             // Handling of old license types
-            if (!IsNewLicenseType && ProductVersion.Major >= 3 && ProductVersion.Build == 0)
+            if (!IsNewLicenseType && ProductVersion.Major >= 3)
             {
-                // Special case for old license types where all major versions 3 and 4 with any minor version and build 0 (no service patch) are supported.
-                return true;
-            }
-            else if (!IsNewLicenseType && ProductVersion.Major >= 3 && ProductVersion.Build > 0)
-            {
-                // Special case for old license types where all major versions 3 and 4 with any minor version and build > 0 (service patch) are NOT supported.
-                return false;
+                // Old license types were only ever issued for versions 3 and 4, which are
+                // retired. For those two majors any minor version with build 0 (no service
+                // patch) is supported and a service patch is not. No later major version is
+                // supported.
+                return ProductVersion.Major <= 4 && ProductVersion.Build == 0;
             }
 
             if (LicenseVersion.Major == ProductVersion.Major &&
@@ -592,8 +590,12 @@ namespace Technosoftware.UaUtilities
 
             if (LicenseVersion.Major != 0 && LicenseVersion.Major < ProductVersion.Major)
             {
-                // Major version upgrades are only allowed if support contract is valid
-                return IsSupportContractValid();
+                // A license never unlocks a later major version. Customers holding a valid
+                // support contract when the new major version is released are issued a new
+                // license for it, and any exception is granted the same way. This used to
+                // return IsSupportContractValid(), which granted the upgrade at run time and
+                // withdrew it again if the support contract later lapsed.
+                return false;
             }
             if (ProductVersion.Build != 0)
             {
