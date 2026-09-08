@@ -41,6 +41,16 @@
     <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" />
     <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" />
   </ItemGroup>
+
+  <!-- OPC Foundation 2.0 migration. Besides the UA0001-UA0030 diagnostics and their code
+       fixes, this package's source generator re-emits the legacy <Type>Collection wrappers
+       that 2.0 removed, as temporary `: List<T>` shims. That is what lets the tree compile
+       while the call sites are moved to List<T> / ArrayOf<T> one area at a time. Set
+       NoUaMigrationAnalyzer=true to build without it and see the real error surface.
+       Remove this block once the migration is finished. -->
+  <ItemGroup Condition="'$(NoUaMigrationAnalyzer)' == ''">
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.MigrationAnalyzer" PrivateAssets="All" />
+  </ItemGroup>
   <PropertyGroup>
     <NoWarn>$(NoWarn);NU1510</NoWarn>
     <PackageIcon>images/TechnosoftwareGmbH.png</PackageIcon>
