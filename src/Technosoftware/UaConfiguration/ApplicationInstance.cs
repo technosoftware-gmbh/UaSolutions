@@ -466,7 +466,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc/>
         public async Task AddOwnCertificateToTrustedStoreAsync(
-            X509Certificate2 certificate,
+            Certificate certificate,
             CancellationToken ct)
         {
             await AddToTrustedStoreAsync(ApplicationConfiguration, certificate, ct).ConfigureAwait(
@@ -575,7 +575,7 @@ namespace Technosoftware.UaConfiguration
         private async Task<bool> CheckApplicationInstanceCertificateAsync(
             ApplicationConfiguration configuration,
             CertificateIdentifier id,
-            X509Certificate2 certificate,
+            Certificate certificate,
             bool silent,
             ushort minimumKeySize,
             CancellationToken ct)
@@ -617,7 +617,7 @@ namespace Technosoftware.UaConfiguration
                 await configuration
                     .CertificateManager.ValidateAsync(
                         certificate.HasPrivateKey
-                            ? DefaultCertificateFactory.Instance.Create(certificate.RawData)
+                            ? DefaultCertificateFactory.Instance.CreateFromRawData(certificate.RawData)
                             : certificate,
                         ct)
                     .ConfigureAwait(false);
@@ -707,7 +707,7 @@ namespace Technosoftware.UaConfiguration
         /// </summary>
         private async Task<bool> CheckDomainsInCertificateAsync(
             ApplicationConfiguration configuration,
-            X509Certificate2 certificate,
+            Certificate certificate,
             bool silent,
             CancellationToken ct)
         {
@@ -838,7 +838,7 @@ namespace Technosoftware.UaConfiguration
                     serverDomainNames.ToList())
                 .SetLifeTime(lifeTimeInMonths);
 
-            Certificate newCertificate = KeyPairGenerator.CreateCertificate(
+            Certificate newCertificate = DefaultKeyPairGenerator.Instance.CreateCertificate(
                 builder,
                 id.CertificateType,
                 minimumKeySize);
@@ -850,7 +850,7 @@ namespace Technosoftware.UaConfiguration
             {
                 m_logger.LogInformation(
                     "Certificate {Certificate} created for RSA with key size {KeySize} bits.",
-                    newCertificate.AsLogSafeString(),
+                    newCertificate,
                     minimumKeySize == 0 ? CertificateFactory.DefaultKeySize : minimumKeySize);
             }
             else
@@ -861,7 +861,7 @@ namespace Technosoftware.UaConfiguration
 
                 m_logger.LogInformation(
                     "Certificate {Certificate} created for {Curve}.",
-                    newCertificate.AsLogSafeString(),
+                    newCertificate,
                     curve.Value.Oid.FriendlyName);
             }
 
@@ -921,7 +921,7 @@ namespace Technosoftware.UaConfiguration
 
             m_logger.LogInformation(
                 "Certificate {Certificate} created for {ApplicationUri}.",
-                newCertificate.AsLogSafeString(),
+                newCertificate,
                 configuration.ApplicationUri);
 
             // do not dispose temp cert, or X509Store certs become unusable
@@ -1022,7 +1022,7 @@ namespace Technosoftware.UaConfiguration
         /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <c>null</c>.</exception>
         private async Task AddToTrustedStoreAsync(
             ApplicationConfiguration configuration,
-            X509Certificate2 certificate,
+            Certificate certificate,
             CancellationToken ct)
         {
             if (certificate == null)
@@ -1060,7 +1060,7 @@ namespace Technosoftware.UaConfiguration
                 try
                 {
                     // check if it already exists.
-                    X509Certificate2Collection existingCertificates = await store
+                    CertificateCollection existingCertificates = await store
                         .FindByThumbprintAsync(certificate.Thumbprint, ct)
                         .ConfigureAwait(false);
 
@@ -1077,7 +1077,7 @@ namespace Technosoftware.UaConfiguration
                         certificate.Subject);
 
                     // check for old certificate.
-                    X509Certificate2Collection certificates = await store.EnumerateAsync(ct)
+                    CertificateCollection certificates = await store.EnumerateAsync(ct)
                         .ConfigureAwait(false);
 
                     for (int ii = 0; ii < certificates.Count; ii++)
@@ -1121,7 +1121,7 @@ namespace Technosoftware.UaConfiguration
                     }
 
                     // add new certificate.
-                    using X509Certificate2 publicKey = DefaultCertificateFactory.Instance.Create(certificate.RawData);
+                    using Certificate publicKey = DefaultCertificateFactory.Instance.CreateFromRawData(certificate.RawData);
                     await store.AddAsync(publicKey, ct: ct).ConfigureAwait(false);
 
                     m_logger.LogInformation("Added application certificate to trusted peer store.");
