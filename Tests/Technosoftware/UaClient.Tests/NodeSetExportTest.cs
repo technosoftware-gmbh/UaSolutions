@@ -14,6 +14,7 @@
 #endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -354,8 +355,7 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 // Verify default file is smaller or equal to complete
-                var defaultFile = new FileInfo(tempFile);
-                long defaultSize = defaultFile.Length;
+                long defaultSize = MeasuredSize(tempFile);
 
                 // Export with complete options
                 string tempFileComplete = Path.GetTempFileName();
@@ -372,8 +372,7 @@ namespace Technosoftware.UaClient.Tests
                         UaClientUtils.ExportNodesToNodeSet2(systemContext, allNodes, stream, NodeSetExportOptions.Complete);
                     }
 
-                    var completeFile = new FileInfo(tempFileComplete);
-                    long completeSize = completeFile.Length;
+                    long completeSize = MeasuredSize(tempFileComplete);
 
                     // Default should be smaller or equal to complete
                     // (Equal if nodes don't have values to export)
@@ -687,6 +686,35 @@ namespace Technosoftware.UaClient.Tests
                     File.Delete(tempFileNoContext);
                 }
             }
+        }
+
+        /// <summary>
+        /// Size of an exported NodeSet2 file with the LastModified timestamp normalized.
+        /// </summary>
+        /// <remarks>
+        /// SaveAsNodeSet2 stamps the document with DateTime.UtcNow, and the round-trip
+        /// XML format trims trailing zeros from the fractional seconds, so the attribute
+        /// is 28 characters about nine times in ten and shorter otherwise. Two exports of
+        /// the same nodes can therefore differ in length by a few bytes for no reason
+        /// other than the clock, which made a plain file size comparison flaky.
+        /// </remarks>
+        /// <param name="path">The exported file.</param>
+        /// <returns>The file size in characters, with the timestamp made constant.</returns>
+        private static long MeasuredSize(string path)
+        {
+            const string attribute = "LastModified=\"";
+
+            string xml = File.ReadAllText(path);
+            int start = xml.IndexOf(attribute, StringComparison.Ordinal);
+            if (start < 0)
+            {
+                return xml.Length;
+            }
+
+            int valueStart = start + attribute.Length;
+            int valueEnd = xml.IndexOf('"', valueStart);
+
+            return valueEnd > valueStart ? xml.Length - (valueEnd - valueStart) : xml.Length;
         }
     }
 }
