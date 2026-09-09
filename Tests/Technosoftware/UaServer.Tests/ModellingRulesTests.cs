@@ -106,7 +106,7 @@ namespace Technosoftware.UaServer.Tests
                 m_requestHeader,
                 null,
                 0,
-                browseDescriptions, CancellationToken.None).ConfigureAwait(false);
+                browseDescriptions, RequestLifetime.None).ConfigureAwait(false);
 
             ArrayOf<BrowseResult> results = browseResponse.Results;
             Assert.That(results, Is.Not.Null);
@@ -169,7 +169,7 @@ namespace Technosoftware.UaServer.Tests
                 m_requestHeader,
                 null,
                 0,
-                browseDescriptions, CancellationToken.None).ConfigureAwait(false);
+                browseDescriptions, RequestLifetime.None).ConfigureAwait(false);
 
             ArrayOf<BrowseResult> results = browseResponse.Results;
             Assert.That(results, Is.Not.Null);

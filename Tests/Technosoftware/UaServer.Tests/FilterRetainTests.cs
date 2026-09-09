@@ -440,10 +440,13 @@ namespace Technosoftware.UaServer.Tests
 
             if (addFilterRetain)
             {
-                alarm.SupportsFilteredRetain = new PropertyState<bool>(alarm)
-                {
-                    Value = filterRetainValue
-                };
+                // PropertyState<T> is abstract in 2.0; the scalar builder
+                // implementation is the concrete one.
+                alarm.SupportsFilteredRetain =
+                    new PropertyState<bool>.Implementation<VariantBuilder>(alarm)
+                    {
+                        Value = filterRetainValue
+                    };
             }
 
             return alarm;
@@ -533,7 +536,10 @@ namespace Technosoftware.UaServer.Tests
                 Value = new Variant(new NodeId(Objects.ExclusiveLimitStateMachineType_High))
             };
 
-            whereClause.Push(FilterOperator.Equals, [eventLevel, desiredEventLevel]);
+            whereClause.Push(
+                FilterOperator.Equals,
+                Variant.FromStructure(eventLevel),
+                Variant.FromStructure(desiredEventLevel));
 
             return whereClause;
         }
@@ -546,25 +552,29 @@ namespace Technosoftware.UaServer.Tests
             {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = default,
-                BrowsePath = [.. new QualifiedName[] { new QualifiedName(BrowseNames.OutOfServiceState )}]
+                BrowsePath = [new QualifiedName(BrowseNames.OutOfServiceState )]
             };
 
             var desiredOutOfServiceValue = new LiteralOperand { Value = new Variant(InService) };
 
             whereClause.Push(
                 FilterOperator.Equals,
-                [notOutOfServiceState, desiredOutOfServiceValue]);
+                Variant.FromStructure(notOutOfServiceState),
+                Variant.FromStructure(desiredOutOfServiceValue));
 
             var notSuppressed = new SimpleAttributeOperand
             {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = default,
-                BrowsePath = [.. new QualifiedName[] { new QualifiedName(BrowseNames.SuppressedState )}]
+                BrowsePath = [new QualifiedName(BrowseNames.SuppressedState )]
             };
 
             var desiredSuppressedValue = new LiteralOperand { Value = new Variant(Unsuppressed) };
 
-            whereClause.Push(FilterOperator.Equals, [notSuppressed, desiredSuppressedValue]);
+            whereClause.Push(
+                FilterOperator.Equals,
+                Variant.FromStructure(notSuppressed),
+                Variant.FromStructure(desiredSuppressedValue));
 
 #if AddActiveState
 
@@ -572,18 +582,27 @@ namespace Technosoftware.UaServer.Tests
             {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = default,
-                BrowsePath = [.. new QualifiedName[] { new QualifiedName(BrowseNames.ActiveState )}]
+                BrowsePath = [new QualifiedName(BrowseNames.ActiveState )]
             };
 
             var activeValue = new LiteralOperand { Value = new Variant(Active) };
 
-            whereClause.Push(FilterOperator.Equals, [activeState, activeValue]);
+            whereClause.Push(
+                FilterOperator.Equals,
+                Variant.FromStructure(activeState),
+                Variant.FromStructure(activeValue));
 
-            whereClause.Push(FilterOperator.And, [new ElementOperand(1), new ElementOperand(2)]);
+            whereClause.Push(
+                FilterOperator.And,
+                Variant.FromStructure(new ElementOperand(1)),
+                Variant.FromStructure(new ElementOperand(2)));
 
 #endif
 
-            whereClause.Push(FilterOperator.And, [new ElementOperand(0), new ElementOperand(1)]);
+            whereClause.Push(
+                FilterOperator.And,
+                Variant.FromStructure(new ElementOperand(0)),
+                Variant.FromStructure(new ElementOperand(1)));
 
             return whereClause;
         }

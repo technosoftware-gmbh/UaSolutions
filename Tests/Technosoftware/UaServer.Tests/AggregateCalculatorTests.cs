@@ -72,13 +72,13 @@ namespace Technosoftware.UaServer.Tests
 
             for (int i = 0; i < values.Length; i++)
             {
-                dataValues.Add(new DataValue
-                {
-                    Value = values[i],
-                    SourceTimestamp = startTime.AddMilliseconds(i * intervalMs),
-                    ServerTimestamp = startTime.AddMilliseconds(i * intervalMs),
-                    StatusCode = StatusCodes.Good
-                });
+                // DataValue is immutable in 2.0, so it is built in one go
+                // rather than through an object initialiser.
+                dataValues.Add(new DataValue(
+                    new Variant(values[i]),
+                    StatusCodes.Good,
+                    startTime.AddMilliseconds(i * intervalMs),
+                    startTime.AddMilliseconds(i * intervalMs)));
             }
 
             return dataValues;

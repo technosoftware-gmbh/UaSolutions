@@ -966,18 +966,19 @@ namespace Technosoftware.UaServer.Tests
         {
             var whereClause = new ContentFilter();
 
+            // ContentFilter.Push takes Variant operands in 2.0.
             whereClause.Push(
                 FilterOperator.Equals,
-                [
+                Variant.FromStructure(
                     new SimpleAttributeOperand
                     {
                         AttributeId = Attributes.Value,
                         TypeDefinitionId = ObjectTypeIds.BaseEventType,
                         BrowsePath = [new QualifiedName("EventType")]
-                    },
+                    }),
+                Variant.FromStructure(
                     new LiteralOperand {
-                        Value = new Variant(new NodeId(ObjectTypeIds.BaseEventType)) }
-                ]);
+                        Value = new Variant(ObjectTypeIds.BaseEventType) }));
 
             return new MonitoredItemCreateRequest
             {

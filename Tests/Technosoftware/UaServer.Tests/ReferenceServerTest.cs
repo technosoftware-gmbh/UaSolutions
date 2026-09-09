@@ -108,7 +108,7 @@ namespace Technosoftware.UaServer.Tests
             if (!m_sessionClosed)
             {
                 m_requestHeader.Timestamp = DateTime.UtcNow;
-                await m_server.CloseSessionAsync(m_secureChannelContext, m_requestHeader, CancellationToken.None).ConfigureAwait(false);
+                await m_server.CloseSessionAsync(m_secureChannelContext, m_requestHeader, true, RequestLifetime.None).ConfigureAwait(false);
                 m_requestHeader = null;
             }
         }
@@ -131,7 +131,7 @@ namespace Technosoftware.UaServer.Tests
         [GlobalCleanup]
         public async Task GlobalCleanupAsync()
         {
-            await m_server.CloseSessionAsync(m_secureChannelContext, m_requestHeader, true, CancellationToken.None).ConfigureAwait(false);
+            await m_server.CloseSessionAsync(m_secureChannelContext, m_requestHeader, true, RequestLifetime.None).ConfigureAwait(false);
             await m_fixture.StopAsync().ConfigureAwait(false);
             Thread.Sleep(1000);
         }
@@ -144,7 +144,7 @@ namespace Technosoftware.UaServer.Tests
         {
             // test that the server accepts an invalid timestamp
             m_requestHeader.Timestamp = DateTime.UtcNow - TimeSpan.FromDays(30);
-            await m_server.CloseSessionAsync(m_secureChannelContext, m_requestHeader, false, CancellationToken.None).ConfigureAwait(false);
+            await m_server.CloseSessionAsync(m_secureChannelContext, m_requestHeader, false, RequestLifetime.None).ConfigureAwait(false);
             m_sessionClosed = true;
         }
 
@@ -236,7 +236,7 @@ namespace Technosoftware.UaServer.Tests
                 kMaxAge,
                 TimestampsToReturn.Neither,
                 readIdCollection,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, readIdCollection);
             ServerFixtureUtils.ValidateDiagnosticInfos(
                 readResponse.DiagnosticInfos,
@@ -289,7 +289,7 @@ namespace Technosoftware.UaServer.Tests
                 requestHeader,
                 kMaxAge,
                 TimestampsToReturn.Neither,
-                nodesToRead, CancellationToken.None).ConfigureAwait(false);
+                nodesToRead, RequestLifetime.None).ConfigureAwait(false);
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, nodesToRead);
             ServerFixtureUtils.ValidateDiagnosticInfos(
                 readResponse.DiagnosticInfos,
@@ -311,14 +311,20 @@ namespace Technosoftware.UaServer.Tests
             {
                 await GetOperationLimitsAsync().ConfigureAwait(false);
             }
-            m_referenceDescriptions ??= await CommonTestWorkers.BrowseFullAddressSpaceWorkerAsync(
-                serverTestServices,
-                m_requestHeader,
-                m_operationLimits).ConfigureAwait(false);
+            // ArrayOf is a struct, so emptiness stands in for null.
+            if (m_referenceDescriptions.IsEmpty)
+            {
+                m_referenceDescriptions = await CommonTestWorkers.BrowseFullAddressSpaceWorkerAsync(
+                    serverTestServices,
+                    m_requestHeader,
+                    m_operationLimits).ConfigureAwait(false);
+            }
 
             // Read all variables
             RequestHeader requestHeader = m_requestHeader;
-            foreach (ReferenceDescription reference in m_referenceDescriptions)
+            // ArrayOf's enumerator is a span enumerator and cannot cross an
+            // await, so the descriptions are materialised first.
+            foreach (ReferenceDescription reference in m_referenceDescriptions.ToArray())
             {
                 requestHeader.Timestamp = DateTime.UtcNow;
                 var nodesToRead = new List<ReadValueId>();
@@ -335,7 +341,7 @@ namespace Technosoftware.UaServer.Tests
                     requestHeader,
                     kMaxAge,
                     TimestampsToReturn.Both,
-                    nodesToRead, CancellationToken.None).ConfigureAwait(false);
+                    nodesToRead, RequestLifetime.None).ConfigureAwait(false);
                 ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, nodesToRead);
                 ServerFixtureUtils.ValidateDiagnosticInfos(
                     readResponse.DiagnosticInfos,
@@ -375,7 +381,7 @@ namespace Technosoftware.UaServer.Tests
             WriteResponse writeResponse = await m_server.WriteAsync(
                 m_secureChannelContext,
                 requestHeader,
-                nodesToWrite, CancellationToken.None).ConfigureAwait(false);
+                nodesToWrite, RequestLifetime.None).ConfigureAwait(false);
             ServerFixtureUtils.ValidateResponse(writeResponse.ResponseHeader, writeResponse.Results, nodesToWrite);
             ServerFixtureUtils.ValidateDiagnosticInfos(
                 writeResponse.DiagnosticInfos,
@@ -411,7 +417,7 @@ namespace Technosoftware.UaServer.Tests
                 kMaxAge,
                 TimestampsToReturn.Both,
                 nodesToRead,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
 
             Assert.IsNotNull(firstReadResponse);
             Assert.IsNotNull(firstReadResponse.Results);
@@ -423,7 +429,7 @@ namespace Technosoftware.UaServer.Tests
                 firstValue.SourceTimestamp, firstValue.ServerTimestamp);
 
             // Verify the timestamp is recent (not startup time)
-            Assert.GreaterOrEqual(firstValue.SourceTimestamp, timeBeforeFirstRead.AddSeconds(-1),
+            Assert.GreaterOrEqual((DateTime)firstValue.SourceTimestamp, timeBeforeFirstRead.AddSeconds(-1),
                 "SourceTimestamp should be close to the read time, not the server startup time");
 
             // Wait a bit to ensure time difference
@@ -438,7 +444,7 @@ namespace Technosoftware.UaServer.Tests
                 kMaxAge,
                 TimestampsToReturn.Both,
                 nodesToRead,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
 
             Assert.IsNotNull(secondReadResponse);
             Assert.IsNotNull(secondReadResponse.Results);
@@ -454,7 +460,7 @@ namespace Technosoftware.UaServer.Tests
                 "SourceTimestamp should be updated on each read");
 
             // Verify the second timestamp is recent
-            Assert.GreaterOrEqual(secondValue.SourceTimestamp, timeBeforeSecondRead.AddSeconds(-1),
+            Assert.GreaterOrEqual((DateTime)secondValue.SourceTimestamp, timeBeforeSecondRead.AddSeconds(-1),
                 "SourceTimestamp should be close to the second read time");
         }
 
@@ -485,7 +491,7 @@ namespace Technosoftware.UaServer.Tests
                 kMaxAge,
                 TimestampsToReturn.Both,
                 nodesToRead,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
 
             Assert.IsNotNull(firstReadResponse);
             Assert.IsNotNull(firstReadResponse.Results);
@@ -497,7 +503,7 @@ namespace Technosoftware.UaServer.Tests
                 firstValue.SourceTimestamp, firstValue.ServerTimestamp);
 
             // Verify the timestamp is recent (not startup time)
-            Assert.GreaterOrEqual(firstValue.SourceTimestamp, timeBeforeFirstRead.AddSeconds(-1),
+            Assert.GreaterOrEqual((DateTime)firstValue.SourceTimestamp, timeBeforeFirstRead.AddSeconds(-1),
                 "Array SourceTimestamp should be close to the read time, not the server startup time");
 
             // Wait a bit to ensure time difference
@@ -512,7 +518,7 @@ namespace Technosoftware.UaServer.Tests
                 kMaxAge,
                 TimestampsToReturn.Both,
                 nodesToRead,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
 
             Assert.IsNotNull(secondReadResponse);
             Assert.IsNotNull(secondReadResponse.Results);
@@ -528,7 +534,7 @@ namespace Technosoftware.UaServer.Tests
                 "Array SourceTimestamp should be updated on each read");
 
             // Verify the second timestamp is recent
-            Assert.GreaterOrEqual(secondValue.SourceTimestamp, timeBeforeSecondRead.AddSeconds(-1),
+            Assert.GreaterOrEqual((DateTime)secondValue.SourceTimestamp, timeBeforeSecondRead.AddSeconds(-1),
                 "Array SourceTimestamp should be close to the second read time");
         }
 
@@ -586,10 +592,14 @@ namespace Technosoftware.UaServer.Tests
             {
                 await GetOperationLimitsAsync().ConfigureAwait(false);
             }
-            m_referenceDescriptions ??= await CommonTestWorkers.BrowseFullAddressSpaceWorkerAsync(
-                serverTestServices,
-                m_requestHeader,
-                m_operationLimits).ConfigureAwait(false);
+            // ArrayOf is a struct, so emptiness stands in for null.
+            if (m_referenceDescriptions.IsEmpty)
+            {
+                m_referenceDescriptions = await CommonTestWorkers.BrowseFullAddressSpaceWorkerAsync(
+                    serverTestServices,
+                    m_requestHeader,
+                    m_operationLimits).ConfigureAwait(false);
+            }
             _ = await CommonTestWorkers.TranslateBrowsePathWorkerAsync(
                 serverTestServices,
                 m_referenceDescriptions,
@@ -647,7 +657,7 @@ namespace Technosoftware.UaServer.Tests
 
                 // Close session without deleting subscriptions - makes them abandoned
                 header.Timestamp = DateTime.UtcNow;
-                await m_server.CloseSessionAsync(context, header, false, CancellationToken.None)
+                await m_server.CloseSessionAsync(context, header, false, RequestLifetime.None)
                     .ConfigureAwait(false);
             }
 
@@ -706,7 +716,7 @@ namespace Technosoftware.UaServer.Tests
                 -1).ConfigureAwait(false);
 
             transferRequestHeader.Timestamp = DateTime.UtcNow;
-            await m_server.CloseSessionAsync(transferContext, transferRequestHeader, false, CancellationToken.None).ConfigureAwait(false);
+            await m_server.CloseSessionAsync(transferContext, transferRequestHeader, false, RequestLifetime.None).ConfigureAwait(false);
 
             //restore security context, transfer abandoned subscription
             serverTestServices.SecureChannelContext = m_secureChannelContext;
@@ -783,7 +793,7 @@ namespace Technosoftware.UaServer.Tests
             }
 
             transferRequestHeader.Timestamp = DateTime.UtcNow;
-            await m_server.CloseSessionAsync(transferSecurityContext, transferRequestHeader, true, CancellationToken.None).ConfigureAwait(false);
+            await m_server.CloseSessionAsync(transferSecurityContext, transferRequestHeader, true, RequestLifetime.None).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -804,9 +814,9 @@ namespace Technosoftware.UaServer.Tests
             var serverTestServices = new ServerTestServices(m_server, m_secureChannelContext, telemetry);
 
             NamespaceTable namespaceUris = m_server.CurrentInstance.NamespaceUris;
-            ArrayOf<NodeId> testSetCollection = CommonTestWorkers
-                .NodeIdTestSetStatic.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                .ToArray();
+            var testSetCollection = new List<NodeId>(
+                CommonTestWorkers.NodeIdTestSetStatic
+                    .Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris)));
             testSetCollection.AddRange(
                 CommonTestWorkers.NodeIdTestDataSetStatic
                     .Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris)));
@@ -878,7 +888,7 @@ namespace Technosoftware.UaServer.Tests
             CallResponse callResponse = await m_server.CallAsync(
                 resendDataSecurityContext,
                 resendDataRequestHeader,
-                nodesToCall, CancellationToken.None).ConfigureAwait(false);
+                nodesToCall, RequestLifetime.None).ConfigureAwait(false);
 
             serverTestServices.SecureChannelContext = m_secureChannelContext;
 
@@ -943,7 +953,7 @@ namespace Technosoftware.UaServer.Tests
                 serverTestServices.Logger);
             Assert.AreEqual(subscriptionIds[0], publishResponse.SubscriptionId);
             Assert.AreEqual(1, publishResponse.NotificationMessage.NotificationData.Count);
-            ExtensionObject items = publishResponse.NotificationMessage.NotificationData.FirstOrDefault();
+            ExtensionObject items = publishResponse.NotificationMessage.NotificationData.Find(_ => true, default);
             Assert.IsTrue(items.Body is DataChangeNotification);
             ArrayOf<MonitoredItemNotification> monitoredItemsCollection = (
                 (DataChangeNotification)items.Body
@@ -970,7 +980,7 @@ namespace Technosoftware.UaServer.Tests
                     serverTestServices.Logger);
                 Assert.AreEqual(subscriptionIds[0], publishResponse.SubscriptionId);
                 Assert.AreEqual(1, publishResponse.NotificationMessage.NotificationData.Count);
-                items = publishResponse.NotificationMessage.NotificationData.FirstOrDefault();
+                items = publishResponse.NotificationMessage.NotificationData.Find(_ => true, default);
                 Assert.IsTrue(items.Body is DataChangeNotification);
                 monitoredItemsCollection = ((DataChangeNotification)items.Body).MonitoredItems;
                 Assert.AreEqual(
@@ -999,7 +1009,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.AreEqual(0, publishResponse.NotificationMessage.NotificationData.Count);
 
             resendDataRequestHeader.Timestamp = DateTime.UtcNow;
-            await m_server.CloseSessionAsync(resendDataSecurityContext, resendDataRequestHeader, true, CancellationToken.None).ConfigureAwait(false);
+            await m_server.CloseSessionAsync(resendDataSecurityContext, resendDataRequestHeader, true, RequestLifetime.None).ConfigureAwait(false);
         }
 
         private async Task<ArrayOf<CallMethodRequest>> ResendDataCallAsync(
@@ -1027,7 +1037,7 @@ namespace Technosoftware.UaServer.Tests
             CallResponse callResponse = await m_server.CallAsync(
                 m_secureChannelContext,
                 m_requestHeader,
-                nodesToCall, CancellationToken.None).ConfigureAwait(false);
+                nodesToCall, RequestLifetime.None).ConfigureAwait(false);
 
             Assert.AreEqual(expectedStatus, callResponse.Results[0].StatusCode.Code);
             ServerFixtureUtils.ValidateResponse(callResponse.ResponseHeader, callResponse.Results, nodesToCall);
@@ -1062,7 +1072,7 @@ namespace Technosoftware.UaServer.Tests
                 requestHeader,
                 kMaxAge,
                 TimestampsToReturn.Neither,
-                nodesToRead, CancellationToken.None).ConfigureAwait(false);
+                nodesToRead, RequestLifetime.None).ConfigureAwait(false);
 
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, nodesToRead);
             ServerFixtureUtils.ValidateDiagnosticInfos(
@@ -1077,8 +1087,8 @@ namespace Technosoftware.UaServer.Tests
             {
                 var typeInfo = TypeInfo.Construct(dataValue.Value);
                 Assert.IsNotNull(typeInfo);
-                object value = m_generator.GetRandom(typeInfo.BuiltInType);
-                modifiedValues.Add(new DataValue { WrappedValue = new Variant(value) });
+                Variant value = m_generator.GetRandomScalar(typeInfo.BuiltInType);
+                modifiedValues.Add(new DataValue(value));
             }
 
             int ii = 0;
@@ -1100,7 +1110,7 @@ namespace Technosoftware.UaServer.Tests
             WriteResponse writeResponse = await m_server.WriteAsync(
                 m_secureChannelContext,
                 requestHeader,
-                nodesToWrite, CancellationToken.None).ConfigureAwait(false);
+                nodesToWrite, RequestLifetime.None).ConfigureAwait(false);
             ServerFixtureUtils.ValidateResponse(writeResponse.ResponseHeader, writeResponse.Results, nodesToWrite);
             ServerFixtureUtils.ValidateDiagnosticInfos(
                 writeResponse.DiagnosticInfos,
@@ -1132,7 +1142,7 @@ namespace Technosoftware.UaServer.Tests
                 m_requestHeader,
                 0,
                 TimestampsToReturn.Both,
-                readIdCollection, CancellationToken.None).ConfigureAwait(false);
+                readIdCollection, RequestLifetime.None).ConfigureAwait(false);
 
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, readIdCollection);
             Assert.AreEqual(1, readResponse.Results.Count);
@@ -1158,7 +1168,7 @@ namespace Technosoftware.UaServer.Tests
                 m_requestHeader,
                 0,
                 TimestampsToReturn.Both,
-                historyCapabilitiesReadIds, CancellationToken.None).ConfigureAwait(false);
+                historyCapabilitiesReadIds, RequestLifetime.None).ConfigureAwait(false);
 
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, historyCapabilitiesReadIds);
             Assert.AreEqual(2, readResponse.Results.Count);
@@ -1209,7 +1219,7 @@ namespace Technosoftware.UaServer.Tests
                 0,
                 TimestampsToReturn.Both,
                 nodesToRead,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
 
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, nodesToRead);
             Assert.AreEqual(3, readResponse.Results.Count);
@@ -1266,7 +1276,7 @@ namespace Technosoftware.UaServer.Tests
                 kMaxAge,
                 TimestampsToReturn.Neither,
                 readIdCollection,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
 
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, readIdCollection);
             Assert.AreEqual(2, readResponse.Results.Count);
@@ -1304,7 +1314,7 @@ namespace Technosoftware.UaServer.Tests
                 TimestampsToReturn.Both,
                 false,
                 nodesToRead,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
 
             ServerFixtureUtils.ValidateResponse(historyReadResponse.ResponseHeader, historyReadResponse.Results, nodesToRead);
             Assert.AreEqual(1, historyReadResponse.Results.Count);
@@ -1371,7 +1381,7 @@ namespace Technosoftware.UaServer.Tests
             bool hasEndpointWithoutAnonymous = false;
             foreach (EndpointDescription endpoint in endpoints)
             {
-                bool hasAnonymous = endpoint.UserIdentityTokens.Any(
+                bool hasAnonymous = endpoint.UserIdentityTokens.ToArray().Any(
                     policy => policy.TokenType == UserTokenType.Anonymous);
                 if (!hasAnonymous)
                 {

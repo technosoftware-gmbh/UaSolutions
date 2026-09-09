@@ -113,7 +113,7 @@ namespace Technosoftware.UaServer.Tests
             }
 
             // Create client certificate with matching ApplicationUri
-            X509Certificate2 clientCert = CreateCertificateWithMultipleUris(
+            Certificate clientCert = CreateCertificateWithMultipleUris(
                 [kClientApplicationUri],
                 kClientSubjectName,
                 [Utils.GetHostName()],
@@ -148,7 +148,7 @@ namespace Technosoftware.UaServer.Tests
 
             // Create client certificate with different ApplicationUri
             const string certUri = "urn:localhost:technosoftware.com:WrongClient";
-            X509Certificate2 clientCert = CreateCertificateWithMultipleUris(
+            Certificate clientCert = CreateCertificateWithMultipleUris(
                 [certUri],
                 kClientSubjectName,
                 [Utils.GetHostName()],
@@ -178,7 +178,7 @@ namespace Technosoftware.UaServer.Tests
             const string uri2 = kClientApplicationUri; // This matches
             const string uri3 = "https://localhost:8080/UaSolutions";
 
-            X509Certificate2 clientCert = CreateCertificateWithMultipleUris(
+            Certificate clientCert = CreateCertificateWithMultipleUris(
                 [uri1, uri2, uri3],
                 kClientSubjectName,
                 [Utils.GetHostName()],
@@ -223,7 +223,7 @@ namespace Technosoftware.UaServer.Tests
             const string uri2 = "urn:localhost:technosoftware.com:App2";
             const string uri3 = "https://localhost:8080/UaSolutions";
 
-            X509Certificate2 clientCert = CreateCertificateWithMultipleUris(
+            Certificate clientCert = CreateCertificateWithMultipleUris(
                 [uri1, uri2, uri3],
                 kClientSubjectName,
                 [Utils.GetHostName()],
@@ -248,7 +248,7 @@ namespace Technosoftware.UaServer.Tests
         /// Helper method to create a session with a custom client certificate.
         /// </summary>
         private async Task<UaClient.IUaSession> CreateSessionWithCustomCertificateAsync(
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             string clientApplicationUri)
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
@@ -270,15 +270,16 @@ namespace Technosoftware.UaServer.Tests
                     await store.AddAsync(clientCertificate).ConfigureAwait(false);
                 }
 
-                // Create certificate identifier pointing to the stored certificate
-                // Setting the Certificate property will automatically set the CertificateType
+                // Create certificate identifier pointing to the stored
+                // certificate. CertificateIdentifier.Certificate is read-only
+                // in 2.0, so the identifier resolves the certificate out of
+                // the store by thumbprint rather than carrying it.
                 var certIdentifier = new CertificateIdentifier
                 {
                     StoreType = CertificateStoreType.Directory,
                     StorePath = certStorePath,
                     SubjectName = clientCertificate.SubjectName.Name,
-                    Thumbprint = clientCertificate.Thumbprint,
-                    Certificate = clientCertificate
+                    Thumbprint = clientCertificate.Thumbprint
                 };
 
                 // Create client application configuration
@@ -299,8 +300,10 @@ namespace Technosoftware.UaServer.Tests
 
                 // Get server endpoint with RSA-compatible security policy
                 EndpointDescription endpoint = m_serverFixture.Server.GetEndpoints()
-                    .FirstOrDefault(e => e.SecurityMode == MessageSecurityMode.SignAndEncrypt &&
-                        e.SecurityPolicyUri == SecurityPolicies.Basic256Sha256);
+                    .Find(
+                        e => e.SecurityMode == MessageSecurityMode.SignAndEncrypt &&
+                            e.SecurityPolicyUri == SecurityPolicies.Basic256Sha256,
+                        null);
 
                 Assert.NotNull(endpoint, "No suitable endpoint found");
 
@@ -368,7 +371,7 @@ namespace Technosoftware.UaServer.Tests
         /// <summary>
         /// Creates a certificate with multiple application URIs in the SAN extension.
         /// </summary>
-        private static X509Certificate2 CreateCertificateWithMultipleUris(
+        private static Certificate CreateCertificateWithMultipleUris(
             IList<string> applicationUris,
             string subjectName,
             IList<string> domainNames,
@@ -378,7 +381,12 @@ namespace Technosoftware.UaServer.Tests
             DateTime notAfter = DateTime.Today.AddYears(1);
 
             // Default to RSA if not specified
-            certificateType ??= ObjectTypeIds.RsaSha256ApplicationCertificateType;
+            // NodeId is a struct in 2.0, so the default is filled in on a
+            // null-check rather than through ??=.
+            if (certificateType.IsNull)
+            {
+                certificateType = ObjectTypeIds.RsaSha256ApplicationCertificateType;
+            }
 
             // Create the SAN extension with multiple URIs
             var subjectAltName = new X509SubjectAltNameExtension(applicationUris, domainNames);
