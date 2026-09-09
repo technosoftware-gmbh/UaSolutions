@@ -128,7 +128,7 @@ namespace Technosoftware.UaServer.Tests
             }
 
             // Return the first result (we're testing single interval calculations)
-            return results.Count > 0 ? results[0] : null;
+            return results.Count > 0 ? results[0] : default;
         }
 
         /// <summary>

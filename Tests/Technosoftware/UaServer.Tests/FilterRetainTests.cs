@@ -456,24 +456,24 @@ namespace Technosoftware.UaServer.Tests
             int eventIndexCounter = 0;
             var desiredEventFields = new Dictionary<int, QualifiedNameCollection>
             {
-                { eventIndexCounter++, [.. new QualifiedName[] { BrowseNames.EventId }] },
-                { eventIndexCounter++, [.. new QualifiedName[] { BrowseNames.EventType }] },
-                { eventIndexCounter++, [.. new QualifiedName[] { BrowseNames.Time }] },
-                { eventIndexCounter++, [.. new QualifiedName[] { BrowseNames.ActiveState }] },
-                { eventIndexCounter++, [.. new QualifiedName[] { BrowseNames.Message }] },
+                { eventIndexCounter++, [.. new QualifiedName[] { new QualifiedName(BrowseNames.EventId )}] },
+                { eventIndexCounter++, [.. new QualifiedName[] { new QualifiedName(BrowseNames.EventType )}] },
+                { eventIndexCounter++, [.. new QualifiedName[] { new QualifiedName(BrowseNames.Time )}] },
+                { eventIndexCounter++, [.. new QualifiedName[] { new QualifiedName(BrowseNames.ActiveState )}] },
+                { eventIndexCounter++, [.. new QualifiedName[] { new QualifiedName(BrowseNames.Message )}] },
                 {
                     eventIndexCounter++,
-                    [.. new QualifiedName[] { BrowseNames.LimitState, BrowseNames.CurrentState }] },
+                    [.. new QualifiedName[] { new QualifiedName(BrowseNames.LimitState), new QualifiedName(BrowseNames.CurrentState )}] },
                 {
                     eventIndexCounter++,
                     [.. new QualifiedName[] {
-                        BrowseNames.LimitState,
-                        BrowseNames.CurrentState,
-                        BrowseNames.Id }]
+                        new QualifiedName(BrowseNames.LimitState),
+                        new QualifiedName(BrowseNames.CurrentState),
+                        new QualifiedName(BrowseNames.Id )}]
                 },
                 {
                     eventIndexCounter++,
-                    [.. new QualifiedName[] { BrowseNames.LimitState, BrowseNames.LastTransition }]
+                    [.. new QualifiedName[] { new QualifiedName(BrowseNames.LimitState), new QualifiedName(BrowseNames.LastTransition )}]
                 }
             };
 
@@ -522,9 +522,9 @@ namespace Technosoftware.UaServer.Tests
                 BrowsePath =
                 [
                     .. new QualifiedName[] {
-                        BrowseNames.LimitState,
-                        BrowseNames.CurrentState,
-                        BrowseNames.Id }
+                        new QualifiedName(BrowseNames.LimitState),
+                        new QualifiedName(BrowseNames.CurrentState),
+                        new QualifiedName(BrowseNames.Id )}
                 ]
             };
 
@@ -546,7 +546,7 @@ namespace Technosoftware.UaServer.Tests
             {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = default,
-                BrowsePath = [.. new QualifiedName[] { BrowseNames.OutOfServiceState }]
+                BrowsePath = [.. new QualifiedName[] { new QualifiedName(BrowseNames.OutOfServiceState )}]
             };
 
             var desiredOutOfServiceValue = new LiteralOperand { Value = new Variant(InService) };
@@ -559,7 +559,7 @@ namespace Technosoftware.UaServer.Tests
             {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = default,
-                BrowsePath = [.. new QualifiedName[] { BrowseNames.SuppressedState }]
+                BrowsePath = [.. new QualifiedName[] { new QualifiedName(BrowseNames.SuppressedState )}]
             };
 
             var desiredSuppressedValue = new LiteralOperand { Value = new Variant(Unsuppressed) };
@@ -572,7 +572,7 @@ namespace Technosoftware.UaServer.Tests
             {
                 AttributeId = Attributes.Value,
                 TypeDefinitionId = default,
-                BrowsePath = [.. new QualifiedName[] { BrowseNames.ActiveState }]
+                BrowsePath = [.. new QualifiedName[] { new QualifiedName(BrowseNames.ActiveState )}]
             };
 
             var activeValue = new LiteralOperand { Value = new Variant(Active) };

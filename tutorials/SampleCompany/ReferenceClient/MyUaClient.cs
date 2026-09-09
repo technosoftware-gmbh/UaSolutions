@@ -20,6 +20,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using Technosoftware.UaClient;
 #endregion Using Directives
 

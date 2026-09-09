@@ -214,7 +214,7 @@ namespace Technosoftware.UaServer.Tests
                 browseDescription
                 ?? new BrowseDescription
                 {
-                    NodeId = startingNode,
+                    NodeId = new NodeId(startingNode),
                     BrowseDirection = BrowseDirection.Forward,
                     ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
                     IncludeSubtypes = true,
@@ -223,7 +223,7 @@ namespace Technosoftware.UaServer.Tests
                 };
             BrowseDescriptionCollection browseDescriptionCollection =
                 ServerFixtureUtils.CreateBrowseDescriptionCollectionFromNodeId(
-                    [.. new NodeId[] { Objects.RootFolder }],
+                    [.. new NodeId[] { new NodeId(Objects.RootFolder )}],
                     browseTemplate);
 
             // Browse
@@ -408,7 +408,7 @@ namespace Technosoftware.UaServer.Tests
                 referenceDescriptions.Select(r => new BrowsePath
                 {
                     RelativePath = new RelativePath(r.BrowseName),
-                    StartingNode = startingNode
+                    StartingNode = new NodeId(startingNode)
                 }));
             var allBrowsePaths = new BrowsePathResultCollection();
             while (browsePaths.Count > 0)
@@ -978,7 +978,7 @@ namespace Technosoftware.UaServer.Tests
                     {
                         AttributeId = Attributes.Value,
                         TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                        BrowsePath = [.. new QualifiedName[] { "EventType" }]
+                        BrowsePath = [.. new QualifiedName[] { new QualifiedName("EventType" )}]
                     },
                     new LiteralOperand {
                         Value = new Variant(new NodeId(ObjectTypeIds.BaseEventType)) }
@@ -1008,7 +1008,7 @@ namespace Technosoftware.UaServer.Tests
                                         AttributeId = Attributes.Value,
                                         TypeDefinitionId = ObjectTypeIds.BaseEventType,
                                         BrowsePath = [.. new QualifiedName[] {
-                                            BrowseNames.Message }]
+                                            new QualifiedName(BrowseNames.Message )}]
                                     }
                                 }
                             ],

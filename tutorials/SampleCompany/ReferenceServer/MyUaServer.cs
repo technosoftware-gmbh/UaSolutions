@@ -22,6 +22,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using SampleCompany.Common;
 using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer;

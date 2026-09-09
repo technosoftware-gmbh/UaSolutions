@@ -167,7 +167,7 @@ namespace Technosoftware.UaServer.Tests
             var defaultText = new LocalizedText("greeting", "en-US", "Hello");
 
             //Act
-            LocalizedText resultText = resourceManager.Translate(null, defaultText);
+            LocalizedText resultText = resourceManager.Translate(default, defaultText);
 
             // Assert
             Assert.AreEqual(defaultText, resultText);
