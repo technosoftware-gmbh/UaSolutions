@@ -567,7 +567,7 @@ namespace Technosoftware.UaServer
                 nodeStateVar.NodeId.NamespaceIndex == 0 &&
                 nodeStateVar.Value.IsNull)
             {
-                nodeStateVar.Value = Opc.Ua.TypeInfo.GetDefaultValue(
+                nodeStateVar.Value = Opc.Ua.TypeInfo.GetDefaultVariantValue(
                     nodeStateVar.DataType,
                     nodeStateVar.ValueRank,
                     ServerData.TypeTree);
@@ -1134,22 +1134,25 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Sets the AccessRestrictions, RolePermissions and UserRolePermissions values in the metadata
         /// </summary>
-        private static void SetAccessAndRolePermissions(List<object> values, UaNodeMetadata metadata)
+        private static void SetAccessAndRolePermissions(
+            ArrayOf<Variant> values,
+            UaNodeMetadata metadata)
         {
-            if (values[0] != null)
+            if (values[0].TryGetValue(out ushort accessRestrictions))
             {
-                metadata.AccessRestrictions = (AccessRestrictionType)
-                    Enum.ToObject(typeof(AccessRestrictionType), values[0]);
+                metadata.AccessRestrictions = (AccessRestrictionType)accessRestrictions;
             }
-            if (values[1] != null)
+
+            if (values[1].TryGetStructure(
+                out ArrayOf<RolePermissionType> rolePermissions))
             {
-                metadata.RolePermissions = [.. ExtensionObject.ToList<RolePermissionType>(
-                    values[1])];
+                metadata.RolePermissions = rolePermissions;
             }
-            if (values[2] != null)
+
+            if (values[2].TryGetStructure(
+                out ArrayOf<RolePermissionType> userRolePermissions))
             {
-                metadata.UserRolePermissions = [.. ExtensionObject.ToList<RolePermissionType>(
-                    values[2])];
+                metadata.UserRolePermissions = userRolePermissions;
             }
         }
 
@@ -1161,14 +1164,14 @@ namespace Technosoftware.UaServer
         /// <param name="target">The target for which the attributes are read and cached</param>
         /// <param name="key">The key representing the NodeId for which the cache is kept</param>
         /// <returns>The values of the attributes</returns>
-        private static List<object> ReadAndCacheValidationAttributes(
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes,
+        private static ArrayOf<Variant> ReadAndCacheValidationAttributes(
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributes,
             UaServerContext systemContext,
             NodeState target,
             NodeId key)
         {
-            List<object> values = ReadValidationAttributes(systemContext, target);
-            uniqueNodesServiceAttributes[key] = values;
+            ArrayOf<Variant> values = ReadValidationAttributes(systemContext, target);
+            uniqueNodesServiceAttributes[key] = values.ToArray()!;
 
             return values;
         }
@@ -1179,7 +1182,7 @@ namespace Technosoftware.UaServer
         /// <param name="systemContext">The context</param>
         /// <param name="target">The target for which the attributes are read and cached</param>
         /// <returns>The values of the attributes</returns>
-        private static List<object> ReadValidationAttributes(
+        private static ArrayOf<Variant> ReadValidationAttributes(
             UaServerContext systemContext,
             NodeState target)
         {
@@ -1953,19 +1956,9 @@ namespace Technosoftware.UaServer
                         nodeToWrite.IndexRange);
 #endif
                     var propertyState = handle.Node as PropertyState;
-                    object previousPropertyValue = null;
-
-                    if (propertyState != null)
-                    {
-                        if (propertyState.Value is ExtensionObject extension)
-                        {
-                            previousPropertyValue = extension.Body;
-                        }
-                        else
-                        {
-                            previousPropertyValue = propertyState.Value;
-                        }
-                    }
+                    // Variant carries the extension object's body itself, so
+                    // the old unwrap-if-ExtensionObject step is unnecessary.
+                    Variant previousPropertyValue = propertyState?.Value ?? default;
 
                     DataValue oldValue = default;
 
@@ -1978,7 +1971,7 @@ namespace Technosoftware.UaServer
                             systemContext,
                             nodeToWrite.AttributeId,
                             nodeToWrite.ParsedIndexRange,
-                            null,
+                            default,
                             ref oldValue);
                     }
 
@@ -1993,7 +1986,7 @@ namespace Technosoftware.UaServer
                     ServerData.ReportAuditWriteUpdateEvent(
                         systemContext,
                         nodeToWrite,
-                        oldValue.Value,
+                        oldValue.WrappedValue,
                         errors[ii]?.StatusCode ?? StatusCodes.Good,
                         m_logger);
 
@@ -2004,21 +1997,10 @@ namespace Technosoftware.UaServer
 
                     if (propertyState != null)
                     {
-                        object propertyValue;
-
-                        if (nodeToWrite.Value.Value is ExtensionObject extension)
-                        {
-                            propertyValue = extension.Body;
-                        }
-                        else
-                        {
-                            propertyValue = nodeToWrite.Value.Value;
-                        }
-
                         CheckIfSemanticsHaveChanged(
                             systemContext,
                             propertyState,
-                            propertyValue,
+                            nodeToWrite.Value.WrappedValue,
                             previousPropertyValue);
                     }
 
@@ -2044,8 +2026,8 @@ namespace Technosoftware.UaServer
         private void CheckIfSemanticsHaveChanged(
             UaServerContext systemContext,
             PropertyState property,
-            object newPropertyValue,
-            object previousPropertyValue)
+            Variant newPropertyValue,
+            Variant previousPropertyValue)
         {
             // check if the changed property is one that can trigger semantic changes
             string propertyName = property.BrowseName.Name;
@@ -2156,13 +2138,17 @@ namespace Technosoftware.UaServer
                     {
                         monitoredItem.SetSemanticsChanged();
 
-                        var value = new DataValue { ServerTimestamp = DateTime.UtcNow };
+                        var value = new DataValue(
+                            Variant.Null,
+                            StatusCodes.Good,
+                            DateTimeUtc.MinValue,
+                            DateTime.UtcNow);
 
                         node.ReadAttribute(
                             systemContext,
                             Attributes.Value,
                             monitoredItem.IndexRange,
-                            null,
+                            default,
                             ref value);
 
                         monitoredItem.QueueValue(value, ServiceResult.Good, true);
@@ -4183,7 +4169,7 @@ namespace Technosoftware.UaServer
                     return StatusCodes.BadMonitoredItemFilterUnsupported;
                 }
 
-                range = property.Value as Opc.Ua.Range;
+                range = property.Value.GetStructure<Opc.Ua.Range>();
 
                 if (range == null)
                 {
@@ -4788,7 +4774,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             object targetHandle,
             BrowseResultMask resultMask,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributesCache,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributesCache,
             bool permissionsOnly)
         {
             UaServerContext systemContext = SystemContext.Copy(context);
@@ -4811,7 +4797,7 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                List<object> values = null;
+                ArrayOf<Variant> values = default;
 
                 // construct the meta-data object.
                 var metadata = new UaNodeMetadata(target, target.NodeId);
@@ -4874,7 +4860,7 @@ namespace Technosoftware.UaServer
 
             if (namespaceMetadataState != null)
             {
-                List<object> namespaceMetadataValues;
+                ArrayOf<Variant> namespaceMetadataValues;
 
                 if (namespaceMetadataState.DefaultAccessRestrictions != null)
                 {
@@ -4884,12 +4870,10 @@ namespace Technosoftware.UaServer
                             systemContext,
                             Attributes.Value);
 
-                    if (namespaceMetadataValues[0] != null)
+                    if (namespaceMetadataValues[0].TryGetValue(
+                        out AccessRestrictionType accessRestrictions))
                     {
-                        metadata.DefaultAccessRestrictions = (AccessRestrictionType)
-                            Enum.ToObject(
-                                typeof(AccessRestrictionType),
-                                namespaceMetadataValues[0]);
+                        metadata.DefaultAccessRestrictions = accessRestrictions;
                     }
                 }
 
@@ -4901,13 +4885,10 @@ namespace Technosoftware.UaServer
                             systemContext,
                             Attributes.Value);
 
-                    if (namespaceMetadataValues[0] != null)
+                    if (namespaceMetadataValues[0].TryGetStructure(
+                        out ArrayOf<RolePermissionType> rolePermissions))
                     {
-                        metadata.DefaultRolePermissions =
-                        [
-                            .. ExtensionObject.ToList<RolePermissionType>(
-                                namespaceMetadataValues[0])
-                        ];
+                        metadata.DefaultRolePermissions = rolePermissions;
                     }
                 }
 
@@ -4919,13 +4900,10 @@ namespace Technosoftware.UaServer
                             systemContext,
                             Attributes.Value);
 
-                    if (namespaceMetadataValues[0] != null)
+                    if (namespaceMetadataValues[0].TryGetStructure(
+                        out ArrayOf<RolePermissionType> userRolePermissions))
                     {
-                        metadata.DefaultUserRolePermissions =
-                        [
-                            .. ExtensionObject.ToList<RolePermissionType>(
-                                namespaceMetadataValues[0])
-                        ];
+                        metadata.DefaultUserRolePermissions = userRolePermissions;
                     }
                 }
             }

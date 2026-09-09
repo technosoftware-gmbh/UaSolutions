@@ -51,7 +51,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             object targetHandle,
             BrowseResultMask resultMask,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributesCache,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributesCache,
             bool permissionsOnly);
     }
 
@@ -486,7 +486,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             object targetHandle,
             BrowseResultMask resultMask,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributesCache,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributesCache,
             bool permissionsOnly,
             CancellationToken cancellationToken = default);
 
@@ -611,7 +611,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The ArrayDimensions for the Value attribute for Variable or VariableType nodes.
         /// </summary>
-        public IList<uint> ArrayDimensions { get; set; }
+        public ArrayOf<uint> ArrayDimensions { get; set; }
 
         /// <summary>
         /// Specifies the AccessRestrictions that apply to a Node.
@@ -628,24 +628,24 @@ namespace Technosoftware.UaServer
         /// The RolePermissions for the Node.
         /// Specifies the Permissions that apply to a Node for all Roles which have access to the Node.
         /// </summary>
-        public RolePermissionTypeCollection RolePermissions { get; set; }
+        public ArrayOf<RolePermissionType> RolePermissions { get; set; }
 
         /// <summary>
         /// The DefaultRolePermissions of the Node's name-space meta-data
         /// The value reflects the DefaultRolePermissions Property from the NamespaceMetadata Object associated with the Node.
         /// </summary>
-        public RolePermissionTypeCollection DefaultRolePermissions { get; set; }
+        public ArrayOf<RolePermissionType> DefaultRolePermissions { get; set; }
 
         /// <summary>
         /// The UserRolePermissions of the Node.
         /// Specifies the Permissions that apply to a Node for all Roles granted to current Session.
         /// </summary>
-        public RolePermissionTypeCollection UserRolePermissions { get; set; }
+        public ArrayOf<RolePermissionType> UserRolePermissions { get; set; }
 
         /// <summary>
         /// The DefaultUserRolePermissions of the Node.
         /// The value reflects the DefaultUserRolePermissions Property from the NamespaceMetadata Object associated with the Node.
         /// </summary>
-        public RolePermissionTypeCollection DefaultUserRolePermissions { get; set; }
+        public ArrayOf<RolePermissionType> DefaultUserRolePermissions { get; set; }
     }
 }

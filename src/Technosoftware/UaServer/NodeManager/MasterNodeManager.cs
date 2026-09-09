@@ -1296,7 +1296,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentException"></exception>
         private static void PrepareValidationCache<T>(
             List<T> nodesCollection,
-            out Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes)
+            out Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributes)
         {
             var uniqueNodes = new HashSet<NodeId>();
             for (int i = 0; i < nodesCollection.Count; i++)
@@ -1777,7 +1777,7 @@ namespace Technosoftware.UaServer
 
             PrepareValidationCache(
                 nodesToRead,
-                out Dictionary<NodeId, List<object>> uniqueNodesReadAttributes);
+                out Dictionary<NodeId, Variant[]> uniqueNodesReadAttributes);
 
             for (int ii = 0; ii < nodesToRead.Count; ii++)
             {
@@ -3426,7 +3426,7 @@ namespace Technosoftware.UaServer
         protected async ValueTask<ServiceResult> ValidateReadRequestAsync(
             UaServerOperationContext operationContext,
             ReadValueId readValueId,
-            Dictionary<NodeId, List<object>> uniqueNodesReadAttributes = null,
+            Dictionary<NodeId, Variant[]> uniqueNodesReadAttributes = null,
             bool permissionsOnly = false,
             CancellationToken cancellationToken = default)
         {
@@ -3565,7 +3565,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             NodeId nodeId,
             PermissionType requestedPermision,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes = null,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributes = null,
             bool permissionsOnly = false,
             CancellationToken cancellationToken = default)
         {
@@ -3605,7 +3605,7 @@ namespace Technosoftware.UaServer
             IUaStandardAsyncNodeManager nodeManager,
             object nodeHandle,
             PermissionType requestedPermision,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes = null,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributes = null,
             bool permissionsOnly = false,
             CancellationToken cancellationToken = default)
         {
