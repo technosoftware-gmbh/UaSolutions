@@ -18,18 +18,38 @@
     <PackageId>$(PackageId).Debug</PackageId>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Boiler\Generated\SampleCompany.NodeManagers.Boiler.PredefinedNodes.uanodes" />
-    <EmbeddedResource Include="TestData\Generated\SampleCompany.NodeManagers.TestData.PredefinedNodes.uanodes" />
-    <EmbeddedResource Include="MemoryBuffer\Generated\SampleCompany.NodeManagers.MemoryBuffer.PredefinedNodes.uanodes" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Remove="Alarms\Alarms.cs" />
+  </ItemGroup>
+  <!--
+    The information models are compiled from their design XML by the OPC UA
+    model source generator. The ModelCompiler that used to produce
+    *.Classes.cs, *.Constants.cs, *.DataTypes.cs, *.PredefinedNodes.cs and
+    *.PredefinedNodes.uanodes no longer exists in 2.0; the design XML and CSV
+    below are now the only inputs, and the generated code is what the node
+    managers bind to.
+  -->
+  <PropertyGroup>
+    <!-- Model-only emission: the typed accessors reference Opc.Ua.Server.Fluent,
+         which these node managers do not build on. -->
+    <ModelSourceGeneratorOmitFluentApi>true</ModelSourceGeneratorOmitFluentApi>
+  </PropertyGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="Boiler\Generated\BoilerDesign.xml" />
+    <AdditionalFiles Include="Boiler\Generated\BoilerDesign.csv" />
+    <AdditionalFiles Include="TestData\Generated\TestDataDesign.xml" />
+    <AdditionalFiles Include="TestData\Generated\TestDataDesign.csv" />
+    <AdditionalFiles Include="MemoryBuffer\Generated\MemoryBufferDesign.xml" />
+    <AdditionalFiles Include="MemoryBuffer\Generated\MemoryBufferDesign.csv" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Types" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
     <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>   
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Technosoftware\UaConfiguration\Technosoftware.UaConfiguration.csproj" />

@@ -167,13 +167,11 @@ namespace SampleCompany.NodeManagers.Boiler
         /// </summary>
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
-            var predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(
-                context,
-                "SampleCompany.NodeManagers.Boiler.Generated.SampleCompany.NodeManagers.Boiler.PredefinedNodes.uanodes",
-                GetType().GetTypeInfo().Assembly,
-                true);
-            return predefinedNodes;
+            // The model source generator builds the predefined nodes from
+            // BoilerDesign.xml at compile time, so there is no .uanodes
+            // resource to load and no reflection on the way in.
+            return new NodeStateCollection()
+                .AddSampleCompanyNodeManagersBoiler(context);
         }
 
         /// <summary>
