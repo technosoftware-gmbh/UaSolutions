@@ -10,6 +10,15 @@
     <Description>SampleCompany SampleClient</Description>
     <Copyright>Copyright © 2018 - 2026 SampleCompany</Copyright>
   </PropertyGroup>
+  <!--
+    TEMPORARY, for the OPC Foundation 2.0 migration only.
+    These tutorials normally consume the published Technosoftware.UaSolutions.*
+    packages, which is the point of the "Sample" flavour. There is no 7.0
+    package yet, and the 6.x ones bring the 1.5 stack with them, so on this
+    branch they would mix stack versions and fail to bind at all. Project
+    references let the sample sources be migrated and verified in the
+    meantime; restore the PackageReferences before merging.
+  -->
   <ItemGroup>
     <Compile
       Include="..\Common\ConsoleUtils.cs"
@@ -33,9 +42,9 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
     <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaClient" />	
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaUtilities\Technosoftware.UaUtilities.csproj" />
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaConfiguration\Technosoftware.UaConfiguration.csproj" />
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaClient\Technosoftware.UaClient.csproj" />	
   </ItemGroup>     
   <ItemGroup>
     <None Update="SampleCompany.SampleClient.Config.xml">

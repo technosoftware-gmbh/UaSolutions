@@ -112,7 +112,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     externalReferences[ObjectIds.ObjectsFolder] = References = references = [];
                 }
 
-                FolderState root = CreateFolderState(null, "Simulation", "Simulation", null);
+                FolderState root = CreateFolderState(null, "Simulation", new LocalizedText("Simulation"), null);
 
                 var variables = new List<BaseDataVariableState>();
 
@@ -120,12 +120,12 @@ namespace SampleCompany.NodeManagers.Simulation
                 {
                     #region Scalar_Static
                     ResetRandomGenerator(1);
-                    FolderState scalarFolder = CreateFolderState(root, "Scalar", "Scalar", null);
+                    FolderState scalarFolder = CreateFolderState(root, "Scalar", new LocalizedText("Scalar"), null);
                     BaseDataVariableState scalarInstructions = CreateBaseDataVariableState(
                         scalarFolder,
                         "Scalar_Instructions",
-                        "Scalar_Instructions",
-                        null,
+                        new LocalizedText("Scalar_Instructions"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -133,13 +133,13 @@ namespace SampleCompany.NodeManagers.Simulation
                     scalarInstructions.Value = "A library of Read/Write Variables of all supported data-types.";
                     variables.Add(scalarInstructions);
 
-                    FolderState staticFolder = CreateFolderState(scalarFolder, "Scalar_Static", "Scalar_Static", null);
+                    FolderState staticFolder = CreateFolderState(scalarFolder, "Scalar_Static", new LocalizedText("Scalar_Static"), null);
                     const string scalarStatic = "Scalar_Static_";
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Boolean",
-                        "Boolean",
-                        null,
+                        new LocalizedText("Boolean"),
+                        default,
                         DataTypeIds.Boolean,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -147,8 +147,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Byte",
-                        "Byte",
-                        null,
+                        new LocalizedText("Byte"),
+                        default,
                         DataTypeIds.Byte,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -156,8 +156,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "ByteString",
-                        "ByteString",
-                        null,
+                        new LocalizedText("ByteString"),
+                        default,
                         DataTypeIds.ByteString,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -165,8 +165,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "DateTime",
-                        "DateTime",
-                        null,
+                        new LocalizedText("DateTime"),
+                        default,
                         DataTypeIds.DateTime,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -174,8 +174,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Double",
-                        "Double",
-                        null,
+                        new LocalizedText("Double"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -183,8 +183,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Duration",
-                        "Duration",
-                        null,
+                        new LocalizedText("Duration"),
+                        default,
                         DataTypeIds.Duration,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -192,8 +192,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Float",
-                        "Float",
-                        null,
+                        new LocalizedText("Float"),
+                        default,
                         DataTypeIds.Float,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -201,8 +201,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Guid",
-                        "Guid",
-                        null,
+                        new LocalizedText("Guid"),
+                        default,
                         DataTypeIds.Guid,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -210,8 +210,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Int16",
-                        "Int16",
-                        null,
+                        new LocalizedText("Int16"),
+                        default,
                         DataTypeIds.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -219,8 +219,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Int32",
-                        "Int32",
-                        null,
+                        new LocalizedText("Int32"),
+                        default,
                         DataTypeIds.Int32,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -228,8 +228,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Int64",
-                        "Int64",
-                        null,
+                        new LocalizedText("Int64"),
+                        default,
                         DataTypeIds.Int64,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -237,8 +237,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Integer",
-                        "Integer",
-                        null,
+                        new LocalizedText("Integer"),
+                        default,
                         DataTypeIds.Integer,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -246,8 +246,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "LocaleId",
-                        "LocaleId",
-                        null,
+                        new LocalizedText("LocaleId"),
+                        default,
                         DataTypeIds.LocaleId,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -255,8 +255,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "LocalizedText",
-                        "LocalizedText",
-                        null,
+                        new LocalizedText("LocalizedText"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -264,8 +264,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "NodeId",
-                        "NodeId",
-                        null,
+                        new LocalizedText("NodeId"),
+                        default,
                         DataTypeIds.NodeId,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -273,8 +273,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Number",
-                        "Number",
-                        null,
+                        new LocalizedText("Number"),
+                        default,
                         DataTypeIds.Number,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -282,8 +282,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "QualifiedName",
-                        "QualifiedName",
-                        null,
+                        new LocalizedText("QualifiedName"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -291,8 +291,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "SByte",
-                        "SByte",
-                        null,
+                        new LocalizedText("SByte"),
+                        default,
                         DataTypeIds.SByte,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -300,8 +300,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "String",
-                        "String",
-                        null,
+                        new LocalizedText("String"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -309,8 +309,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "UInt16",
-                        "UInt16",
-                        null,
+                        new LocalizedText("UInt16"),
+                        default,
                         DataTypeIds.UInt16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -318,8 +318,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "UInt32",
-                        "UInt32",
-                        null,
+                        new LocalizedText("UInt32"),
+                        default,
                         DataTypeIds.UInt32,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -327,8 +327,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "UInt64",
-                        "UInt64",
-                        null,
+                        new LocalizedText("UInt64"),
+                        default,
                         DataTypeIds.UInt64,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -336,8 +336,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "UInteger",
-                        "UInteger",
-                        null,
+                        new LocalizedText("UInteger"),
+                        default,
                         DataTypeIds.UInteger,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -345,8 +345,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "UtcTime",
-                        "UtcTime",
-                        null,
+                        new LocalizedText("UtcTime"),
+                        default,
                         DataTypeIds.UtcTime,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -354,8 +354,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Variant",
-                        "Variant",
-                        null,
+                        new LocalizedText("Variant"),
+                        default,
                         BuiltInType.Variant,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -363,8 +363,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "XmlElement",
-                        "XmlElement",
-                        null,
+                        new LocalizedText("XmlElement"),
+                        default,
                         DataTypeIds.XmlElement,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -373,8 +373,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState decimalVariable = CreateBaseDataVariableState(
                         staticFolder,
                         scalarStatic + "Decimal",
-                        "Decimal",
-                        null,
+                        new LocalizedText("Decimal"),
+                        default,
                         DataTypeIds.DecimalDataType,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -393,14 +393,14 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Static_Arrays
                     ResetRandomGenerator(2);
-                    FolderState arraysFolder = CreateFolderState(staticFolder, "Scalar_Static_Arrays", "Arrays", null);
+                    FolderState arraysFolder = CreateFolderState(staticFolder, "Scalar_Static_Arrays", new LocalizedText("Arrays"), null);
                     const string staticArrays = "Scalar_Static_Arrays_";
 
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Boolean",
-                        "Boolean",
-                        null,
+                        new LocalizedText("Boolean"),
+                        default,
                         DataTypeIds.Boolean,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -408,8 +408,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Byte",
-                        "Byte",
-                        null,
+                        new LocalizedText("Byte"),
+                        default,
                         DataTypeIds.Byte,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -417,8 +417,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "ByteString",
-                        "ByteString",
-                        null,
+                        new LocalizedText("ByteString"),
+                        default,
                         DataTypeIds.ByteString,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -426,8 +426,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "DateTime",
-                        "DateTime",
-                        null,
+                        new LocalizedText("DateTime"),
+                        default,
                         DataTypeIds.DateTime,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -436,8 +436,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState doubleArrayVar = CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Double",
-                        "Double",
-                        null,
+                        new LocalizedText("Double"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -456,8 +456,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Duration",
-                        "Duration",
-                        null,
+                        new LocalizedText("Duration"),
+                        default,
                         DataTypeIds.Duration,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -466,8 +466,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState floatArrayVar = CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Float",
-                        "Float",
-                        null,
+                        new LocalizedText("Float"),
+                        default,
                         DataTypeIds.Float,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -486,8 +486,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Guid",
-                        "Guid",
-                        null,
+                        new LocalizedText("Guid"),
+                        default,
                         DataTypeIds.Guid,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -495,8 +495,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Int16",
-                        "Int16",
-                        null,
+                        new LocalizedText("Int16"),
+                        default,
                         DataTypeIds.Int16,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -504,8 +504,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Int32",
-                        "Int32",
-                        null,
+                        new LocalizedText("Int32"),
+                        default,
                         DataTypeIds.Int32,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -513,8 +513,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Int64",
-                        "Int64",
-                        null,
+                        new LocalizedText("Int64"),
+                        default,
                         DataTypeIds.Int64,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -522,8 +522,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Integer",
-                        "Integer",
-                        null,
+                        new LocalizedText("Integer"),
+                        default,
                         DataTypeIds.Integer,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -531,8 +531,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "LocaleId",
-                        "LocaleId",
-                        null,
+                        new LocalizedText("LocaleId"),
+                        default,
                         DataTypeIds.LocaleId,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -540,8 +540,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "LocalizedText",
-                        "LocalizedText",
-                        null,
+                        new LocalizedText("LocalizedText"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -549,8 +549,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "NodeId",
-                        "NodeId",
-                        null,
+                        new LocalizedText("NodeId"),
+                        default,
                         DataTypeIds.NodeId,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -558,8 +558,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Number",
-                        "Number",
-                        null,
+                        new LocalizedText("Number"),
+                        default,
                         DataTypeIds.Number,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -567,8 +567,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "QualifiedName",
-                        "QualifiedName",
-                        null,
+                        new LocalizedText("QualifiedName"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -576,8 +576,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "SByte",
-                        "SByte",
-                        null,
+                        new LocalizedText("SByte"),
+                        default,
                         DataTypeIds.SByte,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -586,8 +586,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState stringArrayVar = CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "String",
-                        "String",
-                        null,
+                        new LocalizedText("String"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -608,8 +608,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "UInt16",
-                        "UInt16",
-                        null,
+                        new LocalizedText("UInt16"),
+                        default,
                         DataTypeIds.UInt16,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -617,8 +617,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "UInt32",
-                        "UInt32",
-                        null,
+                        new LocalizedText("UInt32"),
+                        default,
                         DataTypeIds.UInt32,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -626,8 +626,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "UInt64",
-                        "UInt64",
-                        null,
+                        new LocalizedText("UInt64"),
+                        default,
                         DataTypeIds.UInt64,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -635,8 +635,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "UInteger",
-                        "UInteger",
-                        null,
+                        new LocalizedText("UInteger"),
+                        default,
                         DataTypeIds.UInteger,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -644,8 +644,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "UtcTime",
-                        "UtcTime",
-                        null,
+                        new LocalizedText("UtcTime"),
+                        default,
                         DataTypeIds.UtcTime,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -653,8 +653,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "Variant",
-                        "Variant",
-                        null,
+                        new LocalizedText("Variant"),
+                        default,
                         BuiltInType.Variant,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -662,8 +662,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arraysFolder,
                         staticArrays + "XmlElement",
-                        "XmlElement",
-                        null,
+                        new LocalizedText("XmlElement"),
+                        default,
                         DataTypeIds.XmlElement,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -672,13 +672,13 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Static_Arrays2D
                     ResetRandomGenerator(3);
-                    FolderState arrays2DFolder = CreateFolderState(staticFolder, "Scalar_Static_Arrays2D", "Arrays2D", null);
+                    FolderState arrays2DFolder = CreateFolderState(staticFolder, "Scalar_Static_Arrays2D", new LocalizedText("Arrays2D"), null);
                     const string staticArrays2D = "Scalar_Static_Arrays2D_";
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Boolean",
-                        "Boolean",
-                        null,
+                        new LocalizedText("Boolean"),
+                        default,
                         DataTypeIds.Boolean,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -686,8 +686,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Byte",
-                        "Byte",
-                        null,
+                        new LocalizedText("Byte"),
+                        default,
                         DataTypeIds.Byte,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -695,8 +695,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "ByteString",
-                        "ByteString",
-                        null,
+                        new LocalizedText("ByteString"),
+                        default,
                         DataTypeIds.ByteString,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -704,8 +704,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "DateTime",
-                        "DateTime",
-                        null,
+                        new LocalizedText("DateTime"),
+                        default,
                         DataTypeIds.DateTime,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -713,8 +713,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Double",
-                        "Double",
-                        null,
+                        new LocalizedText("Double"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -722,8 +722,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Duration",
-                        "Duration",
-                        null,
+                        new LocalizedText("Duration"),
+                        default,
                         DataTypeIds.Duration,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -731,8 +731,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Float",
-                        "Float",
-                        null,
+                        new LocalizedText("Float"),
+                        default,
                         DataTypeIds.Float,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -740,8 +740,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Guid",
-                        "Guid",
-                        null,
+                        new LocalizedText("Guid"),
+                        default,
                         DataTypeIds.Guid,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -749,8 +749,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Int16",
-                        "Int16",
-                        null,
+                        new LocalizedText("Int16"),
+                        default,
                         DataTypeIds.Int16,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -758,8 +758,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Int32",
-                        "Int32",
-                        null,
+                        new LocalizedText("Int32"),
+                        default,
                         DataTypeIds.Int32,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -767,8 +767,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Int64",
-                        "Int64",
-                        null,
+                        new LocalizedText("Int64"),
+                        default,
                         DataTypeIds.Int64,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -776,8 +776,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Integer",
-                        "Integer",
-                        null,
+                        new LocalizedText("Integer"),
+                        default,
                         DataTypeIds.Integer,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -785,8 +785,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "LocaleId",
-                        "LocaleId",
-                        null,
+                        new LocalizedText("LocaleId"),
+                        default,
                         DataTypeIds.LocaleId,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -794,8 +794,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "LocalizedText",
-                        "LocalizedText",
-                        null,
+                        new LocalizedText("LocalizedText"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -803,8 +803,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "NodeId",
-                        "NodeId",
-                        null,
+                        new LocalizedText("NodeId"),
+                        default,
                         DataTypeIds.NodeId,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -812,8 +812,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Number",
-                        "Number",
-                        null,
+                        new LocalizedText("Number"),
+                        default,
                         DataTypeIds.Number,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -821,8 +821,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "QualifiedName",
-                        "QualifiedName",
-                        null,
+                        new LocalizedText("QualifiedName"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -830,8 +830,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "SByte",
-                        "SByte",
-                        null,
+                        new LocalizedText("SByte"),
+                        default,
                         DataTypeIds.SByte,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -839,8 +839,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "String",
-                        "String",
-                        null,
+                        new LocalizedText("String"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -848,8 +848,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "UInt16",
-                        "UInt16",
-                        null,
+                        new LocalizedText("UInt16"),
+                        default,
                         DataTypeIds.UInt16,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -857,8 +857,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "UInt32",
-                        "UInt32",
-                        null,
+                        new LocalizedText("UInt32"),
+                        default,
                         DataTypeIds.UInt32,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -866,8 +866,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "UInt64",
-                        "UInt64",
-                        null,
+                        new LocalizedText("UInt64"),
+                        default,
                         DataTypeIds.UInt64,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -875,8 +875,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "UInteger",
-                        "UInteger",
-                        null,
+                        new LocalizedText("UInteger"),
+                        default,
                         DataTypeIds.UInteger,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -884,8 +884,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "UtcTime",
-                        "UtcTime",
-                        null,
+                        new LocalizedText("UtcTime"),
+                        default,
                         DataTypeIds.UtcTime,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -893,8 +893,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "Variant",
-                        "Variant",
-                        null,
+                        new LocalizedText("Variant"),
+                        default,
                         BuiltInType.Variant,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -902,8 +902,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
                         staticArrays2D + "XmlElement",
-                        "XmlElement",
-                        null,
+                        new LocalizedText("XmlElement"),
+                        default,
                         DataTypeIds.XmlElement,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -912,13 +912,13 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Static_ArrayDynamic
                     ResetRandomGenerator(4);
-                    FolderState arrayDynamicFolder = CreateFolderState(staticFolder, "Scalar_Static_ArrayDymamic", "ArrayDymamic", null);
+                    FolderState arrayDynamicFolder = CreateFolderState(staticFolder, "Scalar_Static_ArrayDymamic", new LocalizedText("ArrayDymamic"), null);
                     const string staticArraysDynamic = "Scalar_Static_ArrayDynamic_";
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Boolean",
-                        "Boolean",
-                        null,
+                        new LocalizedText("Boolean"),
+                        default,
                         DataTypeIds.Boolean,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -926,8 +926,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Byte",
-                        "Byte",
-                        null,
+                        new LocalizedText("Byte"),
+                        default,
                         DataTypeIds.Byte,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -935,8 +935,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "ByteString",
-                        "ByteString",
-                        null,
+                        new LocalizedText("ByteString"),
+                        default,
                         DataTypeIds.ByteString,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -944,8 +944,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "DateTime",
-                        "DateTime",
-                        null,
+                        new LocalizedText("DateTime"),
+                        default,
                         DataTypeIds.DateTime,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -953,8 +953,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Double",
-                        "Double",
-                        null,
+                        new LocalizedText("Double"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -962,8 +962,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Duration",
-                        "Duration",
-                        null,
+                        new LocalizedText("Duration"),
+                        default,
                         DataTypeIds.Duration,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -971,8 +971,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Float",
-                        "Float",
-                        null,
+                        new LocalizedText("Float"),
+                        default,
                         DataTypeIds.Float,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -980,8 +980,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Guid",
-                        "Guid",
-                        null,
+                        new LocalizedText("Guid"),
+                        default,
                         DataTypeIds.Guid,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -989,8 +989,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Int16",
-                        "Int16",
-                        null,
+                        new LocalizedText("Int16"),
+                        default,
                         DataTypeIds.Int16,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -998,8 +998,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Int32",
-                        "Int32",
-                        null,
+                        new LocalizedText("Int32"),
+                        default,
                         DataTypeIds.Int32,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1007,8 +1007,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Int64",
-                        "Int64",
-                        null,
+                        new LocalizedText("Int64"),
+                        default,
                         DataTypeIds.Int64,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1016,8 +1016,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Integer",
-                        "Integer",
-                        null,
+                        new LocalizedText("Integer"),
+                        default,
                         DataTypeIds.Integer,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1025,8 +1025,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "LocaleId",
-                        "LocaleId",
-                        null,
+                        new LocalizedText("LocaleId"),
+                        default,
                         DataTypeIds.LocaleId,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1034,8 +1034,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "LocalizedText",
-                        "LocalizedText",
-                        null,
+                        new LocalizedText("LocalizedText"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1043,8 +1043,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "NodeId",
-                        "NodeId",
-                        null,
+                        new LocalizedText("NodeId"),
+                        default,
                         DataTypeIds.NodeId,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1052,8 +1052,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Number",
-                        "Number",
-                        null,
+                        new LocalizedText("Number"),
+                        default,
                         DataTypeIds.Number,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1061,8 +1061,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "QualifiedName",
-                        "QualifiedName",
-                        null,
+                        new LocalizedText("QualifiedName"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1070,8 +1070,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "SByte",
-                        "SByte",
-                        null,
+                        new LocalizedText("SByte"),
+                        default,
                         DataTypeIds.SByte,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1079,8 +1079,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "String",
-                        "String",
-                        null,
+                        new LocalizedText("String"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1088,8 +1088,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "UInt16",
-                        "UInt16",
-                        null,
+                        new LocalizedText("UInt16"),
+                        default,
                         DataTypeIds.UInt16,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1097,8 +1097,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "UInt32",
-                        "UInt32",
-                        null,
+                        new LocalizedText("UInt32"),
+                        default,
                         DataTypeIds.UInt32,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1106,8 +1106,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "UInt64",
-                        "UInt64",
-                        null,
+                        new LocalizedText("UInt64"),
+                        default,
                         DataTypeIds.UInt64,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1115,8 +1115,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "UInteger",
-                        "UInteger",
-                        null,
+                        new LocalizedText("UInteger"),
+                        default,
                         DataTypeIds.UInteger,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1124,8 +1124,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "UtcTime",
-                        "UtcTime",
-                        null,
+                        new LocalizedText("UtcTime"),
+                        default,
                         DataTypeIds.UtcTime,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1133,8 +1133,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "Variant",
-                        "Variant",
-                        null,
+                        new LocalizedText("Variant"),
+                        default,
                         BuiltInType.Variant,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1142,8 +1142,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
                         staticArraysDynamic + "XmlElement",
-                        "XmlElement",
-                        null,
+                        new LocalizedText("XmlElement"),
+                        default,
                         DataTypeIds.XmlElement,
                         ValueRanks.OneOrMoreDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -1153,7 +1153,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     #region Scalar_Static_Mass
                     ResetRandomGenerator(5);
                     // create 100 instances of each static scalar type
-                    FolderState massFolder = CreateFolderState(staticFolder, "Scalar_Static_Mass", "Mass", null);
+                    FolderState massFolder = CreateFolderState(staticFolder, "Scalar_Static_Mass", new LocalizedText("Mass"), null);
                     const string staticMass = "Scalar_Static_Mass_";
                     variables.AddRange(CreateVariables(massFolder, staticMass + "Boolean", "Boolean", null, DataTypeIds.Boolean, ValueRanks.Scalar, 100));
                     variables.AddRange(CreateVariables(massFolder, staticMass + "Byte", "Byte", null, DataTypeIds.Byte, ValueRanks.Scalar, 100));
@@ -1186,7 +1186,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Simulation
                     ResetRandomGenerator(6);
-                    FolderState simulationFolder = CreateFolderState(scalarFolder, "Scalar_Simulation", "Simulation", null);
+                    FolderState simulationFolder = CreateFolderState(scalarFolder, "Scalar_Simulation", new LocalizedText("Simulation"), null);
                     const string scalarSimulation = "Scalar_Simulation_";
                     _ = CreateDynamicVariable(simulationFolder, scalarSimulation + "Boolean", "Boolean", null, DataTypeIds.Boolean, ValueRanks.Scalar);
                     _ = CreateDynamicVariable(simulationFolder, scalarSimulation + "Byte", "Byte", null, DataTypeIds.Byte, ValueRanks.Scalar);
@@ -1230,8 +1230,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState intervalVariable = CreateBaseDataVariableState(
                         simulationFolder,
                         scalarSimulation + "Interval",
-                        "Interval",
-                        null,
+                        new LocalizedText("Interval"),
+                        default,
                         DataTypeIds.UInt16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -1242,8 +1242,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState enabledVariable = CreateBaseDataVariableState(
                         simulationFolder,
                         scalarSimulation + "Enabled",
-                        "Enabled",
-                        null,
+                        new LocalizedText("Enabled"),
+                        default,
                         DataTypeIds.Boolean,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -1254,7 +1254,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Simulation_Arrays
                     ResetRandomGenerator(7);
-                    FolderState arraysSimulationFolder = CreateFolderState(simulationFolder, "Scalar_Simulation_Arrays", "Arrays", null);
+                    FolderState arraysSimulationFolder = CreateFolderState(simulationFolder, "Scalar_Simulation_Arrays", new LocalizedText("Arrays"), null);
                     const string simulationArrays = "Scalar_Simulation_Arrays_";
                     _ = CreateDynamicVariable(
                         arraysSimulationFolder,
@@ -1358,7 +1358,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Simulation_Mass
                     ResetRandomGenerator(8);
-                    FolderState massSimulationFolder = CreateFolderState(simulationFolder, "Scalar_Simulation_Mass", "Mass", null);
+                    FolderState massSimulationFolder = CreateFolderState(simulationFolder, "Scalar_Simulation_Mass", new LocalizedText("Mass"), null);
                     const string massSimulation = "Scalar_Simulation_Mass_";
                     _ = CreateDynamicVariables(massSimulationFolder, massSimulation + "Boolean", "Boolean", null, DataTypeIds.Boolean, ValueRanks.Scalar, 100);
                     _ = CreateDynamicVariables(massSimulationFolder, massSimulation + "Byte", "Byte", null, DataTypeIds.Byte, ValueRanks.Scalar, 100);
@@ -1446,12 +1446,12 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region DataAccess_DataItem
                     ResetRandomGenerator(9);
-                    FolderState daFolder = CreateFolderState(root, "DataAccess", "DataAccess", null);
+                    FolderState daFolder = CreateFolderState(root, "DataAccess", new LocalizedText("DataAccess"), null);
                     BaseDataVariableState daInstructions = CreateBaseDataVariableState(
                         daFolder,
                         "DataAccess_Instructions",
-                        "Instructions",
-                        null,
+                        new LocalizedText("Instructions"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -1459,7 +1459,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     daInstructions.Value = "A library of Read/Write Variables of all supported data-types.";
                     variables.Add(daInstructions);
 
-                    FolderState dataItemFolder = CreateFolderState(daFolder, "DataAccess_DataItem", "DataItem", null);
+                    FolderState dataItemFolder = CreateFolderState(daFolder, "DataAccess_DataItem", new LocalizedText("DataItem"), null);
                     const string daDataItem = "DataAccess_DataItem_";
 
 #if NET8_0_OR_GREATER
@@ -1472,8 +1472,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         DataItemState item = CreateDataItemState(
                             dataItemFolder,
                             daDataItem + name,
-                            name,
-                            null,
+                            new LocalizedText(name),
+                            default,
                             Enum.Parse<BuiltInType>(name),
                             ValueRanks.Scalar,
                             AccessLevels.CurrentReadOrWrite,
@@ -1495,7 +1495,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region DataAccess_AnalogType
                     ResetRandomGenerator(10);
-                    FolderState analogItemFolder = CreateFolderState(daFolder, "DataAccess_AnalogType", "AnalogType", null);
+                    FolderState analogItemFolder = CreateFolderState(daFolder, "DataAccess_AnalogType", new LocalizedText("AnalogType"), null);
                     const string daAnalogItem = "DataAccess_AnalogType_";
 
                     foreach (BuiltInType builtInType in builtInTypes)
@@ -1534,7 +1534,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region DataAccess_AnalogType_Array
                     ResetRandomGenerator(11);
-                    FolderState analogArrayFolder = CreateFolderState(analogItemFolder, "DataAccess_AnalogType_Array", "Array", null);
+                    FolderState analogArrayFolder = CreateFolderState(analogItemFolder, "DataAccess_AnalogType_Array", new LocalizedText("Array"), null);
                     const string daAnalogArray = "DataAccess_AnalogType_Array_";
 
                     _ = CreateAnalogItemVariable(
@@ -1726,7 +1726,7 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         BuiltInType.QualifiedName,
                         ValueRanks.OneDimension,
-                        new QualifiedName[] { "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9" });
+                        new QualifiedName[] { new QualifiedName("q0"), new QualifiedName("q1"), new QualifiedName("q2"), new QualifiedName("q3"), new QualifiedName("q4"), new QualifiedName("q5"), new QualifiedName("q6"), new QualifiedName("q7"), new QualifiedName("q8"), new QualifiedName("q9" )});
                     _ = CreateAnalogItemVariable(
                         analogArrayFolder,
                         daAnalogArray + "SByte",
@@ -1823,16 +1823,16 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region DataAccess_DiscreteType
                     ResetRandomGenerator(12);
-                    FolderState discreteTypeFolder = CreateFolderState(daFolder, "DataAccess_DiscreteType", "DiscreteType", null);
-                    FolderState twoStateDiscreteFolder = CreateFolderState(discreteTypeFolder, "DataAccess_TwoStateDiscreteType", "TwoStateDiscreteType", null);
+                    FolderState discreteTypeFolder = CreateFolderState(daFolder, "DataAccess_DiscreteType", new LocalizedText("DiscreteType"), null);
+                    FolderState twoStateDiscreteFolder = CreateFolderState(discreteTypeFolder, "DataAccess_TwoStateDiscreteType", new LocalizedText("TwoStateDiscreteType"), null);
                     const string daTwoStateDiscrete = "DataAccess_TwoStateDiscreteType_";
 
                     // Add our Nodes to the folder, and specify their customized discrete enumerations
                     _ = CreateTwoStateDiscreteState(
                         twoStateDiscreteFolder,
                         daTwoStateDiscrete + "001",
-                        "001",
-                        null,
+                        new LocalizedText("001"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         false,
                         "red",
@@ -1840,8 +1840,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateTwoStateDiscreteState(
                         twoStateDiscreteFolder,
                         daTwoStateDiscrete + "002",
-                        "002",
-                        null,
+                        new LocalizedText("002"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         false,
                         "open",
@@ -1849,8 +1849,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateTwoStateDiscreteState(
                         twoStateDiscreteFolder,
                         daTwoStateDiscrete + "003",
-                        "003",
-                        null,
+                        new LocalizedText("003"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         false,
                         "up",
@@ -1858,8 +1858,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateTwoStateDiscreteState(
                         twoStateDiscreteFolder,
                         daTwoStateDiscrete + "004",
-                        "004",
-                        null,
+                        new LocalizedText("004"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         false,
                         "left",
@@ -1867,8 +1867,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateTwoStateDiscreteState(
                         twoStateDiscreteFolder,
                         daTwoStateDiscrete + "005",
-                        "005",
-                        null,
+                        new LocalizedText("005"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         false,
                         "circle",
@@ -1877,16 +1877,16 @@ namespace SampleCompany.NodeManagers.Simulation
                     FolderState multiStateDiscreteFolder = CreateFolderState(
                         discreteTypeFolder,
                         "DataAccess_MultiStateDiscreteType",
-                        "MultiStateDiscreteType",
-                        null);
+                        new LocalizedText("MultiStateDiscreteType"),
+                        default);
                     const string daMultiStateDiscrete = "DataAccess_MultiStateDiscreteType_";
 
                     // Add our Nodes to the folder, and specify their customized discrete enumerations
                     MultiStateDiscreteState variable = CreateMultiStateDiscreteState(
                         multiStateDiscreteFolder,
                         daMultiStateDiscrete + "001",
-                        "001",
-                        null,
+                        new LocalizedText("001"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -1894,15 +1894,15 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        "open",
-                        "closed",
-                        "jammed");
+                        new LocalizedText("open"),
+                        new LocalizedText("closed"),
+                        new LocalizedText("jammed"));
                     variable.OnWriteValue = OnWriteDiscrete;
                     variable = CreateMultiStateDiscreteState(
                         multiStateDiscreteFolder,
                         daMultiStateDiscrete + "002",
-                        "002",
-                        null,
+                        new LocalizedText("002"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -1910,16 +1910,16 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        "red",
-                        "green",
-                        "blue",
-                        "cyan");
+                        new LocalizedText("red"),
+                        new LocalizedText("green"),
+                        new LocalizedText("blue"),
+                        new LocalizedText("cyan"));
                     variable.OnWriteValue = OnWriteDiscrete;
                     variable = CreateMultiStateDiscreteState(
                         multiStateDiscreteFolder,
                         daMultiStateDiscrete + "003",
-                        "003",
-                        null,
+                        new LocalizedText("003"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -1927,17 +1927,17 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        "lolo",
-                        "lo",
-                        "normal",
-                        "hi",
-                        "hihi");
+                        new LocalizedText("lolo"),
+                        new LocalizedText("lo"),
+                        new LocalizedText("normal"),
+                        new LocalizedText("hi"),
+                        new LocalizedText("hihi"));
                     variable.OnWriteValue = OnWriteDiscrete;
                     variable = CreateMultiStateDiscreteState(
                         multiStateDiscreteFolder,
                         daMultiStateDiscrete + "004",
-                        "004",
-                        null,
+                        new LocalizedText("004"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -1945,15 +1945,15 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        "left",
-                        "right",
-                        "center");
+                        new LocalizedText("left"),
+                        new LocalizedText("right"),
+                        new LocalizedText("center"));
                     variable.OnWriteValue = OnWriteDiscrete;
                     variable = CreateMultiStateDiscreteState(
                         multiStateDiscreteFolder,
                         daMultiStateDiscrete + "005",
-                        "005",
-                        null,
+                        new LocalizedText("005"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -1961,9 +1961,9 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        "circle",
-                        "cross",
-                        "triangle");
+                        new LocalizedText("circle"),
+                        new LocalizedText("cross"),
+                        new LocalizedText("triangle"));
                     variable.OnWriteValue = OnWriteDiscrete;
                     #endregion DataAccess_DiscreteType
 
@@ -1972,17 +1972,17 @@ namespace SampleCompany.NodeManagers.Simulation
                     FolderState multiStateValueDiscreteFolder = CreateFolderState(
                         discreteTypeFolder,
                         "DataAccess_MultiStateValueDiscreteType",
-                        "MultiStateValueDiscreteType",
-                        null);
+                        new LocalizedText("MultiStateValueDiscreteType"),
+                        default);
                     const string daMultiStateValueDiscrete = "DataAccess_MultiStateValueDiscreteType_";
 
                     // Add our Nodes to the folder, and specify their customized discrete enumerations
                     MultiStateValueDiscreteState valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "001",
-                        "001",
-                        null,
-                        null,
+                        new LocalizedText("001"),
+                        default,
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -1990,14 +1990,14 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "open", "closed", "jammed" });
+                        new LocalizedText[] { new LocalizedText("open"), new LocalizedText("closed"), new LocalizedText("jammed" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "002",
-                        "002",
-                        null,
-                        null,
+                        new LocalizedText("002"),
+                        default,
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -2005,14 +2005,14 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "red", "green", "blue", "cyan" });
+                        new LocalizedText[] { new LocalizedText("red"), new LocalizedText("green"), new LocalizedText("blue"), new LocalizedText("cyan" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "003",
-                        "003",
-                        null,
-                        null,
+                        new LocalizedText("003"),
+                        default,
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -2020,14 +2020,14 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "lolo", "lo", "normal", "hi", "hihi" });
+                        new LocalizedText[] { new LocalizedText("lolo"), new LocalizedText("lo"), new LocalizedText("normal"), new LocalizedText("hi"), new LocalizedText("hihi" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "004",
-                        "004",
-                        null,
-                        null,
+                        new LocalizedText("004"),
+                        default,
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -2035,14 +2035,14 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "left", "right", "center" });
+                        new LocalizedText[] { new LocalizedText("left"), new LocalizedText("right"), new LocalizedText("center" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "005",
-                        "005",
-                        null,
-                        null,
+                        new LocalizedText("005"),
+                        default,
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -2050,15 +2050,15 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "circle", "cross", "triangle" });
+                        new LocalizedText[] { new LocalizedText("circle"), new LocalizedText("cross"), new LocalizedText("triangle" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
 
                     // Add our Nodes to the folder and specify varying data types
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "Byte",
-                        "Byte",
-                        null,
+                        new LocalizedText("Byte"),
+                        default,
                         DataTypeIds.Byte,
                         AccessLevels.CurrentReadOrWrite,
                         null,
@@ -2067,13 +2067,13 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "open", "closed", "jammed" });
+                        new LocalizedText[] { new LocalizedText("open"), new LocalizedText("closed"), new LocalizedText("jammed" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "Int16",
-                        "Int16",
-                        null,
+                        new LocalizedText("Int16"),
+                        default,
                         DataTypeIds.Int16,
                         AccessLevels.CurrentReadOrWrite,
                         null,
@@ -2082,13 +2082,13 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "red", "green", "blue", "cyan" });
+                        new LocalizedText[] { new LocalizedText("red"), new LocalizedText("green"), new LocalizedText("blue"), new LocalizedText("cyan" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "Int32",
-                        "Int32",
-                        null,
+                        new LocalizedText("Int32"),
+                        default,
                         DataTypeIds.Int32,
                         AccessLevels.CurrentReadOrWrite,
                         null,
@@ -2097,13 +2097,13 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "lolo", "lo", "normal", "hi", "hihi" });
+                        new LocalizedText[] { new LocalizedText("lolo"), new LocalizedText("lo"), new LocalizedText("normal"), new LocalizedText("hi"), new LocalizedText("hihi" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "Int64",
-                        "Int64",
-                        null,
+                        new LocalizedText("Int64"),
+                        default,
                         DataTypeIds.Int64,
                         AccessLevels.CurrentReadOrWrite,
                         null,
@@ -2112,13 +2112,13 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "left", "right", "center" });
+                        new LocalizedText[] { new LocalizedText("left"), new LocalizedText("right"), new LocalizedText("center" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "SByte",
-                        "SByte",
-                        null,
+                        new LocalizedText("SByte"),
+                        default,
                         DataTypeIds.SByte,
                         AccessLevels.CurrentReadOrWrite,
                         null,
@@ -2127,13 +2127,13 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "open", "closed", "jammed" });
+                        new LocalizedText[] { new LocalizedText("open"), new LocalizedText("closed"), new LocalizedText("jammed" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "UInt16",
-                        "UInt16",
-                        null,
+                        new LocalizedText("UInt16"),
+                        default,
                         DataTypeIds.UInt16,
                         AccessLevels.CurrentReadOrWrite,
                         null,
@@ -2142,13 +2142,13 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "red", "green", "blue", "cyan" });
+                        new LocalizedText[] { new LocalizedText("red"), new LocalizedText("green"), new LocalizedText("blue"), new LocalizedText("cyan" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "UInt32",
-                        "UInt32",
-                        null,
+                        new LocalizedText("UInt32"),
+                        default,
                         DataTypeIds.UInt32,
                         AccessLevels.CurrentReadOrWrite,
                         null,
@@ -2157,13 +2157,13 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "lolo", "lo", "normal", "hi", "hihi" });
+                        new LocalizedText[] { new LocalizedText("lolo"), new LocalizedText("lo"), new LocalizedText("normal"), new LocalizedText("hi"), new LocalizedText("hihi" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
                         daMultiStateValueDiscrete + "UInt64",
-                        "UInt64",
-                        null,
+                        new LocalizedText("UInt64"),
+                        default,
                         DataTypeIds.UInt64,
                         AccessLevels.CurrentReadOrWrite,
                         null,
@@ -2172,21 +2172,21 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "left", "right", "center" });
+                        new LocalizedText[] { new LocalizedText("left"), new LocalizedText("right"), new LocalizedText("center" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
 
                     #endregion DataAccess_MultiStateValueDiscreteType
 
                     #region References
                     ResetRandomGenerator(14);
-                    FolderState referencesFolder = CreateFolderState(root, "References", "References", null);
+                    FolderState referencesFolder = CreateFolderState(root, "References", new LocalizedText("References"), null);
                     const string referencesPrefix = "References_";
 
                     BaseDataVariableState referencesInstructions = CreateBaseDataVariableState(
                         referencesFolder,
                         "References_Instructions",
-                        "Instructions",
-                        null,
+                        new LocalizedText("Instructions"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2199,14 +2199,14 @@ namespace SampleCompany.NodeManagers.Simulation
                         referencesFolder,
                         referencesPrefix + "HasForwardReference",
                         "HasForwardReference");
-                    hasForwardReference.AddReference(ReferenceTypes.HasCause, false, variables[0].NodeId);
+                    hasForwardReference.AddReference(new NodeId(ReferenceTypes.HasCause), false, variables[0].NodeId);
                     variables.Add(hasForwardReference);
 
                     BaseDataVariableState hasInverseReference = CreateMeshVariable(
                         referencesFolder,
                         referencesPrefix + "HasInverseReference",
                         "HasInverseReference");
-                    hasInverseReference.AddReference(ReferenceTypes.HasCause, true, variables[0].NodeId);
+                    hasInverseReference.AddReference(new NodeId(ReferenceTypes.HasCause), true, variables[0].NodeId);
                     variables.Add(hasInverseReference);
 
                     BaseDataVariableState has3InverseReference = null;
@@ -2218,9 +2218,9 @@ namespace SampleCompany.NodeManagers.Simulation
                             referenceString += i.ToString();
                         }
                         BaseDataVariableState has3ForwardReferences = CreateMeshVariable(referencesFolder, referencesPrefix + referenceString, referenceString);
-                        has3ForwardReferences.AddReference(ReferenceTypes.HasCause, false, variables[0].NodeId);
-                        has3ForwardReferences.AddReference(ReferenceTypes.HasCause, false, variables[1].NodeId);
-                        has3ForwardReferences.AddReference(ReferenceTypes.HasCause, false, variables[2].NodeId);
+                        has3ForwardReferences.AddReference(new NodeId(ReferenceTypes.HasCause), false, variables[0].NodeId);
+                        has3ForwardReferences.AddReference(new NodeId(ReferenceTypes.HasCause), false, variables[1].NodeId);
+                        has3ForwardReferences.AddReference(new NodeId(ReferenceTypes.HasCause), false, variables[2].NodeId);
                         if (i == 1)
                         {
                             has3InverseReference = has3ForwardReferences;
@@ -2232,9 +2232,9 @@ namespace SampleCompany.NodeManagers.Simulation
                         referencesFolder,
                         referencesPrefix + "Has3InverseReferences",
                         "Has3InverseReferences");
-                    has3InverseReferences.AddReference(ReferenceTypes.HasEffect, true, variables[0].NodeId);
-                    has3InverseReferences.AddReference(ReferenceTypes.HasEffect, true, variables[1].NodeId);
-                    has3InverseReferences.AddReference(ReferenceTypes.HasEffect, true, variables[2].NodeId);
+                    has3InverseReferences.AddReference(new NodeId(ReferenceTypes.HasEffect), true, variables[0].NodeId);
+                    has3InverseReferences.AddReference(new NodeId(ReferenceTypes.HasEffect), true, variables[1].NodeId);
+                    has3InverseReferences.AddReference(new NodeId(ReferenceTypes.HasEffect), true, variables[2].NodeId);
                     variables.Add(has3InverseReferences);
 
                     BaseDataVariableState hasForwardAndInverseReferences = CreateMeshVariable(
@@ -2251,14 +2251,14 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region AccessRights
                     ResetRandomGenerator(15);
-                    FolderState folderAccessRights = CreateFolderState(root, "AccessRights", "AccessRights", null);
+                    FolderState folderAccessRights = CreateFolderState(root, "AccessRights", new LocalizedText("AccessRights"), null);
                     const string accessRights = "AccessRights_";
 
                     BaseDataVariableState accessRightsInstructions = CreateBaseDataVariableState(
                         folderAccessRights,
                         accessRights + "Instructions",
-                        "Instructions",
-                        null,
+                        new LocalizedText("Instructions"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2267,14 +2267,14 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(accessRightsInstructions);
 
                     // sub-folder for "AccessAll"
-                    FolderState folderAccessRightsAccessAll = CreateFolderState(folderAccessRights, "AccessRights_AccessAll", "AccessAll", null);
+                    FolderState folderAccessRightsAccessAll = CreateFolderState(folderAccessRights, "AccessRights_AccessAll", new LocalizedText("AccessAll"), null);
                     const string accessRightsAccessAll = "AccessRights_AccessAll_";
 
                     BaseDataVariableState arAllRo = CreateBaseDataVariableState(
                         folderAccessRightsAccessAll,
                         accessRightsAccessAll + "RO",
-                        "RO",
-                        null,
+                        new LocalizedText("RO"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2285,8 +2285,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arAllWo = CreateBaseDataVariableState(
                         folderAccessRightsAccessAll,
                         accessRightsAccessAll + "WO",
-                        "WO",
-                        null,
+                        new LocalizedText("WO"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2297,8 +2297,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arAllRw = CreateBaseDataVariableState(
                         folderAccessRightsAccessAll,
                         accessRightsAccessAll + "RW",
-                        "RW",
-                        null,
+                        new LocalizedText("RW"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2309,8 +2309,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arAllRoNotUser = CreateBaseDataVariableState(
                         folderAccessRightsAccessAll,
                         accessRightsAccessAll + "RO_NotUser",
-                        "RO_NotUser",
-                        null,
+                        new LocalizedText("RO_NotUser"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2321,8 +2321,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arAllWoNotUser = CreateBaseDataVariableState(
                         folderAccessRightsAccessAll,
                         accessRightsAccessAll + "WO_NotUser",
-                        "WO_NotUser",
-                        null,
+                        new LocalizedText("WO_NotUser"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2333,8 +2333,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arAllRwNotUser = CreateBaseDataVariableState(
                         folderAccessRightsAccessAll,
                         accessRightsAccessAll + "RW_NotUser",
-                        "RW_NotUser",
-                        null,
+                        new LocalizedText("RW_NotUser"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2345,8 +2345,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arAllRoUserRw = CreateBaseDataVariableState(
                         folderAccessRightsAccessAll,
                         accessRightsAccessAll + "RO_User1_RW",
-                        "RO_User1_RW",
-                        null,
+                        new LocalizedText("RO_User1_RW"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2357,8 +2357,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arAllRoGroupRw = CreateBaseDataVariableState(
                         folderAccessRightsAccessAll,
                         accessRightsAccessAll + "RO_Group1_RW",
-                        "RO_Group1_RW",
-                        null,
+                        new LocalizedText("RO_Group1_RW"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2368,14 +2368,14 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(arAllRoGroupRw);
 
                     // sub-folder for "AccessUser1"
-                    FolderState folderAccessRightsAccessUser1 = CreateFolderState(folderAccessRights, "AccessRights_AccessUser1", "AccessUser1", null);
+                    FolderState folderAccessRightsAccessUser1 = CreateFolderState(folderAccessRights, "AccessRights_AccessUser1", new LocalizedText("AccessUser1"), null);
                     const string accessRightsAccessUser1 = "AccessRights_AccessUser1_";
 
                     BaseDataVariableState arUserRo = CreateBaseDataVariableState(
                         folderAccessRightsAccessUser1,
                         accessRightsAccessUser1 + "RO",
-                        "RO",
-                        null,
+                        new LocalizedText("RO"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2386,8 +2386,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arUserWo = CreateBaseDataVariableState(
                         folderAccessRightsAccessUser1,
                         accessRightsAccessUser1 + "WO",
-                        "WO",
-                        null,
+                        new LocalizedText("WO"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2398,8 +2398,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arUserRw = CreateBaseDataVariableState(
                         folderAccessRightsAccessUser1,
                         accessRightsAccessUser1 + "RW",
-                        "RW",
-                        null,
+                        new LocalizedText("RW"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2409,14 +2409,14 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(arUserRw);
 
                     // sub-folder for "AccessGroup1"
-                    FolderState folderAccessRightsAccessGroup1 = CreateFolderState(folderAccessRights, "AccessRights_AccessGroup1", "AccessGroup1", null);
+                    FolderState folderAccessRightsAccessGroup1 = CreateFolderState(folderAccessRights, "AccessRights_AccessGroup1", new LocalizedText("AccessGroup1"), null);
                     const string accessRightsAccessGroup1 = "AccessRights_AccessGroup1_";
 
                     BaseDataVariableState arGroupRo = CreateBaseDataVariableState(
                         folderAccessRightsAccessGroup1,
                         accessRightsAccessGroup1 + "RO",
-                        "RO",
-                        null,
+                        new LocalizedText("RO"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2427,8 +2427,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arGroupWo = CreateBaseDataVariableState(
                         folderAccessRightsAccessGroup1,
                         accessRightsAccessGroup1 + "WO",
-                        "WO",
-                        null,
+                        new LocalizedText("WO"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2439,8 +2439,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arGroupRw = CreateBaseDataVariableState(
                         folderAccessRightsAccessGroup1,
                         accessRightsAccessGroup1 + "RW",
-                        "RW",
-                        null,
+                        new LocalizedText("RW"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2450,19 +2450,19 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(arGroupRw);
 
                     // sub folder for "RolePermissions"
-                    FolderState folderRolePermissions = CreateFolderState(folderAccessRights, "AccessRights_RolePermissions", "RolePermissions", null);
+                    FolderState folderRolePermissions = CreateFolderState(folderAccessRights, "AccessRights_RolePermissions", new LocalizedText("RolePermissions"), null);
                     const string rolePermissions = "AccessRights_RolePermissions_";
 
                     BaseDataVariableState rpAnonymous = CreateBaseDataVariableState(
                         folderRolePermissions,
                         rolePermissions + "AnonymousAccess",
-                        "AnonymousAccess",
-                        null,
+                        new LocalizedText("AnonymousAccess"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
                         null);
-                    rpAnonymous.Description = "This node can be accessed by users that have Anonymous Role";
+                    rpAnonymous.Description = new LocalizedText("This node can be accessed by users that have Anonymous Role");
                     rpAnonymous.RolePermissions = new RolePermissionTypeCollection()
                     {
                         // allow access to users with Anonymous role
@@ -2477,13 +2477,13 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState rpAuthenticatedUser = CreateBaseDataVariableState(
                         folderRolePermissions,
                         rolePermissions + "AuthenticatedUser",
-                        "AuthenticatedUser",
-                        null,
+                        new LocalizedText("AuthenticatedUser"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
                         null);
-                    rpAuthenticatedUser.Description = "This node can be accessed by users that have AuthenticatedUser Role";
+                    rpAuthenticatedUser.Description = new LocalizedText("This node can be accessed by users that have AuthenticatedUser Role");
                     rpAuthenticatedUser.RolePermissions = new RolePermissionTypeCollection()
                     {
                         // allow access to users with AuthenticatedUser role
@@ -2498,13 +2498,13 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState rpSecurityAdminUser = CreateBaseDataVariableState(
                         folderRolePermissions,
                         rolePermissions + "AdminUser",
-                        "AdminUser",
-                        null,
+                        new LocalizedText("AdminUser"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
                         null);
-                    rpSecurityAdminUser.Description = "This node can be accessed by users that have SecurityAdmin Role over an encrypted connection";
+                    rpSecurityAdminUser.Description = new LocalizedText("This node can be accessed by users that have SecurityAdmin Role over an encrypted connection");
                     rpSecurityAdminUser.AccessRestrictions = AccessRestrictionType.EncryptionRequired;
                     rpSecurityAdminUser.RolePermissions = new RolePermissionTypeCollection()
                     {
@@ -2520,13 +2520,13 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState rpConfigAdminUser = CreateBaseDataVariableState(
                         folderRolePermissions,
                         rolePermissions + "AdminUser",
-                        "AdminUser",
-                        null,
+                        new LocalizedText("AdminUser"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
                         null);
-                    rpConfigAdminUser.Description = "This node can be accessed by users that have ConfigureAdmin Role over an encrypted connection";
+                    rpConfigAdminUser.Description = new LocalizedText("This node can be accessed by users that have ConfigureAdmin Role over an encrypted connection");
                     rpConfigAdminUser.AccessRestrictions = AccessRestrictionType.EncryptionRequired;
                     rpConfigAdminUser.RolePermissions = new RolePermissionTypeCollection()
                     {
@@ -2540,14 +2540,14 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(rpConfigAdminUser);
 
                     // sub-folder for "AccessRestrictions"
-                    FolderState folderAccessRestrictions = CreateFolderState(folderAccessRights, "AccessRights_AccessRestrictions", "AccessRestrictions", null);
+                    FolderState folderAccessRestrictions = CreateFolderState(folderAccessRights, "AccessRights_AccessRestrictions", new LocalizedText("AccessRestrictions"), null);
                     const string accessRestrictions = "AccessRights_AccessRestrictions_";
 
                     BaseDataVariableState arNone = CreateBaseDataVariableState(
                         folderAccessRestrictions,
                         accessRestrictions + "None",
-                        "None",
-                        null,
+                        new LocalizedText("None"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2560,8 +2560,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arSigningRequired = CreateBaseDataVariableState(
                         folderAccessRestrictions,
                         accessRestrictions + "SigningRequired",
-                        "SigningRequired",
-                        null,
+                        new LocalizedText("SigningRequired"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2574,8 +2574,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arEncryptionRequired = CreateBaseDataVariableState(
                         folderAccessRestrictions,
                         accessRestrictions + "EncryptionRequired",
-                        "EncryptionRequired",
-                        null,
+                        new LocalizedText("EncryptionRequired"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2588,8 +2588,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arSessionRequired = CreateBaseDataVariableState(
                         folderAccessRestrictions,
                         accessRestrictions + "SessionRequired",
-                        "SessionRequired",
-                        null,
+                        new LocalizedText("SessionRequired"),
+                        default,
                         BuiltInType.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2602,14 +2602,14 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region NodeIds
                     ResetRandomGenerator(16);
-                    FolderState nodeIdsFolder = CreateFolderState(root, "NodeIds", "NodeIds", null);
+                    FolderState nodeIdsFolder = CreateFolderState(root, "NodeIds", new LocalizedText("NodeIds"), null);
                     const string nodeIds = "NodeIds_";
 
                     BaseDataVariableState nodeIdsInstructions = CreateBaseDataVariableState(
                         nodeIdsFolder,
                         nodeIds + "Instructions",
-                        "Instructions",
-                        null,
+                        new LocalizedText("Instructions"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2620,8 +2620,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState integerNodeId = CreateBaseDataVariableState(
                         nodeIdsFolder,
                         nodeIds + "Int16Integer",
-                        "Int16Integer",
-                        null,
+                        new LocalizedText("Int16Integer"),
+                        default,
                         DataTypeIds.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2632,8 +2632,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(CreateBaseDataVariableState(
                         nodeIdsFolder,
                         nodeIds + "Int16String",
-                        "Int16String",
-                        null,
+                        new LocalizedText("Int16String"),
+                        default,
                         DataTypeIds.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2642,8 +2642,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState guidNodeId = CreateBaseDataVariableState(
                         nodeIdsFolder,
                         nodeIds + "Int16GUID",
-                        "Int16GUID",
-                        null,
+                        new LocalizedText("Int16GUID"),
+                        default,
                         DataTypeIds.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2654,8 +2654,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState opaqueNodeId = CreateBaseDataVariableState(
                         nodeIdsFolder,
                         nodeIds + "Int16Opaque",
-                        "Int16Opaque",
-                        null,
+                        new LocalizedText("Int16Opaque"),
+                        default,
                         DataTypeIds.Int16,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2665,14 +2665,14 @@ namespace SampleCompany.NodeManagers.Simulation
                     #endregion NodeIds
 
                     #region Methods
-                    FolderState methodsFolder = CreateFolderState(root, "Methods", "Methods", null);
+                    FolderState methodsFolder = CreateFolderState(root, "Methods", new LocalizedText("Methods"), null);
                     const string methods = "Methods_";
 
                     BaseDataVariableState methodsInstructions = CreateBaseDataVariableState(
                         methodsFolder,
                         methods + "Instructions",
-                        "Instructions",
-                        null,
+                        new LocalizedText("Instructions"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2706,8 +2706,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     // set output arguments
                     multiplyMethod.OutputArguments = new PropertyState<Argument[]>(multiplyMethod);
                     multiplyMethod.OutputArguments.NodeId = new NodeId(multiplyMethod.BrowseName.Name + "OutArgs", NamespaceIndex);
-                    multiplyMethod.OutputArguments.BrowseName = BrowseNames.OutputArguments;
-                    multiplyMethod.OutputArguments.DisplayName = multiplyMethod.OutputArguments.BrowseName.Name;
+                    multiplyMethod.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
+                    multiplyMethod.OutputArguments.DisplayName = new LocalizedText(multiplyMethod.OutputArguments.BrowseName.Name);
                     multiplyMethod.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     multiplyMethod.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     multiplyMethod.OutputArguments.DataType = DataTypeIds.Argument;
@@ -2782,23 +2782,23 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Views
                     ResetRandomGenerator(18);
-                    FolderState viewsFolder = CreateFolderState(root, "Views", "Views", null);
+                    FolderState viewsFolder = CreateFolderState(root, "Views", new LocalizedText("Views"), null);
                     const string views = "Views_";
 
-                    ViewState viewStateOperations = CreateViewState(viewsFolder, externalReferences, views + "Operations", "Operations", null);
-                    ViewState viewStateEngineering = CreateViewState(viewsFolder, externalReferences, views + "Engineering", "Engineering", null);
+                    ViewState viewStateOperations = CreateViewState(viewsFolder, externalReferences, views + "Operations", new LocalizedText("Operations"), null);
+                    ViewState viewStateEngineering = CreateViewState(viewsFolder, externalReferences, views + "Engineering", new LocalizedText("Engineering"), null);
                     #endregion Views
 
                     #region Locales
                     ResetRandomGenerator(19);
-                    FolderState localesFolder = CreateFolderState(root, "Locales", "Locales", null);
+                    FolderState localesFolder = CreateFolderState(root, "Locales", new LocalizedText("Locales"), null);
                     const string locales = "Locales_";
 
                     BaseDataVariableState qnEnglishVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "QNEnglish",
-                        "QNEnglish",
-                        null,
+                        new LocalizedText("QNEnglish"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2809,8 +2809,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState ltEnglishVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "LTEnglish",
-                        "LTEnglish",
-                        null,
+                        new LocalizedText("LTEnglish"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2822,8 +2822,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState qnFrancaisVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "QNFrancais",
-                        "QNFrancais",
-                        null,
+                        new LocalizedText("QNFrancais"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2834,8 +2834,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState ltFrancaisVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "LTFrancais",
-                        "LTFrancais",
-                        null,
+                        new LocalizedText("LTFrancais"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2847,8 +2847,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState qnDeutschVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "QNDeutsch",
-                        "QNDeutsch",
-                        null,
+                        new LocalizedText("QNDeutsch"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2859,8 +2859,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState ltDeutschVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "LTDeutsch",
-                        "LTDeutsch",
-                        null,
+                        new LocalizedText("LTDeutsch"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2872,8 +2872,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState qnEspanolVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "QNEspanol",
-                        "QNEspanol",
-                        null,
+                        new LocalizedText("QNEspanol"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2884,8 +2884,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState ltEspanolVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "LTEspanol",
-                        "LTEspanol",
-                        null,
+                        new LocalizedText("LTEspanol"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2897,8 +2897,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState qnJapaneseVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "QN日本の",
-                        "QN日本の",
-                        null,
+                        new LocalizedText("QN日本の"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2909,8 +2909,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState ltJapaneseVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "LT日本の",
-                        "LT日本の",
-                        null,
+                        new LocalizedText("LT日本の"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2922,8 +2922,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState qnChineseVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "QN中國的",
-                        "QN中國的",
-                        null,
+                        new LocalizedText("QN中國的"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2934,8 +2934,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState ltChineseVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "LT中國的",
-                        "LT中國的",
-                        null,
+                        new LocalizedText("LT中國的"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2947,8 +2947,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState qnRussianVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "QNрусский",
-                        "QNрусский",
-                        null,
+                        new LocalizedText("QNрусский"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2959,8 +2959,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState ltRussianVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "LTрусский",
-                        "LTрусский",
-                        null,
+                        new LocalizedText("LTрусский"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2972,8 +2972,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState qnArabicVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "QNالعربية",
-                        "QNالعربية",
-                        null,
+                        new LocalizedText("QNالعربية"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2984,8 +2984,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState ltArabicVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "LTالعربية",
-                        "LTالعربية",
-                        null,
+                        new LocalizedText("LTالعربية"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -2997,8 +2997,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState qnKlingonVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "QNtlhIngan",
-                        "QNtlhIngan",
-                        null,
+                        new LocalizedText("QNtlhIngan"),
+                        default,
                         DataTypeIds.QualifiedName,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3009,8 +3009,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState ltKlingonVariable = CreateBaseDataVariableState(
                         localesFolder,
                         locales + "LTtlhIngan",
-                        "LTtlhIngan",
-                        null,
+                        new LocalizedText("LTtlhIngan"),
+                        default,
                         DataTypeIds.LocalizedText,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3022,17 +3022,17 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Attributes
                     ResetRandomGenerator(20);
-                    FolderState folderAttributes = CreateFolderState(root, "Attributes", "Attributes", null);
+                    FolderState folderAttributes = CreateFolderState(root, "Attributes", new LocalizedText("Attributes"), null);
 
                     #region AccessAll
-                    FolderState folderAttributesAccessAll = CreateFolderState(folderAttributes, "Attributes_AccessAll", "AccessAll", null);
+                    FolderState folderAttributesAccessAll = CreateFolderState(folderAttributes, "Attributes_AccessAll", new LocalizedText("AccessAll"), null);
                     const string attributesAccessAll = "Attributes_AccessAll_";
 
                     BaseDataVariableState accessLevelAccessAll = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "AccessLevel",
-                        "AccessLevel",
-                        null,
+                        new LocalizedText("AccessLevel"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3044,8 +3044,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arrayDimensionsAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "ArrayDimensions",
-                        "ArrayDimensions",
-                        null,
+                        new LocalizedText("ArrayDimensions"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3057,8 +3057,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState browseNameAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "BrowseName",
-                        "BrowseName",
-                        null,
+                        new LocalizedText("BrowseName"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3070,8 +3070,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState containsNoLoopsAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "ContainsNoLoops",
-                        "ContainsNoLoops",
-                        null,
+                        new LocalizedText("ContainsNoLoops"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3083,8 +3083,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState dataTypeAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "DataType",
-                        "DataType",
-                        null,
+                        new LocalizedText("DataType"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3096,8 +3096,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState descriptionAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "Description",
-                        "Description",
-                        null,
+                        new LocalizedText("Description"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3109,8 +3109,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState eventNotifierAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "EventNotifier",
-                        "EventNotifier",
-                        null,
+                        new LocalizedText("EventNotifier"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3122,8 +3122,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState executableAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "Executable",
-                        "Executable",
-                        null,
+                        new LocalizedText("Executable"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3135,8 +3135,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState historizingAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "Historizing",
-                        "Historizing",
-                        null,
+                        new LocalizedText("Historizing"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3148,8 +3148,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState inverseNameAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "InverseName",
-                        "InverseName",
-                        null,
+                        new LocalizedText("InverseName"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3161,8 +3161,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState isAbstractAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "IsAbstract",
-                        "IsAbstract",
-                        null,
+                        new LocalizedText("IsAbstract"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3174,8 +3174,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState minimumSamplingIntervalAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "MinimumSamplingInterval",
-                        "MinimumSamplingInterval",
-                        null,
+                        new LocalizedText("MinimumSamplingInterval"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3187,8 +3187,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState nodeClassIntervalAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "NodeClass",
-                        "NodeClass",
-                        null,
+                        new LocalizedText("NodeClass"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3200,8 +3200,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState nodeIdAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "NodeId",
-                        "NodeId",
-                        null,
+                        new LocalizedText("NodeId"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3213,8 +3213,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState symmetricAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "Symmetric",
-                        "Symmetric",
-                        null,
+                        new LocalizedText("Symmetric"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3226,8 +3226,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState userAccessLevelAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "UserAccessLevel",
-                        "UserAccessLevel",
-                        null,
+                        new LocalizedText("UserAccessLevel"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3239,8 +3239,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState userExecutableAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "UserExecutable",
-                        "UserExecutable",
-                        null,
+                        new LocalizedText("UserExecutable"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3252,8 +3252,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState valueRankAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "ValueRank",
-                        "ValueRank",
-                        null,
+                        new LocalizedText("ValueRank"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3265,8 +3265,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState writeMaskAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "WriteMask",
-                        "WriteMask",
-                        null,
+                        new LocalizedText("WriteMask"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3278,8 +3278,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState valueForVariableTypeAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "ValueForVariableType",
-                        "ValueForVariableType",
-                        null,
+                        new LocalizedText("ValueForVariableType"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3291,8 +3291,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState allAccessLevel = CreateBaseDataVariableState(
                         folderAttributesAccessAll,
                         attributesAccessAll + "All",
-                        "All",
-                        null,
+                        new LocalizedText("All"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3341,14 +3341,14 @@ namespace SampleCompany.NodeManagers.Simulation
                     #endregion AccessAll
 
                     #region AccessUser1
-                    FolderState folderAttributesAccessUser1 = CreateFolderState(folderAttributes, "Attributes_AccessUser1", "AccessUser1", null);
+                    FolderState folderAttributesAccessUser1 = CreateFolderState(folderAttributes, "Attributes_AccessUser1", new LocalizedText("AccessUser1"), null);
                     const string attributesAccessUser1 = "Attributes_AccessUser1_";
 
                     BaseDataVariableState accessLevelAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "AccessLevel",
-                        "AccessLevel",
-                        null,
+                        new LocalizedText("AccessLevel"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3360,8 +3360,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState arrayDimensionsAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "ArrayDimensions",
-                        "ArrayDimensions",
-                        null,
+                        new LocalizedText("ArrayDimensions"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3373,8 +3373,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState browseNameAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "BrowseName",
-                        "BrowseName",
-                        null,
+                        new LocalizedText("BrowseName"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3386,8 +3386,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState containsNoLoopsAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "ContainsNoLoops",
-                        "ContainsNoLoops",
-                        null,
+                        new LocalizedText("ContainsNoLoops"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3399,8 +3399,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState dataTypeAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "DataType",
-                        "DataType",
-                        null,
+                        new LocalizedText("DataType"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3412,8 +3412,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState descriptionAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "Description",
-                        "Description",
-                        null,
+                        new LocalizedText("Description"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3425,8 +3425,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState eventNotifierAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "EventNotifier",
-                        "EventNotifier",
-                        null,
+                        new LocalizedText("EventNotifier"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3438,8 +3438,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState executableAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "Executable",
-                        "Executable",
-                        null,
+                        new LocalizedText("Executable"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3451,8 +3451,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState historizingAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "Historizing",
-                        "Historizing",
-                        null,
+                        new LocalizedText("Historizing"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3464,8 +3464,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState inverseNameAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "InverseName",
-                        "InverseName",
-                        null,
+                        new LocalizedText("InverseName"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3477,8 +3477,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState isAbstractAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "IsAbstract",
-                        "IsAbstract",
-                        null,
+                        new LocalizedText("IsAbstract"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3490,8 +3490,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState minimumSamplingIntervalAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "MinimumSamplingInterval",
-                        "MinimumSamplingInterval",
-                        null,
+                        new LocalizedText("MinimumSamplingInterval"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3503,8 +3503,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState nodeClassIntervalAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "NodeClass",
-                        "NodeClass",
-                        null,
+                        new LocalizedText("NodeClass"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3516,8 +3516,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState nodeIdAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "NodeId",
-                        "NodeId",
-                        null,
+                        new LocalizedText("NodeId"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3529,8 +3529,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState symmetricAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "Symmetric",
-                        "Symmetric",
-                        null,
+                        new LocalizedText("Symmetric"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3542,8 +3542,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState userAccessUser1AccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "UserAccessUser1",
-                        "UserAccessUser1",
-                        null,
+                        new LocalizedText("UserAccessUser1"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3555,8 +3555,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState userExecutableAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "UserExecutable",
-                        "UserExecutable",
-                        null,
+                        new LocalizedText("UserExecutable"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3568,8 +3568,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState valueRankAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "ValueRank",
-                        "ValueRank",
-                        null,
+                        new LocalizedText("ValueRank"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3581,8 +3581,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState writeMaskAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "WriteMask",
-                        "WriteMask",
-                        null,
+                        new LocalizedText("WriteMask"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3594,8 +3594,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState valueForVariableTypeAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "ValueForVariableType",
-                        "ValueForVariableType",
-                        null,
+                        new LocalizedText("ValueForVariableType"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3607,8 +3607,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseDataVariableState allAccessUser1 = CreateBaseDataVariableState(
                         folderAttributesAccessUser1,
                         attributesAccessUser1 + "All",
-                        "All",
-                        null,
+                        new LocalizedText("All"),
+                        default,
                         DataTypeIds.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3659,14 +3659,14 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region MyCompany
                     ResetRandomGenerator(21);
-                    FolderState myCompanyFolder = CreateFolderState(root, "MyCompany", "MyCompany", null);
+                    FolderState myCompanyFolder = CreateFolderState(root, "MyCompany", new LocalizedText("MyCompany"), null);
                     const string myCompany = "MyCompany_";
 
                     BaseDataVariableState myCompanyInstructions = CreateBaseDataVariableState(
                         myCompanyFolder,
                         myCompany + "Instructions",
-                        "Instructions",
-                        null,
+                        new LocalizedText("Instructions"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3677,14 +3677,14 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region StandardServerTest
                     ResetRandomGenerator(1);
-                    FolderState standardServerTestFolder = CreateFolderState(root, "StandardServerTest", "StandardServerTest", null);
+                    FolderState standardServerTestFolder = CreateFolderState(root, "StandardServerTest", new LocalizedText("StandardServerTest"), null);
                     const string standardServerTest = "StandardServerTest_";
 
                     BaseDataVariableState standardServerTestInstructions = CreateBaseDataVariableState(
                         standardServerTestFolder,
                         "StandardServerTest_Instructions",
-                        "StandardServerTest_Instructions",
-                        null,
+                        new LocalizedText("StandardServerTest_Instructions"),
+                        default,
                         DataTypeIds.String,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3694,36 +3694,36 @@ namespace SampleCompany.NodeManagers.Simulation
                     BaseObjectState baseObjectState = CreateBaseObjectState(
                         standardServerTestFolder,
                         standardServerTest + "BaseObjectState1",
-                        "BaseObjectState1",
-                        null);
+                        new LocalizedText("BaseObjectState1"),
+                        default);
                     PropertyState propertyState = CreatePropertyState(
                         baseObjectState,
                         standardServerTest + "PropertyState",
-                        "PropertyState",
-                        null,
+                        new LocalizedText("PropertyState"),
+                        default,
                         BuiltInType.Boolean,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
                         null);
 
-                    baseObjectState = CreateBaseObjectState(standardServerTestFolder, standardServerTest + "BaseObjectState2", "BaseObjectState2", null);
+                    baseObjectState = CreateBaseObjectState(standardServerTestFolder, standardServerTest + "BaseObjectState2", new LocalizedText("BaseObjectState2"), null);
                     propertyState = CreatePropertyState(
                         baseObjectState,
                         standardServerTest + "PropertyState2",
-                        "PropertyState2",
-                        null,
+                        new LocalizedText("PropertyState2"),
+                        default,
                         BuiltInType.Boolean,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
                         true);
 
-                    viewStateOperations = CreateViewState(standardServerTestFolder, externalReferences, views + "Operations 2", "Operations 2", null);
+                    viewStateOperations = CreateViewState(standardServerTestFolder, externalReferences, views + "Operations 2", new LocalizedText("Operations 2"), null);
 
                     _ = CreateBaseDataVariableState(
                         standardServerTestFolder,
                         standardServerTest + "Double 1",
-                        "Double 1",
-                        null,
+                        new LocalizedText("Double 1"),
+                        default,
                         BuiltInType.Double,
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
@@ -3732,8 +3732,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateDataItemState(
                         standardServerTestFolder,
                         standardServerTest + "Double 1",
-                        "Double 1",
-                        null,
+                        new LocalizedText("Double 1"),
+                        default,
                         BuiltInType.Double,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -3747,8 +3747,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateDataItemState(
                         standardServerTestFolder,
                         standardServerTest + "Double 2",
-                        "Double 2",
-                        null,
+                        new LocalizedText("Double 2"),
+                        default,
                         BuiltInType.Double,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -3763,8 +3763,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateAnalogItemState(
                         standardServerTestFolder,
                         standardServerTest + "Boolean 1",
-                        "Boolean 1",
-                        null,
+                        new LocalizedText("Boolean 1"),
+                        default,
                         BuiltInType.Boolean,
                         ValueRanks.OneDimension,
                         AccessLevels.CurrentReadOrWrite,
@@ -3773,8 +3773,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateAnalogItemState(
                         standardServerTestFolder,
                         standardServerTest + "Boolean 2",
-                        "Boolean 2",
-                        null,
+                        new LocalizedText("Boolean 2"),
+                        default,
                         BuiltInType.Boolean,
                         ValueRanks.TwoDimensions,
                         AccessLevels.CurrentReadOrWrite,
@@ -3784,8 +3784,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateTwoStateDiscreteState(
                         standardServerTestFolder,
                         standardServerTest + "005",
-                        "005",
-                        null,
+                        new LocalizedText("005"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         false,
                         "circle",
@@ -3794,8 +3794,8 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = CreateMultiStateDiscreteState(
                         standardServerTestFolder,
                         standardServerTest + "001",
-                        "001",
-                        null,
+                        new LocalizedText("001"),
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -3803,16 +3803,16 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        "open",
-                        "closed",
-                        "jammed");
+                        new LocalizedText("open"),
+                        new LocalizedText("closed"),
+                        new LocalizedText("jammed"));
 
                     _ = CreateMultiStateValueDiscreteState(
                         standardServerTestFolder,
                         daMultiStateValueDiscrete + "001",
-                        "001",
-                        null,
-                        null,
+                        new LocalizedText("001"),
+                        default,
+                        default,
                         AccessLevels.CurrentReadOrWrite,
                         null,
                         AttributeWriteMask.None,
@@ -3820,7 +3820,7 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         null,
                         null,
-                        new LocalizedText[] { "open", "closed", "jammed" });
+                        new LocalizedText[] { new LocalizedText("open"), new LocalizedText("closed"), new LocalizedText("jammed" )});
 
                     #endregion StandardServerTest
 
@@ -3890,8 +3890,8 @@ namespace SampleCompany.NodeManagers.Simulation
             BaseDataVariableState variable = CreateBaseDataVariableState(
                 parent,
                 path,
-                name,
-                null,
+                new LocalizedText(name),
+                default,
                 BuiltInType.Double,
                 ValueRanks.Scalar,
                 AccessLevels.CurrentReadOrWrite,
@@ -3901,10 +3901,10 @@ namespace SampleCompany.NodeManagers.Simulation
             {
                 foreach (NodeState peer in peers)
                 {
-                    peer.AddReference(ReferenceTypes.HasCause, false, variable.NodeId);
-                    variable.AddReference(ReferenceTypes.HasCause, true, peer.NodeId);
-                    peer.AddReference(ReferenceTypes.HasEffect, true, variable.NodeId);
-                    variable.AddReference(ReferenceTypes.HasEffect, false, peer.NodeId);
+                    peer.AddReference(new NodeId(ReferenceTypes.HasCause), false, variable.NodeId);
+                    variable.AddReference(new NodeId(ReferenceTypes.HasCause), true, peer.NodeId);
+                    peer.AddReference(new NodeId(ReferenceTypes.HasEffect), true, variable.NodeId);
+                    variable.AddReference(new NodeId(ReferenceTypes.HasEffect), false, peer.NodeId);
                 }
             }
 
@@ -3954,7 +3954,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 parent,
                 browseName,
                 displayName,
-                description,
+                new LocalizedText(description),
                 dataType,
                 valueRank,
                 AccessLevels.CurrentReadOrWrite,
@@ -4176,7 +4176,7 @@ namespace SampleCompany.NodeManagers.Simulation
             UInt16 numVariables)
         {
             // first, create a new Parent folder for this data-type
-            FolderState newParentFolder = CreateFolderState(parent, path, name, null);
+            FolderState newParentFolder = CreateFolderState(parent, path, new LocalizedText(name), null);
 
             var itemsCreated = new List<BaseDataVariableState>();
             // now to create the remaining NUMBERED items
@@ -4185,7 +4185,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 var newName = string.Format("{0}_{1}", name, i.ToString("00"));
                 var newPath = string.Format("{0}_{1}", path, newName);
                 itemsCreated.Add(
-                    CreateBaseDataVariableState(newParentFolder, newPath, newName, null, dataType, valueRank, AccessLevels.CurrentReadOrWrite, null));
+                    CreateBaseDataVariableState(newParentFolder, newPath, new LocalizedText(newName), null, dataType, valueRank, AccessLevels.CurrentReadOrWrite, null));
             }
             return itemsCreated.ToArray();
         }
@@ -4217,7 +4217,7 @@ namespace SampleCompany.NodeManagers.Simulation
             int valueRank,
             byte accessLevel = AccessLevels.CurrentReadOrWrite)
         {
-            BaseDataVariableState variable = CreateBaseDataVariableState(parent, path, name, description, dataType, valueRank, accessLevel, null);
+            BaseDataVariableState variable = CreateBaseDataVariableState(parent, path, new LocalizedText(name), new LocalizedText(description), dataType, valueRank, accessLevel, null);
             m_dynamicNodes.Add(variable);
             return variable;
         }
@@ -4245,7 +4245,7 @@ namespace SampleCompany.NodeManagers.Simulation
             uint numVariables)
         {
             // first, create a new Parent folder for this data-type
-            FolderState newParentFolder = CreateFolderState(parent, path, name, null);
+            FolderState newParentFolder = CreateFolderState(parent, path, new LocalizedText(name), null);
 
             var itemsCreated = new List<BaseDataVariableState>();
             // now to create the remaining NUMBERED items

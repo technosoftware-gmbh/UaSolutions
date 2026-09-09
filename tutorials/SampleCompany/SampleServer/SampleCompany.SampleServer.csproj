@@ -13,13 +13,22 @@
   <ItemGroup Condition=" '$(NoHttps)' != 'true' ">
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" />
   </ItemGroup>
+  <!--
+    TEMPORARY, for the OPC Foundation 2.0 migration only.
+    These tutorials normally consume the published Technosoftware.UaSolutions.*
+    packages, which is the point of the "Sample" flavour. There is no 7.0
+    package yet, and the 6.x ones bring the 1.5 stack with them, so on this
+    branch they would mix stack versions and fail to bind at all. Project
+    references let the sample sources be migrated and verified in the
+    meantime; restore the PackageReferences before merging.
+  -->
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Types" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaUtilities" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaConfiguration" />
-    <PackageReference Include="Technosoftware.UaSolutions.UaServer" />
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaUtilities\Technosoftware.UaUtilities.csproj" />
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaConfiguration\Technosoftware.UaConfiguration.csproj" />
+    <ProjectReference Include="..\..\..\src\Technosoftware\UaServer\Technosoftware.UaServer.csproj" />
   </ItemGroup>   
   <ItemGroup>
     <ProjectReference Include="..\SampleNodeManagers\SampleCompany.SampleNodeManagers.csproj" />
