@@ -4725,23 +4725,20 @@ namespace SampleCompany.NodeManagers.Reference
             };
         }
 
-        private new object GetNewValue(BaseVariableState variable)
+        private new Variant GetNewValue(BaseVariableState variable)
         {
             Debug.Assert(m_generator != null, "Need a random generator!");
 
-            object value = null;
-            for (int retryCount = 0; value == null && retryCount < 10; retryCount++)
+            // DataGenerator.GetRandom returns a Variant in 2.0, so the null
+            // check is the Variant's own rather than an unbox-and-test.
+            Variant value = default;
+            for (int retryCount = 0; value.IsNull && retryCount < 10; retryCount++)
             {
                 value = m_generator.GetRandom(
                     variable.DataType,
                     variable.ValueRank,
                     [10],
                     ServerData.TypeTree);
-                // skip Variant Null
-                if (value is Variant variant && variant.Value == null)
-                {
-                    value = null;
-                }
             }
 
             return value;
