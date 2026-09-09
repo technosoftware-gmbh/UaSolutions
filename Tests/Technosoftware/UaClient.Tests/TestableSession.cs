@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient.Tests
@@ -44,9 +45,9 @@ namespace Technosoftware.UaClient.Tests
             ITransportChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             ArrayOf<EndpointDescription> availableEndpoints = default,
-            StringCollection discoveryProfileUris = null)
+            List<string> discoveryProfileUris = null)
             : base(
                 channel,
                 configuration,

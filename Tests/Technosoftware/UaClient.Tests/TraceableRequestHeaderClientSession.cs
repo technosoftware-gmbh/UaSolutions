@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient
@@ -33,9 +34,9 @@ namespace Technosoftware.UaClient
             ITransportChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             ArrayOf<EndpointDescription> availableEndpoints = default,
-            StringCollection discoveryProfileUris = null)
+            List<string> discoveryProfileUris = null)
             : base(
                 channel,
                 configuration,
@@ -68,7 +69,7 @@ namespace Technosoftware.UaClient
             Span<byte> traceId = stackalloc byte[16];
             context.SpanId.CopyTo(spanId);
             context.TraceId.CopyTo(traceId);
-            var spanContextParameter = new KeyValuePair
+            var spanContextParameter = new Opc.Ua.KeyValuePair
             {
                 Key = "SpanContext",
                 Value = new Variant(new SpanContextDataType
@@ -77,8 +78,11 @@ namespace Technosoftware.UaClient
                     TraceId = (Uuid)new Guid(traceId)
                 })
             };
-            traceData = new AdditionalParametersType();
-            traceData.Parameters.Add(spanContextParameter);
+            // Parameters is an immutable ArrayOf in 2.0.
+            traceData = new AdditionalParametersType
+            {
+                Parameters = [spanContextParameter]
+            };
         }
 
         ///<inheritdoc/>
@@ -100,7 +104,10 @@ namespace Technosoftware.UaClient
                     .Body is AdditionalParametersType existingParameters)
                 {
                     // Merge the trace data into the existing parameters.
-                    existingParameters.Parameters.AddRange(traceData.Parameters);
+                    existingParameters.Parameters = [
+                        .. existingParameters.Parameters.ToArray(),
+                        .. traceData.Parameters.ToArray()
+                    ];
                 }
             }
         }

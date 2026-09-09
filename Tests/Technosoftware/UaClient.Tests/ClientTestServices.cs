@@ -47,12 +47,12 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken ct = default)
         {
-            return new ValueTask<BrowseResponse>(m_session.BrowseAsync(
+            return m_session.BrowseAsync(
                 requestHeader,
                 view,
                 requestedMaxReferencesPerNode,
                 nodesToBrowse,
-                ct));
+                ct);
         }
 
         public ValueTask<BrowseNextResponse> BrowseNextAsync(
@@ -61,11 +61,11 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<ByteString> continuationPoints,
             CancellationToken ct = default)
         {
-            return new ValueTask<BrowseNextResponse>(m_session.BrowseNextAsync(
+            return m_session.BrowseNextAsync(
                 requestHeader,
                 releaseContinuationPoints,
                 continuationPoints,
-                ct));
+                ct);
         }
 
         public ValueTask<CreateSubscriptionResponse> CreateSubscriptionAsync(
@@ -78,7 +78,7 @@ namespace Technosoftware.UaClient.Tests
             byte priority,
             CancellationToken ct = default)
         {
-            return new ValueTask<CreateSubscriptionResponse>(m_session.CreateSubscriptionAsync(
+            return m_session.CreateSubscriptionAsync(
                 requestHeader,
                 requestedPublishingInterval,
                 requestedLifetimeCount,
@@ -86,7 +86,7 @@ namespace Technosoftware.UaClient.Tests
                 maxNotificationsPerPublish,
                 publishingEnabled,
                 priority,
-                ct));
+                ct);
         }
 
         public ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
@@ -96,12 +96,12 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken ct = default)
         {
-            return new ValueTask<CreateMonitoredItemsResponse>(m_session.CreateMonitoredItemsAsync(
+            return m_session.CreateMonitoredItemsAsync(
                 requestHeader,
                 subscriptionId,
                 timestampsToReturn,
                 itemsToCreate,
-                ct));
+                ct);
         }
 
         public ValueTask<ModifySubscriptionResponse> ModifySubscriptionAsync(
@@ -114,7 +114,7 @@ namespace Technosoftware.UaClient.Tests
             byte priority,
             CancellationToken ct = default)
         {
-            return new ValueTask<ModifySubscriptionResponse>(m_session.ModifySubscriptionAsync(
+            return m_session.ModifySubscriptionAsync(
                 requestHeader,
                 subscriptionId,
                 requestedPublishingInterval,
@@ -122,7 +122,7 @@ namespace Technosoftware.UaClient.Tests
                 requestedMaxKeepAliveCount,
                 maxNotificationsPerPublish,
                 priority,
-                ct));
+                ct);
         }
 
         public ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
@@ -132,12 +132,12 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken ct = default)
         {
-            return new ValueTask<ModifyMonitoredItemsResponse>(m_session.ModifyMonitoredItemsAsync(
+            return m_session.ModifyMonitoredItemsAsync(
                 requestHeader,
                 subscriptionId,
                 timestampsToReturn,
                 itemsToModify,
-                ct));
+                ct);
         }
 
         public ValueTask<PublishResponse> PublishAsync(
@@ -145,10 +145,10 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             CancellationToken ct = default)
         {
-            return new ValueTask<PublishResponse>(m_session.PublishAsync(
+            return m_session.PublishAsync(
                 requestHeader,
                 subscriptionAcknowledgements,
-                ct));
+                ct);
         }
 
         public ValueTask<SetPublishingModeResponse> SetPublishingModeAsync(
@@ -157,11 +157,11 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default)
         {
-            return new ValueTask<SetPublishingModeResponse>(m_session.SetPublishingModeAsync(
+            return m_session.SetPublishingModeAsync(
                 requestHeader,
                 publishingEnabled,
                 subscriptionIds,
-                ct));
+                ct);
         }
 
         public ValueTask<SetMonitoringModeResponse> SetMonitoringModeAsync(
@@ -171,12 +171,12 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<uint> monitoredItemIds,
             CancellationToken ct = default)
         {
-            return new ValueTask<SetMonitoringModeResponse>(m_session.SetMonitoringModeAsync(
+            return m_session.SetMonitoringModeAsync(
                 requestHeader,
                 subscriptionId,
                 monitoringMode,
                 monitoredItemIds,
-                ct));
+                ct);
         }
 
         public ValueTask<RepublishResponse> RepublishAsync(
@@ -185,11 +185,11 @@ namespace Technosoftware.UaClient.Tests
             uint retransmitSequenceNumber,
             CancellationToken ct = default)
         {
-            return new ValueTask<RepublishResponse>(m_session.RepublishAsync(
+            return m_session.RepublishAsync(
                 requestHeader,
                 subscriptionId,
                 retransmitSequenceNumber,
-                ct));
+                ct);
         }
 
         public ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
@@ -197,10 +197,10 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default)
         {
-            return new ValueTask<DeleteSubscriptionsResponse>(m_session.DeleteSubscriptionsAsync(
+            return m_session.DeleteSubscriptionsAsync(
                 requestHeader,
                 subscriptionIds,
-                ct));
+                ct);
         }
 
         public ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
@@ -209,11 +209,11 @@ namespace Technosoftware.UaClient.Tests
             bool sendInitialValues,
             CancellationToken ct = default)
         {
-            return new ValueTask<TransferSubscriptionsResponse>(m_session.TransferSubscriptionsAsync(
+            return m_session.TransferSubscriptionsAsync(
                 requestHeader,
                 subscriptionIds,
                 sendInitialValues,
-                ct));
+                ct);
         }
 
         public ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
@@ -221,10 +221,10 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<BrowsePath> browsePaths,
             CancellationToken ct = default)
         {
-            return new ValueTask<TranslateBrowsePathsToNodeIdsResponse>(m_session.TranslateBrowsePathsToNodeIdsAsync(
+            return m_session.TranslateBrowsePathsToNodeIdsAsync(
                 requestHeader,
                 browsePaths,
-                ct));
+                ct);
         }
     }
 }
