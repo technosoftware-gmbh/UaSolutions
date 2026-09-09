@@ -335,11 +335,12 @@ namespace SampleCompany.NodeManagers.Reference
                     var largeInteger = BigInteger.Parse(
                         "1234567890123546789012345678901234567890123456789012345",
                         CultureInfo.InvariantCulture);
-                    decimalVariable.Value = new DecimalDataType
-                    {
-                        Scale = 100,
-                        Value = largeInteger.ToByteArray()
-                    };
+                    decimalVariable.Value = Variant.FromStructure(
+                        new DecimalDataType
+                        {
+                            Scale = 100,
+                            Value = largeInteger.ToByteArray().ToByteString()
+                        });
                     variables.Add(decimalVariable);
 
                     ResetRandomGenerator(2);
@@ -385,11 +386,14 @@ namespace SampleCompany.NodeManagers.Reference
                         DataTypeIds.Double,
                         ValueRanks.OneDimension);
                     // Set the first elements of the array to a smaller value.
-                    double[] doubleArrayVal = doubleArrayVar.Value as double[];
+                    // ArrayOf is immutable, so the elements are adjusted on a
+                    // mutable copy and the whole array assigned back.
+                    double[] doubleArrayVal = doubleArrayVar.Value.GetDoubleArray().ToArray();
                     doubleArrayVal[0] %= 10E+10;
                     doubleArrayVal[1] %= 10E+10;
                     doubleArrayVal[2] %= 10E+10;
                     doubleArrayVal[3] %= 10E+10;
+                    doubleArrayVar.Value = doubleArrayVal.ToArrayOf();
                     variables.Add(doubleArrayVar);
 
                     variables.Add(
@@ -407,11 +411,14 @@ namespace SampleCompany.NodeManagers.Reference
                         DataTypeIds.Float,
                         ValueRanks.OneDimension);
                     // Set the first elements of the array to a smaller value.
-                    float[] floatArrayVal = floatArrayVar.Value as float[];
+                    // ArrayOf is immutable, so the elements are adjusted on a
+                    // mutable copy and the whole array assigned back.
+                    float[] floatArrayVal = floatArrayVar.Value.GetFloatArray().ToArray();
                     floatArrayVal[0] %= 0xf10E + 4;
                     floatArrayVal[1] %= 0xf10E + 4;
                     floatArrayVal[2] %= 0xf10E + 4;
                     floatArrayVal[3] %= 0xf10E + 4;
+                    floatArrayVar.Value = floatArrayVal.ToArrayOf();
                     variables.Add(floatArrayVar);
 
                     variables.Add(
@@ -510,7 +517,7 @@ namespace SampleCompany.NodeManagers.Reference
                         "Yellow Sheep Peach Elephant Cow",
                         "Крыса Корова Свинья Собака Кот",
                         "龙_ 绵羊 大象 芒果; 猫'"
-                    };
+                    }.ToArrayOf();
                     variables.Add(stringArrayVar);
 
                     variables.Add(
@@ -3779,7 +3786,10 @@ namespace SampleCompany.NodeManagers.Reference
             variable.AccessLevel = AccessLevels.CurrentReadOrWrite;
             variable.UserAccessLevel = AccessLevels.CurrentReadOrWrite;
             variable.Historizing = false;
-            variable.Value = TypeInfo.GetDefaultValue(new NodeId((uint)dataType), valueRank, ServerData.TypeTree);
+            variable.Value = TypeInfo.GetDefaultVariantValue(
+                new NodeId((uint)dataType),
+                valueRank,
+                ServerData.TypeTree);
             variable.StatusCode = StatusCodes.Good;
 
             if (valueRank == ValueRanks.OneDimension)
@@ -3847,7 +3857,7 @@ namespace SampleCompany.NodeManagers.Reference
                 parent,
                 path,
                 name,
-                (uint)dataType,
+                new NodeId((uint)dataType),
                 valueRank,
                 initialValues,
                 customRange);
@@ -3913,8 +3923,9 @@ namespace SampleCompany.NodeManagers.Reference
 
             variable.EURange.Value = customRange ?? new Range(100, 0);
 
-            variable.Value = initialValues ??
-                TypeInfo.GetDefaultValue(dataType, valueRank, ServerData.TypeTree);
+            variable.Value = initialValues != null
+                ? new Variant(initialValues)
+                : TypeInfo.GetDefaultVariantValue(dataType, valueRank, ServerData.TypeTree);
 
             variable.StatusCode = StatusCodes.Good;
             // The latest UNECE version (Rev 11, published in 2015) is available here:
@@ -4043,7 +4054,12 @@ namespace SampleCompany.NodeManagers.Reference
             string name,
             params string[] enumNames)
         {
-            return CreateMultiStateValueDiscreteItemVariable(parent, path, name, null, enumNames);
+            return CreateMultiStateValueDiscreteItemVariable(
+                parent,
+                path,
+                name,
+                default,
+                enumNames);
         }
 
         /// <summary>
@@ -4069,7 +4085,7 @@ namespace SampleCompany.NodeManagers.Reference
 
             variable.SymbolicName = name;
             variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
-            variable.DataType = nodeId ?? DataTypeIds.UInt32;
+            variable.DataType = nodeId.IsNull ? DataTypeIds.UInt32 : nodeId;
             variable.ValueRank = ValueRanks.Scalar;
             variable.AccessLevel = AccessLevels.CurrentReadOrWrite;
             variable.UserAccessLevel = AccessLevels.CurrentReadOrWrite;
@@ -4141,7 +4157,7 @@ namespace SampleCompany.NodeManagers.Reference
 
             double number = Convert.ToDouble(value, CultureInfo.InvariantCulture);
 
-            if (number >= variable.EnumStrings.Value.Length || number < 0)
+            if (number >= variable.EnumStrings.Value.Count || number < 0)
             {
                 return StatusCodes.BadOutOfRange;
             }
@@ -4174,7 +4190,7 @@ namespace SampleCompany.NodeManagers.Reference
             }
 
             int number = Convert.ToInt32(value, CultureInfo.InvariantCulture);
-            if (number >= variable.EnumValues.Value.Length || number < 0)
+            if (number >= variable.EnumValues.Value.Count || number < 0)
             {
                 return StatusCodes.BadOutOfRange;
             }
@@ -4223,7 +4239,7 @@ namespace SampleCompany.NodeManagers.Reference
             {
                 if (indexRange != NumericRange.Null)
                 {
-                    object target = variable.Value;
+                    Variant target = variable.Value;
                     ServiceResult result = indexRange.UpdateRange(ref target, value);
 
                     if (ServiceResult.IsBad(result))
@@ -4267,13 +4283,14 @@ namespace SampleCompany.NodeManagers.Reference
             var typeInfo = TypeInfo.Construct(value);
 
             if (node is not PropertyState<Range> variable ||
-                value is not ExtensionObject extensionObject ||
                 typeInfo == null ||
                 typeInfo == TypeInfo.Unknown)
             {
                 return StatusCodes.BadTypeMismatch;
             }
-            if (extensionObject.Body is not Range newRange ||
+
+            // Variant carries the extension object's body itself in 2.0.
+            if (!value.TryGetStructure(out Range newRange) ||
                 variable.Parent is not AnalogItemState parent)
             {
                 return StatusCodes.BadTypeMismatch;
@@ -4291,7 +4308,7 @@ namespace SampleCompany.NodeManagers.Reference
                 return StatusCodes.BadOutOfRange;
             }
 
-            value = newRange;
+            value = Variant.FromStructure(newRange);
 
             return ServiceResult.Good;
         }
@@ -4306,7 +4323,7 @@ namespace SampleCompany.NodeManagers.Reference
             BuiltInType dataType,
             int valueRank)
         {
-            return CreateVariable(parent, path, name, (uint)dataType, valueRank);
+            return CreateVariable(parent, path, name, new NodeId((uint)dataType), valueRank);
         }
 
         /// <summary>
@@ -4361,7 +4378,7 @@ namespace SampleCompany.NodeManagers.Reference
             int valueRank,
             ushort numVariables)
         {
-            return CreateVariables(parent, path, name, (uint)dataType, valueRank, numVariables);
+            return CreateVariables(parent, path, name, new NodeId((uint)dataType), valueRank, numVariables);
         }
 
         private BaseDataVariableState[] CreateVariables(
@@ -4405,7 +4422,7 @@ namespace SampleCompany.NodeManagers.Reference
             BuiltInType dataType,
             int valueRank)
         {
-            return CreateDynamicVariable(parent, path, name, (uint)dataType, valueRank);
+            return CreateDynamicVariable(parent, path, name, new NodeId((uint)dataType), valueRank);
         }
 
         /// <summary>
@@ -4440,7 +4457,7 @@ namespace SampleCompany.NodeManagers.Reference
                 parent,
                 path,
                 name,
-                (uint)dataType,
+                new NodeId((uint)dataType),
                 valueRank,
                 numVariables);
         }
