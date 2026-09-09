@@ -114,8 +114,8 @@ namespace Technosoftware.UaServer
             DateTime minimumGoodTimestamp = DateTime.MinValue;
             DateTime maximumGoodTimestamp = DateTime.MinValue;
 
-            TypeInfo minimumOriginalType = null;
-            TypeInfo maximumOriginalType = null;
+            TypeInfo minimumOriginalType = default;
+            TypeInfo maximumOriginalType = default;
 
             bool badValuesExist = false;
             bool duplicatesMinimumsExist = false;

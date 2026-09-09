@@ -232,14 +232,14 @@ namespace Technosoftware.UaServer
             AttributeId = 0;
             m_indexRange = null;
             m_parsedIndexRange = NumericRange.Empty;
-            DataEncoding = null;
+            DataEncoding = default;
             ClientHandle = 0;
             MonitoringMode = MonitoringMode.Disabled;
             m_samplingInterval = 0;
             QueueSize = 0;
             m_discardOldest = true;
             Filter = null;
-            m_lastValue = null;
+            m_lastValue = default;
             m_lastError = null;
             m_readyToPublish = false;
             m_readyToTrigger = false;
@@ -796,7 +796,7 @@ namespace Technosoftware.UaServer
                 {
                     m_nextSamplingTime = HiResClock.TickCount64;
                     m_lastError = null;
-                    m_lastValue = null;
+                    m_lastValue = default;
                 }
 
                 MonitoringMode = monitoringMode;

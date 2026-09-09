@@ -734,7 +734,7 @@ namespace Technosoftware.UaServer
             lock (m_lock)
             {
                 moreNotifications = false;
-                availableSequenceNumbers = null;
+                availableSequenceNumbers = default;
 
                 // check if expired.
                 if (m_expired)

@@ -199,7 +199,7 @@ namespace Technosoftware.UaServer
         {
             if (m_start < 0)
             {
-                return null;
+                return default;
             }
 
             int last = m_end - 1;
@@ -215,7 +215,7 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public bool Dequeue(out DataValue value, out ServiceResult error)
         {
-            value = null;
+            value = default;
             error = null;
 
             // check for empty queue.
@@ -225,7 +225,7 @@ namespace Technosoftware.UaServer
             }
 
             value = m_values[m_start];
-            m_values[m_start] = null;
+            m_values[m_start] = default;
 
             if (m_errors != null)
             {
@@ -256,7 +256,7 @@ namespace Technosoftware.UaServer
             // check for empty queue.
             if (m_start < 0)
             {
-                return null;
+                return default;
             }
 
             return m_values[m_start];

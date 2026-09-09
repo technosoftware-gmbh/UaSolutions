@@ -459,7 +459,7 @@ namespace Technosoftware.UaServer
                     // ignore nonce if security policy set to none
                     if (context.SecurityPolicyUri == SecurityPolicies.None)
                     {
-                        clientNonce = null;
+                        clientNonce = default;
                     }
                 }
 
@@ -548,7 +548,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // return the endpoints supported by the server.
-                    serverEndpoints = GetEndpointDescriptions(endpointUrl, BaseAddresses, null);
+                    serverEndpoints = GetEndpointDescriptions(endpointUrl, BaseAddresses, default);
 
                     // sign the nonce provided by the client.
                     serverSignature = null;
@@ -2766,7 +2766,7 @@ namespace Technosoftware.UaServer
             }
 
             // check if translated text required.
-            LocalizedText translatedText = null;
+            LocalizedText translatedText = default;
 
             if ((diagnosticsMasks & DiagnosticsMasks.ServiceLocalizedText) != 0)
             {

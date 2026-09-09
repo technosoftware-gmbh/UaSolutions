@@ -90,7 +90,7 @@ namespace Technosoftware.UaServer
             m_discardedValueHandler = discardedValueHandler;
             m_monitoredItemId = monitoredItemId;
             m_discardOldest = false;
-            m_overflow = null;
+            m_overflow = default;
             m_nextSampleTime = 0;
             m_samplingInterval = 0;
         }
@@ -113,7 +113,7 @@ namespace Technosoftware.UaServer
             m_discardOldest = discardOldest;
             m_discardedValueHandler = discardedValueHandler;
             m_nextSampleTime = 0;
-            m_overflow = null;
+            m_overflow = default;
             SetSamplingInterval(samplingInterval);
         }
 
@@ -150,7 +150,7 @@ namespace Technosoftware.UaServer
 
             m_dataValueQueue.ResetQueue(queueSize, queueErrors);
 
-            m_overflow = null;
+            m_overflow = default;
 
             // requeue the data.
             if (existingValues != null)
@@ -262,7 +262,7 @@ namespace Technosoftware.UaServer
                 if (m_overflow != null && m_overflow == value)
                 {
                     SetOverflowBit(ref value, ref error);
-                    m_overflow = null;
+                    m_overflow = default;
                 }
 
                 if (!noEventLog && m_logger.IsEnabled(LogLevel.Trace))

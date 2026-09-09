@@ -1782,7 +1782,7 @@ namespace Technosoftware.UaServer
             for (int ii = 0; ii < nodesToRead.Count; ii++)
             {
                 // add default value to values collection
-                values.Add(null);
+                values.Add(default);
                 // add placeholder for diagnostics
                 diagnosticInfos.Add(null);
 

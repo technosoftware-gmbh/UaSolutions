@@ -122,7 +122,7 @@ namespace Technosoftware.UaServer
             }
 
             double startValue = double.NaN;
-            TypeInfo originalType = null;
+            TypeInfo originalType = default;
             bool badDataSkipped = false;
 
             for (int ii = 0; ii < values.Count; ii++)

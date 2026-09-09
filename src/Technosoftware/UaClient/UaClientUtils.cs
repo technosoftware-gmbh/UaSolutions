@@ -79,7 +79,7 @@ namespace Technosoftware.UaClient
                     ct: ct).ConfigureAwait(false))
             {
                 ApplicationDescriptionCollection servers =
-                    await client.FindServersAsync(null, ct).ConfigureAwait(false);
+                    await client.FindServersAsync(default, ct).ConfigureAwait(false);
 
                 // populate the drop down list with the discovery URLs for the available servers.
                 for (int ii = 0; ii < servers.Count; ii++)
@@ -159,7 +159,7 @@ namespace Technosoftware.UaClient
             var url = new Uri(client.Endpoint?.EndpointUrl ??
                 throw ServiceResultException.Unexpected("Endpoint missing"));
             EndpointDescriptionCollection endpoints =
-                await client.GetEndpointsAsync(null, ct).ConfigureAwait(false);
+                await client.GetEndpointsAsync(default, ct).ConfigureAwait(false);
             return SelectEndpoint(
                 application,
                 url,
@@ -227,7 +227,7 @@ namespace Technosoftware.UaClient
             var url = new Uri(client.Endpoint?.EndpointUrl ??
                 throw ServiceResultException.Unexpected("Endpoint missing"));
             EndpointDescriptionCollection endpoints =
-                await client.GetEndpointsAsync(null, ct).ConfigureAwait(false);
+                await client.GetEndpointsAsync(default, ct).ConfigureAwait(false);
             EndpointDescription? selectedEndpoint = SelectEndpoint(
                 application,
                 url,

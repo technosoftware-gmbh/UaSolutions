@@ -233,7 +233,7 @@ namespace Technosoftware.UaServer
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
                     Timestamp = HiResClock.UtcNow,
-                    Value = null,
+                    Value = default,
                     Parameters = new MonitoringParameters
                     {
                         SamplingInterval = samplingInterval,
@@ -272,7 +272,7 @@ namespace Technosoftware.UaServer
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
                     Timestamp = HiResClock.UtcNow,
-                    Value = null,
+                    Value = default,
                     Parameters = new MonitoringParameters
                     {
                         SamplingInterval = samplingInterval,

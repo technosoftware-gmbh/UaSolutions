@@ -3151,7 +3151,7 @@ namespace Technosoftware.UaServer
                             referenceTypeId,
                             true,
                             isInverse ? BrowseDirection.Inverse : BrowseDirection.Forward,
-                            null,
+                            default,
                             null,
                             true);
 

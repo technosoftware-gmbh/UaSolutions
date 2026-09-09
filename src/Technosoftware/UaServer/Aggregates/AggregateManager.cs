@@ -169,7 +169,7 @@ namespace Technosoftware.UaServer
             if (configuration.UseServerCapabilitiesDefaults)
             {
                 // ensure the configuration is initialized
-                configuration = GetDefaultConfiguration(null);
+                configuration = GetDefaultConfiguration(default);
             }
 
             return factory(

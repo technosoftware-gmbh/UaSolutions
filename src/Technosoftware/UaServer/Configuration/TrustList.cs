@@ -343,7 +343,7 @@ namespace Technosoftware.UaServer
                         ServiceResult = ServiceResult.Create(
                         StatusCodes.BadUserAccessDenied,
                             "Session not authorized"),
-                        Data = null
+                        Data = default
                     });
                 }
 
@@ -354,7 +354,7 @@ namespace Technosoftware.UaServer
                         ServiceResult = ServiceResult.Create(
                         StatusCodes.BadInvalidArgument,
                             "Invalid file handle"),
-                        Data = null
+                        Data = default
                     });
                 }
 
@@ -367,7 +367,7 @@ namespace Technosoftware.UaServer
                         StatusCodes.BadEncodingLimitsExceeded,
                         "Trust list size exceeds maximum allowed size of {0} bytes",
                             m_maxTrustListSize),
-                        Data = null
+                        Data = default
                     });
                 }
 
@@ -941,7 +941,7 @@ namespace Technosoftware.UaServer
             var strm = new MemoryStream();
             using (var encoder = new BinaryEncoder(strm, messageContext, true))
             {
-                encoder.WriteEncodeable(null, trustList, null);
+                encoder.WriteEncodeable(null, trustList, default);
             }
             strm.Position = 0;
             return strm;

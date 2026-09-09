@@ -117,7 +117,7 @@ namespace Technosoftware.UaClient
             ClientHandle = state.ClientId;
             ServerId = state.ServerId;
             TriggeringItemId = state.TriggeringItemId;
-            TriggeredItems = state.TriggeredItems != null ? [.. state.TriggeredItems] : null;
+            TriggeredItems = state.TriggeredItems != null ? [.. state.TriggeredItems] : default;
             CacheQueueSize = state.CacheQueueSize < 1 ? 1 : state.CacheQueueSize;
         }
 
@@ -129,7 +129,7 @@ namespace Technosoftware.UaClient
                 ServerId = Status.Id,
                 ClientId = ClientHandle,
                 TriggeringItemId = TriggeringItemId,
-                TriggeredItems = TriggeredItems != null ? [.. TriggeredItems] : null,
+                TriggeredItems = TriggeredItems != null ? [.. TriggeredItems] : default,
                 CacheQueueSize = CacheQueueSize
             };
         }

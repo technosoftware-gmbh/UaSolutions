@@ -232,7 +232,7 @@ namespace Technosoftware.UaClient
                 NamespaceUris = NamespaceUris,
                 ServerUris = ServerUris,
                 TypeTable = TypeTree,
-                PreferredLocales = null,
+                PreferredLocales = default,
                 SessionId = default,
                 UserIdentity = null
             };
@@ -1145,7 +1145,7 @@ namespace Technosoftware.UaClient
                         m_endpoint.EndpointUrl.ToString(),
                         sessionName,
 clientNonce.ToByteString(),
-                        null,
+                        default,
                         sessionTimeout,
                         maxMessageSize,
                         ct).ConfigureAwait(false);

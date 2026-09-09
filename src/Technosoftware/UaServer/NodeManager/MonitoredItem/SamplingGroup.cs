@@ -462,7 +462,7 @@ namespace Technosoftware.UaServer
                         readValueId.Processed = false;
                         itemsToRead.Add(readValueId);
 
-                        values.Add(null);
+                        values.Add(default);
                         errors.Add(null);
                     }
 

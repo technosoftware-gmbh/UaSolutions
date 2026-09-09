@@ -139,7 +139,7 @@ namespace Technosoftware.UaServer
             // check if all done.
             if (Complete)
             {
-                return null;
+                return default;
             }
 
             // update the slice.
@@ -155,7 +155,7 @@ namespace Technosoftware.UaServer
             // check if a value can be produced.
             if (!CurrentSlice.Complete && !returnPartial)
             {
-                return null;
+                return default;
             }
 
             // check if the slice extends beyond the range of available data.

@@ -845,9 +845,9 @@ namespace Technosoftware.UaServer
 
             variable.Create(
                 SystemContext,
-                null,
+                default,
                 variable.BrowseName,
-                null,
+                default,
                 true);
 
             variable.SymbolicName = displayName.ToString();
@@ -1122,7 +1122,7 @@ namespace Technosoftware.UaServer
                 SystemContext,
                 new NodeId(browseName, NamespaceIndex),
                 variable.BrowseName,
-                null,
+                default,
                 true);
 
             if (engineeringUnit != null)

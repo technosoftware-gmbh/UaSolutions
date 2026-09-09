@@ -406,7 +406,7 @@ namespace Technosoftware.UaServer
                     parent.AddChild(instance);
                 }
 
-                instance.Create(contextToUse, default, browseName, null, true);
+                instance.Create(contextToUse, default, browseName, default, true);
                 AddPredefinedNode(contextToUse, instance);
 
                 return instance.NodeId;
@@ -1254,7 +1254,7 @@ namespace Technosoftware.UaServer
                         continuationPoint.ReferenceTypeId,
                         continuationPoint.IncludeSubtypes,
                         continuationPoint.BrowseDirection,
-                        null,
+                        default,
                         null,
                         false);
                 }
@@ -1967,7 +1967,7 @@ namespace Technosoftware.UaServer
                         }
                     }
 
-                    DataValue oldValue = null;
+                    DataValue oldValue = default;
 
                     if (ServerData?.Auditing == true)
                     {
@@ -2262,7 +2262,7 @@ namespace Technosoftware.UaServer
                     HistoryReadResult result = results[ii] = new HistoryReadResult();
 
                     result.HistoryData = default;
-                    result.ContinuationPoint = null;
+                    result.ContinuationPoint = default;
                     result.StatusCode = StatusCodes.Good;
 
                     // check if the node is a area in memory.

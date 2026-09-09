@@ -327,7 +327,7 @@ namespace Technosoftware.UaServer
 
             if (ServiceResult.IsBad(error))
             {
-                value = null;
+                value = default;
             }
 
             monitoredItem.QueueValue(value, error);

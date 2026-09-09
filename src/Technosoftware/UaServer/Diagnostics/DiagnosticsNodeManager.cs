@@ -638,7 +638,7 @@ namespace Technosoftware.UaServer
                     {
                         if (diagnosticsNode.SamplingIntervalDiagnosticsArray != null)
                         {
-                            diagnosticsNode.SamplingIntervalDiagnosticsArray.Value = null;
+                            diagnosticsNode.SamplingIntervalDiagnosticsArray.Value = default;
                             diagnosticsNode.SamplingIntervalDiagnosticsArray.StatusCode =
                                 StatusCodes.BadWaitingForInitialData;
                             diagnosticsNode.SamplingIntervalDiagnosticsArray.Timestamp = DateTime
@@ -647,7 +647,7 @@ namespace Technosoftware.UaServer
 
                         if (diagnosticsNode.SubscriptionDiagnosticsArray != null)
                         {
-                            diagnosticsNode.SubscriptionDiagnosticsArray.Value = null;
+                            diagnosticsNode.SubscriptionDiagnosticsArray.Value = default;
                             diagnosticsNode.SubscriptionDiagnosticsArray.StatusCode =
                                 StatusCodes.BadWaitingForInitialData;
                             diagnosticsNode.SubscriptionDiagnosticsArray.Timestamp = DateTime
@@ -657,7 +657,7 @@ namespace Technosoftware.UaServer
                         if (diagnosticsNode.SessionsDiagnosticsSummary != null)
                         {
                             diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray.Value
-                                = null;
+                                = default;
                             diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray
                                 .StatusCode =
                                 StatusCodes.BadWaitingForInitialData;
@@ -670,7 +670,7 @@ namespace Technosoftware.UaServer
                         {
                             diagnosticsNode.SessionsDiagnosticsSummary
                                 .SessionSecurityDiagnosticsArray
-                                .Value = null;
+                                .Value = default;
                             diagnosticsNode.SessionsDiagnosticsSummary
                                 .SessionSecurityDiagnosticsArray
                                 .StatusCode =
