@@ -2529,21 +2529,26 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Gets the monitored items for the subscription.
         /// </summary>
-        public void GetMonitoredItems(out uint[] serverHandles, out uint[] clientHandles)
+        public void GetMonitoredItems(
+            out ArrayOf<uint> serverHandles,
+            out ArrayOf<uint> clientHandles)
         {
             lock (m_lock)
             {
-                serverHandles = new uint[m_monitoredItems.Count];
-                clientHandles = new uint[m_monitoredItems.Count];
+                uint[] servers = new uint[m_monitoredItems.Count];
+                uint[] clients = new uint[m_monitoredItems.Count];
 
                 int ii = 0;
 
                 foreach (KeyValuePair<uint, LinkedListNode<IUaMonitoredItem>> entry in m_monitoredItems)
                 {
-                    serverHandles[ii] = entry.Key;
-                    clientHandles[ii] = entry.Value.Value.ClientHandle;
+                    servers[ii] = entry.Key;
+                    clients[ii] = entry.Value.Value.ClientHandle;
                     ii++;
                 }
+
+                serverHandles = servers.ToArrayOf();
+                clientHandles = clients.ToArrayOf();
             }
         }
 

@@ -156,9 +156,11 @@ namespace Technosoftware.UaServer
 
                 if (getMonitoredItemsOutputArguments != null)
                 {
-                    var outputArgumentsValue = (Argument[])getMonitoredItemsOutputArguments.Value;
+                    ArrayOf<Argument> outputArgumentsValue =
+                        getMonitoredItemsOutputArguments.WrappedValue
+                            .GetStructureArray<Argument>();
 
-                    if (outputArgumentsValue != null)
+                    if (!outputArgumentsValue.IsNull)
                     {
                         foreach (Argument argument in outputArgumentsValue)
                         {
@@ -230,17 +232,15 @@ namespace Technosoftware.UaServer
         public ServiceResult OnGetMonitoredItems(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
-            if (inputArguments == null || inputArguments.Count != 1)
+            if (inputArguments.Count != 1)
             {
                 return StatusCodes.BadInvalidArgument;
             }
 
-            uint? subscriptionId = inputArguments[0] as uint?;
-
-            if (subscriptionId == null)
+            if (!inputArguments[0].TryGetValue(out uint subscriptionId))
             {
                 return StatusCodes.BadInvalidArgument;
             }
@@ -250,18 +250,18 @@ namespace Technosoftware.UaServer
                 if (subscription.Id == subscriptionId)
                 {
                     if (context is ISessionSystemContext session &&
-                        subscription.SessionId != session.SessionId)
+                        !subscription.SessionId.Equals(session.SessionId))
                     {
                         // user tries to access subscription of different session
                         return StatusCodes.BadUserAccessDenied;
                     }
 
                     subscription.GetMonitoredItems(
-                        out uint[] serverHandles,
-                        out uint[] clientHandles);
+                        out ArrayOf<uint> serverHandles,
+                        out ArrayOf<uint> clientHandles);
 
-                    outputArguments[0] = serverHandles;
-                    outputArguments[1] = clientHandles;
+                    outputArguments[0] = Variant.From(serverHandles);
+                    outputArguments[1] = Variant.From(clientHandles);
 
                     return ServiceResult.Good;
                 }
@@ -276,17 +276,15 @@ namespace Technosoftware.UaServer
         public ServiceResult OnResendData(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
-            if (inputArguments == null || inputArguments.Count != 1)
+            if (inputArguments.Count != 1)
             {
                 return StatusCodes.BadInvalidArgument;
             }
 
-            uint? subscriptionId = inputArguments[0] as uint?;
-
-            if (subscriptionId == null)
+            if (!inputArguments[0].TryGetValue(out uint subscriptionId))
             {
                 return StatusCodes.BadInvalidArgument;
             }
@@ -296,7 +294,7 @@ namespace Technosoftware.UaServer
                 if (subscription.Id == subscriptionId)
                 {
                     if (context is not UaServerContext session ||
-                        subscription.SessionId != session.SessionId)
+                        !subscription.SessionId.Equals(session.SessionId))
                     {
                         // user tries to access subscription of different session
                         return StatusCodes.BadUserAccessDenied;
@@ -322,12 +320,13 @@ namespace Technosoftware.UaServer
         {
             var systemContext = context as UaServerContext;
 
-            if (!m_serverLockHolder.IsNull && m_serverLockHolder != systemContext.SessionId)
+            if (!m_serverLockHolder.IsNull &&
+                !m_serverLockHolder.Equals(systemContext.SessionId))
             {
                 return StatusCodes.BadSessionIdInvalid;
             }
 
-            m_serverLockHolder = systemContext.SessionId;
+            m_serverLockHolder = systemContext.SessionId ?? default;
 
             return ServiceResult.Good;
         }
@@ -343,7 +342,8 @@ namespace Technosoftware.UaServer
         {
             var systemContext = context as UaServerContext;
 
-            if (!m_serverLockHolder.IsNull && m_serverLockHolder != systemContext.SessionId)
+            if (!m_serverLockHolder.IsNull &&
+                !m_serverLockHolder.Equals(systemContext.SessionId))
             {
                 return StatusCodes.BadSessionIdInvalid;
             }
@@ -1195,14 +1195,14 @@ namespace Technosoftware.UaServer
         private bool UpdateServerDiagnosticsSummary()
         {
             // get the latest snapshot.
-            object value = null;
+            Variant value = default;
 
             ServiceResult result = m_serverDiagnosticsCallback(
                 SystemContext,
                 m_serverDiagnostics.Variable,
                 ref value);
 
-            var newValue = value as ServerDiagnosticsSummaryDataType;
+            ServerDiagnosticsSummaryDataType newValue = value.GetStructure<ServerDiagnosticsSummaryDataType>();
 
             // check for changes.
             if (Utils.IsEqual(newValue, m_serverDiagnostics.Value))
@@ -1245,14 +1245,14 @@ namespace Technosoftware.UaServer
             int index)
         {
             // get the latest snapshot.
-            object value = null;
+            Variant value = default;
 
             ServiceResult result = diagnostics.UpdateCallback(
                 SystemContext,
                 diagnostics.Value.Variable,
                 ref value);
 
-            var newValue = value as SessionDiagnosticsDataType;
+            SessionDiagnosticsDataType newValue = value.GetStructure<SessionDiagnosticsDataType>();
 
             sessionArray[index] = newValue;
 
@@ -1302,14 +1302,14 @@ namespace Technosoftware.UaServer
             int index)
         {
             // get the latest snapshot.
-            object value = null;
+            Variant value = default;
 
             ServiceResult result = diagnostics.SecurityUpdateCallback(
                 SystemContext,
                 diagnostics.SecurityValue.Variable,
                 ref value);
 
-            var newValue = value as SessionSecurityDiagnosticsDataType;
+            SessionSecurityDiagnosticsDataType newValue = value.GetStructure<SessionSecurityDiagnosticsDataType>();
 
             sessionArray[index] = newValue;
 
@@ -1359,14 +1359,14 @@ namespace Technosoftware.UaServer
             int index)
         {
             // get the latest snapshot.
-            object value = null;
+            Variant value = default;
 
             ServiceResult result = diagnostics.UpdateCallback(
                 SystemContext,
                 diagnostics.Value.Variable,
                 ref value);
 
-            var newValue = value as SubscriptionDiagnosticsDataType;
+            SubscriptionDiagnosticsDataType newValue = value.GetStructure<SubscriptionDiagnosticsDataType>();
 
             subscriptionArray[index] = newValue;
 
@@ -1431,7 +1431,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadUserRolePermissions(
             ISystemContext context,
             NodeState node,
-            ref RolePermissionTypeCollection value)
+            ref ArrayOf<RolePermissionType> value)
         {
             bool adminUser;
 
@@ -1443,7 +1443,8 @@ namespace Technosoftware.UaServer
             else
             {
                 NodeId curSession = (context as ISessionSystemContext)?.SessionId ?? default;
-                adminUser = node.NodeId == curSession || HasApplicationSecureAdminAccess(context);
+                adminUser = node.NodeId.Equals(curSession) ||
+                    HasApplicationSecureAdminAccess(context);
             }
 
             if (adminUser)
@@ -1507,7 +1508,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadDiagnosticsArray(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             lock (Lock)
             {
@@ -1536,7 +1537,7 @@ namespace Technosoftware.UaServer
                     }
                     sessionArray = [.. sessionArray.Where(s => s != null)];
 
-                    value = sessionArray;
+                    value = Variant.FromStructure(sessionArray.ToArrayOf());
                 }
                 else if (node.NodeId ==
                     VariableIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionSecurityDiagnosticsArray)
@@ -1555,7 +1556,7 @@ namespace Technosoftware.UaServer
                     }
                     sessionSecurityArray = [.. sessionSecurityArray.Where(s => s != null)];
 
-                    value = sessionSecurityArray;
+                    value = Variant.FromStructure(sessionSecurityArray.ToArrayOf());
                 }
                 else if (node.NodeId == VariableIds
                     .Server_ServerDiagnostics_SubscriptionDiagnosticsArray)
@@ -1574,7 +1575,7 @@ namespace Technosoftware.UaServer
                     }
                     subscriptionArray = [.. subscriptionArray.Where(s => s != null)];
 
-                    value = subscriptionArray;
+                    value = Variant.FromStructure(subscriptionArray.ToArrayOf());
                 }
 
                 return ServiceResult.Good;
