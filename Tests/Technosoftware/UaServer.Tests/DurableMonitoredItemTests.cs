@@ -753,7 +753,7 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.QueueEvent(value);
 
-            var value2 = new EventFieldList { EventFields = [new Variant(true)] };
+            var value2 = new EventFieldList { EventFields = [new Variant(false)] };
 
             queueHandler.QueueEvent(value2);
 
@@ -780,7 +780,7 @@ namespace Technosoftware.UaServer.Tests
 
             queueHandler.QueueEvent(value);
 
-            var value2 = new EventFieldList { EventFields = [new Variant(true)] };
+            var value2 = new EventFieldList { EventFields = [new Variant(false)] };
 
             queueHandler.QueueEvent(value2);
 
@@ -919,7 +919,7 @@ namespace Technosoftware.UaServer.Tests
                 out ServiceResult resultError2);
 
             Assert.That(success2, Is.True);
-            Assert.That(result2, Is.EqualTo(dataValue2));
+            Assert.That(result2.WrappedValue, Is.EqualTo(dataValue2.WrappedValue));
             Assert.That(result2.StatusCode.Overflow, Is.True);
             Assert.That(resultError2.StatusCode.Overflow, Is.True);
         }
@@ -1053,7 +1053,7 @@ namespace Technosoftware.UaServer.Tests
                     out ServiceResult resultError);
 
                 Assert.That(status, Is.True);
-                Assert.That(result, Is.EqualTo(dataValue));
+                Assert.That(result.WrappedValue, Is.EqualTo(dataValue.WrappedValue));
             }
 
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(0));
@@ -1117,7 +1117,7 @@ namespace Technosoftware.UaServer.Tests
                     out ServiceResult resultError);
 
                 Assert.That(status, Is.True);
-                Assert.That(result, Is.EqualTo(dataValue2));
+                Assert.That(result.WrappedValue, Is.EqualTo(dataValue2.WrappedValue));
                 //Assert.That(resultError, Is.EqualTo(statuscode).Or.Property(nameof(result.StatusCode)).Property(nameof(result.StatusCode.Overflow)).True);
             }
 

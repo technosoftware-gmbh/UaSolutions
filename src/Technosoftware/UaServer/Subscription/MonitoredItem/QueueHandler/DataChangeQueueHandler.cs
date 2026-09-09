@@ -91,6 +91,7 @@ namespace Technosoftware.UaServer
             m_monitoredItemId = monitoredItemId;
             m_discardOldest = false;
             m_overflow = default;
+            m_overflowPending = false;
             m_nextSampleTime = 0;
             m_samplingInterval = 0;
         }
@@ -114,6 +115,7 @@ namespace Technosoftware.UaServer
             m_discardedValueHandler = discardedValueHandler;
             m_nextSampleTime = 0;
             m_overflow = default;
+            m_overflowPending = false;
             SetSamplingInterval(samplingInterval);
         }
 
@@ -151,6 +153,7 @@ namespace Technosoftware.UaServer
             m_dataValueQueue.ResetQueue(queueSize, queueErrors);
 
             m_overflow = default;
+            m_overflowPending = false;
 
             // requeue the data.
             if (existingValues != null)
@@ -259,10 +262,15 @@ namespace Technosoftware.UaServer
         {
             if (m_dataValueQueue.Dequeue(out value, out error))
             {
-                if (!m_overflow.IsNull && m_overflow == value)
+                // DataValue was a class in 1.5 and this comparison was
+                // reference equality: the one value that actually overflowed.
+                // As a struct it compares by content and would mark every
+                // equal value, so a flag carries the identity instead.
+                if (m_overflowPending && m_overflow == value)
                 {
                     SetOverflowBit(ref value, ref error);
                     m_overflow = default;
+                    m_overflowPending = false;
                 }
 
                 if (!noEventLog && m_logger.IsEnabled(LogLevel.Trace))
@@ -324,6 +332,7 @@ namespace Technosoftware.UaServer
 
                     //set overflow bit in newest value
                     m_overflow = value;
+                    m_overflowPending = true;
 
                     // overwrite last value
                     m_dataValueQueue.OverwriteLastValue(value, error);
@@ -343,6 +352,7 @@ namespace Technosoftware.UaServer
                 }
                 //set overflow bit in oldest value
                 m_overflow = m_dataValueQueue.PeekOldestValue();
+                m_overflowPending = true;
 
                 m_dataValueQueue.Enqueue(value, error);
 
@@ -410,5 +420,6 @@ namespace Technosoftware.UaServer
         private long m_samplingInterval;
         private readonly Action m_discardedValueHandler;
         private DataValue m_overflow;
+        private bool m_overflowPending;
     }
 }
