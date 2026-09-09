@@ -519,11 +519,11 @@ namespace Technosoftware.UaServer
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0 }];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0, 0 }];
             }
 
             parent?.AddChild(baseDataVariableTypeState);
@@ -625,11 +625,11 @@ namespace Technosoftware.UaServer
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0 }];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0, 0 }];
             }
 
             parent?.AddChild(baseDataVariableTypeState);
@@ -731,11 +731,11 @@ namespace Technosoftware.UaServer
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0 }];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0, 0 }];
             }
 
             parent?.AddChild(baseDataVariableTypeState);
@@ -875,10 +875,10 @@ namespace Technosoftware.UaServer
             switch (valueRank)
             {
                 case ValueRanks.OneDimension:
-                    variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                    variable.ArrayDimensions = [.. new List<uint> { 0 }];
                     break;
                 case ValueRanks.TwoDimensions:
-                    variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                    variable.ArrayDimensions = [.. new List<uint> { 0, 0 }];
                     break;
                 default:
                     break;
@@ -1170,11 +1170,11 @@ namespace Technosoftware.UaServer
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                variable.ArrayDimensions = [.. new List<uint> { 0 }];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                variable.ArrayDimensions = [.. new List<uint> { 0, 0 }];
             }
 
             variable.EURange.Value = euRange ?? new Opc.Ua.Range(100, 0);

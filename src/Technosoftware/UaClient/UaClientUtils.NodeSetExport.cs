@@ -221,7 +221,7 @@ namespace Technosoftware.UaClient
 
                     if (variableNode?.ArrayDimensions != null && variableNode.ArrayDimensions.Count > 0)
                     {
-                        state.ArrayDimensions = new ReadOnlyList<uint>(variableNode.ArrayDimensions);
+                        state.ArrayDimensions = [.. variableNode.ArrayDimensions];
                     }
 
                     if (node is ILocalNode localNode)
@@ -324,7 +324,7 @@ namespace Technosoftware.UaClient
 
                     if (variableTypeNode?.ArrayDimensions != null && variableTypeNode.ArrayDimensions.Count > 0)
                     {
-                        state.ArrayDimensions = new ReadOnlyList<uint>(variableTypeNode.ArrayDimensions);
+                        state.ArrayDimensions = [.. variableTypeNode.ArrayDimensions];
                     }
 
                     if (node is ILocalNode localNode)

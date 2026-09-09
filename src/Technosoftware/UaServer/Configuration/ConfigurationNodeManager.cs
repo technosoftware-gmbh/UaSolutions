@@ -252,7 +252,7 @@ namespace Technosoftware.UaServer
             ];
             m_serverConfigurationNode.ServerCapabilities.ValueRank = ValueRanks.OneDimension;
             m_serverConfigurationNode.ServerCapabilities.ArrayDimensions
-                = new ReadOnlyList<uint>([0]);
+                = [0];
             m_serverConfigurationNode.SupportedPrivateKeyFormats.Value =
             [
                 .. configuration.ServerConfiguration.SupportedPrivateKeyFormats
@@ -260,7 +260,7 @@ namespace Technosoftware.UaServer
             m_serverConfigurationNode.SupportedPrivateKeyFormats.ValueRank = ValueRanks
                 .OneDimension;
             m_serverConfigurationNode.SupportedPrivateKeyFormats.ArrayDimensions
-                = new ReadOnlyList<uint>([0]);
+                = [0];
             m_serverConfigurationNode.MaxTrustListSize.Value = (uint)configuration
                 .ServerConfiguration
                 .MaxTrustListSize;
