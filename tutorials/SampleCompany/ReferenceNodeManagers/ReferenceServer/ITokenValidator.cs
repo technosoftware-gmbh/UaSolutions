@@ -21,6 +21,6 @@ namespace SampleCompany.NodeManagers.Reference
 {
     public interface ITokenValidator
     {
-        IUserIdentity ValidateToken(IssuedIdentityToken issuedToken);
+        IUserIdentity ValidateToken(IssuedIdentityTokenHandler issuedTokenHandler);
     }
 }

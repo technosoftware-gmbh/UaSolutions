@@ -613,13 +613,11 @@ namespace Technosoftware.UaClient.Tests
         {
             byte[] identityToken = "fakeTokenString"u8.ToArray();
 
-            var issuedToken = new IssuedIdentityToken
-            {
-                IssuedTokenType = IssuedTokenType.JWT,
-                PolicyId = Profiles.JwtUserToken,
-                DecryptedTokenData = identityToken
-            };
-
+            // 2.0 keeps the issued token's data on the handler rather than on
+            // the token itself.
+            var issuedToken = new IssuedIdentityTokenHandler(
+                Profiles.JwtUserToken,
+                identityToken);
             var userIdentity = new UserIdentity(issuedToken);
 
             IUaSession session = await ClientFixture
@@ -643,13 +641,9 @@ namespace Technosoftware.UaClient.Tests
         {
             static UserIdentity CreateUserIdentity(byte[] tokenData)
             {
-                var issuedToken = new IssuedIdentityToken
-                {
-                    IssuedTokenType = IssuedTokenType.JWT,
-                    PolicyId = Profiles.JwtUserToken,
-                    DecryptedTokenData = tokenData
-                };
-
+                var issuedToken = new IssuedIdentityTokenHandler(
+                    Profiles.JwtUserToken,
+                    tokenData);
                 return new UserIdentity(issuedToken);
             }
 
@@ -1956,13 +1950,9 @@ namespace Technosoftware.UaClient.Tests
             {
                 const string identityToken = "fakeTokenString";
 
-                var issuedToken = new IssuedIdentityToken
-                {
-                    IssuedTokenType = IssuedTokenType.JWT,
-                    PolicyId = Profiles.JwtUserToken,
-                    DecryptedTokenData = Encoding.UTF8.GetBytes(identityToken)
-                };
-
+                var issuedToken = new IssuedIdentityTokenHandler(
+                    Profiles.JwtUserToken,
+                    Encoding.UTF8.GetBytes(identityToken));
                 var userIdentity = new UserIdentity(issuedToken);
 
                 // the first channel determines the endpoint

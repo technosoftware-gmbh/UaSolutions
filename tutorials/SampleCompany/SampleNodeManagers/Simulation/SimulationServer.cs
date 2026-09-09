@@ -306,9 +306,10 @@ namespace SampleCompany.NodeManagers.Simulation
             }
 
             // check for issued identity token.
-            if (args.NewIdentity is IssuedIdentityToken issuedToken)
+            if (args.NewIdentity is IssuedIdentityToken)
             {
-                args.Identity = VerifyIssuedToken(issuedToken, args.UserTokenPolicy);
+                args.Identity = VerifyIssuedToken(
+                    args.NewIdentityTokenHandler as IssuedIdentityTokenHandler);
 
                 // set AuthenticatedUser role for accepted identity token.
                 // GrantedRoleIds is an immutable ArrayOf in 2.0, so the role is
@@ -453,9 +454,7 @@ namespace SampleCompany.NodeManagers.Simulation
             }
         }
 
-        private IUserIdentity VerifyIssuedToken(
-            IssuedIdentityToken issuedToken,
-            UserTokenPolicy userTokenPolicy)
+        private IUserIdentity VerifyIssuedToken(IssuedIdentityTokenHandler issuedTokenHandler)
         {
             if (TokenValidator == null)
             {
@@ -464,12 +463,12 @@ namespace SampleCompany.NodeManagers.Simulation
             }
             try
             {
-                // IssuedIdentityToken.IssuedTokenType is gone in 2.0; the
-                // profile is carried by the user token policy the client chose.
-                if (userTokenPolicy?.IssuedTokenType == Profiles.JwtUserToken)
+                // 2.0 keeps the issued token's type - and its decrypted
+                // data - on the handler rather than on the token itself.
+                if (issuedTokenHandler?.IssuedTokenType == IssuedTokenType.JWT)
                 {
                     m_logger.LogDebug(Utils.TraceMasks.Security, "VerifyIssuedToken: ValidateToken");
-                    return TokenValidator.ValidateToken(issuedToken);
+                    return TokenValidator.ValidateToken(issuedTokenHandler);
                 }
 
                 return null;

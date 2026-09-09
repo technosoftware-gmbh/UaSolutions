@@ -21,6 +21,6 @@ namespace SampleCompany.NodeManagers.Simulation
 {
     public interface ITokenValidator
     {
-        IUserIdentity ValidateToken(IssuedIdentityToken issuedToken);
+        IUserIdentity ValidateToken(IssuedIdentityTokenHandler issuedTokenHandler);
     }
 }
