@@ -402,7 +402,10 @@ namespace Technosoftware.UaServer
                         if (context.SecurityPolicyUri != SecurityPolicies.None)
                         {
                             // verify if applicationUri from ApplicationDescription matches the applicationUris in the client certificate.
-                            if (!string.IsNullOrEmpty(clientDescription.ApplicationUri))
+                            // A client may create a session without an
+                            // ApplicationDescription, so the URI check is only
+                            // reached when one was supplied.
+                            if (!string.IsNullOrEmpty(clientDescription?.ApplicationUri))
                             {
                                 if (!X509Utils.CompareApplicationUriWithCertificate(parsedClientCertificate, clientDescription.ApplicationUri))
                                 {

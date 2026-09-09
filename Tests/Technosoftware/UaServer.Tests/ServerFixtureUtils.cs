@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer.Tests
@@ -36,6 +37,9 @@ namespace Technosoftware.UaServer.Tests
     {
         public const double DefaultSessionTimeout = 120000;
         public const uint DefaultMaxResponseMessageSize = 128 * 1024;
+
+        private const string kDefaultClientApplicationUri =
+            "urn:localhost:opcfoundation.org:ServerFixtureClient";
         public const int MinTestPort = 50000;
         public const int MaxTestPort = 65000;
 
@@ -81,40 +85,115 @@ namespace Technosoftware.UaServer.Tests
                 endpoint.SecurityPolicyUri = SecurityPolicies.None;
             }
 
-            // set security context
-            var secureChannelContext
-                = new SecureChannelContext(sessionName, endpoint, RequestEncoding.Binary);
-            var requestHeader = new RequestHeader();
+            // 2.0 verifies the client signature on activation, so a secured
+            // session needs a real client certificate and a real signature -
+            // echoing the server's signature back, which is what this did
+            // before, is now rejected with BadApplicationSignatureInvalid.
+            Certificate clientCertificate = null;
+            try
+            {
+                ByteString clientNonce = default;
+                ByteString clientCertificateData = default;
+                byte[] clientChannelCertificate = null;
+                byte[] serverChannelCertificate = null;
+                byte[] channelThumbprint = null;
 
-            // Create session
-            CreateSessionResponse createSessionResponse = await server.CreateSessionAsync(
-                secureChannelContext,
-                requestHeader,
-                null,
-                null,
-                null,
-                sessionName,
-                default,
-                default,
-                sessionTimeout,
-                maxResponseMessageSize,
-                RequestLifetime.None).ConfigureAwait(false);
-            ValidateResponse(createSessionResponse.ResponseHeader);
+                if (useSecurity)
+                {
+                    clientCertificate = CertificateBuilder
+                        .Create("CN=ServerFixtureClient")
+                        .AddExtension(
+                            new X509SubjectAltNameExtension(
+                                kDefaultClientApplicationUri,
+                                [Utils.GetHostName()]))
+                        .SetRSAKeySize(CertificateFactory.DefaultKeySize)
+                        .CreateForRSA();
+                    clientNonce = Nonce.CreateRandomNonceData(32).ToByteString();
+                    clientCertificateData = clientCertificate.RawData.ToByteString();
+                    clientChannelCertificate = clientCertificate.RawData;
+                    channelThumbprint = Nonce.CreateRandomNonceData(32);
 
-            // Activate session
-            requestHeader.AuthenticationToken = createSessionResponse.AuthenticationToken;
-            ActivateSessionResponse activateSessionResponse = await server.ActivateSessionAsync(
-                secureChannelContext,
-                requestHeader,
-                createSessionResponse.ServerSignature,
-                [],
-                [],
-                identityToken != null ? new ExtensionObject(identityToken) : default,
-                null,
-                RequestLifetime.None).ConfigureAwait(false);
-            ValidateResponse(activateSessionResponse.ResponseHeader);
+                    if (!endpoint.ServerCertificate.IsEmpty)
+                    {
+                        using CertificateCollection serverCertificateChain =
+                            Utils.ParseCertificateChainBlob(
+                                endpoint.ServerCertificate,
+                                server.MessageContext.Telemetry);
+                        serverChannelCertificate = serverCertificateChain[0].RawData;
+                    }
+                }
 
-            return (requestHeader, secureChannelContext);
+                // set security context
+                var secureChannelContext = new SecureChannelContext(
+                    sessionName,
+                    endpoint,
+                    RequestEncoding.Binary,
+                    clientChannelCertificate,
+                    serverChannelCertificate,
+                    channelThumbprint);
+                var requestHeader = new RequestHeader();
+
+                // Create session
+                CreateSessionResponse createSessionResponse = await server.CreateSessionAsync(
+                    secureChannelContext,
+                    requestHeader,
+                    null,
+                    null,
+                    null,
+                    sessionName,
+                    clientNonce,
+                    clientCertificateData,
+                    sessionTimeout,
+                    maxResponseMessageSize,
+                    RequestLifetime.None).ConfigureAwait(false);
+                ValidateResponse(createSessionResponse.ResponseHeader);
+
+                // The data to sign is built by the security policy in 2.0 rather
+                // than by appending the certificate and nonce here, so a policy
+                // that mixes in the channel thumbprint or the channel
+                // certificates is handled without a change at this call site.
+                SignatureData clientSignature = null;
+
+                if (useSecurity)
+                {
+                    SecurityPolicyInfo securityPolicy = SecurityPolicies.Default.GetInfo(
+                        endpoint.SecurityPolicyUri);
+                    using CertificateCollection serverCertificateChain =
+                        Utils.ParseCertificateChainBlob(
+                            createSessionResponse.ServerCertificate,
+                            server.MessageContext.Telemetry);
+                    byte[] dataToSign = securityPolicy.GetClientSignatureData(
+                        secureChannelContext.ChannelThumbprint,
+                        createSessionResponse.ServerNonce.ToArray(),
+                        serverCertificateChain[0].RawData,
+                        secureChannelContext.ServerChannelCertificate,
+                        secureChannelContext.ClientChannelCertificate,
+                        clientNonce.ToArray());
+                    clientSignature = SecurityPolicies.Default.CreateSignatureData(
+                        securityPolicy,
+                        clientCertificate,
+                        dataToSign);
+                }
+
+                // Activate session
+                requestHeader.AuthenticationToken = createSessionResponse.AuthenticationToken;
+                ActivateSessionResponse activateSessionResponse = await server.ActivateSessionAsync(
+                    secureChannelContext,
+                    requestHeader,
+                    clientSignature,
+                    [],
+                    [],
+                    identityToken != null ? new ExtensionObject(identityToken) : default,
+                    null,
+                    RequestLifetime.None).ConfigureAwait(false);
+                ValidateResponse(activateSessionResponse.ResponseHeader);
+
+                return (requestHeader, secureChannelContext);
+            }
+            finally
+            {
+                clientCertificate?.Dispose();
+            }
         }
 
         /// <summary>
