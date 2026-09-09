@@ -196,11 +196,11 @@ namespace SampleCompany.NodeManagers.Simulation
         /// <remarks>
         /// Sample to show how to override default user token policies.
         /// </remarks>
-        public override UserTokenPolicyCollection GetUserTokenPolicies(
+        public override ArrayOf<UserTokenPolicy> GetUserTokenPolicies(
             ApplicationConfiguration configuration,
             EndpointDescription description)
         {
-            UserTokenPolicyCollection policies = base.GetUserTokenPolicies(
+            ArrayOf<UserTokenPolicy> policies = base.GetUserTokenPolicies(
                 configuration,
                 description);
 
@@ -208,17 +208,17 @@ namespace SampleCompany.NodeManagers.Simulation
             if (description.SecurityPolicyUri == SecurityPolicies.Aes256_Sha256_RsaPss &&
                 description.SecurityMode == MessageSecurityMode.SignAndEncrypt)
             {
-                return [.. policies.Where(u => u.TokenType != UserTokenType.Certificate)];
+                return policies.Filter(u => u.TokenType != UserTokenType.Certificate);
             }
             else if (description.SecurityPolicyUri == SecurityPolicies.Aes128_Sha256_RsaOaep &&
                 description.SecurityMode == MessageSecurityMode.Sign)
             {
-                return [.. policies.Where(u => u.TokenType != UserTokenType.Anonymous)];
+                return policies.Filter(u => u.TokenType != UserTokenType.Anonymous);
             }
             else if (description.SecurityPolicyUri == SecurityPolicies.Aes128_Sha256_RsaOaep &&
                 description.SecurityMode == MessageSecurityMode.SignAndEncrypt)
             {
-                return [.. policies.Where(u => u.TokenType != UserTokenType.UserName)];
+                return policies.Filter(u => u.TokenType != UserTokenType.UserName);
             }
             return policies;
         }
@@ -480,7 +480,7 @@ namespace SampleCompany.NodeManagers.Simulation
         #endregion User Validation Functions
 
         #region Private Fields
-        private ICertificateValidator m_userCertificateValidator;
+        private CertificateManager m_userCertificateValidator;
         #endregion Private Fields
     }
 }

@@ -65,7 +65,7 @@ namespace Technosoftware.UaClient.Tests
             PkiRoot = Path.GetTempPath() + Path.GetRandomFileName();
 
             // start ref server with reverse connect
-            ServerFixture = new ServerFixture<ReferenceServer>
+            ServerFixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry))
             {
                 AutoAccept = true,
                 SecurityNone = true,

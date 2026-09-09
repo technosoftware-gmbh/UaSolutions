@@ -33,7 +33,7 @@ namespace Technosoftware.UaServer.Tests
     /// </summary>
     /// <typeparam name="T">A server class T used for testing.</typeparam>
     public class ServerFixture<T>
-        where T : ServerBase, new()
+        where T : ServerBase
     {
         public ApplicationInstance Application { get; private set; }
         public ApplicationConfiguration Config { get; private set; }
@@ -61,9 +61,10 @@ namespace Technosoftware.UaServer.Tests
         public ActivityListener ActivityListener { get; private set; }
 
         public ServerFixture(
+            Func<ITelemetryContext, T> factory,
             bool useTracing,
             bool disableActivityLogging)
-            : this()
+            : this(factory)
         {
             UseTracing = useTracing;
             if (UseTracing)
@@ -72,8 +73,14 @@ namespace Technosoftware.UaServer.Tests
             }
         }
 
-        public ServerFixture()
+        /// <remarks>
+        /// UaStandardServer takes an ITelemetryContext in 2.0, which a new()
+        /// constraint cannot express, so the server under test is built by a
+        /// factory the caller supplies.
+        /// </remarks>
+        public ServerFixture(Func<ITelemetryContext, T> factory)
         {
+            m_factory = factory;
             m_telemetry = NUnitTelemetryContext.Create(true);
             m_logger = m_telemetry.CreateLogger<ServerFixture<T>>();
         }
@@ -250,7 +257,7 @@ namespace Technosoftware.UaServer.Tests
             }
 
             // start the server.
-            var server = new T();
+            T server = m_factory(m_telemetry);
             if (AllNodeManagers && server is UaStandardServer standardServer)
             {
                 NodeManagerUtils.AddDefaultNodeManagers(standardServer);
@@ -330,6 +337,7 @@ namespace Technosoftware.UaServer.Tests
             await Task.Delay(100).ConfigureAwait(false);
         }
 
+        private readonly Func<ITelemetryContext, T> m_factory;
         private readonly ITelemetryContext m_telemetry;
         private readonly ILogger m_logger;
     }

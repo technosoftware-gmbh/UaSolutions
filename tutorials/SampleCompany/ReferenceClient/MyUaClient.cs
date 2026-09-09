@@ -59,7 +59,9 @@ namespace SampleCompany.ReferenceClient
             m_logger = telemetry.CreateLogger<MyUaClient>();
             m_telemetry = telemetry;
             m_configuration = configuration;
-            m_configuration.CertificateValidator.CertificateValidation += OnCertificateValidation;
+            // 2.0 replaces the CertificateValidation event with a single
+            // AcceptError callback on the certificate manager.
+            m_configuration.CertificateManager.AcceptError = AcceptCertificate;
             m_reverseConnectManager = reverseConnectManager;
         }
         #endregion Constructors, Destructor, Initialization
@@ -85,7 +87,7 @@ namespace SampleCompany.ReferenceClient
             if (disposing)
             {
                 Session?.Dispose();
-                m_configuration.CertificateValidator.CertificateValidation -= OnCertificateValidation;
+                m_configuration.CertificateManager.AcceptError = null;
             }
             m_disposed = true;
         }
@@ -455,38 +457,32 @@ namespace SampleCompany.ReferenceClient
         /// Handles the certificate validation event.
         /// This event is triggered every time an untrusted certificate is received from the server.
         /// </summary>
-        protected virtual void OnCertificateValidation(
-            CertificateValidator sender,
-            CertificateValidationEventArgs e)
+        protected virtual bool AcceptCertificate(Certificate certificate, ServiceResult error)
         {
-            bool certificateAccepted = false;
-
             // ****
             // Implement a custom logic to decide if the certificate should be
-            // accepted or not and set certificateAccepted flag accordingly.
-            // The certificate can be retrieved from the e.Certificate field
+            // accepted or not. Return true to accept, false to reject.
             // ***
 
-            ServiceResult error = e.Error;
             m_logger.LogInformation("{Error}", error);
-            if (error.StatusCode == StatusCodes.BadCertificateUntrusted && AutoAccept)
-            {
-                certificateAccepted = true;
-            }
+
+            bool certificateAccepted =
+                error.StatusCode == StatusCodes.BadCertificateUntrusted && AutoAccept;
 
             if (certificateAccepted)
             {
                 m_logger.LogInformation(
                     "Untrusted Certificate accepted. Subject = {Subject}",
-                    e.Certificate.Subject);
-                e.Accept = true;
+                    certificate.Subject);
             }
             else
             {
                 m_logger.LogInformation(
                     "Untrusted Certificate rejected. Subject = {Subject}",
-                    e.Certificate.Subject);
+                    certificate.Subject);
             }
+
+            return certificateAccepted;
         }
 
         private readonly Lock m_lock = new();

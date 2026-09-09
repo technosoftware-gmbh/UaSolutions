@@ -65,7 +65,7 @@ namespace Technosoftware.UaServer.Tests
         {
             m_telemetry = NUnitTelemetryContext.Create();
             // start Ref server
-            m_fixture = new ServerFixture<ReferenceServer>
+            m_fixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry))
             {
                 AllNodeManagers = true,
                 OperationLimits = true,
@@ -120,7 +120,7 @@ namespace Technosoftware.UaServer.Tests
         public async Task GlobalSetupAsync()
         {
             // start Ref server
-            m_fixture = new ServerFixture<ReferenceServer> { AllNodeManagers = true };
+            m_fixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry)) { AllNodeManagers = true };
             m_server = await m_fixture.StartAsync(null).ConfigureAwait(false);
             (m_requestHeader, m_secureChannelContext) = await m_server.CreateAndActivateSessionAsync("Bench").ConfigureAwait(false);
         }
@@ -1348,7 +1348,7 @@ namespace Technosoftware.UaServer.Tests
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
 
             // start Ref server in provisioning mode
-            var fixture = new ServerFixture<ReferenceServer>
+            var fixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry))
             {
                 AllNodeManagers = false,
                 OperationLimits = false,

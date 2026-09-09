@@ -67,7 +67,7 @@ namespace Technosoftware.UaServer.Tests
             m_pkiRoot = Path.GetTempPath() + Path.GetRandomFileName() + Path.DirectorySeparatorChar;
 
             // Start a server for testing CreateSession
-            m_serverFixture = new ServerFixture<UaStandardServer>
+            m_serverFixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry))
             {
                 AutoAccept = true,
                 AllNodeManagers = true,

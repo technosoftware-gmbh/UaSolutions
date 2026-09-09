@@ -73,7 +73,7 @@ namespace Technosoftware.UaClient.Tests
             bool securityNone)
         {
             // start Ref server
-            ServerFixture = new ServerFixture<ReferenceServer>(
+            ServerFixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry), 
                 enableTracing,
                 disableActivityLogging)
             {

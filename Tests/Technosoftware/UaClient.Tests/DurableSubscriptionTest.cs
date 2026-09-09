@@ -60,7 +60,7 @@ namespace Technosoftware.UaClient.Tests
         {
             {
                 // start Ref server
-                ServerFixture = new ServerFixture<ReferenceServer>(
+                ServerFixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry), 
                     enableTracing,
                     disableActivityLogging)
                 {

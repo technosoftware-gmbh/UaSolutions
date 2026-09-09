@@ -107,7 +107,7 @@ namespace Technosoftware.UaClient.Tests
             bool securityNone)
         {
             // start Ref server
-            ServerFixtureWithLimits = new ServerFixture<ReferenceServerWithLimits>(
+            ServerFixtureWithLimits = new ServerFixture<ReferenceServerWithLimits>(telemetry => new ReferenceServerWithLimits(telemetry), 
                 enableTracing,
                 disableActivityLogging)
             {

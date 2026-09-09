@@ -44,7 +44,7 @@ namespace Technosoftware.UaServer.Tests
         public async Task RegisterNamespaceManagerNewNamespaceAsync()
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
 
             try
             {
@@ -86,7 +86,7 @@ namespace Technosoftware.UaServer.Tests
         public async Task RegisterNamespaceManagerExistingNamespaceAsync()
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
 
             try
             {
@@ -138,7 +138,7 @@ namespace Technosoftware.UaServer.Tests
             int indexToRemove)
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
 
             try
             {
@@ -190,7 +190,7 @@ namespace Technosoftware.UaServer.Tests
         public async Task UnregisterNamespaceManagerNotInCollectionAsync()
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
 
             try
             {
@@ -244,7 +244,7 @@ namespace Technosoftware.UaServer.Tests
         public async Task UnregisterNamespaceManagerUnknownNamespaceAsync()
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
 
             try
             {

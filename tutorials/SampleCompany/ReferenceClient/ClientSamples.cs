@@ -1142,7 +1142,7 @@ namespace SampleCompany.ReferenceClient
                                         uaClient.Session.MessageContext,
                                         variableId.ToString(),
                                         value,
-                                        JsonEncodingType.Compact);
+                                        JsonEncoderOptions.Compact);
                                     m_logger.LogInformation("{Value}", valueString);
                                 }
                                 else
@@ -1172,7 +1172,7 @@ namespace SampleCompany.ReferenceClient
                                     uaClient.Session.MessageContext,
                                     variableIds[ii].ToString(),
                                     value,
-                                    JsonEncodingType.Compact);
+                                    JsonEncoderOptions.Compact);
                                 m_logger.LogInformation("{Value}", valueString);
                             }
                             else
@@ -1295,7 +1295,7 @@ namespace SampleCompany.ReferenceClient
             IServiceMessageContext messageContext,
             string name,
             DataValue value,
-            JsonEncodingType jsonEncodingType)
+            JsonEncoderOptions jsonEncodingType)
         {
             string textbuffer;
             using (var jsonEncoder = new JsonEncoder(messageContext, jsonEncodingType))

@@ -43,7 +43,7 @@ namespace Technosoftware.UaServer.Tests
         [OneTimeSetUp]
         public async Task OneTimeSetUpAsync()
         {
-            m_fixture = new ServerFixture<ReferenceServer>
+            m_fixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry))
             {
                 AllNodeManagers = true,
                 OperationLimits = true
