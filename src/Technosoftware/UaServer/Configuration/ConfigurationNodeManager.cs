@@ -192,19 +192,20 @@ namespace Technosoftware.UaServer
 
                             // delete unsupported groups
                             if (m_certificateGroups.All(group =>
-                                    group.BrowseName != activeNode.DefaultHttpsGroup?.BrowseName))
+                                    group.BrowseName !=
+                                        activeNode.DefaultHttpsGroup?.BrowseName.Name))
                             {
                                 activeNode.DefaultHttpsGroup = null;
                             }
                             if (m_certificateGroups.All(group =>
-                                    group.BrowseName != activeNode.DefaultUserTokenGroup?
-                                        .BrowseName))
+                                    group.BrowseName !=
+                                        activeNode.DefaultUserTokenGroup?.BrowseName.Name))
                             {
                                 activeNode.DefaultUserTokenGroup = null;
                             }
                             if (m_certificateGroups.All(group =>
-                                    group.BrowseName != activeNode.DefaultApplicationGroup?
-                                        .BrowseName))
+                                    group.BrowseName !=
+                                        activeNode.DefaultApplicationGroup?.BrowseName.Name))
                             {
                                 activeNode.DefaultApplicationGroup = null;
                             }
@@ -417,23 +418,23 @@ namespace Technosoftware.UaServer
             NodeId objectId,
             NodeId certificateGroupId,
             NodeId certificateTypeId,
-            byte[] certificate,
-            byte[][] issuerCertificates,
+            ByteString certificate,
+            ArrayOf<ByteString> issuerCertificates,
             string privateKeyFormat,
-            byte[] privateKey,
+            ByteString privateKey,
             CancellationToken ct)
         {
             bool applyChangesRequired = false;
             HasApplicationSecureAdminAccess(context);
 
-            object[] inputArguments =
+            ArrayOf<Variant> inputArguments =
             [
-                certificateGroupId,
-                certificateTypeId,
-                certificate,
-                issuerCertificates,
-                privateKeyFormat,
-                privateKey
+                Variant.From(certificateGroupId),
+                Variant.From(certificateTypeId),
+                Variant.From(certificate),
+                Variant.From(issuerCertificates),
+                Variant.From(privateKeyFormat),
+                Variant.From(privateKey)
             ];
             Certificate newCert = null;
             Certificate certWithPrivateKey = null;
@@ -485,15 +486,17 @@ namespace Technosoftware.UaServer
 
                 // identify the existing certificate to be updated
                 // it should be of the same type and same subject name as the new certificate
+                // CertificateIdentifier.Certificate is gone in 2.0 - resolving
+                // an identifier is asynchronous and needs a registry - so the
+                // fallback for a subject that changed mid-rotation matches on
+                // the certificate type alone, as upstream does, rather than by
+                // reading each identifier's certificate for its application URI.
                 CertificateIdentifier existingCertIdentifier =
                     (
                         certificateGroup.ApplicationCertificates.FirstOrDefault(cert =>
                             X509Utils.CompareDistinguishedName(cert.SubjectName, newCert.Subject) &&
                             cert.CertificateType == certificateTypeId)
                         ?? certificateGroup.ApplicationCertificates.FirstOrDefault(cert =>
-                            cert.Certificate != null &&
-                            X509Utils.GetApplicationUrisFromCertificate(cert.Certificate)
-                                .Any(uri => uri.Equals(m_configuration.ApplicationUri, StringComparison.Ordinal)) &&
                             cert.CertificateType == certificateTypeId))
                     ?? throw new ServiceResultException(
                         StatusCodes.BadInvalidArgument,
@@ -506,9 +509,10 @@ namespace Technosoftware.UaServer
                     // build issuer chain
                     if (issuerCertificates != null)
                     {
-                        foreach (byte[] issuerRawCert in issuerCertificates)
+                        foreach (ByteString issuerRawCert in issuerCertificates)
                         {
-                            newIssuerCollection.Add(DefaultCertificateFactory.Instance.CreateFromRawData(issuerRawCert));
+                            using var issuer = Certificate.FromRawData(issuerRawCert);
+                            newIssuerCollection.Add(issuer);
                         }
                     }
                 }
@@ -588,8 +592,9 @@ namespace Technosoftware.UaServer
                                 }
                                 else
                                 {
-                                    certWithPrivateKey = await existingCertIdentifier
-                                        .LoadPrivateKeyExAsync(
+                                    certWithPrivateKey = await CertificateIdentifierResolver
+                                        .LoadPrivateKeyAsync(
+                                            existingCertIdentifier,
                                             passwordProvider,
                                             m_configuration.ApplicationUri,
                                             ServerData.Telemetry,
@@ -632,7 +637,7 @@ namespace Technosoftware.UaServer
                             for (int attempt = 0; ; attempt++)
                             {
                                 certWithPrivateKey = X509Utils.CreateCertificateFromPKCS12(
-                                    privateKey,
+                                    privateKey.ToArray(),
                                     passwordProvider?.GetPassword(existingCertIdentifier),
                                     false);
 
@@ -664,7 +669,7 @@ namespace Technosoftware.UaServer
                                 updateCertificate.CertificateWithPrivateKey =
                                 CertificateFactory.CreateCertificateWithPEMPrivateKey(
                                     newCert,
-                                    privateKey,
+                                    privateKey.ToArray(),
                                     passwordProvider?.GetPassword(existingCertIdentifier));
                                 try
                                 {
@@ -744,7 +749,8 @@ namespace Technosoftware.UaServer
             {
                 try
                 {
-                    using (ICertificateStore appStore = existingCertIdentifier.OpenStore(ServerData.Telemetry))
+                    using (ICertificateStore appStore = CertificateIdentifierResolver
+                        .OpenStore(existingCertIdentifier, ServerData.Telemetry))
                     {
                         if (appStore == null)
                         {
@@ -754,8 +760,8 @@ namespace Technosoftware.UaServer
 
                         m_logger.LogInformation(
                             Utils.TraceMasks.Security,
-                            "Delete application certificate {Certificate}",
-                            Redact.Create(existingCertIdentifier.Certificate));
+                            "Delete application certificate {Thumbprint}",
+                            existingCertIdentifier.Thumbprint);
                         await appStore.DeleteAsync(
                             existingCertIdentifier.Thumbprint,
                             ct)
@@ -778,12 +784,9 @@ namespace Technosoftware.UaServer
                             updateCertificate.CertificateWithPrivateKey.RawData);
                         updateCertificate.CertificateWithPrivateKey.Dispose();
                         updateCertificate.CertificateWithPrivateKey = certOnly;
-                        // update certificate identifier with new certificate
-                        await existingCertIdentifier.FindAsync(
-                            m_configuration.ApplicationUri,
-                            ServerData.Telemetry,
-                            ct)
-                            .ConfigureAwait(false);
+                        // the identifier no longer caches a resolved
+                        // certificate; the store is the single source of truth
+                        // and callers resolve when they need one.
                     }
 
                     ICertificateStore issuerStore = certificateGroup.IssuerStore.OpenStore(ServerData.Telemetry);
@@ -848,7 +851,7 @@ namespace Technosoftware.UaServer
             NodeId certificateTypeId,
             string subjectName,
             bool regeneratePrivateKey,
-            byte[] nonce,
+            ByteString nonce,
             CancellationToken cancellationToken)
         {
             HasApplicationSecureAdminAccess(context);
@@ -874,7 +877,17 @@ namespace Technosoftware.UaServer
             Certificate certWithPrivateKey;
             if (regeneratePrivateKey)
             {
-                IList<string> domainNames = X509Utils.GetDomainsFromCertificate(existingCertIdentifier.Certificate);
+                // the configured identifier is metadata only in 2.0; the
+                // currently-active certificate comes from the manager's
+                // registry, and its domains seed the temporary certificate.
+                using CertificateEntry currentEntry =
+                    (m_configuration.CertificateManager as ICertificateRegistry)?
+                        .AcquireApplicationCertificateByType(certificateTypeId);
+                Certificate currentCert = currentEntry?.Certificate;
+
+                ArrayOf<string> domainNames = currentCert != null
+                    ? X509Utils.GetDomainsFromCertificate(currentCert)
+                    : default;
 
                 certWithPrivateKey = GenerateTemporaryApplicationCertificate(
                     certificateTypeId,
@@ -887,11 +900,13 @@ namespace Technosoftware.UaServer
                 ICertificatePasswordProvider passwordProvider = m_configuration
                     .SecurityConfiguration
                     .CertificatePasswordProvider;
-                certWithPrivateKey = await existingCertIdentifier
-                    .LoadPrivateKeyExAsync(passwordProvider,
-                                           m_configuration.ApplicationUri,
-                                           ServerData.Telemetry,
-                                           cancellationToken)
+                certWithPrivateKey = await CertificateIdentifierResolver
+                    .LoadPrivateKeyAsync(
+                        existingCertIdentifier,
+                        passwordProvider,
+                        m_configuration.ApplicationUri,
+                        ServerData.Telemetry,
+                        cancellationToken)
                     .ConfigureAwait(false);
 
                 if (certWithPrivateKey == null)
@@ -911,7 +926,7 @@ namespace Technosoftware.UaServer
             return new CreateSigningRequestMethodStateResult
             {
                 ServiceResult = ServiceResult.Good,
-                CertificateRequest = certificateRequest
+                CertificateRequest = certificateRequest.ToByteString()
             };
         }
 
@@ -919,7 +934,7 @@ namespace Technosoftware.UaServer
             NodeId certificateTypeId,
             ServerCertificateGroup certificateGroup,
             string subjectName,
-            IList<string> domainNames)
+            ArrayOf<string> domainNames)
         {
             Certificate certificate;
 
@@ -955,8 +970,8 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             HasApplicationSecureAdminAccess(context);
 
@@ -1012,8 +1027,11 @@ namespace Technosoftware.UaServer
                             Utils.TraceMasks.Security,
                             "----- Apply Changes for application certificate update running...");
 
+                        // CertificateValidator.UpdateCertificateAsync is gone
+                        // in 2.0; the manager reloads the application
+                        // certificate snapshot from the configuration instead.
                         await m_configuration
-                            .CertificateManager.UpdateCertificateAsync(
+                            .CertificateManager.ReloadApplicationCertificatesAsync(
                                 m_configuration.SecurityConfiguration,
                                 m_configuration.ApplicationUri)
                             .ConfigureAwait(false);
@@ -1042,7 +1060,7 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            ref byte[][] certificates)
+            ref ArrayOf<ByteString> certificates)
         {
             HasApplicationSecureAdminAccess(context);
 
@@ -1058,13 +1076,13 @@ namespace Technosoftware.UaServer
             {
                 if (store != null)
                 {
-                    CertificateCollection collection = store.EnumerateAsync().Result;
-                    var rawList = new List<byte[]>();
+                    using CertificateCollection collection = store.EnumerateAsync().Result;
+                    var rawList = new List<ByteString>();
                     foreach (Certificate cert in collection)
                     {
-                        rawList.Add(cert.RawData);
+                        rawList.Add(cert.RawData.ToByteString());
                     }
-                    certificates = [.. rawList];
+                    certificates = rawList.ToArrayOf();
                 }
             }
             finally
@@ -1080,8 +1098,8 @@ namespace Technosoftware.UaServer
             MethodState method,
             NodeId objectId,
             NodeId certificateGroupId,
-            ref NodeId[] certificateTypeIds,
-            ref byte[][] certificates)
+            ref ArrayOf<NodeId> certificateTypeIds,
+            ref ArrayOf<ByteString> certificates)
         {
             HasApplicationSecureAdminAccess(context);
 
@@ -1093,8 +1111,9 @@ namespace Technosoftware.UaServer
                     "Certificate group invalid.");
 
             certificateTypeIds = certificateGroup.CertificateTypes;
-            certificates = [.. certificateGroup.ApplicationCertificates
-                .Select(s => s.Certificate?.RawData)];
+            certificates = certificateGroup.ApplicationCertificates
+                .Select(s => s.Certificate?.RawData.ToByteString() ?? default)
+                .ToArrayOf();
 
             return ServiceResult.Good;
         }
