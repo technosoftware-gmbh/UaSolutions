@@ -203,9 +203,6 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public ArrayOf<NodeId> GrantedRoleIds { get; }
 
-        /// <inheritdoc/>
-        public IUserIdentityTokenHandler TokenHandler => m_identity.TokenHandler;
-
         /// <summary>
         /// The role in the context of a server.
         /// </summary>
@@ -227,9 +224,6 @@ namespace Technosoftware.UaServer
         public bool SupportsSignatures => m_identity.SupportsSignatures;
 
         /// <inheritdoc/>
-        public UserIdentityToken GetIdentityToken()
-        {
-            return m_identity.GetIdentityToken();
-        }
+        public IUserIdentityTokenHandler TokenHandler => m_identity.TokenHandler;
     }
 }

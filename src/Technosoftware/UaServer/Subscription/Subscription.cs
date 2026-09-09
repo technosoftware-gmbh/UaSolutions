@@ -2577,7 +2577,7 @@ namespace Technosoftware.UaServer
                 MaxNotificationsPerPublish = m_maxNotificationsPerPublish,
                 Priority = Priority,
                 PublishingInterval = PublishingInterval,
-                UserIdentityToken = EffectiveIdentity?.GetIdentityToken(),
+                UserIdentityToken = EffectiveIdentity?.TokenHandler?.Token,
                 MonitoredItems = monitoredItemsToStore,
                 IsDurable = IsDurable
             };

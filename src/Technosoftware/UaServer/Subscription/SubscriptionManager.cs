@@ -1394,13 +1394,13 @@ namespace Technosoftware.UaServer
 
                     // get the identity of the current or last owner
                     UserIdentityToken ownerIdentity = subscription.EffectiveIdentity
-                        .GetIdentityToken();
+                        ?.TokenHandler?.Token;
 
                     // Validate the identity of the user who owns/owned the subscription
                     // is the same as the new owner.
                     bool validIdentity = Utils.IsEqualUserIdentity(
                         ownerIdentity,
-                        context.Session.EffectiveIdentity.GetIdentityToken());
+                        context.Session.EffectiveIdentity?.TokenHandler?.Token);
 
                     // Test if anonymous user is using a
                     // secure session using Sign or SignAndEncrypt

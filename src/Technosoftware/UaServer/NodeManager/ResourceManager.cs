@@ -71,7 +71,7 @@ namespace Technosoftware.UaServer
         {
             return Translate(
                 preferredLocales,
-                null,
+                default,
                 new TranslationInfo(key, string.Empty, text, args));
         }
 
@@ -304,7 +304,7 @@ namespace Technosoftware.UaServer
             defaultText = FilterByPreferredLocales(defaultText, preferredLocales);
 
             bool isMultilanguageRequested =
-                preferredLocales?.Count > 0 &&
+                preferredLocales.Count > 0 &&
                 preferredLocales[0].ToLowerInvariant() is "mul" or "qst";
 
             // check for trivial case.
@@ -462,7 +462,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // construct translated localized text.
-                return new LocalizedText(culture.Name, formattedText) { TranslationInfo = info };
+                return new LocalizedText(culture.Name, formattedText, info);
             }
         }
 
@@ -602,7 +602,7 @@ namespace Technosoftware.UaServer
                         info = new TranslationInfo(info.Key, info.Locale, info.Text, args);
                     }
 
-                    return Translate(preferredLocales, null, info);
+                    return Translate(preferredLocales, default, info);
                 }
             }
 
@@ -631,7 +631,7 @@ namespace Technosoftware.UaServer
                         info = new TranslationInfo(info.Key, info.Locale, info.Text, args);
                     }
 
-                    return Translate(preferredLocales, null, info);
+                    return Translate(preferredLocales, default, info);
                 }
             }
 
