@@ -432,11 +432,13 @@ namespace Technosoftware.UaClient
                 nodeIds.Select(nodeId => ExpandedNodeId.ToNodeId(nodeId, m_context.NamespaceUris)));
 
             // fetch nodes and references from server.
-            (IReadOnlyList<Node> sourceNodes, IReadOnlyList<ServiceResult> readErrors) = await m_context
-                .FetchNodesAsync(null, localIds, NodeClass.Unspecified, ct: ct)
+            (ArrayOf<Node> sourceNodes, ArrayOf<ServiceResult> readErrors) = await m_context
+                .FetchNodesAsync(null, localIds.ToArrayOf(), NodeClass.Unspecified, ct: ct)
                 .ConfigureAwait(false);
-            (IReadOnlyList<ArrayOf<ReferenceDescription>> referenceCollectionList, IReadOnlyList<ServiceResult> fetchErrors) =
-                await m_context.FetchReferencesAsync(null, localIds, ct).ConfigureAwait(false);
+            (ArrayOf<ArrayOf<ReferenceDescription>> referenceCollectionList,
+                ArrayOf<ServiceResult> fetchErrors) = await m_context
+                    .FetchReferencesAsync(null, localIds.ToArrayOf(), ct)
+                    .ConfigureAwait(false);
 
             int ii = 0;
             for (ii = 0; ii < count; ii++)
@@ -806,7 +808,7 @@ namespace Technosoftware.UaClient
             NodeId referenceTypeId,
             CancellationToken ct = default)
         {
-            QualifiedName? typeName;
+            QualifiedName typeName;
             m_cacheLock.EnterReadLock();
             try
             {
@@ -816,7 +818,7 @@ namespace Technosoftware.UaClient
             {
                 m_cacheLock.ExitReadLock();
             }
-            return new ValueTask<QualifiedName?>(typeName);
+            return new ValueTask<QualifiedName>(typeName);
         }
 
         /// <inheritdoc/>
@@ -967,7 +969,7 @@ namespace Technosoftware.UaClient
 
             // for structure types must try to determine the subtype.
 
-            if (value is ExtensionObject extension)
+            if (value.TryGetValue(out ExtensionObject extension))
             {
                 return await IsEncodingForAsync(
                     expectedTypeId,
@@ -977,9 +979,9 @@ namespace Technosoftware.UaClient
 
             // every element in an array must match.
 
-            if (value is ExtensionObject[] extensions)
+            if (value.TryGetValue(out ArrayOf<ExtensionObject> extensions))
             {
-                for (int ii = 0; ii < extensions.Length; ii++)
+                for (int ii = 0; ii < extensions.Count; ii++)
                 {
                     if (!await IsEncodingForAsync(
                         expectedTypeId,
