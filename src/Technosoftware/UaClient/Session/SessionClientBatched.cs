@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
+using Opc.Ua.Client;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient
@@ -54,11 +55,11 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<BrowseResponse> BrowseAsync(
+        public override ValueTask<BrowseResponse> BrowseAsync(
             RequestHeader? requestHeader,
             ViewDescription? view,
             uint requestedMaxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerBrowse;
@@ -79,25 +80,24 @@ namespace Technosoftware.UaClient
                 operationLimit,
                 ct);
 
-            async Task<BrowseResponse> BrowseBatchedAsync(
+            async ValueTask<BrowseResponse> BrowseBatchedAsync(
                 RequestHeader? requestHeader,
                 ViewDescription? view,
                 uint requestedMaxReferencesPerNode,
-                BrowseDescriptionCollection nodesToBrowse,
+                ArrayOf<BrowseDescription> nodesToBrowse,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 BrowseResponse? response = null;
-                InitResponseCollections<BrowseResult, BrowseResultCollection>(
-                    out BrowseResultCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<BrowseResult>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     nodesToBrowse.Count,
                     operationLimit);
-                foreach (BrowseDescriptionCollection nodesToBrowseBatch in nodesToBrowse
-                    .Batch<BrowseDescription, BrowseDescriptionCollection>(operationLimit))
+                foreach (ArrayOf<BrowseDescription> nodesToBrowseBatch in nodesToBrowse.Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.BrowseAsync(
@@ -107,13 +107,13 @@ namespace Technosoftware.UaClient
                         nodesToBrowseBatch,
                         ct).ConfigureAwait(false);
 
-                    BrowseResultCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<BrowseResult> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
 
                     ValidateResponse(batchResults, nodesToBrowseBatch);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, nodesToBrowseBatch);
 
-                    AddResponses<BrowseResult, BrowseResultCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -131,10 +131,10 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<BrowseNextResponse> BrowseNextAsync(
+        public override ValueTask<BrowseNextResponse> BrowseNextAsync(
             RequestHeader? requestHeader,
             bool releaseContinuationPoints,
-            ByteStringCollection continuationPoints,
+            ArrayOf<ByteString> continuationPoints,
             CancellationToken ct)
         {
             ushort operationLimit = ServerCapabilities.MaxBrowseContinuationPoints;
@@ -154,24 +154,23 @@ namespace Technosoftware.UaClient
                 operationLimit,
                 ct);
 
-            async Task<BrowseNextResponse> BrowseNextBatchedAsync(
+            async ValueTask<BrowseNextResponse> BrowseNextBatchedAsync(
                 RequestHeader? requestHeader,
                 bool releaseContinuationPoints,
-                ByteStringCollection continuationPoints,
+                ArrayOf<ByteString> continuationPoints,
                 ushort operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 BrowseNextResponse? response = null;
-                InitResponseCollections<BrowseResult, BrowseResultCollection>(
-                    out BrowseResultCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<BrowseResult>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     continuationPoints.Count,
                     operationLimit);
-                foreach (ByteStringCollection continuationPointsBatch in continuationPoints
-                    .Batch<byte[], ByteStringCollection>(operationLimit))
+                foreach (ArrayOf<ByteString> continuationPointsBatch in continuationPoints.Batch(operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.BrowseNextAsync(
@@ -180,13 +179,13 @@ namespace Technosoftware.UaClient
                         continuationPointsBatch,
                         ct).ConfigureAwait(false);
 
-                    BrowseResultCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<BrowseResult> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
 
                     ValidateResponse(batchResults, continuationPointsBatch);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, continuationPointsBatch);
 
-                    AddResponses<BrowseResult, BrowseResultCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -204,9 +203,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
+        public override ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
             RequestHeader? requestHeader,
-            BrowsePathCollection browsePaths,
+            ArrayOf<BrowsePath> browsePaths,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds;
@@ -219,23 +218,22 @@ namespace Technosoftware.UaClient
             }
             return TranslateBrowsePathsToNodeIdsBatchedAsync(requestHeader, browsePaths, operationLimit, ct);
 
-            async Task<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsBatchedAsync(
+            async ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsBatchedAsync(
                 RequestHeader? requestHeader,
-                BrowsePathCollection browsePaths,
+                ArrayOf<BrowsePath> browsePaths,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 TranslateBrowsePathsToNodeIdsResponse? response = null;
-                InitResponseCollections<BrowsePathResult, BrowsePathResultCollection>(
-                    out BrowsePathResultCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<BrowsePathResult>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     browsePaths.Count,
                     operationLimit);
-                foreach (BrowsePathCollection batchBrowsePaths in browsePaths
-                    .Batch<BrowsePath, BrowsePathCollection>(operationLimit))
+                foreach (ArrayOf<BrowsePath> batchBrowsePaths in browsePaths.Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.TranslateBrowsePathsToNodeIdsAsync(
@@ -243,12 +241,12 @@ namespace Technosoftware.UaClient
                         batchBrowsePaths,
                         ct).ConfigureAwait(false);
 
-                    BrowsePathResultCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<BrowsePathResult> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
                     ValidateResponse(batchResults, batchBrowsePaths);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchBrowsePaths);
 
-                    AddResponses<BrowsePathResult, BrowsePathResultCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -266,9 +264,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<RegisterNodesResponse> RegisterNodesAsync(
+        public override ValueTask<RegisterNodesResponse> RegisterNodesAsync(
             RequestHeader? requestHeader,
-            NodeIdCollection nodesToRegister,
+            ArrayOf<NodeId> nodesToRegister,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerRegisterNodes;
@@ -281,18 +279,17 @@ namespace Technosoftware.UaClient
             }
             return RegisterNodesBatchedAsync(requestHeader, nodesToRegister, operationLimit, ct);
 
-            async Task<RegisterNodesResponse> RegisterNodesBatchedAsync(
+            async ValueTask<RegisterNodesResponse> RegisterNodesBatchedAsync(
                 RequestHeader? requestHeader,
-                NodeIdCollection nodesToRegister,
+                ArrayOf<NodeId> nodesToRegister,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 RegisterNodesResponse? response = null;
-                var registeredNodeIds = new NodeIdCollection();
-                foreach (NodeIdCollection batchNodesToRegister in nodesToRegister
-                    .Batch<NodeId, NodeIdCollection>(operationLimit))
+                var registeredNodeIds = new List<NodeId>();
+                foreach (ArrayOf<NodeId> batchNodesToRegister in nodesToRegister.Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.RegisterNodesAsync(
@@ -300,7 +297,7 @@ namespace Technosoftware.UaClient
                         batchNodesToRegister,
                         ct).ConfigureAwait(false);
 
-                    NodeIdCollection batchRegisteredNodeIds = response.RegisteredNodeIds;
+                    ArrayOf<NodeId> batchRegisteredNodeIds = response.RegisteredNodeIds;
                     ValidateResponse(batchRegisteredNodeIds, batchNodesToRegister);
                     registeredNodeIds.AddRange(batchRegisteredNodeIds);
                 }
@@ -312,9 +309,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<UnregisterNodesResponse> UnregisterNodesAsync(
+        public override ValueTask<UnregisterNodesResponse> UnregisterNodesAsync(
             RequestHeader? requestHeader,
-            NodeIdCollection nodesToUnregister,
+            ArrayOf<NodeId> nodesToUnregister,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerRegisterNodes;
@@ -327,17 +324,17 @@ namespace Technosoftware.UaClient
             }
             return UnregisterNodesBatchedAsync(requestHeader, nodesToUnregister, operationLimit, ct);
 
-            async Task<UnregisterNodesResponse> UnregisterNodesBatchedAsync(
+            async ValueTask<UnregisterNodesResponse> UnregisterNodesBatchedAsync(
                 RequestHeader? requestHeader,
-                NodeIdCollection nodesToUnregister,
+                ArrayOf<NodeId> nodesToUnregister,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 UnregisterNodesResponse? response = null;
-                foreach (NodeIdCollection batchNodesToUnregister in nodesToUnregister
-                    .Batch<NodeId, NodeIdCollection>(operationLimit))
+                foreach (ArrayOf<NodeId> batchNodesToUnregister in nodesToUnregister
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.UnregisterNodesAsync(
@@ -351,11 +348,11 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<ReadResponse> ReadAsync(
+        public override ValueTask<ReadResponse> ReadAsync(
             RequestHeader? requestHeader,
             double maxAge,
             TimestampsToReturn timestampsToReturn,
-            ReadValueIdCollection nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerRead;
@@ -376,25 +373,25 @@ namespace Technosoftware.UaClient
                 operationLimit,
                 ct);
 
-            async Task<ReadResponse> ReadBatchedAsync(
+            async ValueTask<ReadResponse> ReadBatchedAsync(
                 RequestHeader? requestHeader,
                 double maxAge,
                 TimestampsToReturn timestampsToReturn,
-                ReadValueIdCollection nodesToRead,
+                ArrayOf<ReadValueId> nodesToRead,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 ReadResponse? response = null;
-                InitResponseCollections<DataValue, DataValueCollection>(
-                    out DataValueCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<DataValue>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     nodesToRead.Count,
                     operationLimit);
-                foreach (ReadValueIdCollection batchAttributesToRead in nodesToRead
-                    .Batch<ReadValueId, ReadValueIdCollection>(operationLimit))
+                foreach (ArrayOf<ReadValueId> batchAttributesToRead in nodesToRead
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.ReadAsync(
@@ -404,13 +401,13 @@ namespace Technosoftware.UaClient
                         batchAttributesToRead,
                         ct).ConfigureAwait(false);
 
-                    DataValueCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<DataValue> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
 
                     ValidateResponse(batchResults, batchAttributesToRead);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchAttributesToRead);
 
-                    AddResponses<DataValue, DataValueCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -428,17 +425,17 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<HistoryReadResponse> HistoryReadAsync(
+        public override ValueTask<HistoryReadResponse> HistoryReadAsync(
             RequestHeader? requestHeader,
             ExtensionObject historyReadDetails,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            HistoryReadValueIdCollection nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerHistoryReadData;
-            if (historyReadDetails?.TypeId == DataTypeIds.ReadEventDetails ||
-                historyReadDetails?.Body is ReadEventDetails)
+            if (historyReadDetails.TypeId == DataTypeIds.ReadEventDetails ||
+                historyReadDetails.TryGetValue(out ReadEventDetails? _))
             {
                 operationLimit = OperationLimits.MaxNodesPerHistoryReadEvents;
             }
@@ -462,26 +459,26 @@ namespace Technosoftware.UaClient
                 operationLimit,
                 ct);
 
-            async Task<HistoryReadResponse> HistoryReadBatchedAsync(
+            async ValueTask<HistoryReadResponse> HistoryReadBatchedAsync(
                 RequestHeader? requestHeader,
-                ExtensionObject? historyReadDetails,
+                ExtensionObject historyReadDetails,
                 TimestampsToReturn timestampsToReturn,
                 bool releaseContinuationPoints,
-                HistoryReadValueIdCollection nodesToRead,
+                ArrayOf<HistoryReadValueId> nodesToRead,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 HistoryReadResponse? response = null;
-                InitResponseCollections<HistoryReadResult, HistoryReadResultCollection>(
-                    out HistoryReadResultCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<HistoryReadResult>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     nodesToRead.Count,
                     operationLimit);
-                foreach (HistoryReadValueIdCollection batchNodesToRead in nodesToRead
-                    .Batch<HistoryReadValueId, HistoryReadValueIdCollection>(operationLimit))
+                foreach (ArrayOf<HistoryReadValueId> batchNodesToRead in nodesToRead
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.HistoryReadAsync(
@@ -492,13 +489,13 @@ namespace Technosoftware.UaClient
                         batchNodesToRead,
                         ct).ConfigureAwait(false);
 
-                    HistoryReadResultCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<HistoryReadResult> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
 
                     ValidateResponse(batchResults, batchNodesToRead);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchNodesToRead);
 
-                    AddResponses<HistoryReadResult, HistoryReadResultCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -516,9 +513,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<WriteResponse> WriteAsync(
+        public override ValueTask<WriteResponse> WriteAsync(
             RequestHeader? requestHeader,
-            WriteValueCollection nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerWrite;
@@ -531,23 +528,23 @@ namespace Technosoftware.UaClient
             }
             return WriteBatchedAsync(requestHeader, nodesToWrite, operationLimit, ct);
 
-            async Task<WriteResponse> WriteBatchedAsync(
+            async ValueTask<WriteResponse> WriteBatchedAsync(
                 RequestHeader? requestHeader,
-                WriteValueCollection nodesToWrite,
+                ArrayOf<WriteValue> nodesToWrite,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 WriteResponse? response = null;
-                InitResponseCollections<StatusCode, StatusCodeCollection>(
-                    out StatusCodeCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<StatusCode>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     nodesToWrite.Count,
                     operationLimit);
-                foreach (WriteValueCollection batchNodesToWrite in nodesToWrite
-                    .Batch<WriteValue, WriteValueCollection>(operationLimit))
+                foreach (ArrayOf<WriteValue> batchNodesToWrite in nodesToWrite
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.WriteAsync(
@@ -555,13 +552,13 @@ namespace Technosoftware.UaClient
                         batchNodesToWrite,
                         ct).ConfigureAwait(false);
 
-                    StatusCodeCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<StatusCode> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
 
                     ValidateResponse(batchResults, batchNodesToWrite);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchNodesToWrite);
 
-                    AddResponses<StatusCode, StatusCodeCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -579,15 +576,15 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<HistoryUpdateResponse> HistoryUpdateAsync(
+        public override ValueTask<HistoryUpdateResponse> HistoryUpdateAsync(
             RequestHeader? requestHeader,
-            ExtensionObjectCollection historyUpdateDetails,
+            ArrayOf<ExtensionObject> historyUpdateDetails,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerHistoryUpdateData;
             if (historyUpdateDetails.Count > 0 &&
                 (historyUpdateDetails[0].TypeId == DataTypeIds.UpdateEventDetails ||
-                    historyUpdateDetails[0]?.Body is UpdateEventDetails))
+                    historyUpdateDetails[0].TryGetValue(out UpdateEventDetails? _)))
             {
                 operationLimit = OperationLimits.MaxNodesPerHistoryUpdateEvents;
             }
@@ -600,23 +597,23 @@ namespace Technosoftware.UaClient
             }
             return HistoryUpdateBatchedAsync(requestHeader, historyUpdateDetails, operationLimit, ct);
 
-            async Task<HistoryUpdateResponse> HistoryUpdateBatchedAsync(
+            async ValueTask<HistoryUpdateResponse> HistoryUpdateBatchedAsync(
                 RequestHeader? requestHeader,
-                ExtensionObjectCollection historyUpdateDetails,
+                ArrayOf<ExtensionObject> historyUpdateDetails,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 HistoryUpdateResponse? response = null;
-                InitResponseCollections<HistoryUpdateResult, HistoryUpdateResultCollection>(
-                    out HistoryUpdateResultCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<HistoryUpdateResult>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     historyUpdateDetails.Count,
                     operationLimit);
-                foreach (ExtensionObjectCollection batchHistoryUpdateDetails in historyUpdateDetails
-                    .Batch<ExtensionObject, ExtensionObjectCollection>(operationLimit))
+                foreach (ArrayOf<ExtensionObject> batchHistoryUpdateDetails in historyUpdateDetails
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.HistoryUpdateAsync(
@@ -624,13 +621,13 @@ namespace Technosoftware.UaClient
                         batchHistoryUpdateDetails,
                         ct).ConfigureAwait(false);
 
-                    HistoryUpdateResultCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<HistoryUpdateResult> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
 
                     ValidateResponse(batchResults, batchHistoryUpdateDetails);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchHistoryUpdateDetails);
 
-                    AddResponses<HistoryUpdateResult, HistoryUpdateResultCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -648,9 +645,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<CallResponse> CallAsync(
+        public override ValueTask<CallResponse> CallAsync(
             RequestHeader? requestHeader,
-            CallMethodRequestCollection methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerMethodCall;
@@ -663,23 +660,23 @@ namespace Technosoftware.UaClient
             }
             return CallBatchedAsync(requestHeader, methodsToCall, operationLimit, ct);
 
-            async Task<CallResponse> CallBatchedAsync(
+            async ValueTask<CallResponse> CallBatchedAsync(
                 RequestHeader? requestHeader,
-                CallMethodRequestCollection methodsToCall,
+                ArrayOf<CallMethodRequest> methodsToCall,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 CallResponse? response = null;
-                InitResponseCollections<CallMethodResult, CallMethodResultCollection>(
-                    out CallMethodResultCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<CallMethodResult>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     methodsToCall.Count,
                     operationLimit);
-                foreach (CallMethodRequestCollection batchMethodsToCall in methodsToCall
-                    .Batch<CallMethodRequest, CallMethodRequestCollection>(operationLimit))
+                foreach (ArrayOf<CallMethodRequest> batchMethodsToCall in methodsToCall
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.CallAsync(
@@ -687,13 +684,13 @@ namespace Technosoftware.UaClient
                         batchMethodsToCall,
                         ct).ConfigureAwait(false);
 
-                    CallMethodResultCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<CallMethodResult> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
 
                     ValidateResponse(batchResults, batchMethodsToCall);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchMethodsToCall);
 
-                    AddResponses<CallMethodResult, CallMethodResultCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -711,11 +708,11 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
+        public override ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             RequestHeader? requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxMonitoredItemsPerCall;
@@ -737,25 +734,25 @@ namespace Technosoftware.UaClient
                 operationLimit,
                 ct);
 
-            async Task<CreateMonitoredItemsResponse> CreateMonitoredItemsBatchedAsync(
+            async ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsBatchedAsync(
                 RequestHeader? requestHeader,
                 uint subscriptionId,
                 TimestampsToReturn timestampsToReturn,
-                MonitoredItemCreateRequestCollection itemsToCreate,
+                ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 CreateMonitoredItemsResponse? response = null;
-                InitResponseCollections<MonitoredItemCreateResult, MonitoredItemCreateResultCollection>(
-                    out MonitoredItemCreateResultCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<MonitoredItemCreateResult>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     itemsToCreate.Count,
                     operationLimit);
-                foreach (MonitoredItemCreateRequestCollection batchItemsToCreate in itemsToCreate
-                    .Batch<MonitoredItemCreateRequest, MonitoredItemCreateRequestCollection>(operationLimit))
+                foreach (ArrayOf<MonitoredItemCreateRequest> batchItemsToCreate in itemsToCreate
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.CreateMonitoredItemsAsync(
@@ -765,12 +762,12 @@ namespace Technosoftware.UaClient
                         batchItemsToCreate,
                         ct).ConfigureAwait(false);
 
-                    MonitoredItemCreateResultCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<MonitoredItemCreateResult> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
                     ValidateResponse(batchResults, batchItemsToCreate);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchItemsToCreate);
 
-                    AddResponses<MonitoredItemCreateResult, MonitoredItemCreateResultCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -788,11 +785,11 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
+        public override ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             RequestHeader? requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxMonitoredItemsPerCall;
@@ -813,25 +810,25 @@ namespace Technosoftware.UaClient
                 operationLimit,
                 ct);
 
-            async Task<ModifyMonitoredItemsResponse> ModifyMonitoredItemsBatchedAsync(
+            async ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsBatchedAsync(
                 RequestHeader? requestHeader,
                 uint subscriptionId,
                 TimestampsToReturn timestampsToReturn,
-                MonitoredItemModifyRequestCollection itemsToModify,
+                ArrayOf<MonitoredItemModifyRequest> itemsToModify,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 ModifyMonitoredItemsResponse? response = null;
-                InitResponseCollections<MonitoredItemModifyResult, MonitoredItemModifyResultCollection>(
-                    out MonitoredItemModifyResultCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<MonitoredItemModifyResult>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     itemsToModify.Count,
                     operationLimit);
-                foreach (MonitoredItemModifyRequestCollection batchItemsToModify in itemsToModify
-                    .Batch<MonitoredItemModifyRequest, MonitoredItemModifyRequestCollection>(operationLimit))
+                foreach (ArrayOf<MonitoredItemModifyRequest> batchItemsToModify in itemsToModify
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.ModifyMonitoredItemsAsync(
@@ -841,12 +838,12 @@ namespace Technosoftware.UaClient
                         batchItemsToModify,
                         ct).ConfigureAwait(false);
 
-                    MonitoredItemModifyResultCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<MonitoredItemModifyResult> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
                     ValidateResponse(batchResults, batchItemsToModify);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchItemsToModify);
 
-                    AddResponses<MonitoredItemModifyResult, MonitoredItemModifyResultCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -864,11 +861,11 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<SetMonitoringModeResponse> SetMonitoringModeAsync(
+        public override ValueTask<SetMonitoringModeResponse> SetMonitoringModeAsync(
             RequestHeader? requestHeader,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxMonitoredItemsPerCall;
@@ -890,25 +887,25 @@ namespace Technosoftware.UaClient
                 operationLimit,
                 ct);
 
-            async Task<SetMonitoringModeResponse> SetMonitoringModeBatchedAsync(
+            async ValueTask<SetMonitoringModeResponse> SetMonitoringModeBatchedAsync(
                 RequestHeader? requestHeader,
                 uint subscriptionId,
                 MonitoringMode monitoringMode,
-                UInt32Collection monitoredItemIds,
+                ArrayOf<uint> monitoredItemIds,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 SetMonitoringModeResponse? response = null;
-                InitResponseCollections<StatusCode, StatusCodeCollection>(
-                    out StatusCodeCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<StatusCode>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     monitoredItemIds.Count,
                     operationLimit);
-                foreach (UInt32Collection batchMonitoredItemIds in monitoredItemIds
-                    .Batch<uint, UInt32Collection>(operationLimit))
+                foreach (ArrayOf<uint> batchMonitoredItemIds in monitoredItemIds
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.SetMonitoringModeAsync(
@@ -918,13 +915,13 @@ namespace Technosoftware.UaClient
                         batchMonitoredItemIds,
                         ct).ConfigureAwait(false);
 
-                    StatusCodeCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<StatusCode> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
 
                     ValidateResponse(batchResults, batchMonitoredItemIds);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchMonitoredItemIds);
 
-                    AddResponses<StatusCode, StatusCodeCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -942,12 +939,12 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<SetTriggeringResponse> SetTriggeringAsync(
+        public override ValueTask<SetTriggeringResponse> SetTriggeringAsync(
             RequestHeader? requestHeader,
             uint subscriptionId,
             uint triggeringItemId,
-            UInt32Collection linksToAdd,
-            UInt32Collection linksToRemove,
+            ArrayOf<uint> linksToAdd,
+            ArrayOf<uint> linksToRemove,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxMonitoredItemsPerCall;
@@ -971,34 +968,34 @@ namespace Technosoftware.UaClient
                 operationLimit,
                 ct);
 
-            async Task<SetTriggeringResponse> SetTriggeringBatchedAsync(
+            async ValueTask<SetTriggeringResponse> SetTriggeringBatchedAsync(
                 RequestHeader? requestHeader,
                 uint subscriptionId,
                 uint triggeringItemId,
-                UInt32Collection linksToAdd,
-                UInt32Collection linksToRemove,
+                ArrayOf<uint> linksToAdd,
+                ArrayOf<uint> linksToRemove,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 SetTriggeringResponse? response = null;
-                InitResponseCollections<StatusCode, StatusCodeCollection>(
-                    out StatusCodeCollection? addResults,
-                    out DiagnosticInfoCollection? addDiagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<StatusCode>? addResults,
+                    out List<DiagnosticInfo>? addDiagnosticInfos,
+                    out List<string> stringTable,
                     linksToAdd.Count,
                     operationLimit);
-                InitResponseCollections<StatusCode, StatusCodeCollection>(
-                    out StatusCodeCollection? removeResults,
-                    out DiagnosticInfoCollection? removeDiagnosticInfos,
+                InitResponseCollections(
+                    out List<StatusCode>? removeResults,
+                    out List<DiagnosticInfo>? removeDiagnosticInfos,
                     out _,
                     linksToRemove.Count,
                     operationLimit);
-                foreach (UInt32Collection batchLinksToAdd in linksToAdd
-                    .Batch<uint, UInt32Collection>(operationLimit))
+                foreach (ArrayOf<uint> batchLinksToAdd in linksToAdd
+                    .Batch((int)operationLimit))
                 {
-                    UInt32Collection batchLinksToRemove;
+                    ArrayOf<uint> batchLinksToRemove;
                     if (operationLimit == 0)
                     {
                         batchLinksToRemove = linksToRemove;
@@ -1006,8 +1003,8 @@ namespace Technosoftware.UaClient
                     }
                     else if (batchLinksToAdd.Count < operationLimit)
                     {
-                        batchLinksToRemove = [.. linksToRemove.Take((int)operationLimit - batchLinksToAdd.Count)];
-                        linksToRemove = [.. linksToRemove.Skip(batchLinksToRemove.Count)];
+                        batchLinksToRemove = linksToRemove[..((int)operationLimit - batchLinksToAdd.Count)];
+                        linksToRemove = linksToRemove[batchLinksToRemove.Count..];
                     }
                     else
                     {
@@ -1023,17 +1020,17 @@ namespace Technosoftware.UaClient
                         batchLinksToRemove,
                         ct).ConfigureAwait(false);
 
-                    StatusCodeCollection batchAddResults = response.AddResults;
-                    DiagnosticInfoCollection batchAddDiagnosticInfos = response.AddDiagnosticInfos;
-                    StatusCodeCollection batchRemoveResults = response.RemoveResults;
-                    DiagnosticInfoCollection batchRemoveDiagnosticInfos = response.RemoveDiagnosticInfos;
+                    ArrayOf<StatusCode> batchAddResults = response.AddResults;
+                    ArrayOf<DiagnosticInfo> batchAddDiagnosticInfos = response.AddDiagnosticInfos;
+                    ArrayOf<StatusCode> batchRemoveResults = response.RemoveResults;
+                    ArrayOf<DiagnosticInfo> batchRemoveDiagnosticInfos = response.RemoveDiagnosticInfos;
 
                     ValidateResponse(batchAddResults, batchLinksToAdd);
                     ValidateDiagnosticInfos(batchAddDiagnosticInfos, batchLinksToAdd);
                     ValidateResponse(batchRemoveResults, batchLinksToRemove);
                     ValidateDiagnosticInfos(batchRemoveDiagnosticInfos, batchLinksToRemove);
 
-                    AddResponses<StatusCode, StatusCodeCollection>(
+                    AddResponses(
                         ref addResults,
                         ref addDiagnosticInfos,
                         ref stringTable,
@@ -1041,7 +1038,7 @@ namespace Technosoftware.UaClient
                         batchAddDiagnosticInfos,
                         response.ResponseHeader.StringTable);
 
-                    AddResponses<StatusCode, StatusCodeCollection>(
+                    AddResponses(
                         ref removeResults,
                         ref removeDiagnosticInfos,
                         ref stringTable,
@@ -1052,11 +1049,11 @@ namespace Technosoftware.UaClient
 
                 if (linksToRemove.Count > 0)
                 {
-                    foreach (UInt32Collection batchLinksToRemove in linksToRemove
-                        .Batch<uint, UInt32Collection>(operationLimit))
+                    foreach (ArrayOf<uint> batchLinksToRemove in linksToRemove
+                        .Batch((int)operationLimit))
                     {
                         requestHeader.RequestHandle = 0;
-                        var batchLinksToAdd = new UInt32Collection();
+                        var batchLinksToAdd = ArrayOf.Empty<uint>();
                         response = await base.SetTriggeringAsync(
                             requestHeader,
                             subscriptionId,
@@ -1065,17 +1062,17 @@ namespace Technosoftware.UaClient
                             batchLinksToRemove,
                             ct).ConfigureAwait(false);
 
-                        StatusCodeCollection batchAddResults = response.AddResults;
-                        DiagnosticInfoCollection batchAddDiagnosticInfos = response.AddDiagnosticInfos;
-                        StatusCodeCollection batchRemoveResults = response.RemoveResults;
-                        DiagnosticInfoCollection batchRemoveDiagnosticInfos = response.RemoveDiagnosticInfos;
+                        ArrayOf<StatusCode> batchAddResults = response.AddResults;
+                        ArrayOf<DiagnosticInfo> batchAddDiagnosticInfos = response.AddDiagnosticInfos;
+                        ArrayOf<StatusCode> batchRemoveResults = response.RemoveResults;
+                        ArrayOf<DiagnosticInfo> batchRemoveDiagnosticInfos = response.RemoveDiagnosticInfos;
 
                         ValidateResponse(batchAddResults, batchLinksToAdd);
                         ValidateDiagnosticInfos(batchAddDiagnosticInfos, batchLinksToAdd);
                         ValidateResponse(batchRemoveResults, batchLinksToRemove);
                         ValidateDiagnosticInfos(batchRemoveDiagnosticInfos, batchLinksToRemove);
 
-                        AddResponses<StatusCode, StatusCodeCollection>(
+                        AddResponses(
                             ref addResults,
                             ref addDiagnosticInfos,
                             ref stringTable,
@@ -1083,7 +1080,7 @@ namespace Technosoftware.UaClient
                             batchAddDiagnosticInfos,
                             response.ResponseHeader.StringTable);
 
-                        AddResponses<StatusCode, StatusCodeCollection>(
+                        AddResponses(
                             ref removeResults,
                             ref removeDiagnosticInfos,
                             ref stringTable,
@@ -1104,10 +1101,10 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
+        public override ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             RequestHeader? requestHeader,
             uint subscriptionId,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxMonitoredItemsPerCall;
@@ -1126,24 +1123,24 @@ namespace Technosoftware.UaClient
                 operationLimit,
                 ct);
 
-            async Task<DeleteMonitoredItemsResponse> DeleteMonitoredItemsBatchedAsync(
+            async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsBatchedAsync(
                 RequestHeader? requestHeader,
                 uint subscriptionId,
-                UInt32Collection monitoredItemIds,
+                ArrayOf<uint> monitoredItemIds,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 DeleteMonitoredItemsResponse? response = null;
-                InitResponseCollections<StatusCode, StatusCodeCollection>(
-                    out StatusCodeCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<StatusCode>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     monitoredItemIds.Count,
                     operationLimit);
-                foreach (UInt32Collection batchMonitoredItemIds in monitoredItemIds
-                    .Batch<uint, UInt32Collection>(operationLimit))
+                foreach (ArrayOf<uint> batchMonitoredItemIds in monitoredItemIds
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.DeleteMonitoredItemsAsync(
@@ -1151,13 +1148,13 @@ namespace Technosoftware.UaClient
                         subscriptionId,
                         batchMonitoredItemIds,
                         ct).ConfigureAwait(false);
-                    StatusCodeCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<StatusCode> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
 
                     ValidateResponse(batchResults, batchMonitoredItemIds);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchMonitoredItemIds);
 
-                    AddResponses<StatusCode, StatusCodeCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -1175,9 +1172,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<AddNodesResponse> AddNodesAsync(
+        public override ValueTask<AddNodesResponse> AddNodesAsync(
             RequestHeader? requestHeader,
-            AddNodesItemCollection nodesToAdd,
+            ArrayOf<AddNodesItem> nodesToAdd,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerNodeManagement;
@@ -1191,33 +1188,33 @@ namespace Technosoftware.UaClient
 
             return AddNodesBatchedAsync(requestHeader, nodesToAdd, operationLimit, ct);
 
-            async Task<AddNodesResponse> AddNodesBatchedAsync(
+            async ValueTask<AddNodesResponse> AddNodesBatchedAsync(
                 RequestHeader? requestHeader,
-                AddNodesItemCollection nodesToAdd,
+                ArrayOf<AddNodesItem> nodesToAdd,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 AddNodesResponse? response = null;
-                InitResponseCollections<AddNodesResult, AddNodesResultCollection>(
-                    out AddNodesResultCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<AddNodesResult>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     nodesToAdd.Count,
                     operationLimit);
-                foreach (AddNodesItemCollection batchNodesToAdd in nodesToAdd
-                    .Batch<AddNodesItem, AddNodesItemCollection>(operationLimit))
+                foreach (ArrayOf<AddNodesItem> batchNodesToAdd in nodesToAdd
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.AddNodesAsync(requestHeader, batchNodesToAdd,
                         ct).ConfigureAwait(false);
-                    AddNodesResultCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<AddNodesResult> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
                     ValidateResponse(batchResults, batchNodesToAdd);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchNodesToAdd);
 
-                    AddResponses<AddNodesResult, AddNodesResultCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -1235,9 +1232,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<AddReferencesResponse> AddReferencesAsync(
+        public override ValueTask<AddReferencesResponse> AddReferencesAsync(
             RequestHeader? requestHeader,
-            AddReferencesItemCollection referencesToAdd,
+            ArrayOf<AddReferencesItem> referencesToAdd,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerNodeManagement;
@@ -1251,23 +1248,23 @@ namespace Technosoftware.UaClient
 
             return AddReferencesBatchedAsync(requestHeader, referencesToAdd, operationLimit, ct);
 
-            async Task<AddReferencesResponse> AddReferencesBatchedAsync(
+            async ValueTask<AddReferencesResponse> AddReferencesBatchedAsync(
                 RequestHeader? requestHeader,
-                AddReferencesItemCollection referencesToAdd,
+                ArrayOf<AddReferencesItem> referencesToAdd,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 AddReferencesResponse? response = null;
-                InitResponseCollections<StatusCode, StatusCodeCollection>(
-                    out StatusCodeCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<StatusCode>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     referencesToAdd.Count,
                     operationLimit);
-                foreach (AddReferencesItemCollection batchReferencesToAdd in referencesToAdd
-                    .Batch<AddReferencesItem, AddReferencesItemCollection>(operationLimit))
+                foreach (ArrayOf<AddReferencesItem> batchReferencesToAdd in referencesToAdd
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.AddReferencesAsync(
@@ -1275,12 +1272,12 @@ namespace Technosoftware.UaClient
                         batchReferencesToAdd,
                         ct).ConfigureAwait(false);
 
-                    StatusCodeCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<StatusCode> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
                     ValidateResponse(batchResults, batchReferencesToAdd);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchReferencesToAdd);
 
-                    AddResponses<StatusCode, StatusCodeCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -1298,9 +1295,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<DeleteNodesResponse> DeleteNodesAsync(
+        public override ValueTask<DeleteNodesResponse> DeleteNodesAsync(
             RequestHeader? requestHeader,
-            DeleteNodesItemCollection nodesToDelete,
+            ArrayOf<DeleteNodesItem> nodesToDelete,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerNodeManagement;
@@ -1314,23 +1311,23 @@ namespace Technosoftware.UaClient
 
             return DeleteNodesBatchedAsync(requestHeader, nodesToDelete, operationLimit, ct);
 
-            async Task<DeleteNodesResponse> DeleteNodesBatchedAsync(
+            async ValueTask<DeleteNodesResponse> DeleteNodesBatchedAsync(
                 RequestHeader? requestHeader,
-                DeleteNodesItemCollection nodesToDelete,
+                ArrayOf<DeleteNodesItem> nodesToDelete,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 DeleteNodesResponse? response = null;
-                InitResponseCollections<StatusCode, StatusCodeCollection>(
-                    out StatusCodeCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<StatusCode>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     nodesToDelete.Count,
                     operationLimit);
-                foreach (DeleteNodesItemCollection batchNodesToDelete in nodesToDelete
-                    .Batch<DeleteNodesItem, DeleteNodesItemCollection>(operationLimit))
+                foreach (ArrayOf<DeleteNodesItem> batchNodesToDelete in nodesToDelete
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.DeleteNodesAsync(
@@ -1338,12 +1335,12 @@ namespace Technosoftware.UaClient
                         batchNodesToDelete,
                         ct).ConfigureAwait(false);
 
-                    StatusCodeCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<StatusCode> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
                     ValidateResponse(batchResults, batchNodesToDelete);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchNodesToDelete);
 
-                    AddResponses<StatusCode, StatusCodeCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -1361,9 +1358,9 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public override Task<DeleteReferencesResponse> DeleteReferencesAsync(
+        public override ValueTask<DeleteReferencesResponse> DeleteReferencesAsync(
             RequestHeader? requestHeader,
-            DeleteReferencesItemCollection referencesToDelete,
+            ArrayOf<DeleteReferencesItem> referencesToDelete,
             CancellationToken ct)
         {
             uint operationLimit = OperationLimits.MaxNodesPerNodeManagement;
@@ -1377,23 +1374,23 @@ namespace Technosoftware.UaClient
 
             return DeleteReferencesBatchedAsync(requestHeader, referencesToDelete, operationLimit, ct);
 
-            async Task<DeleteReferencesResponse> DeleteReferencesBatchedAsync(
+            async ValueTask<DeleteReferencesResponse> DeleteReferencesBatchedAsync(
                 RequestHeader? requestHeader,
-                DeleteReferencesItemCollection referencesToDelete,
+                ArrayOf<DeleteReferencesItem> referencesToDelete,
                 uint operationLimit,
                 CancellationToken ct)
             {
                 using Activity? activity = m_telemetry.StartActivity();
                 requestHeader ??= new RequestHeader();
                 DeleteReferencesResponse? response = null;
-                InitResponseCollections<StatusCode, StatusCodeCollection>(
-                    out StatusCodeCollection? results,
-                    out DiagnosticInfoCollection? diagnosticInfos,
-                    out StringCollection? stringTable,
+                InitResponseCollections(
+                    out List<StatusCode>? results,
+                    out List<DiagnosticInfo>? diagnosticInfos,
+                    out List<string> stringTable,
                     referencesToDelete.Count,
                     operationLimit);
-                foreach (DeleteReferencesItemCollection batchReferencesToDelete in referencesToDelete
-                    .Batch<DeleteReferencesItem, DeleteReferencesItemCollection>(operationLimit))
+                foreach (ArrayOf<DeleteReferencesItem> batchReferencesToDelete in referencesToDelete
+                    .Batch((int)operationLimit))
                 {
                     requestHeader.RequestHandle = 0;
                     response = await base.DeleteReferencesAsync(
@@ -1401,12 +1398,12 @@ namespace Technosoftware.UaClient
                         batchReferencesToDelete,
                         ct).ConfigureAwait(false);
 
-                    StatusCodeCollection batchResults = response.Results;
-                    DiagnosticInfoCollection batchDiagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<StatusCode> batchResults = response.Results;
+                    ArrayOf<DiagnosticInfo> batchDiagnosticInfos = response.DiagnosticInfos;
                     ValidateResponse(batchResults, batchReferencesToDelete);
                     ValidateDiagnosticInfos(batchDiagnosticInfos, batchReferencesToDelete);
 
-                    AddResponses<StatusCode, StatusCodeCollection>(
+                    AddResponses(
                         ref results,
                         ref diagnosticInfos,
                         ref stringTable,
@@ -1432,7 +1429,7 @@ namespace Technosoftware.UaClient
         {
             if (response is null)
             {
-                throw new ServiceResultException(StatusCodes.BadUnexpectedError,
+                throw ServiceResultException.Unexpected(
                     "Empty ops should have been covered in fast path");
             }
         }
@@ -1441,7 +1438,6 @@ namespace Technosoftware.UaClient
         /// Initialize the collections for a service call.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <typeparam name="C"></typeparam>
         /// <param name="results"></param>
         /// <param name="diagnosticInfos"></param>
         /// <param name="stringTable"></param>
@@ -1451,17 +1447,16 @@ namespace Technosoftware.UaClient
         /// Preset the result collections with null if the operation limit
         /// is sufficient or with the final size if batching is necessary.
         /// </remarks>
-        private static void InitResponseCollections<T, C>(
-            out C results,
-            out DiagnosticInfoCollection diagnosticInfos,
-            out StringCollection stringTable,
+        private static void InitResponseCollections<T>(
+            out List<T> results,
+            out List<DiagnosticInfo> diagnosticInfos,
+            out List<string> stringTable,
             int count,
             uint operationLimit)
-            where C : List<T>, new()
         {
             Debug.Assert(count > operationLimit);
-            results = new C { Capacity = count };
-            diagnosticInfos = new DiagnosticInfoCollection(count);
+            results = new List<T>(count);
+            diagnosticInfos = new List<DiagnosticInfo>(count);
             stringTable = [];
         }
 
@@ -1469,7 +1464,6 @@ namespace Technosoftware.UaClient
         /// Add the result of a batched service call to the results.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <typeparam name="C"></typeparam>
         /// <param name="results"></param>
         /// <param name="diagnosticInfos"></param>
         /// <param name="stringTable"></param>
@@ -1482,13 +1476,13 @@ namespace Technosoftware.UaClient
         /// collections otherwise.
         /// The string table indexes are updated in the diagnostic infos if necessary.
         /// </remarks>
-        private static void AddResponses<T, C>(
-            ref C results,
-            ref DiagnosticInfoCollection diagnosticInfos,
-            ref StringCollection stringTable,
-            C batchedResults,
-            DiagnosticInfoCollection batchedDiagnosticInfos,
-            StringCollection batchedStringTable) where C : List<T>
+        private static void AddResponses<T>(
+            ref List<T> results,
+            ref List<DiagnosticInfo> diagnosticInfos,
+            ref List<string> stringTable,
+            ArrayOf<T> batchedResults,
+            ArrayOf<DiagnosticInfo> batchedDiagnosticInfos,
+            ArrayOf<string> batchedStringTable)
         {
             bool hasDiagnosticInfos = diagnosticInfos.Count > 0;
             bool hasEmptyDiagnosticInfos = diagnosticInfos.Count == 0 && results.Count > 0;
@@ -1507,7 +1501,9 @@ namespace Technosoftware.UaClient
                 // fill missing diagnostics infos with null entries
                 for (int i = 0; i < correctionCount; i++)
                 {
-                    diagnosticInfos.Add(null);
+                    // DiagnosticInfoCollection accepts null sentinels even though the
+                    // declared element type is non-nullable; null marks a "missing" slot.
+                    diagnosticInfos.Add(null!);
                 }
             }
             else if (batchedStringTable.Count > 0)
@@ -1519,11 +1515,12 @@ namespace Technosoftware.UaClient
                     UpdateDiagnosticInfoIndexes(diagnosticInfo, stringTableOffset);
                 }
             }
+
             results.AddRange(batchedResults);
             diagnosticInfos.AddRange(batchedDiagnosticInfos);
             stringTable.AddRange(batchedStringTable);
 
-            static void UpdateDiagnosticInfoIndexes(DiagnosticInfo diagnosticInfo,
+            static void UpdateDiagnosticInfoIndexes(DiagnosticInfo? diagnosticInfo,
                 int stringTableOffset)
             {
                 int depth = 0;
@@ -1551,48 +1548,5 @@ namespace Technosoftware.UaClient
         }
 
         private readonly ITelemetryContext m_telemetry;
-    }
-
-    /// <summary>
-    /// Extension helpers for client service calls.
-    /// </summary>
-    public static partial class SessionClientExtensions
-    {
-        /// <summary>
-        /// Returns batches of a collection for processing.
-        /// </summary>
-        /// <remarks>
-        /// Returns the original collection if batchsize is 0 or the collection count is smaller than the batch size.
-        /// </remarks>
-        /// <typeparam name="T">The type of the items in the collection.</typeparam>
-        /// <typeparam name="C">The type of the items in the collection.</typeparam>
-        /// <param name="collection">The collection from which items are batched.</param>
-        /// <param name="batchSize">The size of a batch.</param>
-        /// <returns>The collection.</returns>
-        internal static IEnumerable<C> Batch<T, C>(this C collection, uint batchSize)
-            where C : List<T>, new()
-        {
-            if (collection.Count < batchSize || batchSize == 0)
-            {
-                yield return collection;
-            }
-            else
-            {
-                var nextbatch = new C { Capacity = (int)batchSize };
-                foreach (T item in collection)
-                {
-                    nextbatch.Add(item);
-                    if (nextbatch.Count == batchSize)
-                    {
-                        yield return nextbatch;
-                        nextbatch = new C { Capacity = (int)batchSize };
-                    }
-                }
-                if (nextbatch.Count > 0)
-                {
-                    yield return nextbatch;
-                }
-            }
-        }
     }
 }
