@@ -56,7 +56,7 @@ namespace SampleCompany.NodeManagers.Alarms
 
                 BaseEventState alarm = GetAlarm();
 
-                alarm.EventId.Value = Guid.NewGuid().ToByteArray();
+                alarm.EventId.Value = Guid.NewGuid().ToByteArray().ToByteString();
                 alarm.EventType.Value = new NodeId(
                     alarmTypeIdentifier,
                     GetNameSpaceIndex(alarmTypeIdentifier));
@@ -82,10 +82,10 @@ namespace SampleCompany.NodeManagers.Alarms
             return alarm;
         }
 
-        protected bool IsEvent(byte[] eventId)
+        protected bool IsEvent(ByteString eventId)
         {
             bool isEvent = false;
-            if (GetAlarm().EventId.Value.SequenceEqual(eventId))
+            if (GetAlarm().EventId.Value == eventId)
             {
                 isEvent = true;
             }

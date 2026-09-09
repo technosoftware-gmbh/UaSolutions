@@ -108,7 +108,7 @@ namespace SampleCompany.NodeManagers.Boiler
 
             string name = Utils.Format("Boiler #{0}", unitNumber);
 
-            boiler.Create(context, null, new QualifiedName(name, m_namespaceIndex), default, true);
+            boiler.Create(context, default, new QualifiedName(name, m_namespaceIndex), default, true);
 
             NodeState folder = FindPredefinedNode<NodeState>(
                 ExpandedNodeId.ToNodeId(ObjectIds.Boilers, Server.NamespaceUris));
@@ -131,7 +131,7 @@ namespace SampleCompany.NodeManagers.Boiler
 
             // Autostart boiler simulation state machine
             MethodState start = boiler.Simulation.Start;
-            IList<Variant> inputArguments = [];
+            ArrayOf<Variant> inputArguments = [];
             IList<Variant> outputArguments = [];
             var errors = new List<ServiceResult>();
             start.Call(context, boiler.NodeId, inputArguments, errors, outputArguments);
@@ -209,7 +209,7 @@ namespace SampleCompany.NodeManagers.Boiler
 
                     // Autostart boiler simulation state machine
                     MethodState start = activeNode.Simulation.Start;
-                    IList<Variant> inputArguments = [];
+                    ArrayOf<Variant> inputArguments = [];
                     IList<Variant> outputArguments = [];
                     var errors = new List<ServiceResult>();
                     start.Call(context, activeNode.NodeId, inputArguments, errors, outputArguments);

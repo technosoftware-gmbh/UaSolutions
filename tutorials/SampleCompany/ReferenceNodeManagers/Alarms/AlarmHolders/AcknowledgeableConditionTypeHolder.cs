@@ -130,7 +130,7 @@ namespace SampleCompany.NodeManagers.Alarms
             return (AcknowledgeableConditionState)alarm;
         }
 
-        private AcknowledgeableConditionState GetAlarmOrBranch(byte[] eventId)
+        private AcknowledgeableConditionState GetAlarmOrBranch(ByteString eventId)
         {
             AcknowledgeableConditionState alarmOrBranch = null;
 
@@ -146,10 +146,10 @@ namespace SampleCompany.NodeManagers.Alarms
         private ServiceResult OnAcknowledge(
             ISystemContext context,
             ConditionState condition,
-            byte[] eventId,
+            ByteString eventId,
             LocalizedText comment)
         {
-            string eventIdString = Utils.ToHexString(eventId);
+            string eventIdString = eventId.ToHexString();
 
             if (m_acked.Contains(eventIdString))
             {
@@ -196,10 +196,10 @@ namespace SampleCompany.NodeManagers.Alarms
         private ServiceResult OnConfirm(
             ISystemContext context,
             ConditionState condition,
-            byte[] eventId,
+            ByteString eventId,
             LocalizedText comment)
         {
-            string eventIdString = Utils.ToHexString(eventId);
+            string eventIdString = eventId.ToHexString();
 
             Log(
                 "OnConfirm",

@@ -89,7 +89,7 @@ namespace SampleCompany.NodeManagers.Alarms
             base.Initialize(alarmTypeIdentifier, name);
 
             alarm.SetActiveState(SystemContext, active: false);
-            alarm.InputNode.Value = new NodeId(m_trigger.NodeId);
+            alarm.InputNode.Value = m_trigger.NodeId;
 
             if (Optional)
             {
@@ -100,7 +100,7 @@ namespace SampleCompany.NodeManagers.Alarms
                     oneShot: false,
                     shelvingTime: double.MaxValue);
                 alarm.ShelvingState.LastTransition.Value = new LocalizedText(string.Empty);
-                alarm.ShelvingState.LastTransition.Id.Value = 0;
+                alarm.ShelvingState.LastTransition.Id.Value = default;
 
                 alarm.OnShelve = OnShelve;
                 alarm.OnTimedUnshelve = OnTimedUnshelve;

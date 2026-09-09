@@ -692,7 +692,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                 {
                     m_nextSampleTime = DateTime.UtcNow.Ticks;
                     m_lastError = null;
-                    m_lastValue = null;
+                    m_lastValue = default;
                 }
 
                 MonitoringMode = monitoringMode;
@@ -814,7 +814,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             // set semantics changed bit.
             if (m_semanticsChanged)
             {
-                value?.StatusCode = value.StatusCode.SetSemanticsChanged(true);
+                value = value.WithStatus(value.StatusCode.SetSemanticsChanged(true));
 
                 m_semanticsChanged = false;
             }
@@ -822,7 +822,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             // set structure changed bit.
             if (m_structureChanged)
             {
-                value?.StatusCode = value.StatusCode.SetStructureChanged(true);
+                value = value.WithStatus(value.StatusCode.SetStructureChanged(true));
 
                 m_structureChanged = false;
             }

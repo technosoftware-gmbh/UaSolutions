@@ -207,7 +207,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         {
             if (ItemsInQueue == 0)
             {
-                return null;
+                return default;
             }
 
             if (m_enqueueBatch.Values.Count > 0)
@@ -228,7 +228,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         /// <inheritdoc/>
         public bool Dequeue(out DataValue value, out ServiceResult error)
         {
-            value = null;
+            value = default;
             error = null;
 
             // check for empty queue.
@@ -300,7 +300,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             // check for empty queue.
             if (ItemsInQueue == 0)
             {
-                return null;
+                return default;
             }
 
             return m_dequeueBatch.Values[0].Item1;

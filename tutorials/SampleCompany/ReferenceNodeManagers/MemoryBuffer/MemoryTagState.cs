@@ -38,7 +38,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 Utils.Format("{1:X8}", parent.SymbolicName, offet),
                 parent.TypeDefinitionId.NamespaceIndex);
             DisplayName = new LocalizedText(BrowseName.Name);
-            Description = null;
+            Description = default;
             WriteMask = AttributeWriteMask.None;
             UserWriteMask = AttributeWriteMask.None;
             ReferenceTypeId = ReferenceTypeIds.HasComponent;
@@ -49,7 +49,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             NumericId = offet;
             DataType = new NodeId((uint)parent.ElementType);
             ValueRank = ValueRanks.Scalar;
-            ArrayDimensions = null;
+            ArrayDimensions = default;
             AccessLevel = AccessLevels.CurrentReadOrWrite;
             UserAccessLevel = AccessLevels.CurrentReadOrWrite;
             MinimumSamplingInterval = parent.MaximumScanRate;

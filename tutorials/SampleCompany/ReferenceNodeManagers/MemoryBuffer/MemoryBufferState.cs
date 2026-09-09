@@ -236,7 +236,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                     return StatusCodes.BadOutOfService;
                 }
 
-                value = GetValueAtOffset(offset).Value;
+                value = GetValueAtOffset(offset);
             }
 
             statusCode = StatusCodes.Good;
@@ -304,26 +304,25 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 {
                     case BuiltInType.UInt32:
                     {
-                        uint? valueToWrite = value as uint?;
-
-                        if (valueToWrite == null)
+                        // The written value arrives as a Variant in 2.0, so
+                        // the type check is a TryGetValue rather than an "as"
+                        // against a nullable box.
+                        if (!value.TryGetValue(out uint uintToWrite))
                         {
                             return StatusCodes.BadTypeMismatch;
                         }
 
-                        bytes = BitConverter.GetBytes(valueToWrite.Value);
+                        bytes = BitConverter.GetBytes(uintToWrite);
                         break;
                     }
                     case BuiltInType.Double:
                     {
-                        double? valueToWrite = value as double?;
-
-                        if (valueToWrite == null)
+                        if (!value.TryGetValue(out double doubleToWrite))
                         {
                             return StatusCodes.BadTypeMismatch;
                         }
 
-                        bytes = BitConverter.GetBytes(valueToWrite.Value);
+                        bytes = BitConverter.GetBytes(doubleToWrite);
                         break;
                     }
                     case >= BuiltInType.Null and <= BuiltInType.Enumeration:

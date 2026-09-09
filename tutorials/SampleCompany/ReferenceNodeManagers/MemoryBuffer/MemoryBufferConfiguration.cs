@@ -14,8 +14,7 @@
 #endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System.Collections.Generic;
-using System.Runtime.Serialization;
+using Opc.Ua;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.MemoryBuffer
@@ -23,100 +22,51 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
     /// <summary>
     /// Stores the configuration the test node manager
     /// </summary>
-    [DataContract(Namespace = Namespaces.MemoryBuffer)]
-    public class MemoryBufferConfiguration
+    /// <remarks>
+    /// ApplicationConfiguration.ParseExtension&lt;T&gt; constrains T to
+    /// IEncodeable in 2.0, so the configuration is described with [DataType]
+    /// and its encodeable implementation is generated rather than
+    /// hand-written; the DataContractSerializer attributes it carried before
+    /// are gone. Namespaces.MemoryBuffer is emitted by the same generator
+    /// pass and so cannot be referenced here - the namespace URI is spelled
+    /// out instead.
+    /// </remarks>
+    [DataType(Namespace = "http://samplecompany.com/SampleServer/NodeManagers/MemoryBuffer")]
+    public partial class MemoryBufferConfiguration
     {
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
-        public MemoryBufferConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing]
-        private void Initialize(StreamingContext context)
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
-        private void Initialize()
-        {
-            Buffers = null;
-        }
-
         /// <summary>
         /// The buffers exposed by the memory
         /// </summary>
-        [DataMember(Order = 1)]
-        public MemoryBufferInstanceCollection Buffers { get; set; }
+        [DataTypeField(Order = 1, StructureHandling = StructureHandling.Inline)]
+        public ArrayOf<MemoryBufferInstance> Buffers { get; set; }
     }
 
     /// <summary>
     /// Stores the configuration for a memory buffer instance.
     /// </summary>
-    [DataContract(Namespace = Namespaces.MemoryBuffer)]
-    public class MemoryBufferInstance
+    /// <remarks>
+    /// See <see cref="MemoryBufferConfiguration"/> for why the namespace URI
+    /// is spelled out rather than taken from Namespaces.MemoryBuffer.
+    /// </remarks>
+    [DataType(Namespace = "http://samplecompany.com/SampleServer/NodeManagers/MemoryBuffer")]
+    public partial class MemoryBufferInstance
     {
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
-        public MemoryBufferInstance()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing]
-        private void Initialize(StreamingContext context)
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
-        private void Initialize()
-        {
-            Name = null;
-            TagCount = 0;
-            DataType = null;
-        }
-
         /// <summary>
         /// The browse name for the instance.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataTypeField(Order = 1)]
         public string Name { get; set; }
 
         /// <summary>
         /// The number of tags in the buffer.
         /// </summary>
-        [DataMember(Order = 2)]
+        [DataTypeField(Order = 2)]
         public int TagCount { get; set; }
 
         /// <summary>
         /// The data type of the tags in the buffer.
         /// </summary>
-        [DataMember(Order = 3)]
+        [DataTypeField(Order = 3)]
         public string DataType { get; set; }
     }
-
-    /// <summary>
-    /// A collection of MemoryBufferInstances.
-    /// </summary>
-    [CollectionDataContract(
-        Name = "ListOfMemoryBufferInstance",
-        Namespace = Namespaces.MemoryBuffer,
-        ItemName = "MemoryBufferInstance"
-    )]
-    public class MemoryBufferInstanceCollection : List<MemoryBufferInstance>;
 }

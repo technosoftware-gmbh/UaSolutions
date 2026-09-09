@@ -246,7 +246,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     // check if the node has been deleted.
                     if ((masks & NodeStateChangeMasks.Deleted) != 0)
                     {
-                        monitoredItem.QueueValue(null, StatusCodes.BadNodeIdUnknown, false);
+                        monitoredItem.QueueValue(default, StatusCodes.BadNodeIdUnknown, false);
                         continue;
                     }
 

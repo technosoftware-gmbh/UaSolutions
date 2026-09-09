@@ -896,9 +896,9 @@ namespace SampleCompany.NodeManagers.Alarms
 
                 if (holder != null && holder.HasBranches())
                 {
-                    byte[] eventId = GetEventIdFromAckConfirmMethod(methodToCall);
+                    ByteString eventId = GetEventIdFromAckConfirmMethod(methodToCall);
 
-                    if (eventId != null)
+                    if (!eventId.IsNull)
                     {
                         BaseEventState state = holder.GetBranch(eventId);
 
@@ -938,16 +938,15 @@ namespace SampleCompany.NodeManagers.Alarms
             return isAckConfirm;
         }
 
-        private static byte[] GetEventIdFromAckConfirmMethod(CallMethodRequest request)
+        private static ByteString GetEventIdFromAckConfirmMethod(CallMethodRequest request)
         {
-            byte[] eventId = null;
+            ByteString eventId = default;
 
             // Bad magic Numbers hereStart
-            if (request.InputArguments != null &&
-                request.InputArguments.Count == 2 &&
+            if (request.InputArguments.Count == 2 &&
                 request.InputArguments[0].TypeInfo.BuiltInType.Equals(BuiltInType.ByteString))
             {
-                eventId = (byte[])request.InputArguments[0].Value;
+                request.InputArguments[0].TryGetValue(out eventId);
             }
             return eventId;
         }

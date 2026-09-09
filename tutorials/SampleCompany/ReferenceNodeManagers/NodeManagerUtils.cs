@@ -38,7 +38,7 @@ namespace SampleCompany.NodeManagers
         /// </summary>
         public static async Task ApplyCTTModeAsync(TextWriter output, UaStandardServer server)
         {
-            var methodsToCall = new CallMethodRequestCollection();
+            var methodsToCall = new List<CallMethodRequest>();
             int index = server.CurrentInstance.NamespaceUris.GetIndex(Alarms.Namespaces.Alarms);
             if (index > 0)
             {
@@ -58,7 +58,7 @@ namespace SampleCompany.NodeManagers
                         TimeoutHint = 10000
                     };
                     var context = new UaServerOperationContext(requestHeader, null, RequestType.Call);
-                    (CallMethodResultCollection results, DiagnosticInfoCollection diagnosticInfos) = await server.CurrentInstance.NodeManager.CallAsync(
+                    (CallMethodResultCollection results, List<DiagnosticInfo> diagnosticInfos) = await server.CurrentInstance.NodeManager.CallAsync(
                         context,
                         methodsToCall)
                         .ConfigureAwait(false);

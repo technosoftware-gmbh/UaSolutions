@@ -106,7 +106,7 @@ namespace SampleCompany.NodeManagers.Alarms
                     NodeId branchId = GetNewBranchId();
                     ConditionState branch = alarm.CreateBranch(SystemContext, branchId);
 
-                    string postEventId = Utils.ToHexString(branch.EventId.Value);
+                    string postEventId = branch.EventId.Value.ToHexString();
 
                     Log(
                         "CreateBranch",
@@ -150,7 +150,7 @@ namespace SampleCompany.NodeManagers.Alarms
 
             if (alarm.EnabledState.Id.Value)
             {
-                alarm.EventId.Value = Guid.NewGuid().ToByteArray();
+                alarm.EventId.Value = Guid.NewGuid().ToByteArray().ToByteString();
                 alarm.Time.Value = DateTime.UtcNow;
                 alarm.ReceiveTime.Value = alarm.Time.Value;
 
@@ -250,7 +250,7 @@ namespace SampleCompany.NodeManagers.Alarms
             return (ConditionState)alarm;
         }
 
-        protected bool IsEvent(string caller, byte[] eventId)
+        protected bool IsEvent(string caller, ByteString eventId)
         {
             bool isEvent = IsEvent(eventId);
 
@@ -262,9 +262,9 @@ namespace SampleCompany.NodeManagers.Alarms
             return isEvent;
         }
 
-        protected string EventErrorMessage(byte[] eventId)
+        protected string EventErrorMessage(ByteString eventId)
         {
-            return " Requested Event " + Utils.ToHexString(eventId);
+            return " Requested Event " + eventId.ToHexString();
         }
 
         public ServiceResult OnEnableDisableAlarm(
@@ -299,7 +299,7 @@ namespace SampleCompany.NodeManagers.Alarms
         private ServiceResult OnAddComment(
             ISystemContext context,
             ConditionState condition,
-            byte[] eventId,
+            ByteString eventId,
             LocalizedText comment)
         {
             ConditionState alarm = GetAlarm();
@@ -307,7 +307,7 @@ namespace SampleCompany.NodeManagers.Alarms
             ConditionState alarmOrBranch = alarm.GetEventByEventId(eventId);
             if (alarmOrBranch == null)
             {
-                string errorMessage = "Unknown event id " + Utils.ToHexString(eventId);
+                string errorMessage = "Unknown event id " + eventId.ToHexString();
                 alarm.Message.Value = new LocalizedText("OnAddComment " + errorMessage);
                 LogError("OnAddComment", errorMessage);
                 return StatusCodes.BadEventIdUnknown;

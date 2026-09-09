@@ -624,7 +624,7 @@ namespace SampleCompany.NodeManagers.TestData
 
             return new VectorWithOptionalFields
             {
-                EncodingMask = encodingMask,
+                EncodingMask = (uint)encodingMask,
                 X = m_generator.GetRandomDouble(),
                 Y = m_generator.GetRandomDouble(),
                 Z = m_generator.GetRandomDouble()
@@ -817,8 +817,8 @@ namespace SampleCompany.NodeManagers.TestData
                     }
                     else
                     {
-                        object value = ReadValue(variable);
-                        if (value != null)
+                        Variant value = ReadValue(variable);
+                        if (!value.IsNull)
                         {
                             var sample = new Sample
                             {
