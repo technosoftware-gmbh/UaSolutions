@@ -353,7 +353,7 @@ namespace Technosoftware.UaClient
         /// <returns></returns>
         /// <exception cref="ServiceResultException"></exception>
         public async ValueTask<ResultSet<ArrayOf<ReferenceDescription>>> BrowseAsync(
-            IReadOnlyList<NodeId> nodesToBrowse,
+            ArrayOf<NodeId> nodesToBrowse,
             CancellationToken ct = default)
         {
             BrowserOptions state = State;

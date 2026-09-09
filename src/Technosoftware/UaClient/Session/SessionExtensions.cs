@@ -43,7 +43,7 @@ namespace Technosoftware.UaClient
             IUserIdentity identity,
             CancellationToken ct = default)
         {
-            return session.OpenAsync(sessionName, 0, identity, null, ct);
+            return session.OpenAsync(sessionName, 0, identity, default, ct);
         }
 
         /// <summary>
@@ -248,7 +248,7 @@ namespace Technosoftware.UaClient
             var errors = new List<ServiceResult>();
 
             // build list of paths to translate.
-            ArrayOf<BrowsePath> pathsToTranslate = componentPaths.ToArrayOf().ConvertAll(
+            ArrayOf<BrowsePath> pathsToTranslate = componentPaths.ConvertAll(
                 componentPath => new BrowsePath
                 {
                     StartingNode = instanceId,
