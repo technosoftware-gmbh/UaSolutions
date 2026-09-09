@@ -96,7 +96,7 @@ namespace Technosoftware.UaClient
                     Activity.Current.Context,
                     out AdditionalParametersType traceData);
 
-                if (request.RequestHeader.AdditionalHeader == null)
+                if (request.RequestHeader.AdditionalHeader.IsNull)
                 {
                     request.RequestHeader.AdditionalHeader = new ExtensionObject(traceData);
                 }

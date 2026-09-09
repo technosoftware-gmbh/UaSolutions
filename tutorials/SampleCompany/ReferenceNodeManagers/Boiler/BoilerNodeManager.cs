@@ -147,7 +147,7 @@ namespace SampleCompany.NodeManagers.Boiler
         {
             LocalizedText displayName = instance.DisplayName;
 
-            if (displayName != null)
+            if (!displayName.IsNull)
             {
                 string text = displayName.Text;
 

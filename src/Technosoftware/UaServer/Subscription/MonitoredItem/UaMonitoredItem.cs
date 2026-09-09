@@ -853,7 +853,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // make a shallow copy of the value.
-                if (value != null)
+                if (!value.IsNull)
                 {
                     if (m_logger.IsEnabled(LogLevel.Trace))
                     {
@@ -880,7 +880,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // create empty value if none provided.
-                if (ServiceResult.IsBad(error) && value == null)
+                if (ServiceResult.IsBad(error) && value.IsNull)
                 {
                     value = new DataValue()
                         .WithStatus(error.StatusCode)
@@ -889,7 +889,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // this should never happen.
-                if (value == null)
+                if (value.IsNull)
                 {
                     return;
                 }
@@ -907,7 +907,7 @@ namespace Technosoftware.UaServer
 
                     DataValue processedValue = m_calculator.GetProcessedValue(false);
 
-                    while (processedValue != null)
+                    while (!processedValue.IsNull)
                     {
                         AddValueToQueue(processedValue, null);
                         processedValue = m_calculator.GetProcessedValue(false);
@@ -941,7 +941,7 @@ namespace Technosoftware.UaServer
                 overflow = m_dataChangeQueueHandler.QueueValue(value, error);
             }
 
-            if (m_lastValue != null)
+            if (!m_lastValue.IsNull)
             {
                 m_readyToTrigger = true;
             }
@@ -1373,7 +1373,7 @@ namespace Technosoftware.UaServer
                     {
                         DataValue processedValue = m_calculator.GetProcessedValue(false);
 
-                        while (processedValue != null)
+                        while (!processedValue.IsNull)
                         {
                             AddValueToQueue(processedValue, null);
                         }
@@ -1598,7 +1598,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
         protected virtual bool ApplyFilter(DataValue value, ServiceResult error)
         {
-            if (value == null)
+            if (value.IsNull)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -1624,7 +1624,7 @@ namespace Technosoftware.UaServer
             DataChangeFilter filter,
             double range)
         {
-            if (value == null)
+            if (value.IsNull)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -1656,7 +1656,7 @@ namespace Technosoftware.UaServer
             {
                 status = error.StatusCode;
             }
-            else if (lastValue != null)
+            else if (!lastValue.IsNull)
             {
                 status = value.StatusCode;
             }
@@ -1668,7 +1668,7 @@ namespace Technosoftware.UaServer
             {
                 lastStatus = lastError.StatusCode;
             }
-            else if (lastValue != null)
+            else if (!lastValue.IsNull)
             {
                 lastStatus = lastValue.StatusCode;
             }
@@ -1682,7 +1682,7 @@ namespace Technosoftware.UaServer
             }
 
             // value changed if only one is null.
-            if (lastValue == null)
+            if (lastValue.IsNull)
             {
                 return true;
             }
@@ -1915,7 +1915,7 @@ namespace Technosoftware.UaServer
                             DiagnosticsMasks);
                         m_dataChangeQueueHandler.SetSamplingInterval(m_samplingInterval);
 
-                        if (queueLastValue && m_lastValue != null)
+                        if (queueLastValue && !m_lastValue.IsNull)
                         {
                             m_dataChangeQueueHandler.QueueValue(m_lastValue, m_lastError);
                         }

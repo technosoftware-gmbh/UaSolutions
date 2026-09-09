@@ -951,7 +951,7 @@ namespace Technosoftware.UaServer
                         Server.NamespaceUris,
                         Server.TypeTree);
 
-                    if (typeInfo == null)
+                    if (typeInfo.IsUnknown)
                     {
                         errors[ii] = StatusCodes.BadTypeMismatch;
                         continue;
@@ -3558,7 +3558,7 @@ namespace Technosoftware.UaServer
             // check filter.
             DataChangeFilter datachangeFilter = null;
 
-            if (filter != null)
+            if (!filter.IsNull)
             {
                 datachangeFilter = filter.Body as DataChangeFilter;
             }

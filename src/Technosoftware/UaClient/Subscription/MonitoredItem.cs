@@ -533,7 +533,7 @@ namespace Technosoftware.UaClient
 
                 if (m_dataCache != null && newValue is MonitoredItemNotification datachange)
                 {
-                    if (datachange.Value != null)
+                    if (!datachange.Value.IsNull)
                     {
                         if (validateTimestamp)
                         {

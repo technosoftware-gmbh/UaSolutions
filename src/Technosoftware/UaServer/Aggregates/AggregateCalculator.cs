@@ -83,7 +83,7 @@ namespace Technosoftware.UaServer
         public bool QueueRawValue(DataValue value)
         {
             // ignore bad data.
-            if (value == null)
+            if (value.IsNull)
             {
                 return false;
             }
@@ -336,12 +336,12 @@ namespace Technosoftware.UaServer
         /// <returns>Less than 0 if value1 is earlier than value2; 0 if they are equal; Greater than zero otherwise.</returns>
         protected int CompareTimestamps(DataValue value1, DataValue value2)
         {
-            if (value1 == null)
+            if (value1.IsNull)
             {
-                return value2 == null ? 0 : -1;
+                return value2.IsNull ? 0 : -1;
             }
 
-            if (value2 == null)
+            if (value2.IsNull)
             {
                 return +1;
             }
@@ -380,7 +380,7 @@ namespace Technosoftware.UaServer
         {
             if (value2 == null)
             {
-                return value1 == null ? 0 : +1;
+                return value1.IsNull ? 0 : +1;
             }
 
             return CompareTimestamps(value1, value2.Value);
@@ -417,7 +417,7 @@ namespace Technosoftware.UaServer
         /// <returns>Less than 0 if value1 is earlier than value2; 0 if they are equal; Greater than zero otherwise.</returns>
         protected int CompareTimestamps(DateTime value1, LinkedListNode<DataValue> value2)
         {
-            if (value2 == null || value2.Value == null)
+            if (value2 == null || value2.Value.IsNull)
             {
                 return +1;
             }
@@ -443,7 +443,7 @@ namespace Technosoftware.UaServer
         /// <returns>True if the value is good.</returns>
         protected bool IsGood(DataValue value)
         {
-            if (value == null)
+            if (value.IsNull)
             {
                 return false;
             }
@@ -1062,7 +1062,7 @@ namespace Technosoftware.UaServer
             // add the start point.
             DataValue startBound = GetSimpleBound(slice.StartTime, slice);
 
-            if (startBound != null)
+            if (!startBound.IsNull)
             {
                 values.Add(startBound);
             }
@@ -1084,7 +1084,7 @@ namespace Technosoftware.UaServer
             // add the end point.
             DataValue endBound = GetSimpleBound(slice.EndTime, slice);
 
-            if (endBound != null)
+            if (!endBound.IsNull)
             {
                 values.Add(endBound);
             }
@@ -1154,7 +1154,7 @@ namespace Technosoftware.UaServer
             // add the start point.
             DataValue startBound = Interpolate(slice.StartTime, slice);
 
-            if (startBound != null)
+            if (!startBound.IsNull)
             {
                 values.Add(startBound);
             }
@@ -1176,7 +1176,7 @@ namespace Technosoftware.UaServer
             // add the end point.
             DataValue endBound = Interpolate(slice.EndTime, slice);
 
-            if (endBound != null)
+            if (!endBound.IsNull)
             {
                 values.Add(endBound);
             }

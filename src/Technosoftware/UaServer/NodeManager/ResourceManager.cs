@@ -97,11 +97,11 @@ namespace Technosoftware.UaServer
                 // extract any additional arguments from the translation info.
                 object[] args = null;
 
-                if (result.LocalizedText != null && result.LocalizedText.TranslationInfo != null)
+                if (!result.LocalizedText.IsNull && !result.LocalizedText.TranslationInfo.IsNull)
                 {
                     TranslationInfo info = result.LocalizedText.TranslationInfo;
 
-                    if (info != null && info.Args != null && info.Args.Length > 0)
+                    if (!info.IsNull && info.Args != null && info.Args.Length > 0)
                     {
                         args = info.Args;
                     }
@@ -308,7 +308,7 @@ namespace Technosoftware.UaServer
                 preferredLocales[0].ToLowerInvariant() is "mul" or "qst";
 
             // check for trivial case.
-            if (info == null || (string.IsNullOrEmpty(info.Text) && string.IsNullOrEmpty(info.Key)))
+            if (info.IsNull || (string.IsNullOrEmpty(info.Text) && string.IsNullOrEmpty(info.Key)))
             {
                 return defaultText;
             }
@@ -316,7 +316,7 @@ namespace Technosoftware.UaServer
             // check for exact match.
             if (preferredLocales != null && preferredLocales.Count > 0)
             {
-                if (defaultText != null &&
+                if (!defaultText.IsNull &&
                     !isMultilanguageRequested &&
                     preferredLocales[0] == defaultText.Locale)
                 {

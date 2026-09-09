@@ -4001,7 +4001,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     context.NamespaceUris,
                     context.TypeTable);
 
-            if (typeInfo == null || typeInfo == TypeInfo.Unknown)
+            if (typeInfo.IsUnknown || typeInfo == TypeInfo.Unknown)
             {
                 return StatusCodes.BadTypeMismatch;
             }
@@ -4033,7 +4033,7 @@ namespace SampleCompany.NodeManagers.Simulation
             var typeInfo = TypeInfo.Construct(value);
 
             if (!(node is MultiStateValueDiscreteState variable) ||
-                typeInfo == null ||
+                typeInfo.IsUnknown ||
                 typeInfo == TypeInfo.Unknown ||
                 !TypeInfo.IsNumericType(typeInfo.BuiltInType))
             {
@@ -4080,7 +4080,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 context.NamespaceUris,
                 context.TypeTable);
 
-            if (typeInfo == null || typeInfo == TypeInfo.Unknown)
+            if (typeInfo.IsUnknown || typeInfo == TypeInfo.Unknown)
             {
                 return StatusCodes.BadTypeMismatch;
             }
@@ -4133,7 +4133,7 @@ namespace SampleCompany.NodeManagers.Simulation
             var typeInfo = TypeInfo.Construct(value);
 
             if (node is not PropertyState<Opc.Ua.Range> variable ||
-                typeInfo == null ||
+                typeInfo.IsUnknown ||
                 typeInfo == TypeInfo.Unknown)
             {
                 return StatusCodes.BadTypeMismatch;

@@ -847,7 +847,7 @@ namespace Technosoftware.UaServer
             UserTokenPolicy policy = null;
 
             // check for empty token.
-            if (identityToken == null ||
+            if (identityToken.IsNull ||
                 identityToken.Body == null ||
                 identityToken.Body.GetType() == typeof(AnonymousIdentityToken))
             {

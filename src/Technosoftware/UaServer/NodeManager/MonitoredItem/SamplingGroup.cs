@@ -486,7 +486,7 @@ namespace Technosoftware.UaServer
                     // update monitored items.
                     for (int ii = 0; ii < items.Count; ii++)
                     {
-                        if (values[ii] == null)
+                        if (values[ii].IsNull)
                         {
                             values[ii] = DataValue.FromStatusCode(
                                 StatusCodes.BadInternalError,

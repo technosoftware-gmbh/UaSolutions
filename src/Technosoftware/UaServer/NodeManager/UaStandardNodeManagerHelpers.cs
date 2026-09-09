@@ -79,12 +79,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -169,12 +169,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -269,12 +269,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -370,12 +370,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -473,12 +473,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -580,12 +580,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -687,12 +687,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -814,12 +814,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -1081,12 +1081,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -1254,12 +1254,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -1370,12 +1370,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null, params LocalizedText[] values)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }
@@ -1492,12 +1492,12 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null, params LocalizedText[] enumNames)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
             }

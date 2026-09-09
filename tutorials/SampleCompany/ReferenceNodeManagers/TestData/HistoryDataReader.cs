@@ -106,7 +106,7 @@ namespace SampleCompany.NodeManagers.TestData
                     m_request.IsReadModified,
                     out m_position);
 
-                if (value != null)
+                if (!value.IsNull)
                 {
                     AddValue(timestampsToReturn, indexRange, dataEncoding, values, value);
                 }
@@ -144,7 +144,7 @@ namespace SampleCompany.NodeManagers.TestData
                     ref m_position);
 
                 // no more data.
-                if (value == null)
+                if (value.IsNull)
                 {
                     return true;
                 }

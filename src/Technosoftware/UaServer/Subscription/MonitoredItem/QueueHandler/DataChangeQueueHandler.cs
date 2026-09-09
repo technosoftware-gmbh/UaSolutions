@@ -259,7 +259,7 @@ namespace Technosoftware.UaServer
         {
             if (m_dataValueQueue.Dequeue(out value, out error))
             {
-                if (m_overflow != null && m_overflow == value)
+                if (!m_overflow.IsNull && m_overflow == value)
                 {
                     SetOverflowBit(ref value, ref error);
                     m_overflow = default;
@@ -365,7 +365,7 @@ namespace Technosoftware.UaServer
         /// <param name="error">The error to update.</param>
         private static void SetOverflowBit(ref DataValue value, ref ServiceResult error)
         {
-            if (value != null)
+            if (!value.IsNull)
             {
                 value = value.WithStatus(value.StatusCode.SetOverflow(true));
             }

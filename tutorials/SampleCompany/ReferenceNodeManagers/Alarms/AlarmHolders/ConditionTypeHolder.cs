@@ -326,7 +326,7 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             bool canSetComment = false;
 
-            if (comment != null)
+            if (!comment.IsNull)
             {
                 canSetComment = true;
 
