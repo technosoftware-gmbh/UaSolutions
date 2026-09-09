@@ -79,10 +79,8 @@ namespace Technosoftware.UaServer
                     m_serverInternal = null;
                 }
 
-                if (CertificateValidator != null)
-                {
-                    CertificateValidator.CertificateUpdate -= OnCertificateUpdateAsync;
-                }
+                m_certificateManagerSubscription?.Dispose();
+                m_certificateManagerSubscription = null;
             }
 
             base.Dispose(disposing);
@@ -424,7 +422,20 @@ namespace Technosoftware.UaServer
                                         clientDescription.ApplicationUri);
                                 }
 
-                                await CertificateValidator.ValidateAsync(clientCertificateChain, ct).ConfigureAwait(false);
+                                Opc.Ua.Security.Certificates.CertificateValidationResult clientCertificateResult =
+                                    await CertificateManager
+                                        .ValidateAsync(
+                                            clientCertificateChain,
+                                            TrustListIdentifier.Peers,
+                                            options: null,
+                                            ct: ct)
+                                        .ConfigureAwait(false);
+
+                                if (!clientCertificateResult.IsValid)
+                                {
+                                    throw new ServiceResultException(
+                                        clientCertificateResult.StatusCode);
+                                }
                             }
                         }
                     }
@@ -452,10 +463,12 @@ namespace Technosoftware.UaServer
                     }
                 }
 
-                // load the certificate for the security profile
-                Certificate instanceCertificate = InstanceCertificateTypesProvider
-                    .GetInstanceCertificate(
-                        context.SecurityPolicyUri);
+                // load the certificate for the security profile. The session takes
+                // its own ref-counted handle on it, so the entry acquired here is
+                // released when this scope exits.
+                using CertificateEntry instanceEntry = CertificateManager
+                    .AcquireApplicationCertificateBySecurityPolicy(context.SecurityPolicyUri);
+                Certificate instanceCertificate = instanceEntry?.Certificate;
 
                 // create the session.
                 CreateSessionResult result = await ServerInternal.SessionManager.CreateSessionAsync(
@@ -488,10 +501,10 @@ namespace Technosoftware.UaServer
                             EndpointUrl = new Uri(endpointUrl)
                         };
 
-                        CertificateValidator.ValidateDomains(
+                        CertificateManager.ValidateDomains(
                             instanceCertificate,
                             configuredEndpoint,
-                            true);
+                            serverValidation: true);
                     }
                     catch (ServiceResultException sre)
                         when (sre.StatusCode == StatusCodes.BadCertificateHostNameInvalid)
@@ -524,15 +537,13 @@ namespace Technosoftware.UaServer
                     if (requireEncryption)
                     {
                         // check if complete chain should be sent.
-                        if (InstanceCertificateTypesProvider.SendCertificateChain)
+                        if (CertificateManager.SendCertificateChain)
                         {
-                            serverCertificate = InstanceCertificateTypesProvider
-                                .LoadCertificateChainRaw(
-                                    instanceCertificate);
+                            serverCertificate = instanceEntry.GetEncodedChainBlob().ToByteString();
                         }
                         else
                         {
-                            serverCertificate = instanceCertificate.RawData;
+                            serverCertificate = instanceCertificate.RawData.ToByteString();
                         }
                     }
 
@@ -651,7 +662,7 @@ namespace Technosoftware.UaServer
                     {
                         string policyUri = ii.Value.ToString();
 
-                        if (EccUtils.IsEccPolicy(policyUri))
+                        if (CryptoUtils.IsEccPolicy(policyUri))
                         {
                             session.SetEccUserTokenSecurityPolicy(policyUri);
                             EphemeralKeyType key = session.GetNewEccKey();
@@ -2378,16 +2389,18 @@ namespace Technosoftware.UaServer
                                 Timestamp = DateTime.UtcNow
                             };
 
-                            // create the client.
-                            Certificate instanceCertificate =
-                                InstanceCertificateTypesProvider.GetInstanceCertificate(
+                            // create the client. Ownership of the AddRef'd handle
+                            // transfers to the registration channel, which disposes
+                            // it when the channel closes.
+                            using CertificateEntry registrationEntry = CertificateManager
+                                .AcquireApplicationCertificateBySecurityPolicy(
                                     endpoint.Description?.SecurityPolicyUri ??
                                     SecurityPolicies.None);
                             client = await RegistrationClient.CreateAsync(
                                 configuration,
                                 endpoint.Description,
                                 endpoint.Configuration,
-                                instanceCertificate,
+                                registrationEntry?.Certificate?.AddRef(),
                                 ct: ct).ConfigureAwait(false);
 
                             client.OperationTimeout = 10000;
@@ -2927,13 +2940,13 @@ namespace Technosoftware.UaServer
         /// <returns>
         /// Returns IList of a host for a UA service.
         /// </returns>
-        protected override ValueTask<ServiceHostInitializationResult> InitializeServiceHostsAsync(
+        protected override async ValueTask<ServiceHostInitializationResult> InitializeServiceHostsAsync(
             ApplicationConfiguration configuration,
             ITransportBindingRegistry bindingFactory,
             CancellationToken cancellationToken = default)
         {
             ApplicationDescription serverDescription;
-            EndpointDescriptionCollection endpoints;
+            var endpoints = new List<EndpointDescription>();
 
             var hosts = new Dictionary<string, ServiceHost>();
 
@@ -2962,31 +2975,34 @@ namespace Technosoftware.UaServer
                 DiscoveryUrls = GetDiscoveryUrls()
             };
 
-            endpoints = [];
-            IList<EndpointDescription> endpointsForHost = null;
-
-            List<string> baseAddresses = configuration.ServerConfiguration.BaseAddresses;
+            ArrayOf<string> baseAddresses = configuration.ServerConfiguration.BaseAddresses;
             foreach (
                 string scheme in Utils.DefaultUriSchemes.Where(scheme =>
-                    baseAddresses.Any(a => a.StartsWith(scheme, StringComparison.Ordinal))))
+                    baseAddresses.Contains(a => a.StartsWith(scheme, StringComparison.Ordinal))))
             {
-                ITransportListenerFactory binding = bindingFactory.GetBinding(scheme, MessageContext.Telemetry);
+                ITransportListenerFactory binding = bindingFactory.GetListenerFactory(scheme);
                 if (binding != null)
                 {
-                    endpointsForHost = binding.CreateServiceHost(
-                        this,
-                        hosts,
-                        configuration,
-                        configuration.ServerConfiguration.BaseAddresses,
-                        serverDescription,
-                        configuration.ServerConfiguration.SecurityPolicies,
-                        InstanceCertificateTypesProvider);
+                    List<EndpointDescription> endpointsForHost = await binding
+                        .CreateServiceHostAsync(
+                            this,
+                            hosts,
+                            configuration,
+                            configuration.ServerConfiguration.BaseAddresses,
+                            serverDescription,
+                            configuration.ServerConfiguration.SecurityPolicies,
+                            CertificateManager,
+                            configuration.CertificateManager,
+                            cancellationToken)
+                        .ConfigureAwait(false);
                     endpoints.AddRange(endpointsForHost);
                 }
             }
 
-            return new ValueTask<ServiceHostInitializationResult>(
-                new ServiceHostInitializationResult([.. hosts.Values], serverDescription, endpoints));
+            return new ServiceHostInitializationResult(
+                [.. hosts.Values],
+                serverDescription,
+                endpoints.ToArrayOf());
         }
 
         /// <summary>
@@ -3239,7 +3255,15 @@ namespace Technosoftware.UaServer
                 m_configurationWatcher.Changed += OnConfigurationChangedAsync;
             }
 
-            CertificateValidator.CertificateUpdate += OnCertificateUpdateAsync;
+            // Subscribe to CertificateManager change notifications and fan out to
+            // OnCertificateUpdateAsync so endpoint descriptions and transport
+            // listeners pick up certificate hot-updates. In 1.5 this was the
+            // CertificateValidator.CertificateUpdate event.
+            if (CertificateManager != null)
+            {
+                m_certificateManagerSubscription = CertificateManager.CertificateChanges
+                    .Subscribe(new CertificateManagerChangeObserver(this, m_logger));
+            }
         }
 
         /// <summary>
@@ -3826,6 +3850,71 @@ namespace Technosoftware.UaServer
         private bool m_useRegisterServer2;
         private readonly List<IUaNodeManagerFactory> m_nodeManagerFactories = [];
         private readonly List<IUaAsyncNodeManagerFactory> m_asyncNodeManagerFactories = [];
+        private IDisposable m_certificateManagerSubscription;
         #endregion Private Fields
+
+        #region Private Types
+        /// <summary>
+        /// Forwards the certificate manager's change notifications to
+        /// <see cref="ServerBase.OnCertificateUpdateAsync"/>, which is what
+        /// refreshes the endpoint descriptions and the transport listeners.
+        /// </summary>
+        /// <remarks>
+        /// The reload itself has already been performed by the certificate
+        /// manager before the notification fires, so there is nothing to do
+        /// here beyond the fan-out.
+        /// </remarks>
+        private sealed class CertificateManagerChangeObserver : IObserver<CertificateChangeEvent>
+        {
+            /// <summary>
+            /// Initializes a new instance of the
+            /// <see cref="CertificateManagerChangeObserver"/> class.
+            /// </summary>
+            /// <param name="server">The server to notify.</param>
+            /// <param name="logger">The logger to report fan-out failures to.</param>
+            public CertificateManagerChangeObserver(UaStandardServer server, ILogger logger)
+            {
+                m_server = server;
+                m_logger = logger;
+            }
+
+            /// <inheritdoc/>
+            public void OnNext(CertificateChangeEvent value)
+            {
+                if (value.Kind != CertificateChangeKind.ApplicationCertificateUpdated)
+                {
+                    return;
+                }
+
+                try
+                {
+                    var args = new CertificateUpdateEventArgs(
+                        m_server.Configuration?.SecurityConfiguration,
+                        m_server.CertificateManager);
+
+                    m_server.OnCertificateUpdateAsync(m_server, args);
+                }
+                catch (Exception ex)
+                {
+                    m_logger.LogError(
+                        ex,
+                        "Failed to fan out a certificate manager change notification.");
+                }
+            }
+
+            /// <inheritdoc/>
+            public void OnError(Exception error)
+            {
+            }
+
+            /// <inheritdoc/>
+            public void OnCompleted()
+            {
+            }
+
+            private readonly UaStandardServer m_server;
+            private readonly ILogger m_logger;
+        }
+        #endregion Private Types
     }
 }
