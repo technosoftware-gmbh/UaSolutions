@@ -36,7 +36,7 @@ namespace SampleCompany.NodeManagers.TestData
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
             => [Namespaces.TestData, Namespaces.TestData + "Instance"];
     }
 
@@ -621,7 +621,7 @@ namespace SampleCompany.NodeManagers.TestData
             UaServerContext context,
             ReadRawModifiedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -663,7 +663,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         protected override void HistoryReleaseContinuationPoints(
             UaServerContext context,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
             IDictionary<NodeId, NodeState> cache)

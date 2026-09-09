@@ -115,12 +115,12 @@ namespace SampleCompany.NodeManagers
         /// <summary>
         /// The property with available node manager factories.
         /// </summary>
-        public static ReadOnlyList<IUaNodeManagerFactory> NodeManagerFactories
+        public static IReadOnlyList<IUaNodeManagerFactory> NodeManagerFactories
         {
             get
             {
                 s_nodeManagerFactories ??= GetNodeManagerFactories();
-                return new ReadOnlyList<IUaNodeManagerFactory>(s_nodeManagerFactories);
+                return s_nodeManagerFactories.AsReadOnly();
             }
         }
 
@@ -151,6 +151,6 @@ namespace SampleCompany.NodeManagers
             return [.. nodeManagerFactories];
         }
 
-        private static IList<IUaNodeManagerFactory> s_nodeManagerFactories;
+        private static List<IUaNodeManagerFactory> s_nodeManagerFactories;
     }
 }

@@ -24,7 +24,7 @@ using Technosoftware.UaServer;
 
 namespace SampleCompany.NodeManagers.MemoryBuffer
 {
-    public partial class MemoryBufferState
+    public partial class MemoryBufferState : IDisposable
     {
         /// <summary>
         /// Initializes the buffer from the configuration.
@@ -89,15 +89,30 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         /// </summary>
         public int MaximumScanRate { get; private set; }
 
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
+        /// <summary>
+        /// Cleans up when the object is disposed.
+        /// </summary>
+        /// <remarks>
+        /// NodeState is no longer IDisposable in 2.0, so this class owns the
+        /// pattern itself. The node manager still releases predefined nodes
+        /// with (node as IDisposable)?.Dispose(), so disposal is unchanged.
+        /// </remarks>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// An overrideable version of the Dispose.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_scanTimer);
+                m_scanTimer?.Dispose();
                 m_scanTimer = null;
             }
-            base.Dispose(disposing);
         }
 
         /// <summary>

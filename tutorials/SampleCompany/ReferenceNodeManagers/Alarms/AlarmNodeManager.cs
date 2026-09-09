@@ -37,7 +37,7 @@ namespace SampleCompany.NodeManagers.Alarms
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
         {
             get
             {
@@ -688,7 +688,7 @@ namespace SampleCompany.NodeManagers.Alarms
         /// </summary>
         public override void Call(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors)
         {

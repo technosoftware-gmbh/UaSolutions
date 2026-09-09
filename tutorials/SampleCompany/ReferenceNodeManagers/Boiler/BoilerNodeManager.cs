@@ -36,7 +36,7 @@ namespace SampleCompany.NodeManagers.Boiler
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
             => [Namespaces.Boiler, Namespaces.Boiler + "Instance"];
     }
 

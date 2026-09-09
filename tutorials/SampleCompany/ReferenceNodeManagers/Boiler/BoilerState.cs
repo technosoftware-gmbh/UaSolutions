@@ -23,7 +23,7 @@ using Opc.Ua;
 
 namespace SampleCompany.NodeManagers.Boiler
 {
-    public partial class BoilerState
+    public partial class BoilerState : IDisposable
     {
         protected override void Initialize(ITelemetryContext telemetry)
         {
@@ -34,9 +34,12 @@ namespace SampleCompany.NodeManagers.Boiler
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
-        protected override void OnAfterCreate(ISystemContext context, NodeState node)
+        protected override void OnAfterCreate(
+            ISystemContext context,
+            NodeState node,
+            CancellationToken ct = default)
         {
-            base.OnAfterCreate(context, node);
+            base.OnAfterCreate(context, node, ct);
 
             Simulation.OnAfterTransition = OnControlSimulation;
         }
@@ -44,14 +47,27 @@ namespace SampleCompany.NodeManagers.Boiler
         /// <summary>
         /// Cleans up when the object is disposed.
         /// </summary>
-        protected override void Dispose(bool disposing)
+        /// <remarks>
+        /// NodeState is no longer IDisposable in 2.0, so this class owns the
+        /// pattern itself. The node manager still releases predefined nodes
+        /// with (node as IDisposable)?.Dispose(), so disposal is unchanged.
+        /// </remarks>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// An overrideable version of the Dispose.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing && m_simulationTimer != null)
             {
                 m_simulationTimer.Dispose();
                 m_simulationTimer = null;
             }
-            base.Dispose(disposing);
         }
 
         /// <summary>

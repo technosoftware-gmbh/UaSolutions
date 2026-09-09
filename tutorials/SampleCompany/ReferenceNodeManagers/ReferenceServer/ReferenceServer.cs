@@ -225,11 +225,11 @@ namespace SampleCompany.NodeManagers.Reference
         /// <remarks>
         /// Sample to show how to override default user token policies.
         /// </remarks>
-        public override UserTokenPolicyCollection GetUserTokenPolicies(
+        public override ArrayOf<UserTokenPolicy> GetUserTokenPolicies(
             ApplicationConfiguration configuration,
             EndpointDescription description)
         {
-            UserTokenPolicyCollection policies = base.GetUserTokenPolicies(
+            ArrayOf<UserTokenPolicy> policies = base.GetUserTokenPolicies(
                 configuration,
                 description);
 
@@ -274,16 +274,12 @@ namespace SampleCompany.NodeManagers.Reference
                     if (configuration.SecurityConfiguration.TrustedUserCertificates != null &&
                         configuration.SecurityConfiguration.UserIssuerCertificates != null)
                     {
-                        var certificateValidator = new CertificateValidator(MessageContext.Telemetry);
-                        certificateValidator.UpdateAsync(configuration.SecurityConfiguration)
-                            .Wait();
-                        certificateValidator.Update(
-                            configuration.SecurityConfiguration.UserIssuerCertificates,
-                            configuration.SecurityConfiguration.TrustedUserCertificates,
-                            configuration.SecurityConfiguration.RejectedCertificateStore);
-
-                        // set custom validator for user certificates.
-                        m_userCertificateValidator = certificateValidator.GetChannelValidator();
+                        // 2.0 has no separate CertificateValidator to build and no
+                        // GetChannelValidator: the server's own CertificateManager
+                        // already holds the user trust lists from the
+                        // SecurityConfiguration, and a user certificate is validated
+                        // by naming TrustListIdentifier.Users at the call.
+                        m_validateUserCertificates = true;
                     }
                 }
             }
@@ -417,14 +413,16 @@ namespace SampleCompany.NodeManagers.Reference
             X509Certificate2 certificate = token.GetOrCreateCertificate(MessageContext.Telemetry);
             try
             {
-                if (m_userCertificateValidator != null)
-                {
-                    m_userCertificateValidator.ValidateAsync(certificate, default).GetAwaiter().GetResult();
-                }
-                else
-                {
-                    CertificateValidator.ValidateAsync(certificate, default).GetAwaiter().GetResult();
-                }
+                CertificateValidationResult result = CertificateManager
+                    .ValidateAsync(
+                        certificate,
+                        m_validateUserCertificates
+                            ? TrustListIdentifier.Users
+                            : TrustListIdentifier.Peers)
+                    .GetAwaiter()
+                    .GetResult();
+
+                result.ThrowIfInvalid();
             }
             catch (Exception e)
             {
@@ -511,6 +509,6 @@ namespace SampleCompany.NodeManagers.Reference
             }
         }
 
-        private ICertificateValidator m_userCertificateValidator;
+        private bool m_validateUserCertificates;
     }
 }

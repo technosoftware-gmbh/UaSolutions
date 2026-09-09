@@ -152,7 +152,7 @@ namespace SampleCompany.ReferenceServer
         /// Create server instance and add node managers.
         /// </summary>
         /// <exception cref="ErrorExitException"></exception>
-        public void Create(IList<IUaNodeManagerFactory> nodeManagerFactories)
+        public void Create(IEnumerable<IUaNodeManagerFactory> nodeManagerFactories)
         {
             try
             {

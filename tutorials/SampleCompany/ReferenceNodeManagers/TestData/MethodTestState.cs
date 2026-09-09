@@ -15,7 +15,7 @@
 
 #region Using Directives
 using System;
-using System.Xml;
+using System.Threading;
 using Opc.Ua;
 #endregion Using Directives
 
@@ -26,9 +26,12 @@ namespace SampleCompany.NodeManagers.TestData
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
-        protected override void OnAfterCreate(ISystemContext context, NodeState node)
+        protected override void OnAfterCreate(
+            ISystemContext context,
+            NodeState node,
+            CancellationToken ct = default)
         {
-            base.OnAfterCreate(context, node);
+            base.OnAfterCreate(context, node, ct);
 
             ScalarMethod1.OnCall = OnScalarValue1;
             ScalarMethod2.OnCall = OnScalarValue2;
@@ -89,9 +92,9 @@ namespace SampleCompany.NodeManagers.TestData
             MethodState method,
             NodeId objectId,
             string stringIn,
-            DateTime dateTimeIn,
+            DateTimeUtc dateTimeIn,
             Uuid guidIn,
-            byte[] byteStringIn,
+            ByteString byteStringIn,
             XmlElement xmlElementIn,
             NodeId nodeIdIn,
             ExpandedNodeId expandedNodeIdIn,
@@ -99,9 +102,9 @@ namespace SampleCompany.NodeManagers.TestData
             LocalizedText localizedTextIn,
             StatusCode statusCodeIn,
             ref string stringOut,
-            ref DateTime dateTimeOut,
+            ref DateTimeUtc dateTimeOut,
             ref Uuid guidOut,
-            ref byte[] byteStringOut,
+            ref ByteString byteStringOut,
             ref XmlElement xmlElementOut,
             ref NodeId nodeIdOut,
             ref ExpandedNodeId expandedNodeIdOut,
@@ -289,9 +292,9 @@ namespace SampleCompany.NodeManagers.TestData
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            DateTime dateTimeIn,
+            DateTimeUtc dateTimeIn,
             Uuid guidIn,
-            byte[] byteStringIn,
+            ByteString byteStringIn,
             XmlElement xmlElementIn,
             NodeId nodeIdIn,
             ExpandedNodeId expandedNodeIdIn,
@@ -299,9 +302,9 @@ namespace SampleCompany.NodeManagers.TestData
             LocalizedText localizedTextIn,
             StatusCode statusCodeIn,
             object variantIn,
-            ref DateTime dateTimeOut,
+            ref DateTimeUtc dateTimeOut,
             ref Uuid guidOut,
-            ref byte[] byteStringOut,
+            ref ByteString byteStringOut,
             ref XmlElement xmlElementOut,
             ref NodeId nodeIdOut,
             ref ExpandedNodeId expandedNodeIdOut,

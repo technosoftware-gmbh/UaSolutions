@@ -36,7 +36,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
             => [Namespaces.MemoryBuffer, Namespaces.MemoryBuffer + "/Instance"];
     }
 

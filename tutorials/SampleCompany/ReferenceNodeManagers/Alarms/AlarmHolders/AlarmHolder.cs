@@ -104,7 +104,7 @@ namespace SampleCompany.NodeManagers.Alarms
         {
         }
 
-        private void InitializeInternal(BaseEventState alarm, NodeId branchId = null)
+        private void InitializeInternal(BaseEventState alarm, NodeId branchId = default)
         {
             string alarmName = AlarmName;
             string alarmNodeId = (string)m_parent.NodeId.Identifier + "." + AlarmName;
@@ -133,7 +133,7 @@ namespace SampleCompany.NodeManagers.Alarms
         private static bool IsBranch(NodeId branchId)
         {
             bool isBranch = false;
-            if (branchId != null && !branchId.IsNullNodeId)
+            if (!branchId.IsNullNodeId)
             {
                 isBranch = true;
             }
