@@ -465,22 +465,22 @@ namespace SampleCompany.ReferenceClient
 
                         if (browseall || fetchall || jsonvalues || managedbrowseall)
                         {
-                            NodeIdCollection variableIds = null;
-                            NodeIdCollection variableIdsManagedBrowse = null;
-                            ReferenceDescriptionCollection referenceDescriptions = null;
-                            ReferenceDescriptionCollection referenceDescriptionsFromManagedBrowse
-                                = null;
+                            ArrayOf<NodeId> variableIds = default;
+                            ArrayOf<NodeId> variableIdsManagedBrowse = default;
+                            ArrayOf<ReferenceDescription> referenceDescriptions = default;
+                            ArrayOf<ReferenceDescription> referenceDescriptionsFromManagedBrowse
+                                = default;
 
                             if (browseall)
                             {
                                 Console.WriteLine("Browse the full address space.");
                                 referenceDescriptions = await samples
-                                    .BrowseFullAddressSpaceAsync(uaClient, Objects.RootFolder, ct: ct)
+                                    .BrowseFullAddressSpaceAsync(uaClient, new NodeId(Objects.RootFolder), ct: ct)
                                     .ConfigureAwait(false);
                                 variableIds =
                                 [
                                     .. referenceDescriptions
-                                        .Where(r =>
+                                        .ToArray().Where(r =>
                                             r.NodeClass == NodeClass.Variable &&
                                             r.TypeDefinition.NamespaceIndex != 0
                                         )
@@ -496,13 +496,13 @@ namespace SampleCompany.ReferenceClient
                                 referenceDescriptionsFromManagedBrowse = await samples
                                     .ManagedBrowseFullAddressSpaceAsync(
                                         uaClient,
-                                        Objects.RootFolder,
+                                        new NodeId(Objects.RootFolder),
                                         ct: ct)
                                     .ConfigureAwait(false);
                                 variableIdsManagedBrowse =
                                 [
                                     .. referenceDescriptionsFromManagedBrowse
-                                        .Where(r =>
+                                        .ToArray().Where(r =>
                                             r.NodeClass == NodeClass.Variable &&
                                             r.TypeDefinition.NamespaceIndex != 0
                                         )
@@ -525,7 +525,7 @@ namespace SampleCompany.ReferenceClient
                                 allNodes = await samples
                                     .FetchAllNodesNodeCacheAsync(
                                         uaClient,
-                                        Objects.RootFolder,
+                                        new NodeId(Objects.RootFolder),
                                         true,
                                         true,
                                         false,
@@ -577,7 +577,7 @@ namespace SampleCompany.ReferenceClient
                                 else if (browseall)
                                 {
                                     var variableReferences = referenceDescriptions
-                                        .Where(r => r.NodeClass == NodeClass.Variable &&
+                                        .ToArray().Where(r => r.NodeClass == NodeClass.Variable &&
                                             r.NodeId.NamespaceIndex > 1)
                                         .Select(r => r.NodeId)
                                         .OrderBy(o => UnsecureRandom.Shared.Next())

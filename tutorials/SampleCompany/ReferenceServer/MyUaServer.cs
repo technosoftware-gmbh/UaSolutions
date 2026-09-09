@@ -193,7 +193,7 @@ namespace SampleCompany.ReferenceServer
                 ExitCode = ExitCode.ErrorRunning;
 
                 // print endpoint info
-                foreach (string endpoint in Application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct())
+                foreach (string endpoint in Application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct())
                 {
                     Console.WriteLine(endpoint);
                 }

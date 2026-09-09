@@ -268,7 +268,7 @@ namespace SampleCompany.ReferenceClient
                             m_configuration.ApplicationName,
                             SessionLifeTime,
                             UserIdentity,
-                            null,
+                            default,
                             ct)
                         .ConfigureAwait(false);
 
