@@ -642,7 +642,8 @@ namespace Technosoftware.UaConfiguration
         /// <param name="value">The object to add and encode.</param>
         IUaApplicationConfigurationExtension AddExtension<T>(
             XmlQualifiedName elementName,
-            object value);
+            T value)
+            where T : IEncodeable;
     }
 
     /// <summary>

@@ -363,7 +363,7 @@ namespace Technosoftware.UaConfiguration
             // check that it is ok.
             if (certificate != null)
             {
-                m_logger.LogInformation("Check certificate: {Certificate}", certificate.AsLogSafeString());
+                m_logger.LogInformation("Check certificate: {Certificate}", certificate);
                 bool certificateValid = await CheckApplicationInstanceCertificateAsync(
                         configuration,
                         id,
@@ -644,7 +644,7 @@ namespace Technosoftware.UaConfiguration
                     ? DefaultCertificateFactory.Instance.CreateFromRawData(certificate.RawData)
                     : null;
 
-                CertificateValidationResult validationResult = await configuration
+                var validationResult = await configuration
                     .CertificateManager.ValidateAsync(publicKeyOnly ?? certificate, ct: ct)
                     .ConfigureAwait(false);
 
@@ -743,7 +743,7 @@ namespace Technosoftware.UaConfiguration
 
             bool valid = true;
             ArrayOf<string> serverDomainNames = configuration.GetServerDomainNames();
-            ArrayOf<string> certificateDomainNames = X509Utils.GetDomainsFromCertificate(certificate);
+            List<string> certificateDomainNames = [.. X509Utils.GetDomainsFromCertificate(certificate)];
 
             m_logger.LogInformation("Server Domain names:");
             foreach (string name in serverDomainNames)
@@ -987,7 +987,7 @@ namespace Technosoftware.UaConfiguration
                 m_logger.LogInformation(
                     Utils.TraceMasks.Security,
                     "Deleting application instance certificate {Certificate} and private key.",
-                    certificate.AsLogSafeString());
+                    certificate);
             }
 
             // delete trusted peer certificate.
@@ -1039,7 +1039,7 @@ namespace Technosoftware.UaConfiguration
                     m_logger.LogInformation(
                         Utils.TraceMasks.Security,
                         "Application certificate {Certificate} and private key deleted.",
-                        certificate.AsLogSafeString());
+                        certificate);
                 }
             }
 

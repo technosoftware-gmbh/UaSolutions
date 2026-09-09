@@ -423,10 +423,10 @@ namespace Technosoftware.UaConfiguration
         {
             if (addPolicy)
             {
-                List<ServerSecurityPolicy> policies = ApplicationConfiguration
-                    .ServerConfiguration
-                    .SecurityPolicies;
+                List<ServerSecurityPolicy> policies =
+                    [.. ApplicationConfiguration.ServerConfiguration.SecurityPolicies];
                 InternalAddPolicy(policies, MessageSecurityMode.None, SecurityPolicies.None);
+                ApplicationConfiguration.ServerConfiguration.SecurityPolicies = policies;
             }
             return this;
         }
@@ -483,10 +483,10 @@ namespace Technosoftware.UaConfiguration
                 throw new ArgumentException("Use AddUnsecurePolicyNone to add no security policy.");
             }
 
-            InternalAddPolicy(
-                ApplicationConfiguration.ServerConfiguration.SecurityPolicies,
-                securityMode,
-                securityPolicy);
+            List<ServerSecurityPolicy> policies =
+                [.. ApplicationConfiguration.ServerConfiguration.SecurityPolicies];
+            InternalAddPolicy(policies, securityMode, securityPolicy);
+            ApplicationConfiguration.ServerConfiguration.SecurityPolicies = policies;
             return this;
         }
 
@@ -1106,9 +1106,10 @@ namespace Technosoftware.UaConfiguration
         /// <inheritdoc/>
         public IUaApplicationConfigurationExtension AddExtension<T>(
             XmlQualifiedName elementName,
-            object value)
+            T value)
+            where T : IEncodeable
         {
-            ApplicationConfiguration.UpdateExtension<T>(elementName, value);
+            ApplicationConfiguration.UpdateExtension(elementName, value);
             return this;
         }
 
@@ -1372,12 +1373,11 @@ namespace Technosoftware.UaConfiguration
                 defaultPolicyUris.AddRange(SecurityPolicies.GetDefaultDeprecatedUris());
             }
 
+            List<ServerSecurityPolicy> policies =
+                [.. ApplicationConfiguration.ServerConfiguration.SecurityPolicies];
             foreach (MessageSecurityMode securityMode in typeof(MessageSecurityMode)
                 .GetEnumValues())
             {
-                List<ServerSecurityPolicy> policies = ApplicationConfiguration
-                    .ServerConfiguration
-                    .SecurityPolicies;
                 if (policyNone && securityMode == MessageSecurityMode.None)
                 {
                     InternalAddPolicy(policies, MessageSecurityMode.None, SecurityPolicies.None);
@@ -1391,6 +1391,8 @@ namespace Technosoftware.UaConfiguration
                     }
                 }
             }
+
+            ApplicationConfiguration.ServerConfiguration.SecurityPolicies = policies;
         }
 
         /// <summary>
@@ -1404,13 +1406,13 @@ namespace Technosoftware.UaConfiguration
                 ? MessageSecurityMode.Sign
                 : MessageSecurityMode.SignAndEncrypt;
             {
-                List<ServerSecurityPolicy> policies = ApplicationConfiguration
-                    .ServerConfiguration
-                    .SecurityPolicies;
+                List<ServerSecurityPolicy> policies =
+                    [.. ApplicationConfiguration.ServerConfiguration.SecurityPolicies];
                 foreach (string policyUri in defaultPolicyUris)
                 {
                     InternalAddPolicy(policies, securityMode, policyUri);
                 }
+                ApplicationConfiguration.ServerConfiguration.SecurityPolicies = policies;
             }
         }
 
