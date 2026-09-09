@@ -422,12 +422,18 @@ namespace Technosoftware.UaServer
                 return +1;
             }
 
+            // The timestamps are DateTimeUtc in 2.0. Comparing a DateTime
+            // against one binds DateTime.CompareTo(object), which boxes and
+            // throws at run time, so the comparison is made in DateTimeUtc -
+            // DateTime converts to it implicitly and without loss.
+            DateTimeUtc timestamp = value1;
+
             if (UseServerTimestamp)
             {
-                return value1.CompareTo(value2.Value.ServerTimestamp);
+                return timestamp.CompareTo(value2.Value.ServerTimestamp);
             }
 
-            return value1.CompareTo(value2.Value.SourceTimestamp);
+            return timestamp.CompareTo(value2.Value.SourceTimestamp);
         }
 
         /// <summary>

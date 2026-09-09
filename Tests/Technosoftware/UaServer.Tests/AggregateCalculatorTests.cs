@@ -117,13 +117,18 @@ namespace Technosoftware.UaServer.Tests
             {
                 // Use returnPartial=true to get results even without a late bound
                 DataValue result = calculator.GetProcessedValue(true);
-                if (result != null)
+
+                // DataValue is a struct in 2.0, so "no more values" is the
+                // default value rather than null. Comparing against null lifts
+                // to DataValue? and is always true, which spun this loop until
+                // the test host ran out of memory.
+                if (result == default)
                 {
-                    results.Add(result);
+                    hasData = false;
                 }
                 else
                 {
-                    hasData = false;
+                    results.Add(result);
                 }
             }
 
