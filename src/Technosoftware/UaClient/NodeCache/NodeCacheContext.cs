@@ -14,9 +14,7 @@
 #endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,7 +44,7 @@ namespace Technosoftware.UaClient
         public StringTable ServerUris => m_session.MessageContext.ServerUris;
 
         /// <inheritdoc/>
-        public async ValueTask<ReferenceDescriptionCollection> FetchReferencesAsync(
+        public async ValueTask<ArrayOf<ReferenceDescription>> FetchReferencesAsync(
             RequestHeader? requestHeader,
             NodeId nodeId,
             CancellationToken ct = default)
@@ -59,21 +57,21 @@ namespace Technosoftware.UaClient
                 IncludeSubtypes = true,
                 NodeClassMask = 0
             });
-            ResultSet<ReferenceDescriptionCollection> results =
+            ResultSet<ArrayOf<ReferenceDescription>> results =
                 await browser.BrowseAsync([nodeId], ct).ConfigureAwait(false);
             return results.Results[0];
         }
 
         /// <inheritdoc/>
-        public ValueTask<ResultSet<ReferenceDescriptionCollection>> FetchReferencesAsync(
+        public ValueTask<ResultSet<ArrayOf<ReferenceDescription>>> FetchReferencesAsync(
             RequestHeader? requestHeader,
-            IReadOnlyList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             CancellationToken ct = default)
         {
             if (nodeIds.Count == 0)
             {
-                return new ValueTask<ResultSet<ReferenceDescriptionCollection>>(
-                    ResultSet<ReferenceDescriptionCollection>.Empty);
+                return new ValueTask<ResultSet<ArrayOf<ReferenceDescription>>>(
+                    ResultSet<ArrayOf<ReferenceDescription>>.Empty);
             }
             var browser = new Browser(m_session, new BrowserOptions
             {
@@ -89,7 +87,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public async ValueTask<ResultSet<Node>> FetchNodesAsync(
             RequestHeader? requestHeader,
-            IReadOnlyList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             bool skipOptionalAttributes = false,
             CancellationToken ct = default)
         {
@@ -98,16 +96,15 @@ namespace Technosoftware.UaClient
                 return ResultSet<Node>.Empty;
             }
 
-            var nodeCollection = new NodeCollection(nodeIds.Count);
-            var itemsToRead = new ReadValueIdCollection(nodeIds.Count);
+            var nodeCollection = new List<Node>(nodeIds.Count);
 
             // first read only nodeclasses for nodes from server.
-            itemsToRead =
-            [
-                .. nodeIds.Select(nodeId => new ReadValueId {
+            ArrayOf<ReadValueId> itemsToRead = nodeIds
+                .ConvertAll(nodeId => new ReadValueId
+                {
                     NodeId = nodeId,
-                    AttributeId = Attributes.NodeClass })
-            ];
+                    AttributeId = Attributes.NodeClass
+                });
 
             ReadResponse readResponse = await m_session.ReadAsync(
                 null,
@@ -117,16 +114,16 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            List<DataValue> nodeClassValues = readResponse.Results;
-            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
+            ArrayOf<DataValue> nodeClassValues = readResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(nodeClassValues, itemsToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
 
             // second determine attributes to read per nodeclass
-            var attributesPerNodeId = new List<IDictionary<uint, DataValue?>?>(nodeIds.Count);
+            var attributesPerNodeId = new List<IDictionary<uint, DataValue>?>(nodeIds.Count);
             var serviceResults = new List<ServiceResult>(nodeIds.Count);
-            var attributesToRead = new ReadValueIdCollection();
+            var attributesToRead = new List<ReadValueId>();
 
             CreateAttributesReadNodesRequest(
                 readResponse.ResponseHeader,
@@ -141,23 +138,24 @@ namespace Technosoftware.UaClient
 
             if (attributesToRead.Count > 0)
             {
+                itemsToRead = attributesToRead.ToArrayOf();
                 readResponse = await m_session.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Neither,
-                    attributesToRead,
+                    itemsToRead,
                     ct)
                     .ConfigureAwait(false);
 
-                List<DataValue> values = readResponse.Results;
+                ArrayOf<DataValue> values = readResponse.Results;
                 diagnosticInfos = readResponse.DiagnosticInfos;
 
-                ClientBase.ValidateResponse(values, attributesToRead);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, attributesToRead);
+                ClientBase.ValidateResponse(values, itemsToRead);
+                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
 
                 ProcessAttributesReadNodesResponse(
                     readResponse.ResponseHeader,
-                    attributesToRead,
+                    itemsToRead,
                     attributesPerNodeId,
                     values,
                     diagnosticInfos,
@@ -171,7 +169,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public async ValueTask<ResultSet<Node>> FetchNodesAsync(
             RequestHeader? requestHeader,
-            IReadOnlyList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             NodeClass nodeClass,
             bool skipOptionalAttributes = false,
             CancellationToken ct = default)
@@ -189,11 +187,10 @@ namespace Technosoftware.UaClient
                     skipOptionalAttributes, ct).ConfigureAwait(false);
             }
 
-            var nodeCollection = new NodeCollection(nodeIds.Count);
-
+            var nodeCollection = new List<Node>(nodeIds.Count);
             // determine attributes to read for nodeclass
-            var attributesPerNodeId = new List<IDictionary<uint, DataValue?>?>(nodeIds.Count);
-            var attributesToRead = new ReadValueIdCollection();
+            var attributesPerNodeId = new List<IDictionary<uint, DataValue>?>(nodeIds.Count);
+            var attributesToRead = new List<ReadValueId>();
 
             CreateNodeClassAttributesReadNodesRequest(
                 nodeIds,
@@ -203,24 +200,25 @@ namespace Technosoftware.UaClient
                 nodeCollection,
                 skipOptionalAttributes);
 
+            var itemsToRead = attributesToRead.ToArrayOf();
             ReadResponse readResponse = await m_session.ReadAsync(
                 requestHeader,
                 0,
                 TimestampsToReturn.Neither,
-                attributesToRead,
+                itemsToRead,
                 ct)
                 .ConfigureAwait(false);
 
-            List<DataValue> values = readResponse.Results;
-            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
+            ArrayOf<DataValue> values = readResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
-            ClientBase.ValidateResponse(values, attributesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, attributesToRead);
+            ClientBase.ValidateResponse(values, itemsToRead);
+            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
 
             List<ServiceResult> serviceResults = new ServiceResult[nodeIds.Count].ToList();
             ProcessAttributesReadNodesResponse(
                 readResponse.ResponseHeader,
-                attributesToRead,
+                itemsToRead,
                 attributesPerNodeId,
                 values,
                 diagnosticInfos,
@@ -239,17 +237,17 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             // build list of attributes.
-            IDictionary<uint, DataValue?> attributes = CreateAttributes(
+            IDictionary<uint, DataValue> attributes = CreateAttributes(
                 nodeClass,
                 skipOptionalAttributes);
 
             // build list of values to read.
-            var itemsToRead = new ReadValueIdCollection();
-            foreach (uint attributeId in attributes.Keys)
-            {
-                var itemToRead = new ReadValueId { NodeId = nodeId, AttributeId = attributeId };
-                itemsToRead.Add(itemToRead);
-            }
+            var itemsToRead = attributes.Keys
+                .Select(attributeId => new ReadValueId
+                {
+                    NodeId = nodeId,
+                    AttributeId = attributeId
+                }).ToArrayOf();
 
             // read from server.
             ReadResponse readResponse = await m_session.ReadAsync(
@@ -260,8 +258,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            List<DataValue> values = readResponse.Results;
-            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
+            ArrayOf<DataValue> values = readResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, itemsToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
@@ -280,12 +278,14 @@ namespace Technosoftware.UaClient
             NodeId nodeId,
             CancellationToken ct = default)
         {
-            var itemToRead = new ReadValueId
-            {
-                NodeId = nodeId,
-                AttributeId = Attributes.Value
-            };
-            var itemsToRead = new ReadValueIdCollection { itemToRead };
+            ArrayOf<ReadValueId> itemsToRead =
+            [
+                new ReadValueId
+                {
+                    NodeId = nodeId,
+                    AttributeId = Attributes.Value
+                }
+            ];
 
             // read from server.
             ReadResponse readResponse = await m_session.ReadAsync(
@@ -296,8 +296,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            List<DataValue> values = readResponse.Results;
-            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
+            ArrayOf<DataValue> values = readResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, itemsToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
@@ -318,7 +318,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public async ValueTask<ResultSet<DataValue>> FetchValuesAsync(
             RequestHeader? requestHeader,
-            IReadOnlyList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             CancellationToken ct = default)
         {
             if (nodeIds.Count == 0)
@@ -327,12 +327,15 @@ namespace Technosoftware.UaClient
             }
 
             // read all values from server.
-            var itemsToRead = new ReadValueIdCollection(
-                nodeIds.Select(
-                    nodeId => new ReadValueId { NodeId = nodeId, AttributeId = Attributes.Value }));
+            ArrayOf<ReadValueId> itemsToRead = nodeIds
+                .ConvertAll(nodeId => new ReadValueId
+                {
+                    NodeId = nodeId,
+                    AttributeId = Attributes.Value
+                });
 
             // read from server.
-            var errors = new List<ServiceResult>(itemsToRead.Count);
+            var errors = new ServiceResult[itemsToRead.Count];
 
             ReadResponse readResponse = await m_session.ReadAsync(
                 null,
@@ -342,24 +345,24 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            List<DataValue> values = readResponse.Results;
-            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
+            ArrayOf<DataValue> values = readResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, itemsToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
 
-            foreach (DataValue value in values)
+            for (int ii = 0; ii < values.Count; ii++)
             {
                 ServiceResult result = ServiceResult.Good;
-                if (StatusCode.IsBad(value.StatusCode))
+                if (StatusCode.IsBad(values[ii].StatusCode))
                 {
                     result = ClientBase.GetResult(
-                        values[0].StatusCode,
-                        0,
+                        values[ii].StatusCode,
+                        ii,
                         diagnosticInfos,
                         readResponse.ResponseHeader);
                 }
-                errors.Add(result);
+                errors[ii] = result;
             }
 
             return ResultSet.From(values, errors);
@@ -370,20 +373,19 @@ namespace Technosoftware.UaClient
         /// </summary>
         private static void CreateAttributesReadNodesRequest(
             ResponseHeader responseHeader,
-            ReadValueIdCollection itemsToRead,
-            List<DataValue> nodeClassValues,
-            List<DiagnosticInfo> diagnosticInfos,
-            ReadValueIdCollection attributesToRead,
-            List<IDictionary<uint, DataValue?>?> attributesPerNodeId,
-            NodeCollection nodeCollection,
+            ArrayOf<ReadValueId> itemsToRead,
+            ArrayOf<DataValue> nodeClassValues,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
+            List<ReadValueId> attributesToRead,
+            List<IDictionary<uint, DataValue>?> attributesPerNodeId,
+            List<Node> nodeCollection,
             List<ServiceResult> errors,
             bool skipOptionalAttributes)
         {
-            NodeClass? nodeClass;
             for (int ii = 0; ii < itemsToRead.Count; ii++)
             {
                 var node = new Node { NodeId = itemsToRead[ii].NodeId };
-                if (!DataValue.IsGood(nodeClassValues[ii]))
+                if (!nodeClassValues[ii].IsGood)
                 {
                     nodeCollection.Add(node);
                     errors.Add(
@@ -397,11 +399,9 @@ namespace Technosoftware.UaClient
                 }
 
                 // check for valid node class.
-                nodeClass = nodeClassValues[ii].Value as NodeClass?;
-
-                if (nodeClass == null)
+                if (!nodeClassValues[ii].WrappedValue.TryGetValue(out NodeClass nodeClass))
                 {
-                    if (nodeClassValues[ii].Value is int nc)
+                    if (nodeClassValues[ii].WrappedValue.TryGetValue(out int nc))
                     {
                         nodeClass = (NodeClass)nc;
                     }
@@ -412,15 +412,14 @@ namespace Technosoftware.UaClient
                             ServiceResult.Create(
                                 StatusCodes.BadUnexpectedError,
                                 "Node does not have a valid value for NodeClass: {0}.",
-                                nodeClassValues[ii].Value));
+                                nodeClassValues[ii].WrappedValue));
                         attributesPerNodeId.Add(null);
                         continue;
                     }
                 }
 
-                node.NodeClass = nodeClass.Value;
-
-                Dictionary<uint, DataValue?> attributes = CreateAttributes(
+                node.NodeClass = nodeClass;
+                Dictionary<uint, DataValue> attributes = CreateAttributes(
                     node.NodeClass,
                     skipOptionalAttributes);
                 foreach (uint attributeId in attributes.Keys)
@@ -451,29 +450,28 @@ namespace Technosoftware.UaClient
         /// <param name="errors">The service results for each node.</param>
         private static void ProcessAttributesReadNodesResponse(
             ResponseHeader responseHeader,
-            ReadValueIdCollection attributesToRead,
-            List<IDictionary<uint, DataValue?>?> attributesPerNodeId,
-            List<DataValue> values,
-            List<DiagnosticInfo> diagnosticInfos,
-            NodeCollection nodeCollection,
+            ArrayOf<ReadValueId> attributesToRead,
+            List<IDictionary<uint, DataValue>?> attributesPerNodeId,
+            ArrayOf<DataValue> values,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
+            List<Node> nodeCollection,
             List<ServiceResult> errors)
         {
             int readIndex = 0;
             for (int ii = 0; ii < nodeCollection.Count; ii++)
             {
-                IDictionary<uint, DataValue?>? attributes = attributesPerNodeId[ii];
+                IDictionary<uint, DataValue>? attributes = attributesPerNodeId[ii];
                 if (attributes == null)
                 {
                     continue;
                 }
 
                 int readCount = attributes.Count;
-                var subRangeAttributes = new ReadValueIdCollection(
-                    attributesToRead.GetRange(readIndex, readCount));
-                var subRangeValues = new List<DataValue>(values.GetRange(readIndex, readCount));
-                List<DiagnosticInfo> subRangeDiagnostics =
+                ArrayOf<ReadValueId> subRangeAttributes = attributesToRead.Slice(readIndex, readCount);
+                ArrayOf<DataValue> subRangeValues = values.Slice(readIndex, readCount);
+                ArrayOf<DiagnosticInfo> subRangeDiagnostics =
                     diagnosticInfos.Count > 0
-                        ? [.. diagnosticInfos.GetRange(readIndex, readCount)]
+                        ? diagnosticInfos.Slice(readIndex, readCount)
                         : diagnosticInfos;
                 try
                 {
@@ -499,13 +497,13 @@ namespace Technosoftware.UaClient
         /// <exception cref="ServiceResultException"></exception>
         private static Node ProcessReadResponse(
             ResponseHeader responseHeader,
-            IDictionary<uint, DataValue?> attributes,
-            ReadValueIdCollection itemsToRead,
-            List<DataValue> values,
-            List<DiagnosticInfo> diagnosticInfos)
+            IDictionary<uint, DataValue> attributes,
+            ArrayOf<ReadValueId> itemsToRead,
+            ArrayOf<DataValue> values,
+            ArrayOf<DiagnosticInfo> diagnosticInfos)
         {
             // process results.
-            NodeClass? nodeClass = null;
+            NodeClass nodeClass = default;
 
             for (int ii = 0; ii < itemsToRead.Count; ii++)
             {
@@ -514,7 +512,7 @@ namespace Technosoftware.UaClient
                 // the node probably does not exist if the node class is not found.
                 if (attributeId == Attributes.NodeClass)
                 {
-                    if (!DataValue.IsGood(values[ii]))
+                    if (!values[ii].IsGood)
                     {
                         throw ServiceResultException.Create(
                             values[ii].StatusCode,
@@ -524,22 +522,14 @@ namespace Technosoftware.UaClient
                     }
 
                     // check for valid node class.
-                    nodeClass = values[ii].Value as NodeClass?;
-                    if (nodeClass == null)
+                    if (!values[ii].WrappedValue.TryGetValue(out nodeClass))
                     {
-                        if (values[ii].Value is int nc)
-                        {
-                            nodeClass = (NodeClass)nc;
-                        }
-                        else
-                        {
-                            throw ServiceResultException.Unexpected(
-                                "Node does not have a valid value for NodeClass: {0}.",
-                                values[ii].Value);
-                        }
+                        throw ServiceResultException.Unexpected(
+                            "Node does not have a valid value for NodeClass: {0}.",
+                            values[ii]);
                     }
                 }
-                else if (!DataValue.IsGood(values[ii]))
+                else if (!values[ii].IsGood)
                 {
                     // check for unsupported attributes.
                     if (values[ii].StatusCode == StatusCodes.BadAttributeIdInvalid)
@@ -580,35 +570,33 @@ namespace Technosoftware.UaClient
             }
 
             Node node;
-            DataValue? value;
+            DataValue value;
             switch (nodeClass)
             {
                 case NodeClass.Object:
                     var objectNode = new ObjectNode();
 
                     value = attributes[Attributes.EventNotifier];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "Object does not support the EventNotifier attribute.");
                     }
 
-                    objectNode.EventNotifier = value.GetValueOrDefault<byte>();
+                    objectNode.EventNotifier = value.WrappedValue.GetByte();
                     node = objectNode;
                     break;
                 case NodeClass.ObjectType:
                     var objectTypeNode = new ObjectTypeNode();
 
                     value = attributes[Attributes.IsAbstract];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "ObjectType does not support the IsAbstract attribute.");
                     }
 
-                    objectTypeNode.IsAbstract = value.GetValueOrDefault<bool>();
+                    objectTypeNode.IsAbstract = value.WrappedValue.GetBoolean();
                     node = objectTypeNode;
                     break;
                 case NodeClass.Variable:
@@ -616,90 +604,82 @@ namespace Technosoftware.UaClient
 
                     // DataType Attribute
                     value = attributes[Attributes.DataType];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "Variable does not support the DataType attribute.");
                     }
 
-                    variableNode.DataType = (NodeId)value.GetValue(typeof(NodeId));
+                    variableNode.DataType = value.WrappedValue.GetNodeId();
 
                     // ValueRank Attribute
                     value = attributes[Attributes.ValueRank];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "Variable does not support the ValueRank attribute.");
                     }
 
-                    variableNode.ValueRank = value.GetValueOrDefault<int>();
+                    variableNode.ValueRank = value.WrappedValue.GetInt32();
 
                     // ArrayDimensions Attribute
                     value = attributes[Attributes.ArrayDimensions];
 
-                    if (value != null)
+                    if (!value.IsNull)
                     {
-                        if (value.Value == null)
+                        if (!value.WrappedValue.TryGetValue(out ArrayOf<uint> arrayDimensions1))
                         {
-                            variableNode.ArrayDimensions = Array.Empty<uint>();
+                            variableNode.ArrayDimensions = [];
                         }
                         else
                         {
-                            variableNode.ArrayDimensions = (uint[])value.GetValue(typeof(uint[]));
+                            variableNode.ArrayDimensions = arrayDimensions1;
                         }
                     }
 
                     // AccessLevel Attribute
                     value = attributes[Attributes.AccessLevel];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "Variable does not support the AccessLevel attribute.");
                     }
 
-                    variableNode.AccessLevel = value.GetValueOrDefault<byte>();
+                    variableNode.AccessLevel = value.WrappedValue.GetByte();
 
                     // UserAccessLevel Attribute
                     value = attributes[Attributes.UserAccessLevel];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "Variable does not support the UserAccessLevel attribute.");
                     }
 
-                    variableNode.UserAccessLevel = value.GetValueOrDefault<byte>();
+                    variableNode.UserAccessLevel = value.WrappedValue.GetByte();
 
                     // Historizing Attribute
                     value = attributes[Attributes.Historizing];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "Variable does not support the Historizing attribute.");
                     }
 
-                    variableNode.Historizing = value.GetValueOrDefault<bool>();
+                    variableNode.Historizing = value.WrappedValue.GetBoolean();
 
                     // MinimumSamplingInterval Attribute
                     value = attributes[Attributes.MinimumSamplingInterval];
-
-                    if (value != null)
+                    if (!value.IsNull)
                     {
-                        variableNode.MinimumSamplingInterval = Convert.ToDouble(
-                            attributes[Attributes.MinimumSamplingInterval]?.Value,
-                            CultureInfo.InvariantCulture);
+                        variableNode.MinimumSamplingInterval =
+                            (double)value.WrappedValue.ConvertToDouble();
                     }
 
                     // AccessLevelEx Attribute
                     value = attributes[Attributes.AccessLevelEx];
-
-                    if (value != null)
+                    if (!value.IsNull)
                     {
-                        variableNode.AccessLevelEx = value.GetValueOrDefault<uint>();
+                        variableNode.AccessLevelEx = value.WrappedValue.GetUInt32();
                     }
 
                     node = variableNode;
@@ -709,43 +689,41 @@ namespace Technosoftware.UaClient
 
                     // IsAbstract Attribute
                     value = attributes[Attributes.IsAbstract];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "VariableType does not support the IsAbstract attribute.");
                     }
 
-                    variableTypeNode.IsAbstract = value.GetValueOrDefault<bool>();
+                    variableTypeNode.IsAbstract = value.WrappedValue.GetBoolean();
 
                     // DataType Attribute
                     value = attributes[Attributes.DataType];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "VariableType does not support the DataType attribute.");
                     }
 
-                    variableTypeNode.DataType = (NodeId)value.GetValue(typeof(NodeId));
+                    variableTypeNode.DataType = value.WrappedValue.GetNodeId();
 
                     // ValueRank Attribute
                     value = attributes[Attributes.ValueRank];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "VariableType does not support the ValueRank attribute.");
                     }
 
-                    variableTypeNode.ValueRank = value.GetValueOrDefault<int>();
+                    variableTypeNode.ValueRank = value.WrappedValue.GetInt32();
 
                     // ArrayDimensions Attribute
                     value = attributes[Attributes.ArrayDimensions];
 
-                    if (value != null && value.Value != null)
+                    if (!value.IsNull &&
+                        value.WrappedValue.TryGetValue(out ArrayOf<uint> arrayDimensions2))
                     {
-                        variableTypeNode.ArrayDimensions = (uint[])value.GetValue(typeof(uint[]));
+                        variableTypeNode.ArrayDimensions = arrayDimensions2;
                     }
 
                     node = variableTypeNode;
@@ -755,25 +733,23 @@ namespace Technosoftware.UaClient
 
                     // Executable Attribute
                     value = attributes[Attributes.Executable];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "Method does not support the Executable attribute.");
                     }
 
-                    methodNode.Executable = value.GetValueOrDefault<bool>();
+                    methodNode.Executable = value.WrappedValue.GetBoolean();
 
                     // UserExecutable Attribute
                     value = attributes[Attributes.UserExecutable];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "Method does not support the UserExecutable attribute.");
                     }
 
-                    methodNode.UserExecutable = value.GetValueOrDefault<bool>();
+                    methodNode.UserExecutable = value.WrappedValue.GetBoolean();
 
                     node = methodNode;
                     break;
@@ -782,22 +758,21 @@ namespace Technosoftware.UaClient
 
                     // IsAbstract Attribute
                     value = attributes[Attributes.IsAbstract];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "DataType does not support the IsAbstract attribute.");
                     }
 
-                    dataTypeNode.IsAbstract = value.GetValueOrDefault<bool>();
+                    dataTypeNode.IsAbstract = value.WrappedValue.GetBoolean();
 
                     // DataTypeDefinition Attribute
                     value = attributes[Attributes.DataTypeDefinition];
 
-                    if (value != null)
+                    if (!value.IsNull)
                     {
                         dataTypeNode.DataTypeDefinition =
-                            value.Value is ExtensionObject eo ? eo : default;
+                            value.WrappedValue.TryGetValue(out ExtensionObject eo) ? eo : default;
                     }
 
                     node = dataTypeNode;
@@ -807,33 +782,31 @@ namespace Technosoftware.UaClient
 
                     // IsAbstract Attribute
                     value = attributes[Attributes.IsAbstract];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "ReferenceType does not support the IsAbstract attribute.");
                     }
 
-                    referenceTypeNode.IsAbstract = value.GetValueOrDefault<bool>();
+                    referenceTypeNode.IsAbstract = value.WrappedValue.GetBoolean();
 
                     // Symmetric Attribute
                     value = attributes[Attributes.Symmetric];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "ReferenceType does not support the Symmetric attribute.");
                     }
 
-                    referenceTypeNode.Symmetric = value.GetValueOrDefault<bool>();
+                    referenceTypeNode.Symmetric = value.WrappedValue.GetBoolean();
 
                     // InverseName Attribute
                     value = attributes[Attributes.InverseName];
 
-                    if (value != null && value.Value != null)
+                    if (!value.IsNull &&
+                        value.WrappedValue.TryGetValue(out LocalizedText inverseName))
                     {
-                        referenceTypeNode.InverseName = (LocalizedText)value.GetValue(
-                            typeof(LocalizedText));
+                        referenceTypeNode.InverseName = inverseName;
                     }
 
                     node = referenceTypeNode;
@@ -843,32 +816,30 @@ namespace Technosoftware.UaClient
 
                     // EventNotifier Attribute
                     value = attributes[Attributes.EventNotifier];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "View does not support the EventNotifier attribute.");
                     }
 
-                    viewNode.EventNotifier = value.GetValueOrDefault<byte>();
+                    viewNode.EventNotifier = value.WrappedValue.GetByte();
 
                     // ContainsNoLoops Attribute
                     value = attributes[Attributes.ContainsNoLoops];
-
-                    if (value == null)
+                    if (value.IsNull)
                     {
                         throw ServiceResultException.Unexpected(
                             "View does not support the ContainsNoLoops attribute.");
                     }
 
-                    viewNode.ContainsNoLoops = value.GetValueOrDefault<bool>();
+                    viewNode.ContainsNoLoops = value.WrappedValue.GetBoolean();
 
                     node = viewNode;
                     break;
                 case NodeClass.Unspecified:
                     throw ServiceResultException.Unexpected(
                         "Node does not have a valid value for NodeClass: {0}.",
-                        nodeClass.Value);
+                        nodeClass);
                 default:
                     throw ServiceResultException.Unexpected(
                         $"Unexpected NodeClass: {nodeClass}.");
@@ -876,92 +847,101 @@ namespace Technosoftware.UaClient
 
             // NodeId Attribute
             value = attributes[Attributes.NodeId];
-
-            if (value == null)
+            if (value.IsNull)
             {
                 throw ServiceResultException.Unexpected(
                     "Node does not support the NodeId attribute.");
             }
 
-            node.NodeId = (NodeId)value.GetValue(typeof(NodeId));
-            node.NodeClass = nodeClass.Value;
+            node.NodeId = value.WrappedValue.GetNodeId();
+            node.NodeClass = nodeClass;
 
             // BrowseName Attribute
             value = attributes[Attributes.BrowseName];
-
-            if (value == null)
+            if (value.IsNull)
             {
                 throw ServiceResultException.Unexpected(
                     "Node does not support the BrowseName attribute.");
             }
 
-            node.BrowseName = (QualifiedName)value.GetValue(typeof(QualifiedName));
+            node.BrowseName = value.WrappedValue.GetQualifiedName();
 
             // DisplayName Attribute
             value = attributes[Attributes.DisplayName];
-
-            if (value == null)
+            if (value.IsNull)
             {
                 throw ServiceResultException.Unexpected(
                     "Node does not support the DisplayName attribute.");
             }
 
-            node.DisplayName = (LocalizedText)value.GetValue(typeof(LocalizedText));
+            node.DisplayName = value.WrappedValue.GetLocalizedText();
 
             // all optional attributes follow
 
             // Description Attribute
             if (attributes.TryGetValue(Attributes.Description, out value) &&
-                value != null &&
-                value.Value != null)
+                !value.IsNull &&
+                !value.WrappedValue.IsNull)
             {
-                node.Description = (LocalizedText)value.GetValue(typeof(LocalizedText));
+                node.Description = value.WrappedValue.GetLocalizedText();
             }
 
             // WriteMask Attribute
-            if (attributes.TryGetValue(Attributes.WriteMask, out value) && value != null)
+            if (attributes.TryGetValue(Attributes.WriteMask, out value) &&
+                !value.IsNull)
             {
-                node.WriteMask = value.GetValueOrDefault<uint>();
+                node.WriteMask = value.WrappedValue.GetUInt32();
             }
 
             // UserWriteMask Attribute
-            if (attributes.TryGetValue(Attributes.UserWriteMask, out value) && value != null)
+            if (attributes.TryGetValue(Attributes.UserWriteMask, out value) &&
+                !value.IsNull)
             {
-                node.UserWriteMask = value.GetValueOrDefault<uint>();
+                node.UserWriteMask = value.WrappedValue.GetUInt32();
             }
 
             // RolePermissions Attribute
-            if (attributes.TryGetValue(Attributes.RolePermissions, out value) && value != null)
+            if (attributes.TryGetValue(Attributes.RolePermissions, out value) &&
+                !value.IsNull)
             {
-                if (value.Value is ExtensionObject[] rolePermissions)
+                if (value.WrappedValue.TryGetValue(out ArrayOf<ExtensionObject> rolePermissions))
                 {
-                    node.RolePermissions = [];
-
+                    // Preserve original behavior of inserting null entries when an
+                    // ExtensionObject cannot be decoded into a RolePermissionType. The
+                    // declared element type of node.RolePermissions is non-nullable so
+                    // the failure branch uses null! to suppress nullability metadata.
+                    var rolePermissionList = new List<RolePermissionType>();
                     foreach (ExtensionObject rolePermission in rolePermissions)
                     {
-                        node.RolePermissions.Add(rolePermission.Body as RolePermissionType);
+                        rolePermissionList.Add(rolePermission.TryGetValue(
+                            out RolePermissionType? rolePermissionType) ? rolePermissionType! : null!);
                     }
+                    node.RolePermissions = rolePermissionList;
                 }
             }
 
             // UserRolePermissions Attribute
-            if (attributes.TryGetValue(Attributes.UserRolePermissions, out value) && value != null)
+            if (attributes.TryGetValue(Attributes.UserRolePermissions, out value) &&
+                !value.IsNull)
             {
-                if (value.Value is ExtensionObject[] userRolePermissions)
+                if (value.WrappedValue.TryGetValue(out ArrayOf<ExtensionObject> userRolePermissions))
                 {
-                    node.UserRolePermissions = [];
-
+                    // See RolePermissions above for the rationale behind the null! casts.
+                    var userRolePermissionList = new List<RolePermissionType>();
                     foreach (ExtensionObject rolePermission in userRolePermissions)
                     {
-                        node.UserRolePermissions.Add(rolePermission.Body as RolePermissionType);
+                        userRolePermissionList.Add(rolePermission.TryGetValue(
+                            out RolePermissionType? rolePermissionType) ? rolePermissionType! : null!);
                     }
+                    node.UserRolePermissions = userRolePermissionList;
                 }
             }
 
             // AccessRestrictions Attribute
-            if (attributes.TryGetValue(Attributes.AccessRestrictions, out value) && value != null)
+            if (attributes.TryGetValue(Attributes.AccessRestrictions, out value) &&
+                !value.IsNull)
             {
-                node.AccessRestrictions = value.GetValueOrDefault<ushort>();
+                node.AccessRestrictions = value.WrappedValue.GetUInt16();
             }
 
             return node;
@@ -971,78 +951,78 @@ namespace Technosoftware.UaClient
         /// Create a dictionary of attributes to read for a nodeclass.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        private static Dictionary<uint, DataValue?> CreateAttributes(
+        private static Dictionary<uint, DataValue> CreateAttributes(
             NodeClass nodeClass,
             bool skipOptionalAttributes)
         {
             // Attributes to read for all types of nodes
-            var attributes = new Dictionary<uint, DataValue?>(Attributes.MaxAttributes)
+            var attributes = new Dictionary<uint, DataValue>(Attributes.MaxAttributes)
             {
-                { Attributes.NodeId, null },
-                { Attributes.NodeClass, null },
-                { Attributes.BrowseName, null },
-                { Attributes.DisplayName, null }
+                { Attributes.NodeId, default },
+                { Attributes.NodeClass, default },
+                { Attributes.BrowseName, default },
+                { Attributes.DisplayName, default }
             };
 
             switch (nodeClass)
             {
                 case NodeClass.Object:
-                    attributes.Add(Attributes.EventNotifier, null);
+                    attributes.Add(Attributes.EventNotifier, default);
                     break;
                 case NodeClass.Variable:
-                    attributes.Add(Attributes.DataType, null);
-                    attributes.Add(Attributes.ValueRank, null);
-                    attributes.Add(Attributes.ArrayDimensions, null);
-                    attributes.Add(Attributes.AccessLevel, null);
-                    attributes.Add(Attributes.UserAccessLevel, null);
-                    attributes.Add(Attributes.Historizing, null);
-                    attributes.Add(Attributes.MinimumSamplingInterval, null);
-                    attributes.Add(Attributes.AccessLevelEx, null);
+                    attributes.Add(Attributes.DataType, default);
+                    attributes.Add(Attributes.ValueRank, default);
+                    attributes.Add(Attributes.ArrayDimensions, default);
+                    attributes.Add(Attributes.AccessLevel, default);
+                    attributes.Add(Attributes.UserAccessLevel, default);
+                    attributes.Add(Attributes.Historizing, default);
+                    attributes.Add(Attributes.MinimumSamplingInterval, default);
+                    attributes.Add(Attributes.AccessLevelEx, default);
                     break;
                 case NodeClass.Method:
-                    attributes.Add(Attributes.Executable, null);
-                    attributes.Add(Attributes.UserExecutable, null);
+                    attributes.Add(Attributes.Executable, default);
+                    attributes.Add(Attributes.UserExecutable, default);
                     break;
                 case NodeClass.ObjectType:
-                    attributes.Add(Attributes.IsAbstract, null);
+                    attributes.Add(Attributes.IsAbstract, default);
                     break;
                 case NodeClass.VariableType:
-                    attributes.Add(Attributes.IsAbstract, null);
-                    attributes.Add(Attributes.DataType, null);
-                    attributes.Add(Attributes.ValueRank, null);
-                    attributes.Add(Attributes.ArrayDimensions, null);
+                    attributes.Add(Attributes.IsAbstract, default);
+                    attributes.Add(Attributes.DataType, default);
+                    attributes.Add(Attributes.ValueRank, default);
+                    attributes.Add(Attributes.ArrayDimensions, default);
                     break;
                 case NodeClass.ReferenceType:
-                    attributes.Add(Attributes.IsAbstract, null);
-                    attributes.Add(Attributes.Symmetric, null);
-                    attributes.Add(Attributes.InverseName, null);
+                    attributes.Add(Attributes.IsAbstract, default);
+                    attributes.Add(Attributes.Symmetric, default);
+                    attributes.Add(Attributes.InverseName, default);
                     break;
                 case NodeClass.DataType:
-                    attributes.Add(Attributes.IsAbstract, null);
-                    attributes.Add(Attributes.DataTypeDefinition, null);
+                    attributes.Add(Attributes.IsAbstract, default);
+                    attributes.Add(Attributes.DataTypeDefinition, default);
                     break;
                 case NodeClass.View:
-                    attributes.Add(Attributes.EventNotifier, null);
-                    attributes.Add(Attributes.ContainsNoLoops, null);
+                    attributes.Add(Attributes.EventNotifier, default);
+                    attributes.Add(Attributes.ContainsNoLoops, default);
                     break;
                 case NodeClass.Unspecified:
                     // build complete list of attributes.
-                    attributes.Add(Attributes.DataType, null);
-                    attributes.Add(Attributes.ValueRank, null);
-                    attributes.Add(Attributes.ArrayDimensions, null);
-                    attributes.Add(Attributes.AccessLevel, null);
-                    attributes.Add(Attributes.UserAccessLevel, null);
-                    attributes.Add(Attributes.MinimumSamplingInterval, null);
-                    attributes.Add(Attributes.Historizing, null);
-                    attributes.Add(Attributes.EventNotifier, null);
-                    attributes.Add(Attributes.Executable, null);
-                    attributes.Add(Attributes.UserExecutable, null);
-                    attributes.Add(Attributes.IsAbstract, null);
-                    attributes.Add(Attributes.InverseName, null);
-                    attributes.Add(Attributes.Symmetric, null);
-                    attributes.Add(Attributes.ContainsNoLoops, null);
-                    attributes.Add(Attributes.DataTypeDefinition, null);
-                    attributes.Add(Attributes.AccessLevelEx, null);
+                    attributes.Add(Attributes.DataType, default);
+                    attributes.Add(Attributes.ValueRank, default);
+                    attributes.Add(Attributes.ArrayDimensions, default);
+                    attributes.Add(Attributes.AccessLevel, default);
+                    attributes.Add(Attributes.UserAccessLevel, default);
+                    attributes.Add(Attributes.MinimumSamplingInterval, default);
+                    attributes.Add(Attributes.Historizing, default);
+                    attributes.Add(Attributes.EventNotifier, default);
+                    attributes.Add(Attributes.Executable, default);
+                    attributes.Add(Attributes.UserExecutable, default);
+                    attributes.Add(Attributes.IsAbstract, default);
+                    attributes.Add(Attributes.InverseName, default);
+                    attributes.Add(Attributes.Symmetric, default);
+                    attributes.Add(Attributes.ContainsNoLoops, default);
+                    attributes.Add(Attributes.DataTypeDefinition, default);
+                    attributes.Add(Attributes.AccessLevelEx, default);
                     break;
                 default:
                     throw ServiceResultException.Unexpected(
@@ -1051,12 +1031,12 @@ namespace Technosoftware.UaClient
 
             if (!skipOptionalAttributes)
             {
-                attributes.Add(Attributes.Description, null);
-                attributes.Add(Attributes.WriteMask, null);
-                attributes.Add(Attributes.UserWriteMask, null);
-                attributes.Add(Attributes.RolePermissions, null);
-                attributes.Add(Attributes.UserRolePermissions, null);
-                attributes.Add(Attributes.AccessRestrictions, null);
+                attributes.Add(Attributes.Description, default);
+                attributes.Add(Attributes.WriteMask, default);
+                attributes.Add(Attributes.UserWriteMask, default);
+                attributes.Add(Attributes.RolePermissions, default);
+                attributes.Add(Attributes.UserRolePermissions, default);
+                attributes.Add(Attributes.AccessRestrictions, default);
             }
 
             return attributes;
@@ -1066,18 +1046,18 @@ namespace Technosoftware.UaClient
         /// Creates a read request with attributes determined by the NodeClass.
         /// </summary>
         private static void CreateNodeClassAttributesReadNodesRequest(
-            IReadOnlyList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             NodeClass nodeClass,
-            ReadValueIdCollection attributesToRead,
-            List<IDictionary<uint, DataValue?>?> attributesPerNodeId,
-            NodeCollection nodeCollection,
+            List<ReadValueId> attributesToRead,
+            List<IDictionary<uint, DataValue>?> attributesPerNodeId,
+            List<Node> nodeCollection,
             bool skipOptionalAttributes)
         {
             for (int ii = 0; ii < nodeIds.Count; ii++)
             {
                 var node = new Node { NodeId = nodeIds[ii], NodeClass = nodeClass };
 
-                Dictionary<uint, DataValue?> attributes = CreateAttributes(
+                Dictionary<uint, DataValue> attributes = CreateAttributes(
                     node.NodeClass,
                     skipOptionalAttributes);
                 foreach (uint attributeId in attributes.Keys)
