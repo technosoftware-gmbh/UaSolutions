@@ -286,11 +286,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (subscriptionAcknowledgements == null)
-            {
-                throw new ArgumentNullException(nameof(subscriptionAcknowledgements));
-            }
-
             bool diagnosticsExist = false;
             acknowledgeResults = new List<StatusCode>(subscriptionAcknowledgements.Count);
             acknowledgeDiagnosticInfos = new List<DiagnosticInfo>(

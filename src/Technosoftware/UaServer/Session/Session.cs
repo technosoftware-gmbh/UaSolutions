@@ -401,11 +401,6 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="localeIds"/> is <c>null</c>.</exception>
         public bool UpdateLocaleIds(ArrayOf<string> localeIds)
         {
-            if (localeIds == null)
-            {
-                throw new ArgumentNullException(nameof(localeIds));
-            }
-
             lock (m_lock)
             {
                 string[] ids = [.. localeIds];

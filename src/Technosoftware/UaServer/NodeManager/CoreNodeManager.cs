@@ -659,11 +659,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (nodesToRead == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToRead));
-            }
-
             if (values == null)
             {
                 throw new ArgumentNullException(nameof(values));
@@ -802,11 +797,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(details));
             }
 
-            if (nodesToRead == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToRead));
-            }
-
             if (results == null)
             {
                 throw new ArgumentNullException(nameof(results));
@@ -854,11 +844,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (nodesToWrite == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToWrite));
             }
 
             if (errors == null)
@@ -1013,11 +998,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (nodesToUpdate == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToUpdate));
-            }
-
             if (results == null)
             {
                 throw new ArgumentNullException(nameof(results));
@@ -1066,11 +1046,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (methodsToCall == null)
-            {
-                throw new ArgumentNullException(nameof(methodsToCall));
             }
 
             if (results == null)
@@ -1239,11 +1214,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (itemsToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToCreate));
             }
 
             if (errors == null)
@@ -1523,11 +1493,6 @@ namespace Technosoftware.UaServer
             if (monitoredItems == null)
             {
                 throw new ArgumentNullException(nameof(monitoredItems));
-            }
-
-            if (itemsToModify == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToModify));
             }
 
             if (errors == null)

@@ -706,11 +706,6 @@ namespace Technosoftware.UaServer
             ArrayOf<NodeId> nodesToRegister,
             out ArrayOf<NodeId> registeredNodeIds)
         {
-            if (nodesToRegister == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToRegister));
-            }
-
             // return the node id provided; ArrayOf<T> is immutable, so the
             // copy the loop used to make is no longer needed.
             registeredNodeIds = nodesToRegister;
@@ -740,11 +735,6 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             ArrayOf<NodeId> nodesToUnregister)
         {
-            if (nodesToUnregister == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToUnregister));
-            }
-
             m_logger.LogTrace(
                 Utils.TraceMasks.ServiceDetail,
                 "MasterNodeManager.UnregisterNodes - Count={Count}",
@@ -771,11 +761,6 @@ namespace Technosoftware.UaServer
             ArrayOf<BrowsePath> browsePaths,
             CancellationToken cancellationToken = default)
         {
-            if (browsePaths == null)
-            {
-                throw new ArgumentNullException(nameof(browsePaths));
-            }
-
             bool diagnosticsExist = false;
             var results = new BrowsePathResultCollection(browsePaths.Count);
             var diagnosticInfos = new List<DiagnosticInfo>(browsePaths.Count);
@@ -1161,11 +1146,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (nodesToBrowse == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToBrowse));
-            }
-
             if (view != null && !NodeId.IsNull(view.ViewId))
             {
                 (object viewHandle, IUaStandardAsyncNodeManager viewManager) =
@@ -1343,11 +1323,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (continuationPoints == null)
-            {
-                throw new ArgumentNullException(nameof(continuationPoints));
             }
 
             bool diagnosticsExist = false;
@@ -1756,11 +1731,6 @@ namespace Technosoftware.UaServer
             ArrayOf<ReadValueId> nodesToRead,
             CancellationToken cancellationToken = default)
         {
-            if (nodesToRead == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToRead));
-            }
-
             if (maxAge < 0)
             {
                 throw new ServiceResultException(StatusCodes.BadMaxAgeInvalid);
@@ -2032,11 +2002,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (nodesToWrite == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToWrite));
-            }
-
             int count = nodesToWrite.Count;
 
             bool diagnosticsExist = false;
@@ -2277,11 +2242,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (methodsToCall == null)
-            {
-                throw new ArgumentNullException(nameof(methodsToCall));
-            }
-
             bool diagnosticsExist = false;
             var results = new CallMethodResultCollection(methodsToCall.Count);
             var diagnosticInfos = new List<DiagnosticInfo>(methodsToCall.Count);
@@ -2414,11 +2374,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (itemsToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToCreate));
             }
 
             if (errors == null)
@@ -2813,11 +2768,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (itemsToModify == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToModify));
-            }
-
             if (monitoredItems == null)
             {
                 throw new ArgumentNullException(nameof(monitoredItems));
@@ -3166,11 +3116,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (itemsToModify == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToModify));
             }
 
             if (errors == null)

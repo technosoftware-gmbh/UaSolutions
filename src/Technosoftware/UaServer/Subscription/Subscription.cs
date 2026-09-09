@@ -1354,16 +1354,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (linksToAdd == null)
-            {
-                throw new ArgumentNullException(nameof(linksToAdd));
-            }
-
-            if (linksToRemove == null)
-            {
-                throw new ArgumentNullException(nameof(linksToRemove));
-            }
-
             // allocate results.
             bool diagnosticsExist = false;
             addResults = [];
@@ -1547,11 +1537,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (itemsToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToCreate));
             }
 
             int count = itemsToCreate.Count;
@@ -1766,11 +1751,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (itemsToModify == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToModify));
-            }
-
             int count = itemsToModify.Count;
 
             // allocate results.
@@ -1954,11 +1934,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (monitoredItemIds == null)
-            {
-                throw new ArgumentNullException(nameof(monitoredItemIds));
-            }
-
             int count = monitoredItemIds.Count;
 
             bool diagnosticsExist = false;
@@ -2130,11 +2105,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (monitoredItemIds == null)
-            {
-                throw new ArgumentNullException(nameof(monitoredItemIds));
             }
 
             int count = monitoredItemIds.Count;
