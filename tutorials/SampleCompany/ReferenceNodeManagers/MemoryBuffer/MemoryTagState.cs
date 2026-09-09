@@ -37,7 +37,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             BrowseName = new QualifiedName(
                 Utils.Format("{1:X8}", parent.SymbolicName, offet),
                 parent.TypeDefinitionId.NamespaceIndex);
-            DisplayName = BrowseName.Name;
+            DisplayName = new LocalizedText(BrowseName.Name);
             Description = null;
             WriteMask = AttributeWriteMask.None;
             UserWriteMask = AttributeWriteMask.None;

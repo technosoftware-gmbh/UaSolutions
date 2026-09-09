@@ -125,7 +125,7 @@ namespace SampleCompany.NodeManagers.Alarms
 
             if (!isBranch)
             {
-                m_trigger.AddReference(ReferenceTypes.HasCondition, false, m_alarm.NodeId);
+                m_trigger.AddReference(new NodeId(ReferenceTypes.HasCondition), false, m_alarm.NodeId);
                 m_parent.AddChild(alarm);
             }
         }

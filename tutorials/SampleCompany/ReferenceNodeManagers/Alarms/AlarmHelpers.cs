@@ -38,7 +38,7 @@ namespace SampleCompany.NodeManagers.Alarms
             var folder = new FolderState(parent)
             {
                 SymbolicName = name,
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = ObjectTypeIds.FolderType,
                 NodeId = new NodeId(path, nameSpaceIndex),
                 BrowseName = new QualifiedName(path, nameSpaceIndex),
@@ -84,7 +84,7 @@ namespace SampleCompany.NodeManagers.Alarms
             var variable = new BaseDataVariableState(parent)
             {
                 SymbolicName = name,
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
                 NodeId = new NodeId(path, nameSpaceIndex),
                 BrowseName = new QualifiedName(name, nameSpaceIndex),
@@ -160,9 +160,9 @@ namespace SampleCompany.NodeManagers.Alarms
             startMethod.InputArguments = new PropertyState<Argument[]>(startMethod)
             {
                 NodeId = new NodeId(startMethod.BrowseName.Name + "InArgs", namespaceIndex),
-                BrowseName = BrowseNames.InputArguments
+                BrowseName = new QualifiedName(BrowseNames.InputArguments)
             };
-            startMethod.InputArguments.DisplayName = startMethod.InputArguments.BrowseName.Name;
+            startMethod.InputArguments.DisplayName = new LocalizedText(startMethod.InputArguments.BrowseName.Name);
             startMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
             startMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
             startMethod.InputArguments.DataType = DataTypeIds.Argument;
@@ -173,7 +173,7 @@ namespace SampleCompany.NodeManagers.Alarms
                 new Argument
                 {
                     Name = "UInt32 value",
-                    Description = "Runtime of Alarms in seconds.",
+                    Description = new LocalizedText("Runtime of Alarms in seconds."),
                     DataType = DataTypeIds.UInt32,
                     ValueRank = ValueRanks.Scalar
                 }

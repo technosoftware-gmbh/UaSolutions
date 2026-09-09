@@ -133,12 +133,12 @@ namespace SampleCompany.NodeManagers.Alarms
 
                     FolderState alarmsFolder = CreateFolder(null, alarmsNodeName, alarmsName);
                     alarmsFolder.AddReference(
-                        ReferenceTypes.Organizes,
+                        new NodeId(ReferenceTypes.Organizes),
                         true,
                         ObjectIds.ObjectsFolder);
                     references.Add(
                         new NodeStateReference(
-                            ReferenceTypes.Organizes,
+                            new NodeId(ReferenceTypes.Organizes),
                             false,
                             alarmsFolder.NodeId));
                     alarmsFolder.EventNotifier = EventNotifiers.SubscribeToEvents;
@@ -272,7 +272,7 @@ namespace SampleCompany.NodeManagers.Alarms
             var folder = new FolderState(parent)
             {
                 SymbolicName = name,
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = ObjectTypeIds.FolderType,
                 NodeId = new NodeId(path, NamespaceIndex),
                 BrowseName = new QualifiedName(path, NamespaceIndex),
@@ -306,7 +306,7 @@ namespace SampleCompany.NodeManagers.Alarms
                             controller.Source.GetReferences(
                                 SystemContext,
                                 references,
-                                ReferenceTypes.HasCondition,
+                                new NodeId(ReferenceTypes.HasCondition),
                                 false);
                             foreach (IReference reference in references)
                             {
@@ -374,7 +374,7 @@ namespace SampleCompany.NodeManagers.Alarms
                         sourceController.Source.GetReferences(
                             SystemContext,
                             references,
-                            ReferenceTypes.HasCondition,
+                            new NodeId(ReferenceTypes.HasCondition),
                             false);
                         foreach (IReference reference in references)
                         {
@@ -438,7 +438,7 @@ namespace SampleCompany.NodeManagers.Alarms
                         sourceController.Source.GetReferences(
                             SystemContext,
                             references,
-                            ReferenceTypes.HasCondition,
+                            new NodeId(ReferenceTypes.HasCondition),
                             false);
                         foreach (IReference reference in references)
                         {
@@ -484,7 +484,7 @@ namespace SampleCompany.NodeManagers.Alarms
                         sourceController.Source.GetReferences(
                             SystemContext,
                             references,
-                            ReferenceTypes.HasCondition,
+                            new NodeId(ReferenceTypes.HasCondition),
                             false);
                         foreach (IReference reference in references)
                         {
@@ -537,7 +537,7 @@ namespace SampleCompany.NodeManagers.Alarms
                 sourceController.Source.GetReferences(
                     SystemContext,
                     references,
-                    ReferenceTypes.HasCondition,
+                    new NodeId(ReferenceTypes.HasCondition),
                     false);
                 foreach (IReference reference in references)
                 {

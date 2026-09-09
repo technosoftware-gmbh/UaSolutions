@@ -2487,7 +2487,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             {
                 if (variable.FindChild(
                     context,
-                    BrowseNames.EURange) is not BaseVariableState euRange)
+                    new QualifiedName(BrowseNames.EURange)) is not BaseVariableState euRange)
                 {
                     return StatusCodes.BadMonitoredItemFilterUnsupported;
                 }

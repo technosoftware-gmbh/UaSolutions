@@ -112,9 +112,9 @@ namespace SampleCompany.NodeManagers.Reference
                 }
 
                 FolderState root = CreateFolder(null, "CTT", "CTT");
-                root.AddReference(ReferenceTypes.Organizes, true, ObjectIds.ObjectsFolder);
+                root.AddReference(new NodeId(ReferenceTypes.Organizes), true, ObjectIds.ObjectsFolder);
                 references.Add(
-                    new NodeStateReference(ReferenceTypes.Organizes, false, root.NodeId));
+                    new NodeStateReference(new NodeId(ReferenceTypes.Organizes), false, root.NodeId));
                 root.EventNotifier = EventNotifiers.SubscribeToEvents;
                 AddRootNotifier(root);
 
@@ -2053,7 +2053,7 @@ namespace SampleCompany.NodeManagers.Reference
                         referencesPrefix + "HasForwardReference",
                         "HasForwardReference");
                     hasForwardReference.AddReference(
-                        ReferenceTypes.HasCause,
+                        new NodeId(ReferenceTypes.HasCause),
                         false,
                         variables[0].NodeId);
                     variables.Add(hasForwardReference);
@@ -2063,7 +2063,7 @@ namespace SampleCompany.NodeManagers.Reference
                         referencesPrefix + "HasInverseReference",
                         "HasInverseReference");
                     hasInverseReference.AddReference(
-                        ReferenceTypes.HasCause,
+                        new NodeId(ReferenceTypes.HasCause),
                         true,
                         variables[0].NodeId);
                     variables.Add(hasInverseReference);
@@ -2081,15 +2081,15 @@ namespace SampleCompany.NodeManagers.Reference
                             referencesPrefix + referenceString,
                             referenceString);
                         has3ForwardReferences.AddReference(
-                            ReferenceTypes.HasCause,
+                            new NodeId(ReferenceTypes.HasCause),
                             false,
                             variables[0].NodeId);
                         has3ForwardReferences.AddReference(
-                            ReferenceTypes.HasCause,
+                            new NodeId(ReferenceTypes.HasCause),
                             false,
                             variables[1].NodeId);
                         has3ForwardReferences.AddReference(
-                            ReferenceTypes.HasCause,
+                            new NodeId(ReferenceTypes.HasCause),
                             false,
                             variables[2].NodeId);
                         if (i == 1)
@@ -2104,15 +2104,15 @@ namespace SampleCompany.NodeManagers.Reference
                         referencesPrefix + "Has3InverseReferences",
                         "Has3InverseReferences");
                     has3InverseReferences.AddReference(
-                        ReferenceTypes.HasEffect,
+                        new NodeId(ReferenceTypes.HasEffect),
                         true,
                         variables[0].NodeId);
                     has3InverseReferences.AddReference(
-                        ReferenceTypes.HasEffect,
+                        new NodeId(ReferenceTypes.HasEffect),
                         true,
                         variables[1].NodeId);
                     has3InverseReferences.AddReference(
-                        ReferenceTypes.HasEffect,
+                        new NodeId(ReferenceTypes.HasEffect),
                         true,
                         variables[2].NodeId);
                     variables.Add(has3InverseReferences);
@@ -2309,7 +2309,7 @@ namespace SampleCompany.NodeManagers.Reference
                         BuiltInType.Int16,
                         ValueRanks.Scalar);
                     rpAnonymous.Description
-                        = "This node can be accessed by users that have Anonymous Role";
+                        = new LocalizedText("This node can be accessed by users that have Anonymous Role");
                     rpAnonymous.RolePermissions =
                     [
                         // allow access to users with Anonymous role
@@ -2332,7 +2332,7 @@ namespace SampleCompany.NodeManagers.Reference
                         BuiltInType.Int16,
                         ValueRanks.Scalar);
                     rpAuthenticatedUser.Description =
-                        "This node can be accessed by users that have AuthenticatedUser Role";
+                        new LocalizedText("This node can be accessed by users that have AuthenticatedUser Role");
                     rpAuthenticatedUser.RolePermissions =
                     [
                         // allow access to users with AuthenticatedUser role
@@ -2355,7 +2355,7 @@ namespace SampleCompany.NodeManagers.Reference
                         BuiltInType.Int16,
                         ValueRanks.Scalar);
                     rpSecurityAdminUser.Description =
-                        "This node can be accessed by users that have SecurityAdmin Role over an encrypted connection";
+                        new LocalizedText("This node can be accessed by users that have SecurityAdmin Role over an encrypted connection");
                     rpSecurityAdminUser.AccessRestrictions
                         = AccessRestrictionType.EncryptionRequired;
                     rpSecurityAdminUser.RolePermissions =
@@ -2380,7 +2380,7 @@ namespace SampleCompany.NodeManagers.Reference
                         BuiltInType.Int16,
                         ValueRanks.Scalar);
                     rpConfigAdminUser.Description =
-                        "This node can be accessed by users that have ConfigureAdmin Role over an encrypted connection";
+                        new LocalizedText("This node can be accessed by users that have ConfigureAdmin Role over an encrypted connection");
                     rpConfigAdminUser.AccessRestrictions = AccessRestrictionType.EncryptionRequired;
                     rpConfigAdminUser.RolePermissions =
                     [
@@ -2522,9 +2522,9 @@ namespace SampleCompany.NodeManagers.Reference
                     addMethod.InputArguments = new PropertyState<Argument[]>(addMethod)
                     {
                         NodeId = new NodeId(addMethod.BrowseName.Name + "InArgs", NamespaceIndex),
-                        BrowseName = BrowseNames.InputArguments
+                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
                     };
-                    addMethod.InputArguments.DisplayName = addMethod.InputArguments.BrowseName.Name;
+                    addMethod.InputArguments.DisplayName = new LocalizedText(addMethod.InputArguments.BrowseName.Name);
                     addMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     addMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     addMethod.InputArguments.DataType = DataTypeIds.Argument;
@@ -2535,14 +2535,14 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Float value",
-                            Description = "Float value",
+                            Description = new LocalizedText("Float value"),
                             DataType = DataTypeIds.Float,
                             ValueRank = ValueRanks.Scalar
                         },
                         new Argument
                         {
                             Name = "UInt32 value",
-                            Description = "UInt32 value",
+                            Description = new LocalizedText("UInt32 value"),
                             DataType = DataTypeIds.UInt32,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2552,10 +2552,10 @@ namespace SampleCompany.NodeManagers.Reference
                     addMethod.OutputArguments = new PropertyState<Argument[]>(addMethod)
                     {
                         NodeId = new NodeId(addMethod.BrowseName.Name + "OutArgs", NamespaceIndex),
-                        BrowseName = BrowseNames.OutputArguments
+                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
                     };
-                    addMethod.OutputArguments.DisplayName = addMethod.OutputArguments.BrowseName
-                        .Name;
+                    addMethod.OutputArguments.DisplayName = new LocalizedText(addMethod.OutputArguments.BrowseName
+                        .Name);
                     addMethod.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     addMethod.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     addMethod.OutputArguments.DataType = DataTypeIds.Argument;
@@ -2566,7 +2566,7 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Add Result",
-                            Description = "Add Result",
+                            Description = new LocalizedText("Add Result"),
                             DataType = DataTypeIds.Float,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2584,11 +2584,11 @@ namespace SampleCompany.NodeManagers.Reference
                         NodeId = new NodeId(
                             multiplyMethod.BrowseName.Name + "InArgs",
                             NamespaceIndex),
-                        BrowseName = BrowseNames.InputArguments
+                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
                     };
-                    multiplyMethod.InputArguments.DisplayName = multiplyMethod.InputArguments
+                    multiplyMethod.InputArguments.DisplayName = new LocalizedText(multiplyMethod.InputArguments
                         .BrowseName
-                        .Name;
+                        .Name);
                     multiplyMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     multiplyMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     multiplyMethod.InputArguments.DataType = DataTypeIds.Argument;
@@ -2599,14 +2599,14 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Int16 value",
-                            Description = "Int16 value",
+                            Description = new LocalizedText("Int16 value"),
                             DataType = DataTypeIds.Int16,
                             ValueRank = ValueRanks.Scalar
                         },
                         new Argument
                         {
                             Name = "UInt16 value",
-                            Description = "UInt16 value",
+                            Description = new LocalizedText("UInt16 value"),
                             DataType = DataTypeIds.UInt16,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2618,11 +2618,11 @@ namespace SampleCompany.NodeManagers.Reference
                         NodeId = new NodeId(
                             multiplyMethod.BrowseName.Name + "OutArgs",
                             NamespaceIndex),
-                        BrowseName = BrowseNames.OutputArguments
+                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
                     };
-                    multiplyMethod.OutputArguments.DisplayName = multiplyMethod.OutputArguments
+                    multiplyMethod.OutputArguments.DisplayName = new LocalizedText(multiplyMethod.OutputArguments
                         .BrowseName
-                        .Name;
+                        .Name);
                     multiplyMethod.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     multiplyMethod.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     multiplyMethod.OutputArguments.DataType = DataTypeIds.Argument;
@@ -2633,7 +2633,7 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Multiply Result",
-                            Description = "Multiply Result",
+                            Description = new LocalizedText("Multiply Result"),
                             DataType = DataTypeIds.Int32,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2652,10 +2652,10 @@ namespace SampleCompany.NodeManagers.Reference
                         NodeId = new NodeId(
                             divideMethod.BrowseName.Name + "InArgs",
                             NamespaceIndex),
-                        BrowseName = BrowseNames.InputArguments
+                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
                     };
-                    divideMethod.InputArguments.DisplayName = divideMethod.InputArguments.BrowseName
-                        .Name;
+                    divideMethod.InputArguments.DisplayName = new LocalizedText(divideMethod.InputArguments.BrowseName
+                        .Name);
                     divideMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     divideMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     divideMethod.InputArguments.DataType = DataTypeIds.Argument;
@@ -2666,14 +2666,14 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Int32 value",
-                            Description = "Int32 value",
+                            Description = new LocalizedText("Int32 value"),
                             DataType = DataTypeIds.Int32,
                             ValueRank = ValueRanks.Scalar
                         },
                         new Argument
                         {
                             Name = "UInt16 value",
-                            Description = "UInt16 value",
+                            Description = new LocalizedText("UInt16 value"),
                             DataType = DataTypeIds.UInt16,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2685,11 +2685,11 @@ namespace SampleCompany.NodeManagers.Reference
                         NodeId = new NodeId(
                             divideMethod.BrowseName.Name + "OutArgs",
                             NamespaceIndex),
-                        BrowseName = BrowseNames.OutputArguments
+                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
                     };
-                    divideMethod.OutputArguments.DisplayName = divideMethod.OutputArguments
+                    divideMethod.OutputArguments.DisplayName = new LocalizedText(divideMethod.OutputArguments
                         .BrowseName
-                        .Name;
+                        .Name);
                     divideMethod.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     divideMethod.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     divideMethod.OutputArguments.DataType = DataTypeIds.Argument;
@@ -2700,7 +2700,7 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Divide Result",
-                            Description = "Divide Result",
+                            Description = new LocalizedText("Divide Result"),
                             DataType = DataTypeIds.Float,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2718,11 +2718,11 @@ namespace SampleCompany.NodeManagers.Reference
                         NodeId = new NodeId(
                             substractMethod.BrowseName.Name + "InArgs",
                             NamespaceIndex),
-                        BrowseName = BrowseNames.InputArguments
+                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
                     };
-                    substractMethod.InputArguments.DisplayName = substractMethod.InputArguments
+                    substractMethod.InputArguments.DisplayName = new LocalizedText(substractMethod.InputArguments
                         .BrowseName
-                        .Name;
+                        .Name);
                     substractMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     substractMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     substractMethod.InputArguments.DataType = DataTypeIds.Argument;
@@ -2733,14 +2733,14 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Int16 value",
-                            Description = "Int16 value",
+                            Description = new LocalizedText("Int16 value"),
                             DataType = DataTypeIds.Int16,
                             ValueRank = ValueRanks.Scalar
                         },
                         new Argument
                         {
                             Name = "Byte value",
-                            Description = "Byte value",
+                            Description = new LocalizedText("Byte value"),
                             DataType = DataTypeIds.Byte,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2752,11 +2752,11 @@ namespace SampleCompany.NodeManagers.Reference
                         NodeId = new NodeId(
                             substractMethod.BrowseName.Name + "OutArgs",
                             NamespaceIndex),
-                        BrowseName = BrowseNames.OutputArguments
+                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
                     };
-                    substractMethod.OutputArguments.DisplayName = substractMethod.OutputArguments
+                    substractMethod.OutputArguments.DisplayName = new LocalizedText(substractMethod.OutputArguments
                         .BrowseName
-                        .Name;
+                        .Name);
                     substractMethod.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     substractMethod.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     substractMethod.OutputArguments.DataType = DataTypeIds.Argument;
@@ -2767,7 +2767,7 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Substract Result",
-                            Description = "Substract Result",
+                            Description = new LocalizedText("Substract Result"),
                             DataType = DataTypeIds.Int16,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2784,10 +2784,10 @@ namespace SampleCompany.NodeManagers.Reference
                     helloMethod.InputArguments = new PropertyState<Argument[]>(helloMethod)
                     {
                         NodeId = new NodeId(helloMethod.BrowseName.Name + "InArgs", NamespaceIndex),
-                        BrowseName = BrowseNames.InputArguments
+                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
                     };
-                    helloMethod.InputArguments.DisplayName = helloMethod.InputArguments.BrowseName
-                        .Name;
+                    helloMethod.InputArguments.DisplayName = new LocalizedText(helloMethod.InputArguments.BrowseName
+                        .Name);
                     helloMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     helloMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     helloMethod.InputArguments.DataType = DataTypeIds.Argument;
@@ -2798,7 +2798,7 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "String value",
-                            Description = "String value",
+                            Description = new LocalizedText("String value"),
                             DataType = DataTypeIds.String,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2810,10 +2810,10 @@ namespace SampleCompany.NodeManagers.Reference
                         NodeId = new NodeId(
                             helloMethod.BrowseName.Name + "OutArgs",
                             NamespaceIndex),
-                        BrowseName = BrowseNames.OutputArguments
+                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
                     };
-                    helloMethod.OutputArguments.DisplayName = helloMethod.OutputArguments.BrowseName
-                        .Name;
+                    helloMethod.OutputArguments.DisplayName = new LocalizedText(helloMethod.OutputArguments.BrowseName
+                        .Name);
                     helloMethod.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     helloMethod.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     helloMethod.OutputArguments.DataType = DataTypeIds.Argument;
@@ -2824,7 +2824,7 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Hello Result",
-                            Description = "Hello Result",
+                            Description = new LocalizedText("Hello Result"),
                             DataType = DataTypeIds.String,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2840,10 +2840,10 @@ namespace SampleCompany.NodeManagers.Reference
                     inputMethod.InputArguments = new PropertyState<Argument[]>(inputMethod)
                     {
                         NodeId = new NodeId(inputMethod.BrowseName.Name + "InArgs", NamespaceIndex),
-                        BrowseName = BrowseNames.InputArguments
+                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
                     };
-                    inputMethod.InputArguments.DisplayName = inputMethod.InputArguments.BrowseName
-                        .Name;
+                    inputMethod.InputArguments.DisplayName = new LocalizedText(inputMethod.InputArguments.BrowseName
+                        .Name);
                     inputMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     inputMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     inputMethod.InputArguments.DataType = DataTypeIds.Argument;
@@ -2854,7 +2854,7 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "String value",
-                            Description = "String value",
+                            Description = new LocalizedText("String value"),
                             DataType = DataTypeIds.String,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2873,11 +2873,11 @@ namespace SampleCompany.NodeManagers.Reference
                         NodeId = new NodeId(
                             helloMethod.BrowseName.Name + "OutArgs",
                             NamespaceIndex),
-                        BrowseName = BrowseNames.OutputArguments
+                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
                     };
-                    outputMethod.OutputArguments.DisplayName = helloMethod.OutputArguments
+                    outputMethod.OutputArguments.DisplayName = new LocalizedText(helloMethod.OutputArguments
                         .BrowseName
-                        .Name;
+                        .Name);
                     outputMethod.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     outputMethod.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                     outputMethod.OutputArguments.DataType = DataTypeIds.Argument;
@@ -2888,7 +2888,7 @@ namespace SampleCompany.NodeManagers.Reference
                         new Argument
                         {
                             Name = "Output Result",
-                            Description = "Output Result",
+                            Description = new LocalizedText("Output Result"),
                             DataType = DataTypeIds.String,
                             ValueRank = ValueRanks.Scalar
                         }
@@ -2905,11 +2905,11 @@ namespace SampleCompany.NodeManagers.Reference
                         views + "Operations",
                         "Operations");
                     viewStateOperations.AddReference(
-                        ReferenceTypes.Organizes,
+                        new NodeId(ReferenceTypes.Organizes),
                         false,
                         massFolder.NodeId);
                     massFolder.AddReference(
-                        ReferenceTypes.Organizes,
+                        new NodeId(ReferenceTypes.Organizes),
                         true,
                         viewStateOperations.NodeId);
 
@@ -2919,11 +2919,11 @@ namespace SampleCompany.NodeManagers.Reference
                         views + "Engineering",
                         "Engineering");
                     viewStateEngineering.AddReference(
-                        ReferenceTypes.Organizes,
+                        new NodeId(ReferenceTypes.Organizes),
                         false,
                         simulationFolder.NodeId);
                     simulationFolder.AddReference(
-                        ReferenceTypes.Organizes,
+                        new NodeId(ReferenceTypes.Organizes),
                         true,
                         viewStateEngineering.NodeId);
 
@@ -3724,7 +3724,7 @@ namespace SampleCompany.NodeManagers.Reference
             var folder = new FolderState(parent)
             {
                 SymbolicName = name,
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = ObjectTypeIds.FolderType,
                 NodeId = new NodeId(path, NamespaceIndex),
                 BrowseName = new QualifiedName(path, NamespaceIndex),
@@ -3759,10 +3759,10 @@ namespace SampleCompany.NodeManagers.Reference
             {
                 foreach (NodeState peer in peers)
                 {
-                    peer.AddReference(ReferenceTypes.HasCause, false, variable.NodeId);
-                    variable.AddReference(ReferenceTypes.HasCause, true, peer.NodeId);
-                    peer.AddReference(ReferenceTypes.HasEffect, true, variable.NodeId);
-                    variable.AddReference(ReferenceTypes.HasEffect, false, peer.NodeId);
+                    peer.AddReference(new NodeId(ReferenceTypes.HasCause), false, variable.NodeId);
+                    variable.AddReference(new NodeId(ReferenceTypes.HasCause), true, peer.NodeId);
+                    peer.AddReference(new NodeId(ReferenceTypes.HasEffect), true, variable.NodeId);
+                    variable.AddReference(new NodeId(ReferenceTypes.HasEffect), false, peer.NodeId);
                 }
             }
 
@@ -3786,18 +3786,18 @@ namespace SampleCompany.NodeManagers.Reference
             variable.Create(SystemContext, default, variable.BrowseName, null, true);
 
             variable.SymbolicName = name;
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.NodeId = new NodeId(path, NamespaceIndex);
             variable.BrowseName = new QualifiedName(path, NamespaceIndex);
             variable.DisplayName = new LocalizedText("en", name);
             variable.WriteMask = AttributeWriteMask.None;
             variable.UserWriteMask = AttributeWriteMask.None;
-            variable.DataType = (uint)dataType;
+            variable.DataType = new NodeId((uint)dataType);
             variable.ValueRank = valueRank;
             variable.AccessLevel = AccessLevels.CurrentReadOrWrite;
             variable.UserAccessLevel = AccessLevels.CurrentReadOrWrite;
             variable.Historizing = false;
-            variable.Value = TypeInfo.GetDefaultValue((uint)dataType, valueRank, ServerData.TypeTree);
+            variable.Value = TypeInfo.GetDefaultValue(new NodeId((uint)dataType), valueRank, ServerData.TypeTree);
             variable.StatusCode = StatusCodes.Good;
 
             if (valueRank == ValueRanks.OneDimension)
@@ -3899,7 +3899,7 @@ namespace SampleCompany.NodeManagers.Reference
             variable.DisplayName = new LocalizedText("en", name);
             variable.WriteMask = AttributeWriteMask.None;
             variable.UserWriteMask = AttributeWriteMask.None;
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = dataType;
             variable.ValueRank = valueRank;
             variable.AccessLevel = AccessLevels.CurrentReadOrWrite;
@@ -3983,7 +3983,7 @@ namespace SampleCompany.NodeManagers.Reference
             variable.Create(SystemContext, default, variable.BrowseName, null, true);
 
             variable.SymbolicName = name;
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = DataTypeIds.Boolean;
             variable.ValueRank = ValueRanks.Scalar;
             variable.AccessLevel = AccessLevels.CurrentReadOrWrite;
@@ -3992,11 +3992,11 @@ namespace SampleCompany.NodeManagers.Reference
             variable.Value = (bool)GetNewValue(variable);
             variable.StatusCode = StatusCodes.Good;
 
-            variable.TrueState.Value = trueState;
+            variable.TrueState.Value = new LocalizedText(trueState);
             variable.TrueState.AccessLevel = AccessLevels.CurrentReadOrWrite;
             variable.TrueState.UserAccessLevel = AccessLevels.CurrentReadOrWrite;
 
-            variable.FalseState.Value = falseState;
+            variable.FalseState.Value = new LocalizedText(falseState);
             variable.FalseState.AccessLevel = AccessLevels.CurrentReadOrWrite;
             variable.FalseState.UserAccessLevel = AccessLevels.CurrentReadOrWrite;
 
@@ -4026,7 +4026,7 @@ namespace SampleCompany.NodeManagers.Reference
             variable.Create(SystemContext, default, variable.BrowseName, null, true);
 
             variable.SymbolicName = name;
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = DataTypeIds.UInt32;
             variable.ValueRank = ValueRanks.Scalar;
             variable.AccessLevel = AccessLevels.CurrentReadOrWrite;
@@ -4040,7 +4040,7 @@ namespace SampleCompany.NodeManagers.Reference
 
             for (int ii = 0; ii < strings.Length; ii++)
             {
-                strings[ii] = values[ii];
+                strings[ii] = new LocalizedText(values[ii]);
             }
 
             variable.EnumStrings.Value = strings;
@@ -4086,7 +4086,7 @@ namespace SampleCompany.NodeManagers.Reference
             variable.Create(SystemContext, default, variable.BrowseName, null, true);
 
             variable.SymbolicName = name;
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = nodeId ?? DataTypeIds.UInt32;
             variable.ValueRank = ValueRanks.Scalar;
             variable.AccessLevel = AccessLevels.CurrentReadOrWrite;
@@ -4104,7 +4104,7 @@ namespace SampleCompany.NodeManagers.Reference
             var strings = new LocalizedText[enumNames.Length];
             for (int ii = 0; ii < strings.Length; ii++)
             {
-                strings[ii] = enumNames[ii];
+                strings[ii] = new LocalizedText(enumNames[ii]);
             }
 
             // set the enumerated values
@@ -4340,7 +4340,7 @@ namespace SampleCompany.NodeManagers.Reference
             var variable = new BaseDataVariableState(parent)
             {
                 SymbolicName = name,
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
                 NodeId = new NodeId(path, NamespaceIndex),
                 BrowseName = new QualifiedName(path, NamespaceIndex),
@@ -4355,7 +4355,7 @@ namespace SampleCompany.NodeManagers.Reference
             };
             variable.Value = GetNewValue(variable);
             variable.StatusCode = StatusCodes.Good;
-            variable.Description = "Default Description";
+            variable.Description = new LocalizedText("Default Description");
 
             if (valueRank == ValueRanks.OneDimension)
             {
@@ -4509,7 +4509,7 @@ namespace SampleCompany.NodeManagers.Reference
                 NodeId = new NodeId(path, NamespaceIndex),
                 BrowseName = new QualifiedName(name, NamespaceIndex)
             };
-            type.DisplayName = type.BrowseName.Name;
+            type.DisplayName = new LocalizedText(type.BrowseName.Name);
             type.WriteMask = AttributeWriteMask.None;
             type.UserWriteMask = AttributeWriteMask.None;
             type.ContainsNoLoops = true;
@@ -4526,8 +4526,8 @@ namespace SampleCompany.NodeManagers.Reference
 
             if (parent != null)
             {
-                parent.AddReference(ReferenceTypes.Organizes, false, type.NodeId);
-                type.AddReference(ReferenceTypes.Organizes, true, parent.NodeId);
+                parent.AddReference(new NodeId(ReferenceTypes.Organizes), false, type.NodeId);
+                type.AddReference(new NodeId(ReferenceTypes.Organizes), true, parent.NodeId);
             }
 
             AddPredefinedNode(SystemContext, type);

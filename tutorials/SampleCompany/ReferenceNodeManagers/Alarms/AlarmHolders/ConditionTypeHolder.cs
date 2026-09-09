@@ -279,7 +279,7 @@ namespace SampleCompany.NodeManagers.Alarms
             if (enabling != alarm.EnabledState.Id.Value)
             {
                 alarm.SetEnableState(SystemContext, enabling);
-                alarm.Message.Value = enabling ? "Enabling" : "Disabling alarm " + MapName;
+                alarm.Message.Value = new LocalizedText(enabling ? "Enabling" : "Disabling alarm " + MapName);
 
                 // if disabled, it will not fire
                 ReportEvent();
@@ -308,7 +308,7 @@ namespace SampleCompany.NodeManagers.Alarms
             if (alarmOrBranch == null)
             {
                 string errorMessage = "Unknown event id " + Utils.ToHexString(eventId);
-                alarm.Message.Value = "OnAddComment " + errorMessage;
+                alarm.Message.Value = new LocalizedText("OnAddComment " + errorMessage);
                 LogError("OnAddComment", errorMessage);
                 return StatusCodes.BadEventIdUnknown;
             }
