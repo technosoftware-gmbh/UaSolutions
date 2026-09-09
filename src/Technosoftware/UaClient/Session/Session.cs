@@ -1183,7 +1183,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             byte[]? serverNonce = response.ServerNonce;
             byte[]? serverCertificateData = response.ServerCertificate;
             SignatureData serverSignature = response.ServerSignature;
-            EndpointDescriptionCollection serverEndpoints = response.ServerEndpoints;
+            ArrayOf<EndpointDescription> serverEndpoints = response.ServerEndpoints;
 
             m_sessionTimeout = response.RevisedSessionTimeout;
             m_maxRequestMessageSize = response.MaxRequestMessageSize;
@@ -1286,8 +1286,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 ProcessResponseAdditionalHeader(activateResponse.ResponseHeader, serverCertificate);
 
                 serverNonce = activateResponse.ServerNonce;
-                List<StatusCode> certificateResults = activateResponse.Results;
-                List<DiagnosticInfo> certificateDiagnosticInfos = activateResponse
+                ArrayOf<StatusCode> certificateResults = activateResponse.Results;
+                ArrayOf<DiagnosticInfo> certificateDiagnosticInfos = activateResponse
                     .DiagnosticInfos;
 
                 if (certificateResults != null)
@@ -1662,8 +1662,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                             sendInitialValues,
                             ct)
                         .ConfigureAwait(false);
-                    TransferResultCollection results = response.Results;
-                    List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<TransferResult> results = response.Results;
+                    ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
                     ResponseHeader responseHeader = response.ResponseHeader;
 
                     if (!StatusCode.IsGood(responseHeader.ServiceResult))
@@ -1764,8 +1764,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 ct)
                 .ConfigureAwait(false);
 
-            List<DataValue> values = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<DataValue> values = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
 
             ValidateResponse(values, nodesToRead);
@@ -2429,8 +2429,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                         timeout.Token).ConfigureAwait(false);
 
                     byte[]? serverNonce = activateResult.ServerNonce;
-                    List<StatusCode> certificateResults = activateResult.Results;
-                    List<DiagnosticInfo> certificateDiagnosticInfos = activateResult.DiagnosticInfos;
+                    ArrayOf<StatusCode> certificateResults = activateResult.Results;
+                    ArrayOf<DiagnosticInfo> certificateDiagnosticInfos = activateResult.DiagnosticInfos;
 
                     m_logger.LogInformation("Session RECONNECT {SessionId} completed successfully.", SessionId);
 
@@ -3049,8 +3049,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                         ct).ConfigureAwait(false);
 
                     // read the server status.
-                    List<DataValue> values = result.Results;
-                    List<DiagnosticInfo> diagnosticInfos = result.DiagnosticInfos;
+                    ArrayOf<DataValue> values = result.Results;
+                    ArrayOf<DiagnosticInfo> diagnosticInfos = result.DiagnosticInfos;
                     ResponseHeader responseHeader = result.ResponseHeader;
 
                     ValidateResponse(values, nodesToRead);
@@ -3477,11 +3477,11 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 PublishResponse response = task.Result;
                 ResponseHeader responseHeader = response.ResponseHeader;
                 subscriptionId = response.SubscriptionId;
-                List<uint> availableSequenceNumbers = response.AvailableSequenceNumbers;
+                ArrayOf<uint> availableSequenceNumbers = response.AvailableSequenceNumbers;
                 bool moreNotifications = response.MoreNotifications;
                 NotificationMessage notificationMessage = response.NotificationMessage;
-                List<StatusCode> acknowledgeResults = response.Results;
-                List<DiagnosticInfo> acknowledgeDiagnosticInfos = response.DiagnosticInfos;
+                ArrayOf<StatusCode> acknowledgeResults = response.Results;
+                ArrayOf<DiagnosticInfo> acknowledgeDiagnosticInfos = response.DiagnosticInfos;
 
                 LogLevel logLevel = LogLevel.Warning;
                 foreach (StatusCode code in acknowledgeResults)
@@ -4457,8 +4457,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                     ct).ConfigureAwait(false);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                List<StatusCode> results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                ArrayOf<StatusCode> results = response.Results;
+                ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // validate response.
                 ValidateResponse(results, subscriptionIds);

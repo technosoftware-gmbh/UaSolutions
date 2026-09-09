@@ -231,8 +231,8 @@ namespace Technosoftware.UaClient
                 nodesToBrowse,
                 ct).ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
-            List<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
             ResponseHeader responseHeader = browseResponse.ResponseHeader;
 
             // ensure that the server returned valid results.
@@ -251,7 +251,7 @@ namespace Technosoftware.UaClient
 
             // fetch initial set of references.
             byte[]? continuationPoint = results[0].ContinuationPoint;
-            ReferenceDescriptionCollection references = results[0].References;
+            ArrayOf<ReferenceDescription> references = results[0].References;
 
             try
             {
@@ -645,8 +645,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
-            List<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
             ResponseHeader responseHeader = browseResponse.ResponseHeader;
 
             // ensure that the server returned valid results.

@@ -388,8 +388,8 @@ namespace Technosoftware.UaClient
                 valuesToRead,
                 ct).ConfigureAwait(false);
 
-            List<DataValue> results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<DataValue> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
 
             // verify that the server returned the correct number of results.
@@ -580,8 +580,8 @@ namespace Technosoftware.UaClient
                 browseDescriptions,
                 ct).ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
-            List<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, browseDescriptions);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, browseDescriptions);
@@ -640,8 +640,8 @@ namespace Technosoftware.UaClient
                 continuationPoints,
                 ct).ConfigureAwait(false);
 
-            BrowseResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<BrowseResult> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, continuationPoints);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
@@ -731,8 +731,8 @@ namespace Technosoftware.UaClient
                         .ConfigureAwait(false);
 
                     ResponseHeader responseHeader = result.ResponseHeader;
-                    List<DataValue> results = result.Results;
-                    List<DiagnosticInfo> diagnosticInfos = result.DiagnosticInfos;
+                    ArrayOf<DataValue> results = result.Results;
+                    ArrayOf<DiagnosticInfo> diagnosticInfos = result.DiagnosticInfos;
                     ClientBase.ValidateResponse(results, readValueIds);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, readValueIds);
 
@@ -872,8 +872,8 @@ namespace Technosoftware.UaClient
 
             var errors = new List<ServiceResult>(requests.Count);
             CallResponse response = await session.CallAsync(null, requests, ct).ConfigureAwait(false);
-            CallMethodResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<CallMethodResult> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
             ClientBase.ValidateResponse(results, requests);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, requests);

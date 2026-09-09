@@ -966,7 +966,7 @@ namespace Technosoftware.UaClient
                 .TranslateBrowsePathsToNodeIdsAsync(null, browsePaths, ct)
                 .ConfigureAwait(false);
 
-            BrowsePathResultCollection results = response.Results;
+            ArrayOf<BrowsePathResult> results = response.Results;
             ClientBase.ValidateResponse(results, browsePaths);
             ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, browsePaths);
 
@@ -1009,7 +1009,7 @@ namespace Technosoftware.UaClient
                     .CreateMonitoredItemsAsync(null, Id, TimestampsToReturn, requestItems, ct)
                     .ConfigureAwait(false);
 
-                MonitoredItemCreateResultCollection results = response.Results;
+                ArrayOf<MonitoredItemCreateResult> results = response.Results;
                 ClientBase.ValidateResponse(results, itemsToCreate);
                 ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, itemsToCreate);
 
@@ -1068,7 +1068,7 @@ namespace Technosoftware.UaClient
                 .ModifyMonitoredItemsAsync(null, Id, TimestampsToReturn, requestItems, ct)
                 .ConfigureAwait(false);
 
-            MonitoredItemModifyResultCollection results = response.Results;
+            ArrayOf<MonitoredItemModifyResult> results = response.Results;
             ClientBase.ValidateResponse(results, itemsToModify);
             ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, itemsToModify);
 
@@ -1119,7 +1119,7 @@ namespace Technosoftware.UaClient
                 .DeleteMonitoredItemsAsync(null, Id, monitoredItemIds, ct)
                 .ConfigureAwait(false);
 
-            List<StatusCode> results = response.Results;
+            ArrayOf<StatusCode> results = response.Results;
             ClientBase.ValidateResponse(results, monitoredItemIds);
             ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, monitoredItemIds);
 
@@ -1250,7 +1250,7 @@ namespace Technosoftware.UaClient
                 .SetMonitoringModeAsync(null, Id, monitoringMode, monitoredItemIds, ct)
                 .ConfigureAwait(false);
 
-            List<StatusCode> results = response.Results;
+            ArrayOf<StatusCode> results = response.Results;
             ClientBase.ValidateResponse(results, monitoredItemIds);
             ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, monitoredItemIds);
 

@@ -1424,7 +1424,7 @@ namespace Technosoftware.UaServer
                     // need to trap unexpected exceptions to handle bugs in the node managers.
                     try
                     {
-                        ReferenceDescriptionCollection references = result.References;
+                        ArrayOf<ReferenceDescription> references = result.References;
 
                         (error, cp, references) = await FetchReferencesAsync(
                                 context,
@@ -1560,7 +1560,7 @@ namespace Technosoftware.UaServer
             }
 
             // loop until browse is complete or max results.
-            ReferenceDescriptionCollection references = result.References;
+            ArrayOf<ReferenceDescription> references = result.References;
 
             ServiceResult error;
 

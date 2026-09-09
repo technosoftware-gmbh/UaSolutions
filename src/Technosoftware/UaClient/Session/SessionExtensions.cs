@@ -268,8 +268,8 @@ namespace Technosoftware.UaClient
                 pathsToTranslate,
                 ct).ConfigureAwait(false);
 
-            BrowsePathResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<BrowsePathResult> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
 
             // verify that the server returned the correct number of results.
@@ -390,7 +390,7 @@ namespace Technosoftware.UaClient
             }
 
             // look for cached values.
-            IList<INode> encodings = await session.NodeCache.FindAsync(
+            ArrayOf<INode> encodings = await session.NodeCache.FindAsync(
                 variableId,
                 ReferenceTypeIds.HasEncoding,
                 false,

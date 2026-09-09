@@ -758,7 +758,7 @@ namespace Technosoftware.UaClient
             string browsePath,
             uint attributeId)
         {
-            List<QualifiedName> browseNames = SimpleAttributeOperand.Parse(browsePath);
+            ArrayOf<QualifiedName> browseNames = SimpleAttributeOperand.Parse(browsePath);
             return GetFieldValue(eventFields, eventTypeId, browseNames, attributeId);
         }
 

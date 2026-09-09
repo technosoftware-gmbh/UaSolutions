@@ -369,7 +369,7 @@ namespace Technosoftware.UaClient
             try
             {
                 // fetch references from server.
-                ReferenceDescriptionCollection references = await m_context
+                ArrayOf<ReferenceDescription> references = await m_context
                     .FetchReferencesAsync(null, localId, ct)
                     .ConfigureAwait(false);
 
