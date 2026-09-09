@@ -231,7 +231,7 @@ namespace Technosoftware.UaServer
             NodeId = default;
             AttributeId = 0;
             m_indexRange = null;
-            m_parsedIndexRange = NumericRange.Empty;
+            m_parsedIndexRange = NumericRange.Null;
             DataEncoding = default;
             ClientHandle = 0;
             MonitoringMode = MonitoringMode.Disabled;
@@ -1751,7 +1751,8 @@ namespace Technosoftware.UaServer
 
             if (value1 is not Array array1 || value2 is not Array array2)
             {
-                if (value1 is XmlElement xmlElement1 && value2 is XmlElement xmlElement2)
+                if (value1 is System.Xml.XmlElement xmlElement1 &&
+                    value2 is System.Xml.XmlElement xmlElement2)
                 {
                     return xmlElement1.OuterXml
                         .Equals(xmlElement2.OuterXml, StringComparison.Ordinal);

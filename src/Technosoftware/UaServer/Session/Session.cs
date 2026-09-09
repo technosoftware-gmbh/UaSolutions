@@ -300,14 +300,14 @@ namespace Technosoftware.UaServer
 
                 m_eccUserTokenNonce = Nonce.CreateNonce(m_eccUserTokenSecurityPolicyUri);
 
-                var key = new EphemeralKeyType { PublicKey = m_eccUserTokenNonce.Data };
-
-                key.Signature = EccUtils.Sign(
-                    new ArraySegment<byte>(key.PublicKey),
-                    m_serverCertificate,
-                    m_eccUserTokenSecurityPolicyUri);
-
-                return key;
+                return new EphemeralKeyType
+                {
+                    PublicKey = m_eccUserTokenNonce.Data.ToByteString(),
+                    Signature = CryptoUtils.Sign(
+                        new ArraySegment<byte>(m_eccUserTokenNonce.Data!),
+                        m_serverCertificate,
+                        m_eccUserTokenSecurityPolicyUri).ToByteString()
+                };
             }
         }
 

@@ -532,17 +532,18 @@ namespace Technosoftware.UaServer
                 {
                     try
                     {
-                        // verify cert with issuer chain
-                        var certValidator = new CertificateValidator(ServerData.Telemetry);
-                        var issuerStore = new CertificateTrustList();
-                        var issuerCollection = new CertificateIdentifierCollection();
-                        foreach (Certificate issuerCert in newIssuerCollection)
-                        {
-                            issuerCollection.Add(new CertificateIdentifier(issuerCert));
-                        }
-                        issuerStore.TrustedCertificates = issuerCollection;
-                        certValidator.Update(issuerStore, issuerStore, null);
-                        await certValidator.ValidateAsync(newCert, ct).ConfigureAwait(false);
+                        await ValidatePushCertificateAndIssuerChainAsync(
+                            newCert,
+                            newIssuerCollection,
+                            m_configuration.SecurityConfiguration,
+                            ServerData.Telemetry,
+                            ct).ConfigureAwait(false);
+                    }
+                    catch (ServiceResultException)
+                    {
+                        // the validator already reports the specific status
+                        // code; do not flatten it to BadSecurityChecksFailed.
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -938,7 +939,7 @@ namespace Technosoftware.UaServer
             else
             {
                 ECCurve? curve =
-                    EccUtils.GetCurveFromCertificateTypeId(certificateTypeId)
+                    CryptoUtils.GetCurveFromCertificateTypeId(certificateTypeId)
                     ?? throw new ServiceResultException(
                         StatusCodes.BadNotSupported,
                         "The Ecc certificate type is not supported.");
@@ -1228,6 +1229,53 @@ namespace Technosoftware.UaServer
                     // ignore errors
                 }
             }
+        }
+
+        /// <summary>
+        /// Verifies the integrity of a pushed certificate against the issuer
+        /// chain that was pushed with it.
+        /// </summary>
+        /// <remarks>
+        /// The chain is validated as a whole rather than by building a private
+        /// trust list from the issuers, which is what the 1.5 code did with
+        /// <c>CertificateValidator.Update</c>. Certificate download is switched
+        /// off so a pushed certificate cannot make the server fetch a URL, and
+        /// BadCertificateUntrusted is accepted, since at this point the
+        /// certificate is by definition not yet trusted - every other error,
+        /// including signature integrity and key size, still fails.
+        /// </remarks>
+        internal static async Task ValidatePushCertificateAndIssuerChainAsync(
+            Certificate newCertificate,
+            CertificateCollection issuerCertificates,
+            SecurityConfiguration securityConfiguration,
+            ITelemetryContext telemetry,
+            CancellationToken ct)
+        {
+            ArgumentNullException.ThrowIfNull(newCertificate);
+            ArgumentNullException.ThrowIfNull(issuerCertificates);
+            ArgumentNullException.ThrowIfNull(securityConfiguration);
+            ArgumentNullException.ThrowIfNull(telemetry);
+
+            using CertificateCollection validationChain = issuerCertificates.AddRef();
+            validationChain.Insert(0, newCertificate);
+
+            using CertificateManager validator = CertificateManagerFactory.Create(
+                securityConfiguration,
+                telemetry);
+
+            var options = new Opc.Ua.Security.Certificates.CertificateValidationOptions
+            {
+                AllowCertificateDownload = false,
+                UrlRetrievalTimeout = TimeSpan.FromMilliseconds(1),
+                AcceptError = static (_, serviceResult) =>
+                    serviceResult.StatusCode == StatusCodes.BadCertificateUntrusted
+            };
+
+            Opc.Ua.CertificateValidationResult validationResult = await validator
+                .ValidateAsync(validationChain, trustList: null, options: options, ct)
+                .ConfigureAwait(false);
+
+            validationResult.ThrowIfInvalid();
         }
         #endregion Private Methods
 

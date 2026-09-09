@@ -835,12 +835,12 @@ namespace Technosoftware.UaServer
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             if (valuePrecision != null)
             {
-                variable.ValuePrecision = new PropertyState<double>(variable);
+                _ = variable.CreateOrReplaceValuePrecision(SystemContext, null, false);
             }
 
             variable.Create(
@@ -1100,22 +1100,22 @@ namespace Technosoftware.UaServer
 
             if (engineeringUnit != null)
             {
-                variable.EngineeringUnits = new PropertyState<EUInformation>(variable);
+                _ = variable.CreateOrReplaceEngineeringUnits(SystemContext, null, false);
             }
 
             if (instrumentRange != null)
             {
-                variable.InstrumentRange = new PropertyState<Opc.Ua.Range>(variable);
+                _ = variable.CreateOrReplaceInstrumentRange(SystemContext, null, false);
             }
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             if (valuePrecision != null)
             {
-                variable.ValuePrecision = new PropertyState<double>(variable);
+                _ = variable.CreateOrReplaceValuePrecision(SystemContext, null, false);
             }
 
             variable.Create(
@@ -1268,7 +1268,7 @@ namespace Technosoftware.UaServer
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             variable.Create(
@@ -1384,7 +1384,7 @@ namespace Technosoftware.UaServer
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             variable.Create(
@@ -1506,7 +1506,7 @@ namespace Technosoftware.UaServer
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             variable.Create(
@@ -1655,17 +1655,20 @@ namespace Technosoftware.UaServer
         {
             if (parent != null)
             {
-                parent.InputArguments = new PropertyState<Argument[]>(parent)
-                {
-                    NodeId = new NodeId(parent.BrowseName.Name + "InArgs", NamespaceIndex),
-                    BrowseName = new QualifiedName(BrowseNames.InputArguments)
-                };
-                parent.InputArguments.DisplayName = new LocalizedText(parent.InputArguments.BrowseName.Name);
-                parent.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
-                parent.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
-                parent.InputArguments.DataType = DataTypeIds.Argument;
-                parent.InputArguments.ValueRank = ValueRanks.OneDimension;
-                parent.InputArguments.Value = inputArguments;
+                // PropertyState<T> is abstract in 2.0; the state class's own
+                // factory builds the concrete instance with the right builder.
+                PropertyState<ArrayOf<Argument>> arguments = parent
+                    .CreateOrReplaceInputArguments(SystemContext, null, false);
+                arguments.NodeId = new NodeId(
+                    parent.BrowseName.Name + "InArgs",
+                    NamespaceIndex);
+                arguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
+                arguments.DisplayName = new LocalizedText(arguments.BrowseName.Name);
+                arguments.TypeDefinitionId = VariableTypeIds.PropertyType;
+                arguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+                arguments.DataType = DataTypeIds.Argument;
+                arguments.ValueRank = ValueRanks.OneDimension;
+                arguments.Value = inputArguments.ToArrayOf();
 
                 return StatusCodes.Good;
             }
@@ -1681,17 +1684,20 @@ namespace Technosoftware.UaServer
         {
             if (parent != null)
             {
-                parent.OutputArguments = new PropertyState<Argument[]>(parent)
-                {
-                    NodeId = new NodeId(parent.BrowseName.Name + "OutArgs", NamespaceIndex),
-                    BrowseName = new QualifiedName(BrowseNames.OutputArguments)
-                };
-                parent.OutputArguments.DisplayName = new LocalizedText(parent.OutputArguments.BrowseName.Name);
-                parent.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
-                parent.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
-                parent.OutputArguments.DataType = DataTypeIds.Argument;
-                parent.OutputArguments.ValueRank = ValueRanks.OneDimension;
-                parent.OutputArguments.Value = outputArguments;
+                // PropertyState<T> is abstract in 2.0; the state class's own
+                // factory builds the concrete instance with the right builder.
+                PropertyState<ArrayOf<Argument>> arguments = parent
+                    .CreateOrReplaceOutputArguments(SystemContext, null, false);
+                arguments.NodeId = new NodeId(
+                    parent.BrowseName.Name + "OutArgs",
+                    NamespaceIndex);
+                arguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
+                arguments.DisplayName = new LocalizedText(arguments.BrowseName.Name);
+                arguments.TypeDefinitionId = VariableTypeIds.PropertyType;
+                arguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+                arguments.DataType = DataTypeIds.Argument;
+                arguments.ValueRank = ValueRanks.OneDimension;
+                arguments.Value = outputArguments.ToArrayOf();
 
                 return StatusCodes.Good;
             }

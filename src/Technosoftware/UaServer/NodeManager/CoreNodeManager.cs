@@ -1297,7 +1297,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // check value rank against index range.
-                    if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Empty)
+                    if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Null)
                     {
                         int valueRank = metadata.ValueRank;
 

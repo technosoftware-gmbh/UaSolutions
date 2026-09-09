@@ -209,7 +209,7 @@ namespace Technosoftware.UaServer
             }
 
             // determine the calculated value to return.
-            object processedValue = null;
+            Variant processedValue = default;
             TypeInfo processedType = default;
             DateTime processedTimestamp = DateTime.MinValue;
             bool duplicatesExist = false;
@@ -252,21 +252,16 @@ namespace Technosoftware.UaServer
             }
 
             // convert back to original datatype.
-            if (processedType != null && processedType.BuiltInType != BuiltInType.Double)
-            {
-                processedValue = TypeInfo.Cast(
-                    processedValue,
-                    TypeInfo.Scalars.Double,
-                    processedType.BuiltInType);
-            }
-            else
+            if (processedType.IsUnknown ||
+                processedType.BuiltInType == BuiltInType.Double)
             {
                 processedType = TypeInfo.Scalars.Double;
             }
+            processedValue = processedValue.ConvertTo(processedType.BuiltInType);
 
             // create processed value.
             var value = new DataValue()
-                .WithWrappedValue(new Variant(processedValue, processedType))
+                .WithWrappedValue(processedValue)
                 .WithStatus(statusCode);
 
             if (returnActualTime)
@@ -387,7 +382,7 @@ namespace Technosoftware.UaServer
             }
 
             // determine the calculated value to return.
-            object processedValue = null;
+            Variant processedValue = default;
             TypeInfo processedType = default;
             DateTime processedTimestamp = DateTime.MinValue;
             StatusCode processedStatusCode = StatusCodes.Good;
@@ -435,21 +430,16 @@ namespace Technosoftware.UaServer
             }
 
             // convert back to original datatype.
-            if (processedType != null && processedType.BuiltInType != BuiltInType.Double)
-            {
-                processedValue = TypeInfo.Cast(
-                    processedValue,
-                    TypeInfo.Scalars.Double,
-                    processedType.BuiltInType);
-            }
-            else
+            if (processedType.IsUnknown ||
+                processedType.BuiltInType == BuiltInType.Double)
             {
                 processedType = TypeInfo.Scalars.Double;
             }
+            processedValue = processedValue.ConvertTo(processedType.BuiltInType);
 
             // create processed value.
             var value = new DataValue()
-                .WithWrappedValue(new Variant(processedValue, processedType))
+                .WithWrappedValue(processedValue)
                 .WithStatus(GetTimeBasedStatusCode(slice, values, statusCode));
 
             // zero value if status is bad.

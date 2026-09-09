@@ -193,21 +193,14 @@ namespace Technosoftware.UaServer
             // calculate delta.
             double delta = endValue - startValue;
 
-            if (originalType != null && originalType.BuiltInType != BuiltInType.Double)
+            if (originalType.IsUnknown)
             {
-                object delta2 = TypeInfo.Cast(
-                    delta,
-                    TypeInfo.Scalars.Double,
-                    originalType.BuiltInType);
-                value = value.WithWrappedValue(new Variant(delta2, originalType));
-            }
-            else
-            {
-                value = value.WithWrappedValue(new Variant(delta, TypeInfo.Scalars.Double));
+                originalType = TypeInfo.Scalars.Double;
             }
 
             // return result.
-            return value;
+            return value.WithWrappedValue(
+                new Variant(delta).ConvertTo(originalType.BuiltInType));
         }
 
         /// <summary>
@@ -323,21 +316,14 @@ namespace Technosoftware.UaServer
             // calculate delta.
             double delta = endValue - startValue;
 
-            if (originalType != null && originalType.BuiltInType != BuiltInType.Double)
+            if (originalType.IsUnknown)
             {
-                object delta2 = TypeInfo.Cast(
-                    delta,
-                    TypeInfo.Scalars.Double,
-                    originalType.BuiltInType);
-                value = value.WithWrappedValue(new Variant(delta2, originalType));
-            }
-            else
-            {
-                value = value.WithWrappedValue(new Variant(delta, TypeInfo.Scalars.Double));
+                originalType = TypeInfo.Scalars.Double;
             }
 
             // return result.
-            return value;
+            return value.WithWrappedValue(
+                new Variant(delta).ConvertTo(originalType.BuiltInType));
         }
         #endregion Protected Methods
     }
