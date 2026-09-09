@@ -877,7 +877,7 @@ namespace Technosoftware.UaServer
                     // ensure the data value matches the error status code.
                     if (error != null && error.StatusCode.Code != 0)
                     {
-                        value.StatusCode = error.StatusCode;
+                        value = value.WithStatus(error.StatusCode);
                     }
                 }
 
@@ -1441,7 +1441,7 @@ namespace Technosoftware.UaServer
             // set semantics changed bit.
             if (m_semanticsChanged)
             {
-                value.StatusCode = value.StatusCode.SetSemanticsChanged(true);
+                value = value.WithStatus(value.StatusCode.SetSemanticsChanged(true));
 
                 if (error != null)
                 {
@@ -1459,7 +1459,7 @@ namespace Technosoftware.UaServer
             // set structure changed bit.
             if (m_structureChanged)
             {
-                value.StatusCode = value.StatusCode.SetStructureChanged(true);
+                value = value.WithStatus(value.StatusCode.SetStructureChanged(true));
 
                 if (error != null)
                 {
@@ -1480,12 +1480,12 @@ namespace Technosoftware.UaServer
             // apply timestamp filter.
             if (m_timestampsToReturn is not TimestampsToReturn.Server and not TimestampsToReturn.Both)
             {
-                item.Value.ServerTimestamp = DateTime.MinValue;
+                item.Value = item.Value.WithServerTimestamp(DateTime.MinValue);
             }
 
             if (m_timestampsToReturn is not TimestampsToReturn.Source and not TimestampsToReturn.Both)
             {
-                item.Value.SourceTimestamp = DateTime.MinValue;
+                item.Value = item.Value.WithSourceTimestamp(DateTime.MinValue);
             }
 
             UaServerUtils.ReportPublishValue(NodeId, Id, item.Value);

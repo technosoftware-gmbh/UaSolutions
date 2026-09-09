@@ -571,7 +571,7 @@ namespace Technosoftware.UaClient
             {
                 if (ServiceResult.IsBad(readErrors[index]))
                 {
-                    values[index].StatusCode = readErrors[index].StatusCode;
+                    values[index] = values[index].WithStatus(readErrors[index].StatusCode);
                 }
 
                 if (StatusCode.IsGood(values[index].StatusCode))

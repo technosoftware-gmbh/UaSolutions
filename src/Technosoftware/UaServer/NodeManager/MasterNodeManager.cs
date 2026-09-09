@@ -1846,7 +1846,7 @@ namespace Technosoftware.UaServer
                 {
                     value ??= values[ii] = DataValue.FromStatusCode(errors[ii].Code, DateTime.UtcNow);
 
-                    value.StatusCode = errors[ii].Code;
+                    value = value.WithStatus(errors[ii].Code);
 
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
@@ -1862,12 +1862,12 @@ namespace Technosoftware.UaServer
                 // apply the timestamp filters.
                 if (timestampsToReturn is not TimestampsToReturn.Server and not TimestampsToReturn.Both)
                 {
-                    value.ServerTimestamp = DateTime.MinValue;
+                    value = value.WithServerTimestamp(DateTime.MinValue);
                 }
 
                 if (timestampsToReturn is not TimestampsToReturn.Source and not TimestampsToReturn.Both)
                 {
-                    value.SourceTimestamp = DateTime.MinValue;
+                    value = value.WithSourceTimestamp(DateTime.MinValue);
                 }
             }
 

@@ -213,10 +213,10 @@ namespace Technosoftware.UaServer
 
             if (nonGoodDataExists)
             {
-                value.StatusCode = StatusCodes.UncertainDataSubNormal;
+                value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;
@@ -326,10 +326,10 @@ namespace Technosoftware.UaServer
 
             if (nonGoodDataExists)
             {
-                value.StatusCode = StatusCodes.UncertainDataSubNormal;
+                value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;

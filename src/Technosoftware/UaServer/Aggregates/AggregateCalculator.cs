@@ -178,8 +178,7 @@ namespace Technosoftware.UaServer
             {
                 if (m_startOfData > earlyTime && m_startOfData < lateTime)
                 {
-                    value.StatusCode = value.StatusCode.SetAggregateBits(
-                        value.StatusCode.AggregateBits | AggregateBits.Partial);
+                    value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
                 }
 
                 if (!UsingExtrapolation &&
@@ -187,15 +186,14 @@ namespace Technosoftware.UaServer
                     m_endOfData >= earlyTime &&
                     m_endOfData < lateTime)
                 {
-                    value.StatusCode = value.StatusCode.SetAggregateBits(
-                        value.StatusCode.AggregateBits | AggregateBits.Partial);
+                    value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
                 }
             }
 
             // force value to null if status code is bad.
             if (StatusCode.IsBad(value.StatusCode))
             {
-                value.WrappedValue = Variant.Null;
+                value = value.WithWrappedValue(Variant.Null);
             }
 
             // delete unneeded data.
@@ -244,8 +242,7 @@ namespace Technosoftware.UaServer
                     m_endOfData >= earlyTime &&
                     m_endOfData < lateTime)
                 {
-                    value.StatusCode = value.StatusCode.SetAggregateBits(
-                        value.StatusCode.AggregateBits | AggregateBits.Partial);
+                    value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
                 }
             }
             else
@@ -798,8 +795,7 @@ namespace Technosoftware.UaServer
 
                     if (!ReferenceEquals(slice.EarlyBound.Next, slice.LateBound))
                     {
-                        dataValue.StatusCode = dataValue.StatusCode
-                            .SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        dataValue = dataValue.WithStatus(dataValue.StatusCode .SetCodeBits(StatusCodes.UncertainDataSubNormal));
                     }
 
                     return dataValue;
@@ -816,8 +812,7 @@ namespace Technosoftware.UaServer
                             timestamp,
                             slice.SecondEarlyBound.Value,
                             slice.EarlyBound.Value);
-                        dataValue.StatusCode = dataValue.StatusCode
-                            .SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        dataValue = dataValue.WithStatus(dataValue.StatusCode .SetCodeBits(StatusCodes.UncertainDataSubNormal));
                         return dataValue;
                     }
 
@@ -835,8 +830,7 @@ namespace Technosoftware.UaServer
                     CompareTimestamps(timestamp, slice.EarlyBound.Next) > 0)
                 {
                     UsingExtrapolation = true;
-                    dataValue.StatusCode = dataValue.StatusCode
-                        .SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                    dataValue = dataValue.WithStatus(dataValue.StatusCode .SetCodeBits(StatusCodes.UncertainDataSubNormal));
                 }
 
                 return dataValue;
@@ -868,17 +862,16 @@ namespace Technosoftware.UaServer
             // update status code.
             if (StatusCode.IsBad(earlyBound.StatusCode))
             {
-                dataValue.StatusCode = StatusCodes.BadNoData;
+                dataValue = dataValue.WithStatus(StatusCodes.BadNoData);
             }
 
             // update status code.
             if (StatusCode.IsNotGood(earlyBound.StatusCode))
             {
-                dataValue.StatusCode = StatusCodes.UncertainDataSubNormal;
+                dataValue = dataValue.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            dataValue.StatusCode = dataValue.StatusCode
-                .SetAggregateBits(AggregateBits.Interpolated);
+            dataValue = dataValue.WithStatus(dataValue.StatusCode .SetAggregateBits(AggregateBits.Interpolated));
             return dataValue;
         }
 
@@ -905,8 +898,7 @@ namespace Technosoftware.UaServer
 
                     if (StatusCode.IsNotBad(dataValue2.StatusCode))
                     {
-                        dataValue2.StatusCode = dataValue2.StatusCode
-                            .SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        dataValue2 = dataValue2.WithStatus(dataValue2.StatusCode .SetCodeBits(StatusCodes.UncertainDataSubNormal));
                     }
 
                     return dataValue2;
@@ -937,11 +929,10 @@ namespace Technosoftware.UaServer
                 if (StatusCode.IsNotGood(earlyBound.StatusCode) ||
                     StatusCode.IsNotGood(lateBound.StatusCode))
                 {
-                    dataValue.StatusCode = StatusCodes.UncertainDataSubNormal;
+                    dataValue = dataValue.WithStatus(StatusCodes.UncertainDataSubNormal);
                 }
 
-                dataValue.StatusCode = dataValue.StatusCode
-                    .SetAggregateBits(AggregateBits.Interpolated);
+                dataValue = dataValue.WithStatus(dataValue.StatusCode .SetAggregateBits(AggregateBits.Interpolated));
 
                 return dataValue;
             }
@@ -1052,8 +1043,8 @@ namespace Technosoftware.UaServer
             // need to make it uncertain if interpolation was required but not used.
             if (StatusCode.IsGood(value.StatusCode) && revertToStepped)
             {
-                value.StatusCode = StatusCodes.UncertainDataSubNormal;
-                value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Interpolated);
+                value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
+                value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Interpolated));
             }
 
             return value;

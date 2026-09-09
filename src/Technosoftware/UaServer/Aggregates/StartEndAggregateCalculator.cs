@@ -187,10 +187,10 @@ namespace Technosoftware.UaServer
             // set status code.
             if (badDataSkipped)
             {
-                value.StatusCode = StatusCodes.UncertainDataSubNormal;
+                value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
 
             // calculate delta.
             double delta = endValue - startValue;
@@ -201,11 +201,11 @@ namespace Technosoftware.UaServer
                     delta,
                     TypeInfo.Scalars.Double,
                     originalType.BuiltInType);
-                value.WrappedValue = new Variant(delta2, originalType);
+                value = value.WithWrappedValue(new Variant(delta2, originalType));
             }
             else
             {
-                value.WrappedValue = new Variant(delta, TypeInfo.Scalars.Double);
+                value = value.WithWrappedValue(new Variant(delta, TypeInfo.Scalars.Double));
             }
 
             // return result.
@@ -241,17 +241,17 @@ namespace Technosoftware.UaServer
 
             if (!IsGood(value))
             {
-                value.StatusCode = StatusCodes.BadNoData;
+                value = value.WithStatus(StatusCodes.BadNoData);
             }
 
             if (returnEnd)
             {
-                value.SourceTimestamp = GetTimestamp(slice);
-                value.ServerTimestamp = GetTimestamp(slice);
+                value = value.WithSourceTimestamp(GetTimestamp(slice));
+                value = value.WithServerTimestamp(GetTimestamp(slice));
 
                 if (StatusCode.IsNotBad(value.StatusCode))
                 {
-                    value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+                    value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
                 }
             }
 
@@ -319,10 +319,10 @@ namespace Technosoftware.UaServer
 
             if (!IsGood(start) || !IsGood(end))
             {
-                value.StatusCode = StatusCodes.UncertainDataSubNormal;
+                value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
 
             // calculate delta.
             double delta = endValue - startValue;
@@ -333,11 +333,11 @@ namespace Technosoftware.UaServer
                     delta,
                     TypeInfo.Scalars.Double,
                     originalType.BuiltInType);
-                value.WrappedValue = new Variant(delta2, originalType);
+                value = value.WithWrappedValue(new Variant(delta2, originalType));
             }
             else
             {
-                value.WrappedValue = new Variant(delta, TypeInfo.Scalars.Double);
+                value = value.WithWrappedValue(new Variant(delta, TypeInfo.Scalars.Double));
             }
 
             // return result.

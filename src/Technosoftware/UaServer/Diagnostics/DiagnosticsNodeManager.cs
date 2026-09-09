@@ -2152,7 +2152,7 @@ namespace Technosoftware.UaServer
                             value = DataValue.FromStatusCode(error.StatusCode);
                         }
 
-                        value.ServerTimestamp = DateTime.UtcNow;
+                        value = value.WithServerTimestamp(DateTime.UtcNow);
 
                         // queue the value.
                         monitoredItem.QueueValue(value, error);

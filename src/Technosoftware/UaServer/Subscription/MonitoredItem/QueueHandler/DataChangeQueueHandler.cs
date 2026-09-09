@@ -369,7 +369,7 @@ namespace Technosoftware.UaServer
             {
                 StatusCode status = value.StatusCode;
                 status.Overflow = true;
-                value.StatusCode = status;
+                value = value.WithStatus(status);
             }
 
             if (error != null)

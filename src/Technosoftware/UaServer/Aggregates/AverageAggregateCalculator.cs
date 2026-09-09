@@ -134,8 +134,8 @@ namespace Technosoftware.UaServer
                 SourceTimestamp = GetTimestamp(slice),
                 ServerTimestamp = GetTimestamp(slice)
             };
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
-            value.StatusCode = GetValueBasedStatusCode(slice, values, value.StatusCode);
+            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(GetValueBasedStatusCode(slice, values, value.StatusCode));
 
             // return result.
             return value;
@@ -218,19 +218,19 @@ namespace Technosoftware.UaServer
 
             if (useSimpleBounds)
             {
-                value.StatusCode = GetTimeBasedStatusCode(regions, value.StatusCode);
+                value = value.WithStatus(GetTimeBasedStatusCode(regions, value.StatusCode));
             }
             else
             {
-                value.StatusCode = StatusCodes.Good;
+                value = value.WithStatus(StatusCodes.Good);
 
                 if (nonGoodRegionsExists)
                 {
-                    value.StatusCode = StatusCodes.UncertainDataSubNormal;
+                    value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
                 }
             }
 
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;

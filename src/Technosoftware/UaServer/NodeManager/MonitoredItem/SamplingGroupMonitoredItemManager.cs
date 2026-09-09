@@ -230,8 +230,8 @@ namespace Technosoftware.UaServer
 
                     if (ServiceResult.IsBad(error))
                     {
-                        initialValue.Value = null;
-                        initialValue.StatusCode = error.StatusCode;
+                        initialValue = initialValue.WithWrappedValue(Variant.From(null));
+                        initialValue = initialValue.WithStatus(error.StatusCode);
                     }
                 }
 

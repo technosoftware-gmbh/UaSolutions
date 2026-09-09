@@ -273,13 +273,13 @@ namespace Technosoftware.UaServer
 
             if (returnActualTime)
             {
-                value.SourceTimestamp = processedTimestamp;
-                value.ServerTimestamp = processedTimestamp;
+                value = value.WithSourceTimestamp(processedTimestamp);
+                value = value.WithServerTimestamp(processedTimestamp);
             }
             else
             {
-                value.SourceTimestamp = GetTimestamp(slice);
-                value.ServerTimestamp = GetTimestamp(slice);
+                value = value.WithSourceTimestamp(GetTimestamp(slice));
+                value = value.WithServerTimestamp(GetTimestamp(slice));
             }
 
             return value;
@@ -383,8 +383,7 @@ namespace Technosoftware.UaServer
                 // check if interval is partial and set the flag accordingly
                 if (slice.Partial)
                 {
-                    noDataValue.StatusCode = noDataValue.StatusCode
-                        .SetAggregateBits(AggregateBits.Partial);
+                    noDataValue = noDataValue.WithStatus(noDataValue.StatusCode .SetAggregateBits(AggregateBits.Partial));
                 }
                 return noDataValue;
             }
@@ -460,7 +459,7 @@ namespace Technosoftware.UaServer
             // zero value if status is bad.
             if (StatusCode.IsBad(value.StatusCode))
             {
-                value.WrappedValue = Variant.Null;
+                value = value.WithWrappedValue(Variant.Null);
             }
 
             if (returnActualTime)
@@ -471,24 +470,22 @@ namespace Technosoftware.UaServer
                     if (processedTimestamp == slice.StartTime)
                     {
                         processedTimestamp = processedTimestamp.AddMilliseconds(+1);
-                        value.StatusCode = value.StatusCode.SetAggregateBits(
-                            value.StatusCode.AggregateBits | AggregateBits.Interpolated);
+                        value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Interpolated));
                     }
                 }
                 else if (processedTimestamp == slice.EndTime)
                 {
                     processedTimestamp = processedTimestamp.AddMilliseconds(-1);
-                    value.StatusCode = value.StatusCode.SetAggregateBits(
-                        value.StatusCode.AggregateBits | AggregateBits.Interpolated);
+                    value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Interpolated));
                 }
 
-                value.SourceTimestamp = processedTimestamp;
-                value.ServerTimestamp = processedTimestamp;
+                value = value.WithSourceTimestamp(processedTimestamp);
+                value = value.WithServerTimestamp(processedTimestamp);
             }
             else
             {
-                value.SourceTimestamp = GetTimestamp(slice);
-                value.ServerTimestamp = GetTimestamp(slice);
+                value = value.WithSourceTimestamp(GetTimestamp(slice));
+                value = value.WithServerTimestamp(GetTimestamp(slice));
             }
 
             return value;

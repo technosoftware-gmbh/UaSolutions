@@ -696,10 +696,9 @@ namespace Technosoftware.UaServer
 
                     DataValue value = values[ii] = new DataValue();
 
-                    value.Value = null;
-                    value.ServerTimestamp = DateTime.MinValue; // Will be set later
-                    value.SourceTimestamp = DateTime.MinValue;
-                    value.StatusCode = StatusCodes.BadAttributeIdInvalid;
+                    value = value.WithWrappedValue(Variant.From(null));
+                    value = value.WithServerTimestamp(DateTime.MinValue; // Will be set later value = value.WithSourceTimestamp(DateTime.MinValue));
+                    value = value.WithStatus(StatusCodes.BadAttributeIdInvalid);
 
                     // owned by this node manager.
                     nodeToRead.Processed = true;
@@ -743,7 +742,7 @@ namespace Technosoftware.UaServer
 
                         if (ServiceResult.IsBad(error))
                         {
-                            value.Value = null;
+                            value = value.WithWrappedValue(Variant.From(null));
                             errors[ii] = error;
                             continue;
                         }
@@ -758,25 +757,25 @@ namespace Technosoftware.UaServer
 
                             if (ServiceResult.IsBad(error))
                             {
-                                value.Value = null;
+                                value = value.WithWrappedValue(Variant.From(null));
                                 errors[ii] = error;
                                 continue;
                             }
                         }
 
-                        value.Value = defaultValue;
+                        value = value.WithWrappedValue(Variant.From(defaultValue));
 
                         // Set SourceTimestamp if not already set by the node
                         if (value.SourceTimestamp == DateTime.MinValue)
                         {
-                            value.SourceTimestamp = DateTime.UtcNow;
+                            value = value.WithSourceTimestamp(DateTime.UtcNow);
                         }
 
                         // Set ServerTimestamp to match SourceTimestamp for Value attributes
                         // This ensures ServerTimestamp and SourceTimestamp are equal,
                         // which is important for nodes like ServerStatus children where
                         // the node's read callback sets a specific timestamp
-                        value.ServerTimestamp = value.SourceTimestamp;
+                        value = value.WithServerTimestamp(value.SourceTimestamp);
                     }
                 }
             }
@@ -1497,8 +1496,8 @@ namespace Technosoftware.UaServer
 
             if (ServiceResult.IsBad(error))
             {
-                initialValue.Value = null;
-                initialValue.StatusCode = error.StatusCode;
+                initialValue = initialValue.WithWrappedValue(Variant.From(null));
+                initialValue = initialValue.WithStatus(error.StatusCode);
             }
 
             monitoredItem.QueueValue(initialValue, error, true);
@@ -1868,8 +1867,8 @@ namespace Technosoftware.UaServer
 
                             if (ServiceResult.IsBad(error))
                             {
-                                initialValue.Value = null;
-                                initialValue.StatusCode = error.StatusCode;
+                                initialValue = initialValue.WithWrappedValue(Variant.From(null));
+                                initialValue = initialValue.WithStatus(error.StatusCode);
                             }
                         }
 

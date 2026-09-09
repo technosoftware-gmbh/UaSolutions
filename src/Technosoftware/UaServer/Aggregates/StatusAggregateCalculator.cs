@@ -131,7 +131,7 @@ namespace Technosoftware.UaServer
                 SourceTimestamp = GetTimestamp(slice),
                 ServerTimestamp = GetTimestamp(slice)
             };
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;
@@ -200,13 +200,12 @@ namespace Technosoftware.UaServer
                 SourceTimestamp = GetTimestamp(slice),
                 ServerTimestamp = GetTimestamp(slice)
             };
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
 
             if ((StatusCode.IsBad(worstQuality) && badQualityCount > 1) ||
                 (StatusCode.IsUncertain(worstQuality) && uncertainQualityCount > 1))
             {
-                value.StatusCode = value.StatusCode.SetAggregateBits(
-                    value.StatusCode.AggregateBits | AggregateBits.MultipleValues);
+                value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.MultipleValues));
             }
 
             // return result.

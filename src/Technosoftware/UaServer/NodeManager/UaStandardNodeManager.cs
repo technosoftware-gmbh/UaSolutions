@@ -1624,10 +1624,9 @@ namespace Technosoftware.UaServer
                     // create an initial value.
                     DataValue value = values[ii] = new DataValue();
 
-                    value.Value = null;
-                    value.ServerTimestamp = DateTime.MinValue; // Will be set after ReadAttribute
-                    value.SourceTimestamp = DateTime.MinValue;
-                    value.StatusCode = StatusCodes.Good;
+                    value = value.WithWrappedValue(Variant.From(null));
+                    value = value.WithServerTimestamp(DateTime.MinValue; // Will be set after ReadAttribute value = value.WithSourceTimestamp(DateTime.MinValue));
+                    value = value.WithStatus(StatusCodes.Good);
 
                     // check if the node is a area in memory.
                     if (handle.Node == null)
@@ -1656,16 +1655,16 @@ namespace Technosoftware.UaServer
                     {
                         if (value.SourceTimestamp == DateTime.MinValue)
                         {
-                            value.SourceTimestamp = DateTime.UtcNow;
+                            value = value.WithSourceTimestamp(DateTime.UtcNow);
                         }
-                        value.ServerTimestamp = value.SourceTimestamp;
+                        value = value.WithServerTimestamp(value.SourceTimestamp);
                     }
                     else
                     {
                         // For non-value attributes, only ServerTimestamp is relevant
                         if (value.ServerTimestamp == DateTime.MinValue)
                         {
-                            value.ServerTimestamp = DateTime.UtcNow;
+                            value = value.WithServerTimestamp(DateTime.UtcNow);
                         }
                     }
 #if DEBUG
