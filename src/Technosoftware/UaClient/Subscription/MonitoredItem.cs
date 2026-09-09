@@ -1066,7 +1066,7 @@ namespace Technosoftware.UaClient
         /// Collection of server-side identifiers of monitored items that are
         /// triggered by this item. Null if this item does not trigger any other items.
         /// </summary>
-        internal UInt32Collection? TriggeredItems { get; set; }
+        internal ArrayOf<uint> TriggeredItems { get; set; } = [];
     }
 
     /// <summary>

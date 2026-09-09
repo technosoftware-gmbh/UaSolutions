@@ -649,9 +649,9 @@ namespace Technosoftware.UaClient
             public static Comparers Instance { get; } = new Comparers();
 
             /// <inheritdoc/>
-            public bool Equals(ExpandedNodeId? x, ExpandedNodeId? y)
+            public bool Equals(ExpandedNodeId x, ExpandedNodeId y)
             {
-                return ReferenceEquals(x, y) || x == y;
+                return x == y;
             }
 
             /// <inheritdoc/>
@@ -661,15 +661,15 @@ namespace Technosoftware.UaClient
             }
 
             /// <inheritdoc/>
-            public bool Equals(NodeId? x, NodeId? y)
+            public bool Equals(NodeId x, NodeId y)
             {
-                return ReferenceEquals(x, y) || x == y;
+                return x == y;
             }
 
             /// <inheritdoc/>
             public int GetHashCode(NodeId obj)
             {
-                return (obj?.GetHashCode()) ?? 0;
+                return obj.GetHashCode();
             }
         }
 

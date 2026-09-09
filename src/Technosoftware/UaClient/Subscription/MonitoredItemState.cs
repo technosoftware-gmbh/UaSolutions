@@ -83,7 +83,7 @@ namespace Technosoftware.UaClient
         /// any other items. Used to restore triggering links after session reconnect.
         /// </summary>
         [DataMember(Order = 17)]
-        public UInt32Collection? TriggeredItems { get; init; }
+        public ArrayOf<uint> TriggeredItems { get; init; }
 
         /// <summary>
         /// The queue size used by the client-side cache.

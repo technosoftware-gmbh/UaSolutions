@@ -285,7 +285,7 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public async ValueTask<IList<INode>> FindAsync(
+        public async ValueTask<ArrayOf<INode>> FindAsync(
             ExpandedNodeId sourceId,
             NodeId referenceTypeId,
             bool isInverse,
@@ -674,7 +674,7 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public async ValueTask<IList<NodeId>> FindSubTypesAsync(
+        public async ValueTask<ArrayOf<NodeId>> FindSubTypesAsync(
             ExpandedNodeId typeId,
             CancellationToken ct = default)
         {
@@ -802,7 +802,7 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public ValueTask<QualifiedName?> FindReferenceTypeNameAsync(
+        public ValueTask<QualifiedName> FindReferenceTypeNameAsync(
             NodeId referenceTypeId,
             CancellationToken ct = default)
         {
@@ -928,7 +928,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public async ValueTask<bool> IsEncodingForAsync(
             NodeId expectedTypeId,
-            object value,
+            Variant value,
             CancellationToken ct = default)
         {
             // null actual datatype matches nothing.
