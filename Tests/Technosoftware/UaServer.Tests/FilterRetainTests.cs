@@ -438,6 +438,14 @@ namespace Technosoftware.UaServer.Tests
 
             alarm.EventType.Value = ObjectTypeIds.ExclusiveLevelAlarmType;
 
+            // Only mandatory children are instantiated in 2.0, so the optional
+            // states the tests set have to be added explicitly.
+            alarm.AddOutOfServiceState(context)
+                .AddSuppressedState(context)
+                .AddSilenceState(context)
+                .AddShelvingState(context);
+            alarm.AddSeverityLowLow(context);
+
             if (addFilterRetain)
             {
                 // PropertyState<T> is abstract in 2.0; the scalar builder

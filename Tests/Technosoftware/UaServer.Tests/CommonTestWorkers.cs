@@ -281,6 +281,14 @@ namespace Technosoftware.UaServer.Tests
                 BrowseResponse browseResponse = null;
                 do
                 {
+                    // The collection shrinks by maxNodesPerBrowse each round,
+                    // so the last one holds fewer than that. ArrayOf slicing
+                    // does not clamp; take the remainder whole instead.
+                    if (maxNodesPerBrowse >= browseDescriptionCollection.Count)
+                    {
+                        maxNodesPerBrowse = 0;
+                    }
+
                     ArrayOf<BrowseDescription> browseCollection =
                         maxNodesPerBrowse == 0
                             ? browseDescriptionCollection
@@ -868,8 +876,11 @@ namespace Technosoftware.UaServer.Tests
             Assert.IsTrue(subscriptionIds.Contains(publishResponse.SubscriptionId));
             Assert.AreEqual(1, publishResponse.NotificationMessage.NotificationData.Count);
             string statusMessage = publishResponse.NotificationMessage.NotificationData[0].ToString();
-            // Should contain GoodSubscriptionTransferred status code
-            Assert.AreEqual("{GoodSubscriptionTransferred [0x002D0000] | }", statusMessage);
+            // Should contain GoodSubscriptionTransferred status code.
+            // 2.0 renders the decoded notification rather than the raw
+            // ExtensionObject, so the text is matched instead of compared.
+            Assert.That(statusMessage, Does.StartWith("StatusChangeNotification"));
+            Assert.That(statusMessage, Does.Contain("Status=GoodSubscriptionTransferred"));
 
             // static node, do not acknowledge
             if (publishResponse.AvailableSequenceNumbers != null)
