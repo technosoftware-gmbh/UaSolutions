@@ -151,7 +151,7 @@ namespace Technosoftware.UaClient
 
             if (request.RequestedParameters.Filter != null)
             {
-                Filter = Utils.Clone(request.RequestedParameters.Filter.Body) as MonitoringFilter;
+                Filter = CoreUtils.Clone(request.RequestedParameters.Filter.Body) as MonitoringFilter;
             }
 
             if (ServiceResult.IsGood(error))
@@ -162,7 +162,7 @@ namespace Technosoftware.UaClient
 
                 if (result.FilterResult != null)
                 {
-                    FilterResult = Utils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
+                    FilterResult = CoreUtils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
                 }
             }
 
@@ -195,7 +195,7 @@ namespace Technosoftware.UaClient
 
             if (monitoredItem.Filter != null)
             {
-                Filter = Utils.Clone(monitoredItem.Filter);
+                Filter = CoreUtils.Clone(monitoredItem.Filter);
             }
         }
 
@@ -231,7 +231,7 @@ namespace Technosoftware.UaClient
 
                 if (request.RequestedParameters.Filter != null)
                 {
-                    Filter = Utils.Clone(
+                    Filter = CoreUtils.Clone(
                         request.RequestedParameters.Filter.Body) as MonitoringFilter;
                 }
 
@@ -240,7 +240,7 @@ namespace Technosoftware.UaClient
 
                 if (result.FilterResult != null)
                 {
-                    FilterResult = Utils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
+                    FilterResult = CoreUtils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
                 }
             }
         }

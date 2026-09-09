@@ -107,7 +107,7 @@ namespace Technosoftware.UaServer
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
-            ApplicationDescriptionCollection servers = [];
+            ArrayOf<ApplicationDescription> servers = [];
 
             ValidateRequest(requestHeader);
 
@@ -211,7 +211,7 @@ namespace Technosoftware.UaServer
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
-            EndpointDescriptionCollection endpoints = null;
+            ArrayOf<EndpointDescription> endpoints = null;
 
             ValidateRequest(requestHeader);
 
@@ -239,12 +239,12 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Returns the endpoints that match the base address and endpoint url.
         /// </summary>
-        protected EndpointDescriptionCollection GetEndpointDescriptions(
+        protected ArrayOf<EndpointDescription> GetEndpointDescriptions(
             string endpointUrl,
             IList<BaseAddress> baseAddresses,
             ArrayOf<string> localeIds)
         {
-            EndpointDescriptionCollection endpoints = null;
+            ArrayOf<EndpointDescription> endpoints = null;
 
             // parse the url provided by the client.
             Uri parsedEndpointUrl = Utils.ParseUri(endpointUrl);
@@ -355,7 +355,7 @@ namespace Technosoftware.UaServer
             double revisedSessionTimeout = 0;
             byte[] serverNonce;
             byte[] serverCertificate = null;
-            EndpointDescriptionCollection serverEndpoints = null;
+            ArrayOf<EndpointDescription> serverEndpoints = null;
             SignatureData serverSignature = null;
             uint maxRequestMessageSize = (uint)MessageContext.MaxMessageSize;
 

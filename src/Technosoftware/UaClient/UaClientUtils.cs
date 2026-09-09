@@ -78,7 +78,7 @@ namespace Technosoftware.UaClient
                     telemetry,
                     ct: ct).ConfigureAwait(false))
             {
-                ApplicationDescriptionCollection servers =
+                ArrayOf<ApplicationDescription> servers =
                     await client.FindServersAsync(default, ct).ConfigureAwait(false);
 
                 // populate the drop down list with the discovery URLs for the available servers.
@@ -158,7 +158,7 @@ namespace Technosoftware.UaClient
                 ct: ct).ConfigureAwait(false);
             var url = new Uri(client.Endpoint?.EndpointUrl ??
                 throw ServiceResultException.Unexpected("Endpoint missing"));
-            EndpointDescriptionCollection endpoints =
+            ArrayOf<EndpointDescription> endpoints =
                 await client.GetEndpointsAsync(default, ct).ConfigureAwait(false);
             return SelectEndpoint(
                 application,
@@ -226,7 +226,7 @@ namespace Technosoftware.UaClient
             // Connect to the server's discovery endpoint and find the available configuration.
             var url = new Uri(client.Endpoint?.EndpointUrl ??
                 throw ServiceResultException.Unexpected("Endpoint missing"));
-            EndpointDescriptionCollection endpoints =
+            ArrayOf<EndpointDescription> endpoints =
                 await client.GetEndpointsAsync(default, ct).ConfigureAwait(false);
             EndpointDescription? selectedEndpoint = SelectEndpoint(
                 application,
@@ -253,12 +253,12 @@ namespace Technosoftware.UaClient
 
         /// <summary>
         /// Select the best supported endpoint from an
-        /// EndpointDescriptionCollection, with or without security.
+        /// ArrayOf<EndpointDescription>, with or without security.
         /// </summary>
         public static EndpointDescription? SelectEndpoint(
             ApplicationConfiguration configuration,
             Uri url,
-            EndpointDescriptionCollection endpoints,
+            ArrayOf<EndpointDescription> endpoints,
             bool useSecurity,
             ITelemetryContext telemetry)
         {
@@ -329,8 +329,16 @@ namespace Technosoftware.UaClient
             // pick the first available endpoint by default.
             if (selectedEndpoint == null && endpoints.Count > 0)
             {
-                selectedEndpoint = endpoints.FirstOrDefault(e =>
-                    e.EndpointUrl?.StartsWith(url.Scheme, StringComparison.Ordinal) == true);
+                foreach (EndpointDescription endpoint in endpoints)
+                {
+                    if (endpoint.EndpointUrl?.StartsWith(
+                        url.Scheme,
+                        StringComparison.Ordinal) == true)
+                    {
+                        selectedEndpoint = endpoint;
+                        break;
+                    }
+                }
             }
 
             // return the selected endpoint.

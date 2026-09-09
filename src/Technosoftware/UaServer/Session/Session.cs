@@ -785,7 +785,7 @@ namespace Technosoftware.UaServer
         {
             lock (DiagnosticsLock)
             {
-                value = Utils.Clone(SessionDiagnostics);
+                value = CoreUtils.Clone(SessionDiagnostics);
             }
 
             return ServiceResult.Good;
@@ -801,7 +801,7 @@ namespace Technosoftware.UaServer
         {
             lock (DiagnosticsLock)
             {
-                value = Utils.Clone(m_securityDiagnostics);
+                value = CoreUtils.Clone(m_securityDiagnostics);
             }
 
             return ServiceResult.Good;

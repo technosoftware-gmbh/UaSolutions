@@ -73,7 +73,7 @@ namespace Technosoftware.UaClient
             ConfiguredEndpoint endpoint,
             Certificate? clientCertificate = null,
             CertificateCollection? clientCertificateChain = null,
-            EndpointDescriptionCollection? availableEndpoints = null,
+            ArrayOf<EndpointDescription>? availableEndpoints = null,
             List<string>? discoveryProfileUris = null)
             : this(
                   channel,
@@ -3939,12 +3939,12 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// Validates the server endpoints returned.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        private void ValidateServerEndpoints(EndpointDescriptionCollection serverEndpoints)
+        private void ValidateServerEndpoints(ArrayOf<EndpointDescription> serverEndpoints)
         {
             if (m_discoveryServerEndpoints != null && m_discoveryServerEndpoints.Count > 0)
             {
                 // Compare EndpointDescriptions returned at GetEndpoints with values returned at CreateSession
-                EndpointDescriptionCollection? expectedServerEndpoints;
+                ArrayOf<EndpointDescription>? expectedServerEndpoints;
                 if (serverEndpoints != null &&
                     m_discoveryProfileUris != null &&
                     m_discoveryProfileUris.Count > 0)
@@ -4058,7 +4058,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <param name="matchPort">Match criteria includes port</param>
         /// <returns>Matching description or null if no description is matching</returns>
         private EndpointDescription? FindMatchingDescription(
-            EndpointDescriptionCollection? endpointDescriptions,
+            ArrayOf<EndpointDescription>? endpointDescriptions,
             EndpointDescription match,
             bool matchPort)
         {
@@ -4935,7 +4935,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         private string? m_userTokenSecurityPolicyUri;
         private Nonce? m_eccServerEphemeralKey;
         private Subscription? m_defaultSubscription;
-        private readonly EndpointDescriptionCollection? m_discoveryServerEndpoints;
+        private readonly ArrayOf<EndpointDescription>? m_discoveryServerEndpoints;
         private readonly List<string>? m_discoveryProfileUris;
         private new readonly ILogger m_logger;
 

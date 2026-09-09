@@ -325,7 +325,7 @@ namespace Technosoftware.UaClient
             ConfiguredEndpoint endpoint,
             Certificate? clientCertificate = null,
             CertificateCollection? clientCertificateChain = null,
-            EndpointDescriptionCollection? availableEndpoints = null,
+            ArrayOf<EndpointDescription>? availableEndpoints = null,
             List<string>? discoveryProfileUris = null)
         {
             return new Session(

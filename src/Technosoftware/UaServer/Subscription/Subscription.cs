@@ -2635,7 +2635,7 @@ namespace Technosoftware.UaServer
         {
             lock (DiagnosticsLock)
             {
-                value = Utils.Clone(Diagnostics);
+                value = CoreUtils.Clone(Diagnostics);
             }
 
             return ServiceResult.Good;
