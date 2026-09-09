@@ -351,8 +351,8 @@ namespace Technosoftware.UaServer
             NodeId sessionId;
             NodeId authenticationToken;
             double revisedSessionTimeout = 0;
-            byte[] serverNonce;
-            byte[] serverCertificate = null;
+            ByteString serverNonce;
+            ByteString serverCertificate = default;
             ArrayOf<EndpointDescription> serverEndpoints = default;
             SignatureData serverSignature = null;
             uint maxRequestMessageSize = (uint)MessageContext.MaxMessageSize;
@@ -420,7 +420,7 @@ namespace Technosoftware.UaServer
                                         clientDescription.ApplicationUri);
                                 }
 
-                                Opc.Ua.Security.Certificates.CertificateValidationResult clientCertificateResult =
+                                Opc.Ua.CertificateValidationResult clientCertificateResult =
                                     await CertificateManager
                                         .ValidateAsync(
                                             clientCertificateChain,
@@ -552,12 +552,27 @@ namespace Technosoftware.UaServer
                     serverSignature = null;
 
                     //  sign the client nonce (if provided).
-                    if (parsedClientCertificate != null && !clientNonce.IsNull)
+                    if (parsedClientCertificate != null && !clientNonce.IsEmpty)
                     {
-                        byte[] dataToSign = Utils.Append(parsedClientCertificate.RawData, clientNonce);
-                        serverSignature = SecurityPolicies.Sign(
-                            instanceCertificate,
+                        // 2.0 builds the data to sign through the security
+                        // policy, which lets a policy mix in the channel
+                        // thumbprint and the channel certificates.
+                        ISecurityPolicyRegistry policies = SecurityPolicies.Default;
+                        SecurityPolicyInfo securityPolicy =
+                            policies.GetInfo(context.SecurityPolicyUri)!;
+                        SecureChannelContext channelContext = context.ChannelContext;
+
+                        byte[] dataToSign = securityPolicy.GetServerSignatureData(
+                            channelContext.ChannelThumbprint,
+                            clientNonce.ToArray(),
+                            channelContext.ServerChannelCertificate,
+                            parsedClientCertificate.RawData,
+                            channelContext.ClientChannelCertificate,
+                            serverNonce.ToArray());
+
+                        serverSignature = policies.CreateSignatureData(
                             context.SecurityPolicyUri,
+                            instanceCertificate,
                             dataToSign);
                     }
                 }
@@ -733,7 +748,7 @@ namespace Technosoftware.UaServer
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
-            byte[] serverNonce;
+            ByteString serverNonce;
             List<StatusCode> results = null;
             List<DiagnosticInfo> diagnosticInfos = null;
 
@@ -1957,15 +1972,12 @@ namespace Technosoftware.UaServer
 
             try
             {
-                if ((linksToAdd == null || linksToAdd.Count == 0) &&
-                    (linksToRemove == null || linksToRemove.Count == 0))
+                if (linksToAdd.IsEmpty && linksToRemove.IsEmpty)
                 {
                     throw new ServiceResultException(StatusCodes.BadNothingToDo);
                 }
 
-                int monitoredItemsCount = 0;
-                monitoredItemsCount += (linksToAdd?.Count) ?? 0;
-                monitoredItemsCount += (linksToRemove?.Count) ?? 0;
+                int monitoredItemsCount = linksToAdd.Count + linksToRemove.Count;
                 ValidateOperationLimits(
                     monitoredItemsCount,
                     OperationLimits.MaxMonitoredItemsPerCall);
@@ -2626,7 +2638,7 @@ namespace Technosoftware.UaServer
         /// <param name="result">The result.</param>
         /// <exception cref="ServiceResultException"></exception>
         protected virtual void OnApplicationCertificateError(
-            byte[] clientCertificate,
+            ByteString clientCertificate,
             ServiceResult result)
         {
             // see https://reference.opcfoundation.org/Core/Part4/v105/docs/6.1.3
@@ -2724,7 +2736,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             ServiceResultException e)
         {
-            IList<string> preferredLocales = null;
+            ArrayOf<string> preferredLocales = default;
 
             if (context != null && context.Session != null)
             {
@@ -2743,7 +2755,7 @@ namespace Technosoftware.UaServer
         /// <returns>Returns an exception thrown when a UA defined error occurs, the return type is <seealso cref="ServiceResultException"/>.</returns>
         protected virtual ServiceResultException TranslateException(
             DiagnosticsMasks diagnosticsMasks,
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             ServiceResultException e)
         {
             if (e == null)
@@ -2774,7 +2786,7 @@ namespace Technosoftware.UaServer
             // create new result object.
             var result = new ServiceResult(
                 e.NamespaceUri,
-                new StatusCode(e.StatusCode, e.SymbolicId),
+                new StatusCode(e.StatusCode.Code, e.SymbolicId),
                 translatedText,
                 e.AdditionalInfo,
                 innerResult);
@@ -2793,7 +2805,7 @@ namespace Technosoftware.UaServer
         /// <returns>Returns a class that combines the status code and diagnostic info structures.</returns>
         protected virtual ServiceResult TranslateResult(
             DiagnosticsMasks diagnosticsMasks,
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             ServiceResult result)
         {
             if (result == null)
@@ -3008,7 +3020,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public override ServiceHost CreateServiceHost(ServerBase server, params Uri[] addresses)
         {
-            return new ServiceHost(this, typeof(SessionEndpoint), addresses);
+            return new ServiceHost(this, addresses);
         }
 
         /// <summary>

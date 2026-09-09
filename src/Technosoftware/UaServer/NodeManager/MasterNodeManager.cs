@@ -2114,7 +2114,7 @@ namespace Technosoftware.UaServer
         public virtual async ValueTask<(HistoryUpdateResultCollection results, List<DiagnosticInfo> diagnosticInfos)>
             HistoryUpdateAsync(
                 UaServerOperationContext context,
-                List<ExtensionObject> historyUpdateDetails,
+                ArrayOf<ExtensionObject> historyUpdateDetails,
                 CancellationToken cancellationToken = default)
         {
             Type detailsType = null;

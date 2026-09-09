@@ -160,7 +160,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         ValueTask<(HistoryUpdateResultCollection results, List<DiagnosticInfo> diagnosticInfos)> HistoryUpdateAsync(
             UaServerOperationContext context,
-            List<ExtensionObject> historyUpdateDetails,
+            ArrayOf<ExtensionObject> historyUpdateDetails,
             CancellationToken cancellationToken = default);
 
         /// <summary>
