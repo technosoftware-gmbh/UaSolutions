@@ -298,7 +298,7 @@ namespace Technosoftware.UaClient
             {
                 // the server nonce should be validated if the token includes a secret.
                 if (!Nonce.ValidateNonce(
-                    serverNonce,
+                    serverNonce.ToArray(),
                     MessageSecurityMode.SignAndEncrypt,
                     m_configuration.SecurityConfiguration.NonceLength))
                 {
@@ -319,8 +319,8 @@ namespace Technosoftware.UaClient
                 }
 
                 // check that new nonce is different from the previously returned server nonce.
-                if (previousServerNonce != null &&
-                    Nonce.CompareNonce(serverNonce, previousServerNonce))
+                if (!previousServerNonce.IsEmpty &&
+                    Nonce.CompareNonce(serverNonce.ToArray(), previousServerNonce.ToArray()))
                 {
                     if (channelSecurityMode == MessageSecurityMode.SignAndEncrypt ||
                         m_configuration.SecurityConfiguration.SuppressNonceValidationErrors)
@@ -866,9 +866,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public void Snapshot(out SessionConfiguration sessionConfiguration)
         {
-            var serverNonce = Nonce.CreateNonce(
-                m_endpoint.Description?.SecurityPolicyUri,
-                m_serverNonce);
+            ByteString serverNonce = m_serverNonce;
             sessionConfiguration = new SessionConfiguration
             {
                 SessionName = SessionName,
@@ -895,7 +893,7 @@ namespace Technosoftware.UaClient
                 : DefaultCertificateFactory.Instance.CreateFromRawData(serverCertificate);
             m_identity = sessionConfiguration.Identity ?? new UserIdentity();
             m_checkDomain = sessionConfiguration.CheckDomain;
-            m_serverNonce = sessionConfiguration.ServerNonce?.Data;
+            m_serverNonce = sessionConfiguration.ServerNonce;
             m_userTokenSecurityPolicyUri = sessionConfiguration.UserIdentityTokenPolicy;
             m_eccServerEphemeralKey = sessionConfiguration.ServerEccEphemeralKey;
 
@@ -1085,21 +1083,21 @@ namespace Technosoftware.UaClient
 
                 if (requireEncryption)
                 {
-                    if (checkDomain)
+                    ICertificateValidatorEx validator = m_configuration.CertificateManager;
+                    Opc.Ua.Security.Certificates.CertificateValidationResult result = await validator
+                        .ValidateAsync(serverCertificateChain, ct: ct)
+                        .ConfigureAwait(false);
+
+                    if (!result.IsValid)
                     {
-                        await m_configuration
-                            .CertificateManager.ValidateAsync(
-                                serverCertificateChain,
-                                m_endpoint,
-                                ct)
-                            .ConfigureAwait(false);
+                        throw new ServiceResultException(result.StatusCode);
                     }
-                    else
+
+                    if (checkDomain && serverCertificateChain.Count > 0)
                     {
-                        await m_configuration
-                            .CertificateManager.ValidateAsync(serverCertificateChain, ct)
-                            .ConfigureAwait(false);
+                        validator.ValidateDomains(serverCertificateChain[0], m_endpoint);
                     }
+
                     // save for reconnect
                     m_checkDomain = checkDomain;
                 }
@@ -1111,8 +1109,8 @@ namespace Technosoftware.UaClient
 
             // send the application instance certificate for the client.
             BuildCertificateData(
-                out byte[]? clientCertificateData,
-                out byte[]? clientCertificateChainData);
+                out ByteString clientCertificateData,
+                out ByteString clientCertificateChainData);
 
             var clientDescription = new ApplicationDescription
             {
@@ -1147,7 +1145,7 @@ namespace Technosoftware.UaClient
                         m_endpoint.Description.Server.ApplicationUri,
                         m_endpoint.EndpointUrl.ToString(),
                         sessionName,
-clientNonce.ToByteString(),
+                        ByteString.From(clientNonce),
                         default,
                         sessionTimeout,
                         maxMessageSize,
@@ -1170,8 +1168,10 @@ clientNonce.ToByteString(),
                     m_endpoint.Description.Server.ApplicationUri,
                     m_endpoint.EndpointUrl.ToString(),
                     sessionName,
-clientNonce.ToByteString(),
-clientCertificateChainData ?? clientCertificateData.ToByteString(),
+                        ByteString.From(clientNonce),
+                    clientCertificateChainData.IsEmpty
+                        ? clientCertificateData
+                        : clientCertificateChainData,
                     sessionTimeout,
                     maxMessageSize,
                     ct).ConfigureAwait(false);
@@ -1219,7 +1219,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                     serverSignature,
                     clientCertificateData,
                     clientCertificateChainData,
-                    clientNonce);
+                    clientNonce,
+                    serverNonce);
 
                 //  process additional header
                 ProcessResponseAdditionalHeader(response.ResponseHeader, serverCertificate);
@@ -1418,7 +1419,9 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 // get current nonce.
                 serverNonce = m_serverNonce;
 
-                preferredLocales ??= m_preferredLocales;
+                preferredLocales = preferredLocales.Count > 0
+                    ? preferredLocales
+                    : [.. m_preferredLocales];
             }
 
             // get the identity token.
@@ -1469,7 +1472,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 identity.TokenType != UserTokenType.Anonymous)
             {
                 ICertificateValidatorEx validator = m_configuration.CertificateManager;
-                CertificateValidationResult result = await validator
+                Opc.Ua.Security.Certificates.CertificateValidationResult result = await validator
                     .ValidateAsync(m_serverCertificate, ct: ct)
                     .ConfigureAwait(false);
 
@@ -3954,38 +3957,59 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         private void ValidateServerSignature(
             Certificate? serverCertificate,
             SignatureData serverSignature,
-            byte[]? clientCertificateData,
-            byte[]? clientCertificateChainData,
-            byte[] clientNonce)
+            ByteString clientCertificateData,
+            ByteString clientCertificateChainData,
+            byte[] clientNonce,
+            ByteString serverNonce)
         {
-            if (serverSignature == null || serverSignature.Signature.IsNull)
+            if (serverSignature == null || serverSignature.Signature.IsEmpty)
             {
                 m_logger.LogInformation("Server signature is null or empty.");
 
-                //throw ServiceResultException.Create(
-                //    StatusCodes.BadSecurityChecksFailed,
-                //    "Server signature is null or empty.");
+                if (m_endpoint.Description.SecurityMode != MessageSecurityMode.None)
+                {
+                    throw ServiceResultException.Create(
+                        StatusCodes.BadApplicationSignatureInvalid,
+                        "The server did not sign the secured CreateSession response.");
+                }
+
+                return;
             }
 
             // validate the server's signature.
-            byte[] dataToSign = Utils.Append(clientCertificateData, clientNonce);
+            SecurityPolicyInfo? securityPolicy = m_securityPolicies
+                .GetInfo(m_endpoint.Description.SecurityPolicyUri ?? SecurityPolicies.None);
 
-            if (!SecurityPolicies.Verify(
-                    serverCertificate,
-                    m_endpoint.Description.SecurityPolicyUri,
-                    dataToSign,
-                    serverSignature))
+            byte[] dataToSign = securityPolicy!.GetServerSignatureData(
+                TransportChannel.ChannelThumbprint,
+                clientNonce,
+                TransportChannel.ServerChannelCertificate,
+                clientCertificateData.ToArray(),
+                TransportChannel.ClientChannelCertificate,
+                serverNonce.ToArray());
+
+            if (!m_securityPolicies.VerifySignatureData(
+                    serverSignature,
+                    securityPolicy,
+                    serverCertificate!,
+                    dataToSign))
             {
                 // validate the signature with complete chain if the check with leaf certificate failed.
-                if (clientCertificateChainData != null)
+                if (!clientCertificateChainData.IsEmpty)
                 {
-                    dataToSign = Utils.Append(clientCertificateChainData, clientNonce);
+                    dataToSign = securityPolicy.GetServerSignatureData(
+                        TransportChannel.ChannelThumbprint,
+                        clientNonce,
+                        TransportChannel.ServerChannelCertificate,
+                        clientCertificateChainData.ToArray(),
+                        TransportChannel.ClientChannelCertificate,
+                        serverNonce.ToArray());
 
-                    if (!SecurityPolicies.Verify(
-                        serverCertificate,
-                        m_endpoint.Description.SecurityPolicyUri,
-                        dataToSign,
-                        serverSignature))
+                    if (!m_securityPolicies.VerifySignatureData(
+                            serverSignature,
+                            securityPolicy,
+                            serverCertificate!,
+                            dataToSign))
                     {
                         throw ServiceResultException.Create(
                             StatusCodes.BadApplicationSignatureInvalid,

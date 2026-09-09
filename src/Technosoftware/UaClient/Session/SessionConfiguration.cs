@@ -115,7 +115,7 @@ namespace Technosoftware.UaClient
         /// The last server nonce received.
         /// </summary>
         [DataMember(IsRequired = true, Order = 80)]
-        public Nonce? ServerNonce { get; init; }
+        public ByteString ServerNonce { get; init; }
 
         /// <summary>
         /// The user identity token policy which was used to create the session.
