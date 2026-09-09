@@ -1625,9 +1625,8 @@ namespace Technosoftware.UaServer
                     DataValue value = values[ii] = new DataValue();
 
                     value = value.WithWrappedValue(Variant.Null);
-                    value = value
-                        .WithServerTimestamp(DateTime.MinValue; // Will be set after ReadAttribute value = value
-                        .WithSourceTimestamp(DateTime.MinValue));
+                    value = value.WithServerTimestamp(DateTime.MinValue); // Will be set after ReadAttribute
+                    value = value.WithSourceTimestamp(DateTime.MinValue);
                     value = value.WithStatus(StatusCodes.Good);
 
                     // check if the node is a area in memory.

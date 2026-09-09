@@ -697,9 +697,8 @@ namespace Technosoftware.UaServer
                     DataValue value = values[ii] = new DataValue();
 
                     value = value.WithWrappedValue(Variant.Null);
-                    value = value
-                        .WithServerTimestamp(DateTime.MinValue; // Will be set later value = value
-                        .WithSourceTimestamp(DateTime.MinValue));
+                    value = value.WithServerTimestamp(DateTime.MinValue); // Will be set later
+                    value = value.WithSourceTimestamp(DateTime.MinValue);
                     value = value.WithStatus(StatusCodes.BadAttributeIdInvalid);
 
                     // owned by this node manager.
