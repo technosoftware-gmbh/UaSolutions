@@ -71,12 +71,12 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Gets the lock that must be acquired before accessing the contents of the Diagnostics property.
         /// </summary>
-        object DiagnosticsLock { get; }
+        Lock DiagnosticsLock { get; }
 
         /// <summary>
         /// Gets the lock that must be acquired before updating the contents of the Diagnostics property.
         /// </summary>
-        object DiagnosticsWriteLock { get; }
+        Lock DiagnosticsWriteLock { get; }
 
         /// <summary>
         /// Gets the current diagnostics for the subscription.

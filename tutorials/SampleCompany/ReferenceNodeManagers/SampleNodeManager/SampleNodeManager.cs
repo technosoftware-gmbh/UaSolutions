@@ -93,7 +93,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// <summary>
         /// Acquires the lock on the node manager.
         /// </summary>
-        public object Lock { get; } = new object();
+        public System.Threading.Lock Lock { get; } = new();
 
         /// <summary>
         /// The server that the node manager belongs to.

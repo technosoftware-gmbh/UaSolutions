@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Threading;
 using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Security.Certificates;
@@ -50,7 +51,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// A lock which must be acquired before accessing the diagnostics.
         /// </summary>
-        object DiagnosticsLock { get; }
+        Lock DiagnosticsLock { get; }
 
         /// <summary>
         /// The application defined mapping for user identity provided by the client.

@@ -216,7 +216,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// A lock which must be acquired before accessing the diagnostics.
         /// </summary>
-        public object DiagnosticsLock => SessionDiagnostics;
+        public Lock DiagnosticsLock { get; } = new();
 
         /// <summary>
         /// The diagnostics associated with the session.

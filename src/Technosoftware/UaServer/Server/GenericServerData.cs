@@ -353,14 +353,14 @@ namespace Technosoftware.UaServer
         {
             get
             {
-                lock (NonThreadSafeStatus.Lock)
+                lock (DiagnosticsLock)
                 {
                     return NonThreadSafeStatus.Value.State;
                 }
             }
             set
             {
-                lock (NonThreadSafeStatus.Lock)
+                lock (DiagnosticsLock)
                 {
                     NonThreadSafeStatus.Value.State = value;
                 }
@@ -377,14 +377,14 @@ namespace Technosoftware.UaServer
         /// Used to synchronize access to the server diagnostics.
         /// </summary>
         /// <value>The diagnostics lock.</value>
-        public object DiagnosticsLock { get; } = new object();
+        public Lock DiagnosticsLock { get; } = new();
 
         /// <summary>
         /// Used to synchronize write access to
         /// the server diagnostics.
         /// </summary>
         /// <value>The diagnostics lock.</value>
-        public object DiagnosticsWriteLock
+        public Lock DiagnosticsWriteLock
         {
             get
             {
@@ -419,7 +419,7 @@ namespace Technosoftware.UaServer
                     return false;
                 }
 
-                lock (NonThreadSafeStatus.Lock)
+                lock (DiagnosticsLock)
                 {
                     if (NonThreadSafeStatus.Value.State == ServerState.Running)
                     {
@@ -846,9 +846,9 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadNamespaceArray(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
-            value = NamespaceUris.ToArray();
+            value = NamespaceUris.ToArrayOf();
             return ServiceResult.Good;
         }
 
@@ -858,9 +858,9 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadServerArray(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
-            value = ServerUris.ToArray();
+            value = ServerUris.ToArrayOf();
             return ServiceResult.Good;
         }
 
@@ -870,7 +870,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadDiagnosticsEnabledFlag(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             value = DiagnosticsNodeManager.DiagnosticsEnabled;
             return ServiceResult.Good;
@@ -882,7 +882,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnWriteDiagnosticsEnabledFlag(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             bool enabled = (bool)value;
             DiagnosticsNodeManager.SetDiagnosticsEnabled(DefaultSystemContext, enabled);
@@ -896,7 +896,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnWriteAuditing(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             Auditing = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
             return ServiceResult.Good;
@@ -908,7 +908,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadAuditing(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             value = Auditing;
             return ServiceResult.Good;
@@ -920,11 +920,11 @@ namespace Technosoftware.UaServer
         private ServiceResult OnUpdateDiagnostics(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
-            lock (ServerDiagnostics)
+            lock (DiagnosticsLock)
             {
-                value = Utils.Clone(ServerDiagnostics);
+                value = Variant.FromStructure(ServerDiagnostics, copy: true);
             }
 
             return ServiceResult.Good;

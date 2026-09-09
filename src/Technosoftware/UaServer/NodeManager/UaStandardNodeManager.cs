@@ -214,7 +214,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Acquires the lock on the node manager.
         /// </summary>
-        public object Lock { get; } = new object();
+        public System.Threading.Lock Lock { get; } = new();
 
         /// <summary>
         /// Gets the server that the node manager belongs to.

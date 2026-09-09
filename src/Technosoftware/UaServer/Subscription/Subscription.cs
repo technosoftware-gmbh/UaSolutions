@@ -320,12 +320,12 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Gets the lock that must be acquired before accessing the contents of the Diagnostics property.
         /// </summary>
-        public object DiagnosticsLock => Diagnostics;
+        public Lock DiagnosticsLock { get; } = new();
 
         /// <summary>
         /// Gets the lock that must be acquired before updating the contents of the Diagnostics property.
         /// </summary>
-        public object DiagnosticsWriteLock
+        public Lock DiagnosticsWriteLock
         {
             get
             {

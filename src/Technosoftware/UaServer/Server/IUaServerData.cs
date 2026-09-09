@@ -189,13 +189,13 @@ namespace Technosoftware.UaServer
         /// Used to synchronize access to the server diagnostics.
         /// </summary>
         /// <value>The diagnostics lock.</value>
-        object DiagnosticsLock { get; }
+        Lock DiagnosticsLock { get; }
 
         /// <summary>
         /// Used to synchronize write access to the server diagnostics.
         /// </summary>
         /// <value>The diagnostics lock.</value>
-        object DiagnosticsWriteLock { get; }
+        Lock DiagnosticsWriteLock { get; }
 
         /// <summary>
         /// Returns the diagnostics structure for the server.
