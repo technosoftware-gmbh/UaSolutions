@@ -59,7 +59,7 @@ namespace Technosoftware.UaServer.Tests
             uint maxResponseMessageSize = DefaultMaxResponseMessageSize)
         {
             // Find TCP endpoint
-            EndpointDescriptionCollection endpoints = server.GetEndpoints();
+            ArrayOf<EndpointDescription> endpoints = server.GetEndpoints();
             EndpointDescription endpoint =
                 endpoints.FirstOrDefault(e =>
                     e.TransportProfileUri
@@ -170,18 +170,21 @@ namespace Technosoftware.UaServer.Tests
         /// <param name="request">The list of requests passed to the service call.</param>
         /// <exception cref="ArgumentException"></exception>
         /// <exception cref="ServiceResultException"></exception>
-        public static void ValidateResponse(ResponseHeader header, IList response, IList request)
+        public static void ValidateResponse<TRequest, TResponse>(
+            ResponseHeader header,
+            ArrayOf<TResponse> response,
+            ArrayOf<TRequest> request)
         {
             ValidateResponse(header);
 
-            if (response is DiagnosticInfoCollection)
+            if (response is ArrayOf<DiagnosticInfo>)
             {
                 throw new ArgumentException(
-                    "Must call ValidateDiagnosticInfos() for DiagnosticInfoCollections.",
+                    "Must call ValidateDiagnosticInfos() for ArrayOf<DiagnosticInfo>.",
                     nameof(response));
             }
 
-            if (response == null || response.Count != request.Count)
+            if (response.Count != request.Count)
             {
                 throw ServiceResultException.Unexpected(
                     "The server returned a list without the expected number of elements.");
@@ -192,14 +195,14 @@ namespace Technosoftware.UaServer.Tests
         /// Validate the diagnostic response of a service call.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public static void ValidateDiagnosticInfos(
-            DiagnosticInfoCollection response,
-            IList request,
-            StringCollection stringTable,
+        public static void ValidateDiagnosticInfos<TRequest>(
+            ArrayOf<DiagnosticInfo> response,
+            ArrayOf<TRequest> request,
+            ArrayOf<string> stringTable,
             ILogger logger)
         {
             // returning an empty list for diagnostic info arrays is allowed.
-            if (response != null && response.Count != 0)
+            if (response.Count != 0)
             {
                 if (response.Count != request.Count)
                 {
@@ -208,7 +211,7 @@ namespace Technosoftware.UaServer.Tests
                 }
 
                 // now validate the string table
-                if (stringTable != null)
+                if (!stringTable.IsEmpty)
                 {
                     for (int ii = 0; ii < response.Count; ii++)
                     {
@@ -241,11 +244,11 @@ namespace Technosoftware.UaServer.Tests
         /// </summary>
         /// <param name="nodeIdCollection">The node id collection.</param>
         /// <param name="template">The template for the browse description for each node id.</param>
-        public static BrowseDescriptionCollection CreateBrowseDescriptionCollectionFromNodeId(
-            NodeIdCollection nodeIdCollection,
+        public static ArrayOf<BrowseDescription> CreateBrowseDescriptionCollectionFromNodeId(
+            ArrayOf<NodeId> nodeIdCollection,
             BrowseDescription template)
         {
-            var browseDescriptionCollection = new BrowseDescriptionCollection();
+            var browseDescriptionCollection = new List<BrowseDescription>();
             foreach (NodeId nodeId in nodeIdCollection)
             {
                 var browseDescription = (BrowseDescription)template.MemberwiseClone();
@@ -261,13 +264,13 @@ namespace Technosoftware.UaServer.Tests
         /// </summary>
         /// <param name="browseResultCollection">The browse result collection to use.</param>
         /// <returns>The collection of continuation points for the BrowseNext service.</returns>
-        public static ByteStringCollection PrepareBrowseNext(
-            BrowseResultCollection browseResultCollection)
+        public static ArrayOf<ByteString> PrepareBrowseNext(
+            ArrayOf<BrowseResult> browseResultCollection)
         {
-            var continuationPoints = new ByteStringCollection();
+            var continuationPoints = new List<ByteString>();
             foreach (BrowseResult browseResult in browseResultCollection)
             {
-                if (browseResult.ContinuationPoint != null)
+                if (!browseResult.ContinuationPoint.IsEmpty)
                 {
                     continuationPoints.Add(browseResult.ContinuationPoint);
                 }

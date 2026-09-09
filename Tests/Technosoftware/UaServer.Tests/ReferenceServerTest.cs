@@ -52,7 +52,7 @@ namespace Technosoftware.UaServer.Tests
         private RequestHeader m_requestHeader;
         private SecureChannelContext m_secureChannelContext;
         private OperationLimits m_operationLimits;
-        private ReferenceDescriptionCollection m_referenceDescriptions;
+        private ArrayOf<ReferenceDescription> m_referenceDescriptions;
         private RandomSource m_random;
         private DataGenerator m_generator;
         private bool m_sessionClosed;
@@ -154,7 +154,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public void GetEndpoints()
         {
-            EndpointDescriptionCollection endpoints = m_server.GetEndpoints();
+            ArrayOf<EndpointDescription> endpoints = m_server.GetEndpoints();
             Assert.NotNull(endpoints);
         }
 
@@ -168,7 +168,7 @@ namespace Technosoftware.UaServer.Tests
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
             ILogger logger = telemetry.CreateLogger<ReferenceServerTests>();
 
-            var readIdCollection = new ReadValueIdCollection {
+            var readIdCollection = new List<ReadValueId> {
                 new ReadValueId {
                     AttributeId = Attributes.Value,
                     NodeId = VariableIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead
@@ -244,7 +244,7 @@ namespace Technosoftware.UaServer.Tests
                 readResponse.ResponseHeader.StringTable,
                 logger);
 
-            DataValueCollection results = readResponse.Results;
+            ArrayOf<DataValue> results = readResponse.Results;
             Assert.NotNull(results);
             Assert.AreEqual(readIdCollection.Count, results.Count);
 
@@ -278,7 +278,7 @@ namespace Technosoftware.UaServer.Tests
             // Read
             RequestHeader requestHeader = m_requestHeader;
             requestHeader.Timestamp = DateTime.UtcNow;
-            var nodesToRead = new ReadValueIdCollection();
+            var nodesToRead = new List<ReadValueId>();
             var nodeId = new NodeId("Scalar_Simulation_Int32", 2);
             foreach (uint attributeId in ServerFixtureUtils.AttributesIds.Keys)
             {
@@ -321,7 +321,7 @@ namespace Technosoftware.UaServer.Tests
             foreach (ReferenceDescription reference in m_referenceDescriptions)
             {
                 requestHeader.Timestamp = DateTime.UtcNow;
-                var nodesToRead = new ReadValueIdCollection();
+                var nodesToRead = new List<ReadValueId>();
                 var nodeId = ExpandedNodeId.ToNodeId(
                     reference.NodeId,
                     m_server.CurrentInstance.NamespaceUris);
@@ -363,7 +363,7 @@ namespace Technosoftware.UaServer.Tests
             // Write
             RequestHeader requestHeader = m_requestHeader;
             requestHeader.Timestamp = DateTime.UtcNow;
-            var nodesToWrite = new WriteValueCollection();
+            var nodesToWrite = new List<WriteValue>();
             var nodeId = new NodeId("Scalar_Simulation_Int32", 2);
             nodesToWrite.Add(
                 new WriteValue
@@ -396,7 +396,7 @@ namespace Technosoftware.UaServer.Tests
 
             // Read a variable from the ReferenceNodeManager (namespace index 2)
             var nodeId = new NodeId("Scalar_Static_Byte", 2);
-            var nodesToRead = new ReadValueIdCollection
+            var nodesToRead = new List<ReadValueId>
             {
                 new ReadValueId { NodeId = nodeId, AttributeId = Attributes.Value }
             };
@@ -470,7 +470,7 @@ namespace Technosoftware.UaServer.Tests
 
             // Read an array variable from the ReferenceNodeManager (namespace index 2)
             var nodeId = new NodeId("Scalar_Static_Arrays_Byte", 2);
-            var nodesToRead = new ReadValueIdCollection
+            var nodesToRead = new List<ReadValueId>
             {
                 new ReadValueId { NodeId = nodeId, AttributeId = Attributes.Value }
             };
@@ -641,7 +641,7 @@ namespace Technosoftware.UaServer.Tests
 
                 var services = new ServerTestServices(m_server, context, m_telemetry);
                 header.Timestamp = DateTime.UtcNow;
-                UInt32Collection ids = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
+                ArrayOf<uint> ids = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
                     services, header, testSet, kQueueSize, -1).ConfigureAwait(false);
                 subscriptionIds.AddRange(ids.ToList());
 
@@ -656,7 +656,7 @@ namespace Technosoftware.UaServer.Tests
             var deleteTasks = new List<Task<DeleteSubscriptionsResponse>>();
             foreach (uint id in subscriptionIds)
             {
-                UInt32Collection singleId = [id];
+                ArrayOf<uint> singleId = [id];
                 m_requestHeader.Timestamp = DateTime.UtcNow;
                 deleteTasks.Add(
                     mainServices.DeleteSubscriptionsAsync(m_requestHeader, singleId)
@@ -698,7 +698,7 @@ namespace Technosoftware.UaServer.Tests
             ];
             transferRequestHeader.Timestamp = DateTime.UtcNow;
             serverTestServices.SecureChannelContext = transferContext;
-            UInt32Collection subscriptionIds = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
+            ArrayOf<uint> subscriptionIds = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
                 serverTestServices,
                 transferRequestHeader,
                 testSet,
@@ -753,7 +753,7 @@ namespace Technosoftware.UaServer.Tests
                 .. CommonTestWorkers.NodeIdTestSetStatic
                         .Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
             ];
-            UInt32Collection subscriptionIds = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
+            ArrayOf<uint> subscriptionIds = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
                 serverTestServices,
                 m_requestHeader,
                 testSet,
@@ -804,7 +804,7 @@ namespace Technosoftware.UaServer.Tests
             var serverTestServices = new ServerTestServices(m_server, m_secureChannelContext, telemetry);
 
             NamespaceTable namespaceUris = m_server.CurrentInstance.NamespaceUris;
-            NodeIdCollection testSetCollection = CommonTestWorkers
+            ArrayOf<NodeId> testSetCollection = CommonTestWorkers
                 .NodeIdTestSetStatic.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
                 .ToArray();
             testSetCollection.AddRange(
@@ -813,7 +813,7 @@ namespace Technosoftware.UaServer.Tests
             NodeId[] testSet = [.. testSetCollection];
 
             //Re-use method CreateSubscriptionForTransfer to create a subscription
-            UInt32Collection subscriptionIds = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
+            ArrayOf<uint> subscriptionIds = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
                 serverTestServices,
                 m_requestHeader,
                 testSet,
@@ -825,7 +825,7 @@ namespace Technosoftware.UaServer.Tests
 
             serverTestServices.SecureChannelContext = m_secureChannelContext;
             // After the ResendData call there will be data to publish again
-            CallMethodRequestCollection nodesToCall = await ResendDataCallAsync(
+            ArrayOf<CallMethodRequest> nodesToCall = await ResendDataCallAsync(
                 StatusCodes.Good,
                 subscriptionIds).ConfigureAwait(false);
 
@@ -836,7 +836,7 @@ namespace Technosoftware.UaServer.Tests
 
             // Issue a Publish request
             m_requestHeader.Timestamp = DateTime.UtcNow;
-            var acknowledgements = new SubscriptionAcknowledgementCollection();
+            var acknowledgements = new List<SubscriptionAcknowledgement>();
             PublishResponse publishResponse = await serverTestServices.PublishAsync(
                 m_requestHeader,
                 acknowledgements).ConfigureAwait(false);
@@ -945,7 +945,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.AreEqual(1, publishResponse.NotificationMessage.NotificationData.Count);
             ExtensionObject items = publishResponse.NotificationMessage.NotificationData.FirstOrDefault();
             Assert.IsTrue(items.Body is DataChangeNotification);
-            MonitoredItemNotificationCollection monitoredItemsCollection = (
+            ArrayOf<MonitoredItemNotification> monitoredItemsCollection = (
                 (DataChangeNotification)items.Body
             ).MonitoredItems;
             Assert.AreEqual(testSet.Length, monitoredItemsCollection.Count,
@@ -1002,15 +1002,15 @@ namespace Technosoftware.UaServer.Tests
             await m_server.CloseSessionAsync(resendDataSecurityContext, resendDataRequestHeader, true, CancellationToken.None).ConfigureAwait(false);
         }
 
-        private async Task<CallMethodRequestCollection> ResendDataCallAsync(
+        private async Task<ArrayOf<CallMethodRequest>> ResendDataCallAsync(
             StatusCode expectedStatus,
-            UInt32Collection subscriptionIds)
+            ArrayOf<uint> subscriptionIds)
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
             ILogger logger = telemetry.CreateLogger<ReferenceServerTests>();
 
             // Find the ResendData method
-            var nodesToCall = new CallMethodRequestCollection();
+            var nodesToCall = new List<CallMethodRequest>();
             foreach (uint subscriptionId in subscriptionIds)
             {
                 nodesToCall.Add(
@@ -1051,7 +1051,7 @@ namespace Technosoftware.UaServer.Tests
 
             // Read values
             RequestHeader requestHeader = m_requestHeader;
-            var nodesToRead = new ReadValueIdCollection();
+            var nodesToRead = new List<ReadValueId>();
             foreach (NodeId nodeId in testSet)
             {
                 nodesToRead.Add(
@@ -1072,7 +1072,7 @@ namespace Technosoftware.UaServer.Tests
                 logger);
             Assert.AreEqual(testSet.Length, readResponse.Results.Count);
 
-            var modifiedValues = new DataValueCollection();
+            var modifiedValues = new List<DataValue>();
             foreach (DataValue dataValue in readResponse.Results)
             {
                 var typeInfo = TypeInfo.Construct(dataValue.Value);
@@ -1082,7 +1082,7 @@ namespace Technosoftware.UaServer.Tests
             }
 
             int ii = 0;
-            var nodesToWrite = new WriteValueCollection();
+            var nodesToWrite = new List<WriteValue>();
             foreach (NodeId nodeId in testSet)
             {
                 nodesToWrite.Add(
@@ -1119,7 +1119,7 @@ namespace Technosoftware.UaServer.Tests
             ILogger logger = telemetry.CreateLogger<ReferenceServerTests>();
 
             // Read Server object EventNotifier attribute
-            var readIdCollection = new ReadValueIdCollection {
+            var readIdCollection = new List<ReadValueId> {
                 new ReadValueId {
                     AttributeId = Attributes.EventNotifier,
                     NodeId = ObjectIds.Server
@@ -1141,7 +1141,7 @@ namespace Technosoftware.UaServer.Tests
             byte eventNotifier = (byte)readResponse.Results[0].Value;
 
             // Read history capabilities
-            var historyCapabilitiesReadIds = new ReadValueIdCollection {
+            var historyCapabilitiesReadIds = new List<ReadValueId> {
                 new ReadValueId {
                     AttributeId = Attributes.Value,
                     NodeId = VariableIds.HistoryServerCapabilities_AccessHistoryEventsCapability
@@ -1195,7 +1195,7 @@ namespace Technosoftware.UaServer.Tests
             ILogger<ReferenceServerTests> logger = m_telemetry.CreateLogger<ReferenceServerTests>();
 
             // Read ServerStatus children (CurrentTime, StartTime, State, etc.)
-            var nodesToRead = new ReadValueIdCollection
+            var nodesToRead = new List<ReadValueId>
             {
                 new ReadValueId { NodeId = VariableIds.Server_ServerStatus_CurrentTime, AttributeId = Attributes.Value },
                 new ReadValueId { NodeId = VariableIds.Server_ServerStatus_StartTime, AttributeId = Attributes.Value },
@@ -1248,7 +1248,7 @@ namespace Technosoftware.UaServer.Tests
             logger.LogInformation("Testing history read for Int32Value node: {NodeId}", int32ValueNodeId);
 
             // Verify the node has Historizing attribute set to true
-            var readIdCollection = new ReadValueIdCollection {
+            var readIdCollection = new List<ReadValueId> {
                 new ReadValueId {
                     AttributeId = Attributes.Historizing,
                     NodeId = int32ValueNodeId
@@ -1290,7 +1290,7 @@ namespace Technosoftware.UaServer.Tests
                 ReturnBounds = false
             };
 
-            var nodesToRead = new HistoryReadValueIdCollection {
+            var nodesToRead = new List<HistoryReadValueId> {
                 new HistoryReadValueId {
                     NodeId = int32ValueNodeId
                 }
@@ -1363,7 +1363,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.IsTrue(server.ProvisioningMode, "Server should be in provisioning mode");
 
             // Get endpoints - in provisioning mode, anonymous authentication should not be allowed
-            EndpointDescriptionCollection endpoints = server.GetEndpoints();
+            ArrayOf<EndpointDescription> endpoints = server.GetEndpoints();
             Assert.IsNotNull(endpoints);
             Assert.IsTrue(endpoints.Count > 0, "Server should have endpoints");
 

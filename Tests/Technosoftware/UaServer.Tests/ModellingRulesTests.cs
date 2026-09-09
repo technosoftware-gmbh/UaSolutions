@@ -98,7 +98,7 @@ namespace Technosoftware.UaServer.Tests
                 ResultMask = (uint)BrowseResultMask.All
             };
 
-            var browseDescriptions = new BrowseDescriptionCollection { browseRequest };
+            var browseDescriptions = new List<BrowseDescription> { browseRequest };
 
             BrowseResponse browseResponse = await m_server.BrowseAsync(
                 m_secureChannelContext,
@@ -107,7 +107,7 @@ namespace Technosoftware.UaServer.Tests
                 0,
                 browseDescriptions, CancellationToken.None).ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
             Assert.That(results, Is.Not.Null);
             Assert.That(results.Count, Is.EqualTo(1));
             Assert.That(results[0].References.Count, Is.GreaterThan(0), "ModellingRules folder should not be empty");
@@ -161,7 +161,7 @@ namespace Technosoftware.UaServer.Tests
                 ResultMask = (uint)BrowseResultMask.All
             };
 
-            var browseDescriptions = new BrowseDescriptionCollection { browseRequest };
+            var browseDescriptions = new List<BrowseDescription> { browseRequest };
 
             BrowseResponse browseResponse = await m_server.BrowseAsync(
                 m_secureChannelContext,
@@ -170,7 +170,7 @@ namespace Technosoftware.UaServer.Tests
                 0,
                 browseDescriptions, CancellationToken.None).ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
             Assert.That(results, Is.Not.Null);
             Assert.That(results.Count, Is.EqualTo(1));
             Assert.That(results[0].References.Count, Is.GreaterThan(0));

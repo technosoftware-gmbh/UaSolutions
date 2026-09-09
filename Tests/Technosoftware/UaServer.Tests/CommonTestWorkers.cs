@@ -198,7 +198,7 @@ namespace Technosoftware.UaServer.Tests
         /// </summary>
         /// <param name="services">The service interface.</param>
         /// <param name="operationLimits">The operation limits.</param>
-        public static async Task<ReferenceDescriptionCollection> BrowseFullAddressSpaceWorkerAsync(
+        public static async Task<ArrayOf<ReferenceDescription>> BrowseFullAddressSpaceWorkerAsync(
                     IServerTestServices services,
                     RequestHeader requestHeader,
                     OperationLimits operationLimits = null,
@@ -221,7 +221,7 @@ namespace Technosoftware.UaServer.Tests
                     NodeClassMask = 0,
                     ResultMask = (uint)BrowseResultMask.All
                 };
-            BrowseDescriptionCollection browseDescriptionCollection =
+            ArrayOf<BrowseDescription> browseDescriptionCollection =
                 ServerFixtureUtils.CreateBrowseDescriptionCollectionFromNodeId(
                     [.. new NodeId[] { new NodeId(Objects.RootFolder )}],
                     browseTemplate);
@@ -229,7 +229,7 @@ namespace Technosoftware.UaServer.Tests
             // Browse
             uint requestedMaxReferencesPerNode = operationLimits.MaxNodesPerBrowse;
             bool verifyMaxNodesPerBrowse = operationLimits.MaxNodesPerBrowse > 0;
-            var referenceDescriptions = new ReferenceDescriptionCollection();
+            var referenceDescriptions = new List<ReferenceDescription>();
 
             // Test if server responds with BadNothingToDo
             {
@@ -244,7 +244,7 @@ namespace Technosoftware.UaServer.Tests
 
             while (browseDescriptionCollection.Count > 0)
             {
-                var allResults = new BrowseResultCollection();
+                var allResults = new List<BrowseResult>();
                 if (verifyMaxNodesPerBrowse &&
                     browseDescriptionCollection.Count > operationLimits.MaxNodesPerBrowse)
                 {
@@ -282,7 +282,7 @@ namespace Technosoftware.UaServer.Tests
                 BrowseResponse browseResponse = null;
                 do
                 {
-                    BrowseDescriptionCollection browseCollection =
+                    ArrayOf<BrowseDescription> browseCollection =
                         maxNodesPerBrowse == 0
                             ? browseDescriptionCollection
                             : browseDescriptionCollection.Take((int)maxNodesPerBrowse).ToArray();
@@ -331,7 +331,7 @@ namespace Technosoftware.UaServer.Tests
                 }
 
                 // Browse next
-                ByteStringCollection continuationPoints = ServerFixtureUtils.PrepareBrowseNext(
+                ArrayOf<ByteString> continuationPoints = ServerFixtureUtils.PrepareBrowseNext(
                     browseResponse.Results);
                 while (continuationPoints.Count > 0)
                 {
@@ -355,7 +355,7 @@ namespace Technosoftware.UaServer.Tests
                 }
 
                 // Build browse request for next level
-                var browseTable = new NodeIdCollection();
+                var browseTable = new List<NodeId>();
                 foreach (BrowseResult result in allResults)
                 {
                     referenceDescriptions.AddRange(result.References);
@@ -391,9 +391,9 @@ namespace Technosoftware.UaServer.Tests
         /// <summary>
         /// Worker method to translate the browse path.
         /// </summary>
-        public static async Task<BrowsePathResultCollection> TranslateBrowsePathWorkerAsync(
+        public static async Task<ArrayOf<BrowsePathResult>> TranslateBrowsePathWorkerAsync(
             IServerTestServices services,
-            ReferenceDescriptionCollection referenceDescriptions,
+            ArrayOf<ReferenceDescription> referenceDescriptions,
             RequestHeader requestHeader,
             OperationLimits operationLimits)
         {
@@ -404,13 +404,13 @@ namespace Technosoftware.UaServer.Tests
             // TranslateBrowsePath
             bool verifyMaxNodesPerBrowse = operationLimits
                 .MaxNodesPerTranslateBrowsePathsToNodeIds > 0;
-            var browsePaths = new BrowsePathCollection(
+            var browsePaths = new List<BrowsePath>(
                 referenceDescriptions.Select(r => new BrowsePath
                 {
                     RelativePath = new RelativePath(r.BrowseName),
                     StartingNode = new NodeId(startingNode)
                 }));
-            var allBrowsePaths = new BrowsePathResultCollection();
+            var allBrowsePaths = new List<BrowsePathResult>();
             while (browsePaths.Count > 0)
             {
                 if (verifyMaxNodesPerBrowse &&
@@ -426,7 +426,7 @@ namespace Technosoftware.UaServer.Tests
                         (StatusCode)StatusCodes.BadTooManyOperations,
                         (StatusCode)sre.StatusCode);
                 }
-                BrowsePathCollection browsePathSnippet =
+                ArrayOf<BrowsePath> browsePathSnippet =
                     operationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds > 0
                         ? browsePaths.Take(
                             (int)operationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds).ToArray()
@@ -496,7 +496,7 @@ namespace Technosoftware.UaServer.Tests
             ServerFixtureUtils.ValidateResponse(createSubscriptionResponse.ResponseHeader);
             uint id = createSubscriptionResponse.SubscriptionId;
 
-            var itemsToCreate = new MonitoredItemCreateRequestCollection();
+            var itemsToCreate = new List<MonitoredItemCreateRequest>();
             // check badnothingtodo
             ServiceResultException sre = NUnit.Framework.Assert.ThrowsAsync<ServiceResultException>(async () =>
                 await services.CreateMonitoredItemsAsync(
@@ -557,7 +557,7 @@ namespace Technosoftware.UaServer.Tests
             ServerFixtureUtils.ValidateResponse(modifySubscriptionResponse.ResponseHeader);
 
             // modify monitored item, just timestamps to return
-            var itemsToModify = new MonitoredItemModifyRequestCollection();
+            var itemsToModify = new List<MonitoredItemModifyRequest>();
             foreach (MonitoredItemCreateResult itemCreated in createMonitoredItemsResponse.Results)
             {
                 itemsToModify.Add(
@@ -579,7 +579,7 @@ namespace Technosoftware.UaServer.Tests
                 services.Logger);
 
             // publish request
-            var acknowledgements = new SubscriptionAcknowledgementCollection();
+            var acknowledgements = new List<SubscriptionAcknowledgement>();
             PublishResponse publishResponse = await services.PublishAsync(
                 requestHeader,
                 acknowledgements).ConfigureAwait(false);
@@ -594,7 +594,7 @@ namespace Technosoftware.UaServer.Tests
 
             // enable publishing
             enabled = true;
-            var subscriptions = new UInt32Collection { id };
+            var subscriptions = new List<uint> { id };
             SetPublishingModeResponse setPublishingModeResponse = await services.SetPublishingModeAsync(
                 requestHeader,
                 enabled,
@@ -673,7 +673,7 @@ namespace Technosoftware.UaServer.Tests
                 services.Logger);
 
             // disable monitoring
-            var monitoredItemIds = new UInt32Collection(
+            var monitoredItemIds = new List<uint>(
                 createMonitoredItemsResponse.Results.Select(r => r.MonitoredItemId));
             SetMonitoringModeResponse setMonitoringModeResponse = await services.SetMonitoringModeAsync(
                 requestHeader,
@@ -702,7 +702,7 @@ namespace Technosoftware.UaServer.Tests
         /// <summary>
         /// Worker method to test TransferSubscriptions of a server.
         /// </summary>
-        public static async Task<UInt32Collection> CreateSubscriptionForTransferAsync(
+        public static async Task<ArrayOf<uint>> CreateSubscriptionForTransferAsync(
             IServerTestServices services,
             RequestHeader requestHeader,
             NodeId[] testNodes,
@@ -726,7 +726,7 @@ namespace Technosoftware.UaServer.Tests
                     samplingInterval).ConfigureAwait(false);
             }
 
-            var subscriptionIds = new UInt32Collection { subscriptionId };
+            var subscriptionIds = new List<uint> { subscriptionId };
 
             // enable publishing
             SetPublishingModeResponse setPublishingModeResponse = await services.SetPublishingModeAsync(
@@ -744,7 +744,7 @@ namespace Technosoftware.UaServer.Tests
             Thread.Sleep(1000);
 
             // publish request (use invalid sequence number for status)
-            var acknowledgements = new SubscriptionAcknowledgementCollection {
+            var acknowledgements = new List<SubscriptionAcknowledgement> {
                 new SubscriptionAcknowledgement {
                     SubscriptionId = subscriptionId,
                     SequenceNumber = 123 }
@@ -772,7 +772,7 @@ namespace Technosoftware.UaServer.Tests
         public static async Task TransferSubscriptionTestAsync(
             IServerTestServices services,
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool sendInitialData,
             bool expectAccessDenied)
         {
@@ -814,7 +814,7 @@ namespace Technosoftware.UaServer.Tests
             }
 
             requestHeader.Timestamp = DateTime.UtcNow;
-            var acknowledgements = new SubscriptionAcknowledgementCollection();
+            var acknowledgements = new List<SubscriptionAcknowledgement>();
             PublishResponse publishResponse = await services.PublishAsync(
                 requestHeader,
                 acknowledgements).ConfigureAwait(false);
@@ -831,7 +831,7 @@ namespace Technosoftware.UaServer.Tests
             {
                 ExtensionObject items = publishResponse.NotificationMessage.NotificationData.FirstOrDefault();
                 Assert.IsTrue(items.Body is DataChangeNotification);
-                MonitoredItemNotificationCollection monitoredItemsCollection = (
+                ArrayOf<MonitoredItemNotification> monitoredItemsCollection = (
                     (DataChangeNotification)items.Body
                 ).MonitoredItems;
                 Assert.IsNotEmpty(monitoredItemsCollection);
@@ -849,7 +849,7 @@ namespace Technosoftware.UaServer.Tests
         public static async Task VerifySubscriptionTransferredAsync(
             IServerTestServices services,
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool deleteSubscriptions)
         {
             // start time
@@ -859,7 +859,7 @@ namespace Technosoftware.UaServer.Tests
             Thread.Sleep(100);
 
             // publish request
-            var acknowledgements = new SubscriptionAcknowledgementCollection();
+            var acknowledgements = new List<SubscriptionAcknowledgement>();
             PublishResponse publishResponse = await services.PublishAsync(
                 requestHeader,
                 acknowledgements).ConfigureAwait(false);
@@ -932,7 +932,7 @@ namespace Technosoftware.UaServer.Tests
             uint queueSize,
             int samplingInterval)
         {
-            var itemsToCreate = new MonitoredItemCreateRequestCollection {
+            var itemsToCreate = new List<MonitoredItemCreateRequest> {
                 // add item
                 new MonitoredItemCreateRequest
                 {
