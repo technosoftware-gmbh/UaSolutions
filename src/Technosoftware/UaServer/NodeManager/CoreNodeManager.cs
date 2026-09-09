@@ -696,8 +696,10 @@ namespace Technosoftware.UaServer
 
                     DataValue value = values[ii] = new DataValue();
 
-                    value = value.WithWrappedValue(Variant.From(null));
-                    value = value.WithServerTimestamp(DateTime.MinValue; // Will be set later value = value.WithSourceTimestamp(DateTime.MinValue));
+                    value = value.WithWrappedValue(Variant.Null);
+                    value = value
+                        .WithServerTimestamp(DateTime.MinValue; // Will be set later value = value
+                        .WithSourceTimestamp(DateTime.MinValue));
                     value = value.WithStatus(StatusCodes.BadAttributeIdInvalid);
 
                     // owned by this node manager.
@@ -742,7 +744,7 @@ namespace Technosoftware.UaServer
 
                         if (ServiceResult.IsBad(error))
                         {
-                            value = value.WithWrappedValue(Variant.From(null));
+                            value = value.WithWrappedValue(Variant.Null);
                             errors[ii] = error;
                             continue;
                         }
@@ -757,7 +759,7 @@ namespace Technosoftware.UaServer
 
                             if (ServiceResult.IsBad(error))
                             {
-                                value = value.WithWrappedValue(Variant.From(null));
+                                value = value.WithWrappedValue(Variant.Null);
                                 errors[ii] = error;
                                 continue;
                             }
@@ -1484,19 +1486,17 @@ namespace Technosoftware.UaServer
             ILocalNode node,
             IUaDataChangeMonitoredItem2 monitoredItem)
         {
-            var initialValue = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.BadWaitingForInitialData
-            };
+            var initialValue = new DataValue()
+                .WithWrappedValue(Variant.Null)
+                .WithServerTimestamp(DateTime.UtcNow)
+                .WithSourceTimestamp(DateTime.MinValue)
+                .WithStatus(StatusCodes.BadWaitingForInitialData);
 
             ServiceResult error = node.Read(context, monitoredItem.AttributeId, initialValue);
 
             if (ServiceResult.IsBad(error))
             {
-                initialValue = initialValue.WithWrappedValue(Variant.From(null));
+                initialValue = initialValue.WithWrappedValue(Variant.Null);
                 initialValue = initialValue.WithStatus(error.StatusCode);
             }
 
@@ -1850,11 +1850,9 @@ namespace Technosoftware.UaServer
                     if (previousMode == MonitoringMode.Disabled &&
                         monitoringMode != MonitoringMode.Disabled)
                     {
-                        var initialValue = new DataValue
-                        {
-                            ServerTimestamp = DateTime.UtcNow,
-                            StatusCode = StatusCodes.BadWaitingForInitialData
-                        };
+                        var initialValue = new DataValue()
+                            .WithServerTimestamp(DateTime.UtcNow)
+                            .WithStatus(StatusCodes.BadWaitingForInitialData);
 
                         // read the initial value.
 
@@ -1867,7 +1865,7 @@ namespace Technosoftware.UaServer
 
                             if (ServiceResult.IsBad(error))
                             {
-                                initialValue = initialValue.WithWrappedValue(Variant.From(null));
+                                initialValue = initialValue.WithWrappedValue(Variant.Null);
                                 initialValue = initialValue.WithStatus(error.StatusCode);
                             }
                         }

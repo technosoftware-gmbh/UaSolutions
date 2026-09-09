@@ -851,13 +851,11 @@ namespace Technosoftware.UaServer
                 return new DataValue(Variant.Null, StatusCodes.BadNoData, timestamp, timestamp);
             }
 
-            var dataValue = new DataValue
-            {
-                WrappedValue = earlyBound.WrappedValue,
-                SourceTimestamp = timestamp,
-                ServerTimestamp = timestamp,
-                StatusCode = StatusCodes.Good
-            };
+            var dataValue = new DataValue()
+                .WithWrappedValue(earlyBound.WrappedValue)
+                .WithSourceTimestamp(timestamp)
+                .WithServerTimestamp(timestamp)
+                .WithStatus(StatusCodes.Good);
 
             // update status code.
             if (StatusCode.IsBad(earlyBound.StatusCode))
@@ -917,13 +915,11 @@ namespace Technosoftware.UaServer
                     earlyValue;
 
                 // convert back to original type.
-                var dataValue = new DataValue
-                {
-                    WrappedValue = CastToOriginalType(calculatedValue, earlyBound),
-                    SourceTimestamp = timestamp,
-                    ServerTimestamp = timestamp,
-                    StatusCode = StatusCodes.Good
-                };
+                var dataValue = new DataValue()
+                    .WithWrappedValue(CastToOriginalType(calculatedValue, earlyBound))
+                    .WithSourceTimestamp(timestamp)
+                    .WithServerTimestamp(timestamp)
+                    .WithStatus(StatusCodes.Good);
 
                 // update status code.
                 if (StatusCode.IsNotGood(earlyBound.StatusCode) ||

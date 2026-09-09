@@ -213,11 +213,9 @@ namespace Technosoftware.UaServer
             if (previousMode == MonitoringMode.Disabled &&
                 monitoringMode != MonitoringMode.Disabled)
             {
-                var initialValue = new DataValue
-                {
-                    ServerTimestamp = DateTime.UtcNow,
-                    StatusCode = StatusCodes.BadWaitingForInitialData
-                };
+                var initialValue = new DataValue()
+                    .WithServerTimestamp(DateTime.UtcNow)
+                    .WithStatus(StatusCodes.BadWaitingForInitialData);
 
                 // read the initial value.
 
@@ -230,7 +228,7 @@ namespace Technosoftware.UaServer
 
                     if (ServiceResult.IsBad(error))
                     {
-                        initialValue = initialValue.WithWrappedValue(Variant.From(null));
+                        initialValue = initialValue.WithWrappedValue(Variant.Null);
                         initialValue = initialValue.WithStatus(error.StatusCode);
                     }
                 }

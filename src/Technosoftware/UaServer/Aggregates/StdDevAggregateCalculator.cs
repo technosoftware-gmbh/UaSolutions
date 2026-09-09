@@ -204,12 +204,10 @@ namespace Technosoftware.UaServer
             }
 
             // set the timestamp and status.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(result, TypeInfo.Scalars.Double),
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
+            var value = new DataValue()
+                .WithWrappedValue(new Variant(result, TypeInfo.Scalars.Double))
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
 
             if (nonGoodDataExists)
             {
@@ -317,12 +315,10 @@ namespace Technosoftware.UaServer
             }
 
             // set the timestamp and status.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(result, TypeInfo.Scalars.Double),
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
+            var value = new DataValue()
+                .WithWrappedValue(new Variant(result, TypeInfo.Scalars.Double))
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
 
             if (nonGoodDataExists)
             {

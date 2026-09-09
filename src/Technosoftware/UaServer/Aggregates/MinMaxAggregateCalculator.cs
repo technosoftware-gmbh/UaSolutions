@@ -265,11 +265,9 @@ namespace Technosoftware.UaServer
             }
 
             // create processed value.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(processedValue, processedType),
-                StatusCode = statusCode
-            };
+            var value = new DataValue()
+                .WithWrappedValue(new Variant(processedValue, processedType))
+                .WithStatus(statusCode);
 
             if (returnActualTime)
             {
@@ -450,11 +448,9 @@ namespace Technosoftware.UaServer
             }
 
             // create processed value.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(processedValue, processedType),
-                StatusCode = GetTimeBasedStatusCode(slice, values, statusCode)
-            };
+            var value = new DataValue()
+                .WithWrappedValue(new Variant(processedValue, processedType))
+                .WithStatus(GetTimeBasedStatusCode(slice, values, statusCode));
 
             // zero value if status is bad.
             if (StatusCode.IsBad(value.StatusCode))

@@ -305,13 +305,11 @@ namespace Technosoftware.UaServer
             NodeState node,
             IUaDataChangeMonitoredItem2 monitoredItem)
         {
-            var value = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.Good
-            };
+            var value = new DataValue()
+                .WithWrappedValue(Variant.Null)
+                .WithServerTimestamp(DateTime.UtcNow)
+                .WithSourceTimestamp(DateTime.MinValue)
+                .WithStatus(StatusCodes.Good);
 
             ISystemContext contextToUse = context;
 

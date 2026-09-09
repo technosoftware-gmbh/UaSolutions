@@ -1624,8 +1624,10 @@ namespace Technosoftware.UaServer
                     // create an initial value.
                     DataValue value = values[ii] = new DataValue();
 
-                    value = value.WithWrappedValue(Variant.From(null));
-                    value = value.WithServerTimestamp(DateTime.MinValue; // Will be set after ReadAttribute value = value.WithSourceTimestamp(DateTime.MinValue));
+                    value = value.WithWrappedValue(Variant.Null);
+                    value = value
+                        .WithServerTimestamp(DateTime.MinValue; // Will be set after ReadAttribute value = value
+                        .WithSourceTimestamp(DateTime.MinValue));
                     value = value.WithStatus(StatusCodes.Good);
 
                     // check if the node is a area in memory.
@@ -3951,13 +3953,11 @@ namespace Technosoftware.UaServer
             UaNodeHandle handle,
             IUaDataChangeMonitoredItem2 monitoredItem)
         {
-            var initialValue = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.BadWaitingForInitialData
-            };
+            var initialValue = new DataValue()
+                .WithWrappedValue(Variant.Null)
+                .WithServerTimestamp(DateTime.UtcNow)
+                .WithSourceTimestamp(DateTime.MinValue)
+                .WithStatus(StatusCodes.BadWaitingForInitialData);
 
             ServiceResult error = handle.Node.ReadAttribute(
                 context,

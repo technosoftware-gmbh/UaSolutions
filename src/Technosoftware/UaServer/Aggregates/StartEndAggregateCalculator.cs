@@ -178,11 +178,9 @@ namespace Technosoftware.UaServer
                 return GetNoDataValue(slice);
             }
 
-            var value = new DataValue
-            {
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
+            var value = new DataValue()
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
 
             // set status code.
             if (badDataSkipped)
@@ -311,11 +309,9 @@ namespace Technosoftware.UaServer
                 return GetNoDataValue(slice);
             }
 
-            var value = new DataValue
-            {
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
+            var value = new DataValue()
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
 
             if (!IsGood(start) || !IsGood(end))
             {

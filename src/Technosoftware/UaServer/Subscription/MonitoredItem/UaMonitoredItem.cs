@@ -864,15 +864,13 @@ namespace Technosoftware.UaServer
                             value.WrappedValue);
                     }
 
-                    value = new DataValue
-                    {
-                        WrappedValue = value.WrappedValue,
-                        StatusCode = value.StatusCode,
-                        SourceTimestamp = value.SourceTimestamp,
-                        SourcePicoseconds = value.SourcePicoseconds,
-                        ServerTimestamp = value.ServerTimestamp,
-                        ServerPicoseconds = value.ServerPicoseconds
-                    };
+                    value = new DataValue()
+                        .WithWrappedValue(value.WrappedValue)
+                        .WithStatus(value.StatusCode)
+                        .WithSourceTimestamp(value.SourceTimestamp)
+                        .WithSourcePicoseconds(value.SourcePicoseconds)
+                        .WithServerTimestamp(value.ServerTimestamp)
+                        .WithServerPicoseconds(value.ServerPicoseconds);
 
                     // ensure the data value matches the error status code.
                     if (error != null && error.StatusCode.Code != 0)
@@ -884,12 +882,10 @@ namespace Technosoftware.UaServer
                 // create empty value if none provided.
                 if (ServiceResult.IsBad(error) && value == null)
                 {
-                    value = new DataValue
-                    {
-                        StatusCode = error.StatusCode,
-                        SourceTimestamp = DateTime.UtcNow,
-                        ServerTimestamp = DateTime.UtcNow
-                    };
+                    value = new DataValue()
+                        .WithStatus(error.StatusCode)
+                        .WithSourceTimestamp(DateTime.UtcNow)
+                        .WithServerTimestamp(DateTime.UtcNow);
                 }
 
                 // this should never happen.
