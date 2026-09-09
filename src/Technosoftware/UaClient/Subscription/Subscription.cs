@@ -594,7 +594,7 @@ namespace Technosoftware.UaClient
                 {
                     if (m_messageCache.Count > 0)
                     {
-                        return m_messageCache.Last!.Value.PublishTime;
+                        return (DateTime)m_messageCache.Last!.Value.PublishTime;
                     }
                 }
 
@@ -689,15 +689,13 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The sequence numbers that are available for republish requests.
         /// </summary>
-        public IEnumerable<uint> AvailableSequenceNumbers
+        public ArrayOf<uint> AvailableSequenceNumbers
         {
             get
             {
                 lock (m_cache)
                 {
-                    return m_availableSequenceNumbers != null
-                        ? [.. m_availableSequenceNumbers]
-                        : [];
+                    return m_availableSequenceNumbers;
                 }
             }
         }
@@ -950,16 +948,18 @@ namespace Technosoftware.UaClient
             VerifySessionAndSubscriptionState(true);
 
             // collect list of browse paths.
-            var browsePaths = new BrowsePathCollection();
+            var pathsToResolve = new List<BrowsePath>();
             var itemsToBrowse = new List<MonitoredItem>();
 
-            PrepareResolveItemNodeIds(browsePaths, itemsToBrowse);
+            PrepareResolveItemNodeIds(pathsToResolve, itemsToBrowse);
 
             // nothing to do.
-            if (browsePaths.Count == 0)
+            if (pathsToResolve.Count == 0)
             {
                 return;
             }
+
+            ArrayOf<BrowsePath> browsePaths = pathsToResolve.ToArrayOf();
 
             // translate browse paths.
             TranslateBrowsePathsToNodeIdsResponse response = await Session
@@ -989,7 +989,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         public async Task<IList<MonitoredItem>> CreateItemsAsync(CancellationToken ct = default)
         {
-            MonitoredItemCreateRequestCollection requestItems;
+            ArrayOf<MonitoredItemCreateRequest> requestItems;
             List<MonitoredItem> itemsToCreate;
             VerifySession();
 
@@ -1010,8 +1010,8 @@ namespace Technosoftware.UaClient
                     .ConfigureAwait(false);
 
                 ArrayOf<MonitoredItemCreateResult> results = response.Results;
-                ClientBase.ValidateResponse(results, itemsToCreate);
-                ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, itemsToCreate);
+                ClientBase.ValidateResponse(results, requestItems);
+                ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, requestItems);
 
                 // update results.
                 for (int ii = 0; ii < results.Count; ii++)
@@ -1052,15 +1052,17 @@ namespace Technosoftware.UaClient
         {
             VerifySessionAndSubscriptionState(true);
 
-            var requestItems = new MonitoredItemModifyRequestCollection();
+            var itemsToRequest = new List<MonitoredItemModifyRequest>();
             var itemsToModify = new List<MonitoredItem>();
 
-            PrepareItemsToModify(requestItems, itemsToModify);
+            PrepareItemsToModify(itemsToRequest, itemsToModify);
 
-            if (requestItems.Count == 0)
+            if (itemsToRequest.Count == 0)
             {
                 return itemsToModify;
             }
+
+            ArrayOf<MonitoredItemModifyRequest> requestItems = itemsToRequest.ToArrayOf();
 
             using Activity? activity = m_telemetry.StartActivity();
             // modify the subscription.
@@ -1069,8 +1071,8 @@ namespace Technosoftware.UaClient
                 .ConfigureAwait(false);
 
             ArrayOf<MonitoredItemModifyResult> results = response.Results;
-            ClientBase.ValidateResponse(results, itemsToModify);
-            ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, itemsToModify);
+            ClientBase.ValidateResponse(results, requestItems);
+            ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, requestItems);
 
             // update results.
             for (int ii = 0; ii < results.Count; ii++)
@@ -1108,12 +1110,9 @@ namespace Technosoftware.UaClient
             List<MonitoredItem> itemsToDelete = m_deletedItems;
             m_deletedItems = [];
 
-            var monitoredItemIds = new List<uint>();
-
-            foreach (MonitoredItem monitoredItem in itemsToDelete)
-            {
-                monitoredItemIds.Add(monitoredItem.Status.Id);
-            }
+            ArrayOf<uint> monitoredItemIds = itemsToDelete
+                .ConvertAll(monitoredItem => monitoredItem.Status.Id)
+                .ToArrayOf();
 
             DeleteMonitoredItemsResponse response = await Session
                 .DeleteMonitoredItemsAsync(null, Id, monitoredItemIds, ct)
@@ -1240,11 +1239,9 @@ namespace Technosoftware.UaClient
             }
 
             // get list of items to update.
-            var monitoredItemIds = new List<uint>();
-            foreach (MonitoredItem monitoredItem in monitoredItems)
-            {
-                monitoredItemIds.Add(monitoredItem.Status.Id);
-            }
+            ArrayOf<uint> monitoredItemIds = monitoredItems
+                .Select(monitoredItem => monitoredItem.Status.Id)
+                .ToArrayOf();
 
             SetMonitoringModeResponse response = await Session
                 .SetMonitoringModeAsync(null, Id, monitoringMode, monitoredItemIds, ct)
@@ -1357,8 +1354,6 @@ namespace Technosoftware.UaClient
             lock (m_cache)
             {
                 // Initialize the triggered items collection if needed
-                triggeringItem.TriggeredItems ??= [];
-
                 // Add new links
                 if (clientHandlesToAdd.Count > 0)
                 {
@@ -1366,7 +1361,7 @@ namespace Technosoftware.UaClient
                     {
                         if (!triggeringItem.TriggeredItems.Contains(clientHandle))
                         {
-                            triggeringItem.TriggeredItems.Add(clientHandle);
+                            triggeringItem.TriggeredItems += clientHandle;
                         }
 
                         // Update the triggered item to remember its triggering item
@@ -1382,7 +1377,8 @@ namespace Technosoftware.UaClient
                 {
                     foreach (uint clientHandle in clientHandlesToRemove)
                     {
-                        triggeringItem.TriggeredItems.Remove(clientHandle);
+                        triggeringItem.TriggeredItems =
+                            triggeringItem.TriggeredItems.RemoveItem(clientHandle);
 
                         // Clear the triggering item reference
                         if (m_monitoredItems.TryGetValue(clientHandle, out MonitoredItem? triggeredItem))
@@ -1562,17 +1558,14 @@ namespace Technosoftware.UaClient
         /// Adds the notification message to internal cache.
         /// </summary>
         public void SaveMessageInCache(
-            IList<uint>? availableSequenceNumbers,
+            ArrayOf<uint> availableSequenceNumbers,
             NotificationMessage message)
         {
             PublishStateChangedEventHandler? callback = null;
 
             lock (m_cache)
             {
-                if (availableSequenceNumbers != null)
-                {
-                    m_availableSequenceNumbers = availableSequenceNumbers;
-                }
+                m_availableSequenceNumbers = availableSequenceNumbers;
 
                 if (message == null)
                 {
@@ -1960,8 +1953,9 @@ namespace Technosoftware.UaClient
                 m_resyncLastSequenceNumberProcessed = true;
 
                 // save available sequence numbers
-                m_availableSequenceNumbers = (List<uint>)availableSequenceNumbers
-                    .MemberwiseClone();
+                // ArrayOf<uint> is immutable, so the defensive copy the old
+                // MemberwiseClone made is no longer needed.
+                m_availableSequenceNumbers = availableSequenceNumbers;
 
                 if (availableSequenceNumbers.Count != 0 && RepublishAfterTransfer)
                 {
@@ -2346,7 +2340,7 @@ namespace Technosoftware.UaClient
             {
                 foreach (MonitoredItem monitoredItem in m_monitoredItems.Values)
                 {
-                    monitoredItem.SetDeleteResult(StatusCodes.Good, -1, null, null);
+                    monitoredItem.SetDeleteResult(StatusCodes.Good, -1, default, null);
                 }
             }
 
@@ -2525,8 +2519,8 @@ namespace Technosoftware.UaClient
                                 publishStateChangedMask |= PublishStateChangedMask.Republish;
 
                                 // only call republish if the sequence number is available
-                                if (m_availableSequenceNumbers?.Contains(
-                                    ii.Value.SequenceNumber) == true)
+                                if (m_availableSequenceNumbers.Contains(
+                                    ii.Value.SequenceNumber))
                                 {
                                     (messagesToRepublish ??= []).Add(ii.Value);
                                 }
@@ -2774,8 +2768,8 @@ namespace Technosoftware.UaClient
         private static bool UpdateMonitoringMode(
             IList<MonitoredItem> monitoredItems,
             List<ServiceResult?> errors,
-            List<StatusCode> results,
-            List<DiagnosticInfo> diagnosticInfos,
+            ArrayOf<StatusCode> results,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader,
             MonitoringMode monitoringMode)
         {
@@ -2807,7 +2801,7 @@ namespace Technosoftware.UaClient
         /// Prepare the creation requests for all monitored items that have not yet been created.
         /// </summary>
         private async Task<(
-            MonitoredItemCreateRequestCollection,
+            ArrayOf<MonitoredItemCreateRequest>,
             List<MonitoredItem>
             )> PrepareItemsToCreateAsync(CancellationToken ct = default)
         {
@@ -2815,7 +2809,7 @@ namespace Technosoftware.UaClient
 
             await ResolveItemNodeIdsAsync(ct).ConfigureAwait(false);
 
-            var requestItems = new MonitoredItemCreateRequestCollection();
+            var requestItems = new List<MonitoredItemCreateRequest>();
             var itemsToCreate = new List<MonitoredItem>();
             lock (m_cache)
             {
@@ -2867,7 +2861,7 @@ namespace Technosoftware.UaClient
         /// that need modification.
         /// </summary>
         private void PrepareItemsToModify(
-            MonitoredItemModifyRequestCollection requestItems,
+            List<MonitoredItemModifyRequest> requestItems,
             List<MonitoredItem> itemsToModify)
         {
             lock (m_cache)
@@ -2942,7 +2936,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
         private void PrepareResolveItemNodeIds(
-            BrowsePathCollection browsePaths,
+            List<BrowsePath> browsePaths,
             List<MonitoredItem> itemsToBrowse)
         {
             lock (m_cache)
@@ -2991,7 +2985,7 @@ namespace Technosoftware.UaClient
         private void SaveDataChange(
             NotificationMessage message,
             DataChangeNotification notifications,
-            IList<string> stringTable)
+            ArrayOf<string> stringTable)
         {
             // check for empty monitored items list.
             if (notifications.MonitoredItems == null || notifications.MonitoredItems.Count == 0)
@@ -3036,7 +3030,7 @@ namespace Technosoftware.UaClient
         private void SaveEvents(
             NotificationMessage message,
             EventNotificationList notifications,
-            IList<string> stringTable)
+            ArrayOf<string> stringTable)
         {
             for (int ii = 0; ii < notifications.Events.Count; ii++)
             {
@@ -3156,7 +3150,7 @@ namespace Technosoftware.UaClient
         private bool m_disposed;
         private readonly Lock m_cache = new();
         private readonly LinkedList<NotificationMessage> m_messageCache = new();
-        private IList<uint>? m_availableSequenceNumbers;
+        private ArrayOf<uint> m_availableSequenceNumbers;
         private ConcurrentDictionary<uint, MonitoredItem> m_monitoredItems = new();
         private readonly AsyncAutoResetEvent m_messageWorkerEvent = new();
         private CancellationTokenSource? m_messageWorkerCts;
@@ -3293,7 +3287,7 @@ namespace Technosoftware.UaClient
     public delegate void FastDataChangeNotificationEventHandler(
         Subscription subscription,
         DataChangeNotification notification,
-        IList<string> stringTable);
+        ArrayOf<string> stringTable);
 
     /// <summary>
     /// The delegate used to receive event notifications via a direct function call instead of a .NET Event.
@@ -3301,7 +3295,7 @@ namespace Technosoftware.UaClient
     public delegate void FastEventNotificationEventHandler(
         Subscription subscription,
         EventNotificationList notification,
-        IList<string> stringTable);
+        ArrayOf<string> stringTable);
 
     /// <summary>
     /// The delegate used to receive keep alive notifications via a direct function call instead of a .NET Event.

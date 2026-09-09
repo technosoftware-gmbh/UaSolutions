@@ -60,7 +60,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             return session.OpenAsync(
@@ -88,7 +88,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             bool checkDomain,
             CancellationToken ct = default)
         {
@@ -241,7 +241,7 @@ namespace Technosoftware.UaClient
         public static async Task<(List<NodeId>, IList<ServiceResult>)> FindComponentIdsAsync(
             this IUaSession session,
             NodeId instanceId,
-            IList<string> componentPaths,
+            ArrayOf<string> componentPaths,
             CancellationToken ct = default)
         {
             var componentIds = new List<NodeId>();

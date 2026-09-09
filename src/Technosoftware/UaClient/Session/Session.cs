@@ -1043,7 +1043,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             bool checkDomain,
             bool closeChannel,
             CancellationToken ct)
@@ -3258,7 +3258,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <exception cref="ServiceResultException"></exception>
         private void UpdateNamespaceTable(
             List<DataValue> values,
-            List<DiagnosticInfo> diagnosticInfos,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             // validate namespace array.
@@ -5014,7 +5014,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         public NotificationEventArgs(
             Subscription subscription,
             NotificationMessage notificationMessage,
-            IList<string> stringTable)
+            ArrayOf<string> stringTable)
         {
             Subscription = subscription;
             NotificationMessage = notificationMessage;
@@ -5034,7 +5034,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <summary>
         /// Gets the string table returned with the notification message.
         /// </summary>
-        public IList<string> StringTable { get; }
+        public ArrayOf<string> StringTable { get; }
     }
 
     /// <summary>

@@ -51,7 +51,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             return CreateAsync(
@@ -75,7 +75,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             return CreateAsync(
@@ -102,7 +102,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             return CreateAsync(
@@ -129,7 +129,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? userIdentity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             if (reverseConnectManager == null)
@@ -367,7 +367,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             DiagnosticsMasks returnDiagnostics,
             CancellationToken ct = default)
         {

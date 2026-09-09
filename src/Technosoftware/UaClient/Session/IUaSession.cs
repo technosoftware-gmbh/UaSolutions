@@ -392,7 +392,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             bool checkDomain,
             bool closeChannel,
             CancellationToken ct = default);

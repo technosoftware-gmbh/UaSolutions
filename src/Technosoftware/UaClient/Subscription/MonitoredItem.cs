@@ -619,7 +619,7 @@ namespace Technosoftware.UaClient
         protected internal void SetResolvePathResult(
             BrowsePathResult result,
             int index,
-            List<DiagnosticInfo> diagnosticInfos,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             ServiceResult? error = null;
@@ -655,7 +655,7 @@ namespace Technosoftware.UaClient
             MonitoredItemCreateRequest request,
             MonitoredItemCreateResult result,
             int index,
-            List<DiagnosticInfo> diagnosticInfos,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             ServiceResult? error = null;
@@ -680,7 +680,7 @@ namespace Technosoftware.UaClient
             MonitoredItemModifyRequest request,
             MonitoredItemModifyResult result,
             int index,
-            List<DiagnosticInfo> diagnosticInfos,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             ServiceResult? error = null;
@@ -716,7 +716,7 @@ namespace Technosoftware.UaClient
         protected internal void SetDeleteResult(
             StatusCode result,
             int index,
-            List<DiagnosticInfo>? diagnosticInfos,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader? responseHeader)
         {
             ServiceResult? error = null;

@@ -79,7 +79,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default);
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default);
 
         /// <summary>
@@ -154,7 +154,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default);
 
         /// <summary>
@@ -183,7 +183,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? userIdentity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default);
 
         /// <summary>
