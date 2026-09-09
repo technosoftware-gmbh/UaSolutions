@@ -940,7 +940,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<ArrayOf<NodeId>>(i => i.ToHashSet().SetEquals(ids)),
+                    It.Is<ArrayOf<NodeId>>(i => i.ToArray().ToHashSet().SetEquals(ids)),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {
@@ -979,7 +979,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<ArrayOf<NodeId>>(i => i.ToHashSet().SetEquals(ids)),
+                    It.Is<ArrayOf<NodeId>>(i => i.ToArray().ToHashSet().SetEquals(ids)),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {

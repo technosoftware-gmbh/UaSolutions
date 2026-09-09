@@ -634,7 +634,7 @@ namespace Technosoftware.UaClient.Tests
                 Assert.That(requestHeader.AdditionalHeader, Is.Not.Null);
                 var additionalParameters = requestHeader.AdditionalHeader.Body as AdditionalParametersType;
                 Assert.That(additionalParameters, Is.Not.Null);
-                Assert.That(additionalParameters.Parameters.Any(k => k.Key == "SpanContext"), Is.True);
+                Assert.That(additionalParameters.Parameters.ToArray().Any(k => k.Key == "SpanContext"), Is.True);
             }
 
             sessionMock.Channel
@@ -695,7 +695,7 @@ namespace Technosoftware.UaClient.Tests
                 Assert.That(requestHeader.AdditionalHeader, Is.Not.Null);
                 var additionalParameters = requestHeader.AdditionalHeader.Body as AdditionalParametersType;
                 Assert.That(additionalParameters, Is.Not.Null);
-                Assert.That(additionalParameters.Parameters.Any(k => k.Key == "SpanContext"), Is.True);
+                Assert.That(additionalParameters.Parameters.ToArray().Any(k => k.Key == "SpanContext"), Is.True);
             }
 
             sessionMock.Channel

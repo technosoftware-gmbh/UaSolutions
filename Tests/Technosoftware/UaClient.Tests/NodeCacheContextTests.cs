@@ -343,7 +343,7 @@ namespace Technosoftware.UaClient.Tests
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
                     var results = new List<DataValue>(request.NodesToRead
-                        .Select(r =>
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
                             if (r.NodeId == nodeIds[0])
@@ -418,7 +418,7 @@ namespace Technosoftware.UaClient.Tests
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
                     var results = new List<DataValue>(request.NodesToRead
-                        .Select(r =>
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
                             if (r.AttributeId == Attributes.MinimumSamplingInterval)
@@ -483,7 +483,7 @@ namespace Technosoftware.UaClient.Tests
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
                     var results = new List<DataValue>(request.NodesToRead
-                        .Select(r =>
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
                             node.Read(null, r.AttributeId, value);
@@ -550,8 +550,8 @@ namespace Technosoftware.UaClient.Tests
                     new ValueTask<IServiceResponse>(new ReadResponse
                     {
                         Results = [.. request.NodesToRead
-                                .Select(r => new DataValue(StatusCodes.BadAlreadyExists))],
-                        DiagnosticInfos = [.. request.NodesToRead.Select(_ => new DiagnosticInfo())]
+                                .ToArray().Select(r => new DataValue(StatusCodes.BadAlreadyExists))],
+                        DiagnosticInfos = [.. request.NodesToRead.ToArray().Select(_ => new DiagnosticInfo())]
                     }))
                 .Verifiable(Times.Once);
 
@@ -607,7 +607,7 @@ namespace Technosoftware.UaClient.Tests
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
                     var results = new List<DataValue>(request.NodesToRead
-                        .Select(r =>
+                        .ToArray().Select(r =>
                         {
                             if (r.NodeId == nodeIds[0])
                             {
@@ -681,7 +681,7 @@ namespace Technosoftware.UaClient.Tests
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
                     var results = new List<DataValue>(request.NodesToRead
-                        .Select(r =>
+                        .ToArray().Select(r =>
                         {
                             if (r.AttributeId == Attributes.NodeClass)
                             {
@@ -792,7 +792,7 @@ namespace Technosoftware.UaClient.Tests
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
                     var results = new List<DataValue>(request.NodesToRead
-                        .Select(r =>
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
                             node.Read(null, r.AttributeId, value);
@@ -859,7 +859,7 @@ namespace Technosoftware.UaClient.Tests
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
                     var results = new List<DataValue>(request.NodesToRead
-                        .Select(r =>
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
                             if (r.NodeId == nodeIds[0])

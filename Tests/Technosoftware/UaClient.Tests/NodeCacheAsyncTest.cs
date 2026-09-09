@@ -293,7 +293,7 @@ namespace Technosoftware.UaClient.Tests
                 await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
             }
 
-            foreach (ReferenceDescription reference in ReferenceDescriptions.Take(MaxReferences))
+            foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
                 var nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, Session.NamespaceUris);
                 INode node = await Session.NodeCache.FindAsync(reference.NodeId)
@@ -311,7 +311,7 @@ namespace Technosoftware.UaClient.Tests
                 await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
             }
 
-            foreach (ReferenceDescription reference in ReferenceDescriptions.Take(MaxReferences))
+            foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
                 var nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, Session.NamespaceUris);
                 INode node = await Session.NodeCache.FetchNodeAsync(reference.NodeId)
@@ -329,7 +329,7 @@ namespace Technosoftware.UaClient.Tests
                 await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
             }
 
-            var testSet = ReferenceDescriptions.Take(MaxReferences).Select(r => r.NodeId).ToList();
+            var testSet = ReferenceDescriptions.ToArray().Take(MaxReferences).Select(r => r.NodeId).ToList();
             IList<Node> nodeCollection = await Session.NodeCache.FetchNodesAsync(testSet)
                 .ConfigureAwait(false);
             foreach (Node node in nodeCollection)
@@ -348,7 +348,7 @@ namespace Technosoftware.UaClient.Tests
                 await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
             }
 
-            var testSet = ReferenceDescriptions.Take(MaxReferences).Select(r => r.NodeId).ToList();
+            var testSet = ReferenceDescriptions.ToArray().Take(MaxReferences).Select(r => r.NodeId).ToList();
             IList<INode> nodes = await Session
                 .NodeCache.FindReferencesAsync(
                     testSet,
@@ -403,7 +403,7 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var testSet = ReferenceDescriptions
-                .OrderBy(_ => UnsecureRandom.Shared.Next())
+                .ToArray().OrderBy(_ => UnsecureRandom.Shared.Next())
                 .Take(kTestSetSize)
                 .Select(r => r.NodeId)
                 .ToList();
@@ -433,7 +433,7 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var testSet = ReferenceDescriptions
-                .OrderBy(_ => UnsecureRandom.Shared.Next())
+                .ToArray().OrderBy(_ => UnsecureRandom.Shared.Next())
                 .Take(kTestSetSize)
                 .Select(r => r.NodeId)
                 .ToList();
@@ -462,7 +462,7 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var testSet = ReferenceDescriptions
-                .OrderBy(_ => UnsecureRandom.Shared.Next())
+                .ToArray().OrderBy(_ => UnsecureRandom.Shared.Next())
                 .Take(kTestSetSize)
                 .Select(r => r.NodeId)
                 .ToList();
@@ -497,7 +497,7 @@ namespace Technosoftware.UaClient.Tests
             }
 
             var testSetAll = ReferenceDescriptions
-                .Where(r => r.NodeClass == NodeClass.Variable)
+                .ToArray().Where(r => r.NodeClass == NodeClass.Variable)
                 .OrderBy(_ => UnsecureRandom.Shared.Next())
                 .Select(r => r.NodeId)
                 .ToList();

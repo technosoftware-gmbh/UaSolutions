@@ -1340,7 +1340,7 @@ namespace Technosoftware.UaClient.Tests
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
             var nodeIds = ReferenceDescriptions
-                .Select(n => ExpandedNodeId.ToNodeId(n.NodeId, Session.NamespaceUris))
+                .ToArray().Select(n => ExpandedNodeId.ToNodeId(n.NodeId, Session.NamespaceUris))
                 .ToList();
             if (OperationLimits.MaxNodesPerRead > 0 &&
                 nodeIds.Count > OperationLimits.MaxNodesPerRead)
@@ -1412,7 +1412,7 @@ namespace Technosoftware.UaClient.Tests
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
 
-            foreach (ReferenceDescription reference in ReferenceDescriptions.Take(MaxReferences))
+            foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
                 var nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, Session.NamespaceUris);
                 Node node = await Session.ReadNodeAsync(nodeId).ConfigureAwait(false);
@@ -1443,7 +1443,7 @@ namespace Technosoftware.UaClient.Tests
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
 
-            foreach (ReferenceDescription reference in ReferenceDescriptions.Take(MaxReferences))
+            foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
                 var nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, Session.NamespaceUris);
                 INode node = await Session.ReadNodeAsync(nodeId).ConfigureAwait(false);
@@ -1479,7 +1479,7 @@ namespace Technosoftware.UaClient.Tests
 
             var nodes = new List<NodeId>(
                 ReferenceDescriptions
-                    .Take(nodeCount)
+                    .ToArray().Take(nodeCount)
                     .Select(reference => ExpandedNodeId.ToNodeId(
                         reference.NodeId,
                         Session.NamespaceUris)));
@@ -1553,7 +1553,7 @@ namespace Technosoftware.UaClient.Tests
 
             var nodes = new List<NodeId>(
                 ReferenceDescriptions
-                    .Where(reference => reference.NodeClass == NodeClass.Variable)
+                    .ToArray().Where(reference => reference.NodeClass == NodeClass.Variable)
                     .Take(nodeCount)
                     .Select(reference => ExpandedNodeId.ToNodeId(
                         reference.NodeId,
