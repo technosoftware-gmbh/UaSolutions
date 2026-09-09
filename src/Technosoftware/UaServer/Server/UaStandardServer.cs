@@ -655,21 +655,19 @@ namespace Technosoftware.UaServer
                         {
                             session.SetEccUserTokenSecurityPolicy(policyUri);
                             EphemeralKeyType key = session.GetNewEccKey();
-                            response.Parameters.Add(
-                                new KeyValuePair
+                            response.Parameters += new KeyValuePair
                                 {
                                     Key = new QualifiedName("ECDHKey"),
                                     Value = new ExtensionObject(key)
-                                });
+                                };
                         }
                         else
                         {
-                            response.Parameters.Add(
-                                new KeyValuePair
+                            response.Parameters += new KeyValuePair
                                 {
                                     Key = new QualifiedName("ECDHKey"),
                                     Value = StatusCodes.BadSecurityPolicyRejected
-                                });
+                                };
                         }
                     }
                 }
@@ -695,8 +693,7 @@ namespace Technosoftware.UaServer
             if (key != null)
             {
                 response = new AdditionalParametersType();
-                response.Parameters
-                    .Add(new KeyValuePair { Key = new QualifiedName("ECDHKey"), Value = new ExtensionObject(key) });
+                response.Parameters += new KeyValuePair { Key = new QualifiedName("ECDHKey"), Value = new ExtensionObject(key) };
             }
 
             return response;
@@ -2943,7 +2940,7 @@ namespace Technosoftware.UaServer
             // ensure at least one security policy exists.
             if (configuration.ServerConfiguration.SecurityPolicies.Count == 0)
             {
-                configuration.ServerConfiguration.SecurityPolicies.Add(new ServerSecurityPolicy());
+                configuration.ServerConfiguration.SecurityPolicies += new ServerSecurityPolicy();
             }
 
             // ensure at least one user token policy exists.
@@ -2952,7 +2949,7 @@ namespace Technosoftware.UaServer
                 var userTokenPolicy = new UserTokenPolicy { TokenType = UserTokenType.Anonymous };
                 userTokenPolicy.PolicyId = userTokenPolicy.TokenType.ToString();
 
-                configuration.ServerConfiguration.UserTokenPolicies.Add(userTokenPolicy);
+                configuration.ServerConfiguration.UserTokenPolicies += userTokenPolicy;
             }
 
             // set server description.
@@ -3141,7 +3138,7 @@ namespace Technosoftware.UaServer
                     {
                         ServerUri = serverDescription.ApplicationUri
                     };
-                    m_registrationInfo.ServerNames.Add(serverDescription.ApplicationName);
+                    m_registrationInfo.ServerNames += serverDescription.ApplicationName;
                     m_registrationInfo.ProductUri = serverDescription.ProductUri;
                     m_registrationInfo.ServerType = serverDescription.ApplicationType;
                     m_registrationInfo.GatewayServerUri = null;
@@ -3150,6 +3147,8 @@ namespace Technosoftware.UaServer
 
                     // add all discovery urls.
                     string computerName = Utils.GetHostName();
+
+                    var discoveryUrls = new List<string>(BaseAddresses.Count);
 
                     for (int ii = 0; ii < BaseAddresses.Count; ii++)
                     {
@@ -3163,8 +3162,10 @@ namespace Technosoftware.UaServer
                             uri.Host = computerName;
                         }
 
-                        m_registrationInfo.DiscoveryUrls.Add(uri.ToString());
+                        discoveryUrls.Add(uri.ToString());
                     }
+
+                    m_registrationInfo.DiscoveryUrls = discoveryUrls.ToArrayOf();
 
                     // build list of registration endpoints.
                     m_registrationEndpoints = new ConfiguredEndpointCollection(configuration);

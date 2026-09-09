@@ -711,13 +711,9 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(nodesToRegister));
             }
 
-            // return the node id provided.
-            registeredNodeIds = new List<NodeId>(nodesToRegister.Count);
-
-            for (int ii = 0; ii < nodesToRegister.Count; ii++)
-            {
-                registeredNodeIds.Add(nodesToRegister[ii]);
-            }
+            // return the node id provided; ArrayOf<T> is immutable, so the
+            // copy the loop used to make is no longer needed.
+            registeredNodeIds = nodesToRegister;
 
             m_logger.LogTrace(
                 Utils.TraceMasks.ServiceDetail,

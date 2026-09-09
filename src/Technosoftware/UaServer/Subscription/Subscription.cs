@@ -802,7 +802,7 @@ namespace Technosoftware.UaServer
                 }
 
                 var notification = new StatusChangeNotification { Status = StatusCodes.BadTimeout };
-                message.NotificationData.Add(new ExtensionObject(notification));
+                message.NotificationData += new ExtensionObject(notification);
             }
 
             return message;
@@ -834,7 +834,7 @@ namespace Technosoftware.UaServer
                 {
                     Status = StatusCodes.GoodSubscriptionTransferred
                 };
-                message.NotificationData.Add(new ExtensionObject(notification));
+                message.NotificationData += new ExtensionObject(notification);
             }
 
             return message;
@@ -863,10 +863,7 @@ namespace Technosoftware.UaServer
             if (m_lastSentMessage < m_sentMessages.Count)
             {
                 // return the available sequence numbers.
-                for (int ii = 0; ii <= m_lastSentMessage && ii < m_sentMessages.Count; ii++)
-                {
-                    availableSequenceNumbers.Add(m_sentMessages[ii].SequenceNumber);
-                }
+                availableSequenceNumbers = CollectAvailableSequenceNumbers();
 
                 moreNotifications = m_waitingForPublish = (m_lastSentMessage < m_sentMessages.Count - 1) ||
                     m_itemsToPublish.Count > 0;
@@ -1025,10 +1022,7 @@ namespace Technosoftware.UaServer
                 };
 
                 // return the available sequence numbers.
-                for (int ii = 0; ii <= m_lastSentMessage && ii < m_sentMessages.Count; ii++)
-                {
-                    availableSequenceNumbers.Add(m_sentMessages[ii].SequenceNumber);
-                }
+                availableSequenceNumbers = CollectAvailableSequenceNumbers();
 
                 // TraceState(LogLevel.Trace, TraceStateId.Items, "PUBLISH KEEPALIVE");
                 return message;
@@ -1072,10 +1066,7 @@ namespace Technosoftware.UaServer
             moreNotifications = m_waitingForPublish = messages.Count > 1;
 
             // return the available sequence numbers.
-            for (int ii = 0; ii <= m_lastSentMessage && ii < m_sentMessages.Count; ii++)
-            {
-                availableSequenceNumbers.Add(m_sentMessages[ii].SequenceNumber);
-            }
+            availableSequenceNumbers = CollectAvailableSequenceNumbers();
 
             // TraceState(LogLevel.Trace, TraceStateId.Items, "PUBLISH NEW MESSAGE");
             return m_sentMessages[m_lastSentMessage++];
@@ -1085,6 +1076,24 @@ namespace Technosoftware.UaServer
         /// Returns the available sequence numbers for retransmission
         /// For example used in Transfer Subscription
         /// </summary>
+        /// <summary>
+        /// Collects the sequence numbers of the messages still available for
+        /// retransmission. ArrayOf&lt;uint&gt; is immutable, so the three
+        /// publish paths that used to append to it in place now build the
+        /// list once and convert.
+        /// </summary>
+        private ArrayOf<uint> CollectAvailableSequenceNumbers()
+        {
+            var sequenceNumbers = new List<uint>();
+
+            for (int ii = 0; ii <= m_lastSentMessage && ii < m_sentMessages.Count; ii++)
+            {
+                sequenceNumbers.Add(m_sentMessages[ii].SequenceNumber);
+            }
+
+            return sequenceNumbers.ToArrayOf();
+        }
+
         public ArrayOf<uint> AvailableSequenceNumbersForRetransmission()
         {
             var availableSequenceNumbers = new List<uint>();
@@ -1095,7 +1104,7 @@ namespace Technosoftware.UaServer
             {
                 availableSequenceNumbers.Add(m_sentMessages[ii].SequenceNumber);
             }
-            return availableSequenceNumbers;
+            return availableSequenceNumbers.ToArrayOf();
         }
 
         /// <summary>
@@ -1126,30 +1135,31 @@ namespace Technosoftware.UaServer
             if (events.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
             {
                 var notification = new EventNotificationList();
+                var eventFields = new List<EventFieldList>();
 
                 while (events.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
                 {
-                    notification.Events.Add(events.Dequeue());
+                    eventFields.Add(events.Dequeue());
                     notificationCount++;
                 }
 
-                message.NotificationData.Add(new ExtensionObject(notification));
+                notification.Events = eventFields.ToArrayOf();
+
+                message.NotificationData += new ExtensionObject(notification);
             }
 
             // add datachanges (space permitting).
             if (datachanges.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
             {
                 bool diagnosticsExist = false;
-                var notification = new DataChangeNotification
-                {
-                    MonitoredItems = new MonitoredItemNotificationCollection(datachanges.Count),
-                    DiagnosticInfos = new List<DiagnosticInfo>(datachanges.Count)
-                };
+                var notification = new DataChangeNotification();
+                var monitoredItems = new List<MonitoredItemNotification>(datachanges.Count);
+                var diagnosticInfos = new List<DiagnosticInfo>(datachanges.Count);
 
                 while (datachanges.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
                 {
                     MonitoredItemNotification datachange = datachanges.Dequeue();
-                    notification.MonitoredItems.Add(datachange);
+                    monitoredItems.Add(datachange);
 
                     DiagnosticInfo diagnosticInfo = datachangeDiagnostics.Dequeue();
 
@@ -1158,18 +1168,19 @@ namespace Technosoftware.UaServer
                         diagnosticsExist = true;
                     }
 
-                    notification.DiagnosticInfos.Add(diagnosticInfo);
+                    diagnosticInfos.Add(diagnosticInfo);
 
                     notificationCount++;
                 }
 
-                // clear diagnostics if not used.
-                if (!diagnosticsExist)
-                {
-                    notification.DiagnosticInfos.Clear();
-                }
+                notification.MonitoredItems = monitoredItems.ToArrayOf();
 
-                message.NotificationData.Add(new ExtensionObject(notification));
+                // clear diagnostics if not used.
+                notification.DiagnosticInfos = diagnosticsExist
+                    ? diagnosticInfos.ToArrayOf()
+                    : ArrayOf<DiagnosticInfo>.Empty;
+
+                message.NotificationData += new ExtensionObject(notification);
             }
 
             return message;

@@ -114,7 +114,7 @@ namespace Technosoftware.UaServer
                 AuthenticationMechanism = Identity.TokenType.ToString(),
                 Encoding = context.ChannelContext.MessageEncoding.ToString()
             };
-            m_securityDiagnostics.ClientUserIdHistory.Add(Identity.DisplayName);
+            m_securityDiagnostics.ClientUserIdHistory += Identity.DisplayName;
 
             EndpointDescription description = context.ChannelContext.EndpointDescription;
 
@@ -1089,7 +1089,7 @@ namespace Technosoftware.UaServer
                     m_securityDiagnostics.ClientUserIdOfSession = identity.DisplayName;
                     m_securityDiagnostics.AuthenticationMechanism = identity.TokenType.ToString();
 
-                    m_securityDiagnostics.ClientUserIdHistory.Add(identity.DisplayName);
+                    m_securityDiagnostics.ClientUserIdHistory += identity.DisplayName;
                 }
 
                 return changed;

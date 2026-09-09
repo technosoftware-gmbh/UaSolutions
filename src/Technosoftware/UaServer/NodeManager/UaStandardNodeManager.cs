@@ -3145,53 +3145,56 @@ namespace Technosoftware.UaServer
             // check for argument errors.
             bool argumentsValid = true;
 
+            var inputArgumentResults = new List<StatusCode>(argumentErrors.Count);
+            var inputArgumentDiagnosticInfos = new List<DiagnosticInfo>(argumentErrors.Count);
+
             for (int jj = 0; jj < argumentErrors.Count; jj++)
             {
                 ServiceResult argumentError = argumentErrors[jj];
 
                 if (argumentError != null)
                 {
-                    result.InputArgumentResults.Add(argumentError.StatusCode);
+                    inputArgumentResults.Add(argumentError.StatusCode);
 
                     if (ServiceResult.IsBad(argumentError))
                     {
                         argumentsValid = false;
                     }
 
-                // only fill in diagnostic info if it is requested.
-                if (systemContext.OperationContext != null &&
-                    (systemContext.OperationContext.DiagnosticsMask &
-                        DiagnosticsMasks.OperationAll) != 0)
-                {
-                    if (ServiceResult.IsBad(argumentError))
+                    // only fill in diagnostic info if it is requested.
+                    if (systemContext.OperationContext != null &&
+                        (systemContext.OperationContext.DiagnosticsMask &
+                            DiagnosticsMasks.OperationAll) != 0)
                     {
-                        result.InputArgumentDiagnosticInfos.Add(
-                            new DiagnosticInfo(
-                                argumentError,
-                                systemContext.OperationContext.DiagnosticsMask,
-                                false,
-                                systemContext.OperationContext.StringTable,
-                                m_logger));
-                    }
-                    else
-                    {
-                        result.InputArgumentDiagnosticInfos.Add(null);
+                        if (ServiceResult.IsBad(argumentError))
+                        {
+                            inputArgumentDiagnosticInfos.Add(
+                                new DiagnosticInfo(
+                                    argumentError,
+                                    systemContext.OperationContext.DiagnosticsMask,
+                                    false,
+                                    systemContext.OperationContext.StringTable,
+                                    m_logger));
+                        }
+                        else
+                        {
+                            inputArgumentDiagnosticInfos.Add(null);
+                        }
                     }
                 }
-            }
             }
 
             // check for validation errors.
             if (!argumentsValid)
             {
+                result.InputArgumentResults = inputArgumentResults.ToArrayOf();
+                result.InputArgumentDiagnosticInfos = inputArgumentDiagnosticInfos.ToArrayOf();
                 result.StatusCode = StatusCodes.BadInvalidArgument;
                 return result.StatusCode;
             }
 
             // Per OPC UA Part 4, Section 5.12: InputArgumentResults must be empty when StatusCode is Good.
-            // Clear diagnostics and argument results if there are no errors.
-            result.InputArgumentDiagnosticInfos.Clear();
-            result.InputArgumentResults.Clear();
+            // Neither collection is assigned in that case; both stay empty.
 
             // return output arguments.
             result.OutputArguments = outputArguments;

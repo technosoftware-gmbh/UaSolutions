@@ -979,6 +979,7 @@ namespace Technosoftware.UaServer
         {
             // fetch the event fields.
             var fields = new EventFieldList { ClientHandle = ClientHandle, Handle = instance };
+            var eventFields = new List<Variant>(filter.SelectClauses.Count);
 
             foreach (SimpleAttributeOperand clause in filter.SelectClauses)
             {
@@ -1000,14 +1001,16 @@ namespace Technosoftware.UaServer
                     }
 
                     // add value.
-                    fields.EventFields.Add(Variant.From(value));
+                    eventFields.Add(Variant.From(value));
                 }
                 // add a dummy entry for missing values.
                 else
                 {
-                    fields.EventFields.Add(Variant.Null);
+                    eventFields.Add(Variant.Null);
                 }
             }
+
+            fields.EventFields = eventFields.ToArrayOf();
 
             return fields;
         }

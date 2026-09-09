@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -214,20 +215,16 @@ namespace Technosoftware.UaServer
                     {
                         CertificateCollection certificates = await store.EnumerateAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (Certificate certificate in certificates)
-                        {
-                            trustList.TrustedCertificates.Add(certificate.RawData);
-                        }
+                        trustList.TrustedCertificates = trustList.TrustedCertificates.AddItems(
+                            certificates.Select(certificate => certificate.RawData.ToByteString()));
                     }
 
                     if (((int)masks & (int)TrustListMasks.TrustedCrls) != 0)
                     {
                         X509CRLCollection crls = await store.EnumerateCRLsAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (X509CRL crl in crls)
-                        {
-                            trustList.TrustedCrls.Add(crl.RawData);
-                        }
+                        trustList.TrustedCrls = trustList.TrustedCrls.AddItems(
+                            crls.Select(crl => crl.RawData.ToByteString()));
                     }
                 }
                 finally
@@ -249,20 +246,16 @@ namespace Technosoftware.UaServer
                     {
                         CertificateCollection certificates = await store.EnumerateAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (Certificate certificate in certificates)
-                        {
-                            trustList.IssuerCertificates.Add(certificate.RawData);
-                        }
+                        trustList.IssuerCertificates = trustList.IssuerCertificates.AddItems(
+                            certificates.Select(certificate => certificate.RawData.ToByteString()));
                     }
 
                     if (((int)masks & (int)TrustListMasks.IssuerCrls) != 0)
                     {
                         X509CRLCollection crls = await store.EnumerateCRLsAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (X509CRL crl in crls)
-                        {
-                            trustList.IssuerCrls.Add(crl.RawData);
-                        }
+                        trustList.IssuerCrls = trustList.IssuerCrls.AddItems(
+                            crls.Select(crl => crl.RawData.ToByteString()));
                     }
                 }
                 finally

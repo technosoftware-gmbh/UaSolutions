@@ -4775,8 +4775,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             if (EccUtils.IsEccPolicy(userTokenSecurityPolicyUri))
             {
                 var parameters = new AdditionalParametersType();
-                parameters.Parameters.Add(
-                    new Opc.Ua.KeyValuePair { Key = new QualifiedName("ECDHPolicyUri"), Value = userTokenSecurityPolicyUri });
+                parameters.Parameters += new Opc.Ua.KeyValuePair { Key = new QualifiedName("ECDHPolicyUri"), Value = userTokenSecurityPolicyUri };
                 requestHeader.AdditionalHeader = new ExtensionObject(parameters);
             }
 
