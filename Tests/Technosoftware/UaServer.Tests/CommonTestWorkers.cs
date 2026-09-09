@@ -373,7 +373,19 @@ namespace Technosoftware.UaServer.Tests
                         browseTemplate);
             }
 
-            referenceDescriptions.Sort((x, y) => x.NodeId.CompareTo(y.NodeId));
+            // The sort is only here to make the sample the callers take off the
+            // front deterministic. NodeId.CompareTo no longer orders by
+            // namespace and identifier in 2.0, which moved the server's
+            // session-scoped diagnostics nodes - valid only while the session
+            // that produced them is open - into that sample, so the order the
+            // callers rely on is spelled out.
+            referenceDescriptions.Sort((x, y) =>
+            {
+                int order = x.NodeId.NamespaceIndex.CompareTo(y.NodeId.NamespaceIndex);
+                return order != 0
+                    ? order
+                    : string.CompareOrdinal(x.NodeId.ToString(), y.NodeId.ToString());
+            });
 
             TestContext.Out
                 .WriteLine("Found {0} references on server.", referenceDescriptions.Count);

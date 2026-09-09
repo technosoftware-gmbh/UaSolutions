@@ -612,21 +612,13 @@ namespace Technosoftware.UaClient.Tests
             await Task.WhenAll([.. taskList]).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Browses the address space once per session.
-        /// </summary>
         /// <remarks>
-        /// This fixture opens a new session for every test, and the browse
-        /// result carries the session's own diagnostics nodes, which the
-        /// server removes when that session closes. A snapshot taken in an
-        /// earlier session therefore names nodes that no longer exist. The
-        /// old guard compared an ArrayOf against null, which a struct never
-        /// is, so it never re-browsed at all.
+        /// The guard this replaces compared an ArrayOf against null, which a
+        /// struct never is, so it never browsed at all.
         /// </remarks>
         private async Task EnsureReferenceDescriptionsAsync()
         {
-            if (ReferenceDescriptions.IsEmpty ||
-                !ReferenceEquals(m_browsedSession, Session))
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
             }
@@ -645,9 +637,6 @@ namespace Technosoftware.UaClient.Tests
             ReferenceDescriptions = await CommonTestWorkers.BrowseFullAddressSpaceWorkerAsync(
                 clientTestServices,
                 requestHeader).ConfigureAwait(false);
-            m_browsedSession = Session;
         }
-
-        private IUaSession m_browsedSession;
     }
 }

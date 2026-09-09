@@ -1335,7 +1335,7 @@ namespace Technosoftware.UaClient.Tests
         [NonParallelizable]
         public async Task ReadDisplayNamesAsync()
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
@@ -1407,7 +1407,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(550)]
         public async Task ReadNodeSyncAsync()
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
@@ -1438,7 +1438,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(550)]
         public async Task ReadNodeAsync()
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
@@ -1472,7 +1472,7 @@ namespace Technosoftware.UaClient.Tests
         [TestCase(MaxReferences)]
         public async Task ReadNodesSyncAsync(int nodeCount)
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
@@ -1546,7 +1546,7 @@ namespace Technosoftware.UaClient.Tests
         [TestCase(MaxReferences)]
         public async Task ReadNodesAsync(int nodeCount)
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
