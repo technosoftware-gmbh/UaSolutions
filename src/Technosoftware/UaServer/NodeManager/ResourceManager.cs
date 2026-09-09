@@ -64,7 +64,7 @@ namespace Technosoftware.UaServer
 
         /// <inheritdoc/>
         public virtual LocalizedText Translate(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             string key,
             string text,
             params object[] args)
@@ -76,7 +76,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public LocalizedText Translate(IList<string> preferredLocales, LocalizedText text)
+        public LocalizedText Translate(ArrayOf<string> preferredLocales, LocalizedText text)
         {
             return Translate(preferredLocales, text, text.TranslationInfo);
         }
@@ -84,7 +84,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Translates a service result.
         /// </summary>
-        public ServiceResult Translate(IList<string> preferredLocales, ServiceResult result)
+        public ServiceResult Translate(ArrayOf<string> preferredLocales, ServiceResult result)
         {
             if (result == null)
             {
@@ -297,7 +297,7 @@ namespace Technosoftware.UaServer
         /// Translates the text provided.
         /// </summary>
         protected virtual LocalizedText Translate(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             LocalizedText defaultText,
             TranslationInfo info)
         {
@@ -474,7 +474,7 @@ namespace Technosoftware.UaServer
         /// <returns></returns>
         protected virtual LocalizedText FilterByPreferredLocales(
             LocalizedText localizedText,
-            IList<string> preferredLocales)
+            ArrayOf<string> preferredLocales)
         {
             return localizedText?.FilterByPreferredLocales(preferredLocales);
         }
@@ -518,7 +518,7 @@ namespace Technosoftware.UaServer
         /// Finds the best translation for the requested locales.
         /// </summary>
         private string FindBestTranslation(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             string key,
             out CultureInfo culture)
         {
@@ -587,7 +587,7 @@ namespace Technosoftware.UaServer
         /// Translates a status code.
         /// </summary>
         private LocalizedText TranslateStatusCode(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             StatusCode statusCode,
             object[] args)
         {
@@ -613,7 +613,7 @@ namespace Technosoftware.UaServer
         /// Translates a symbolic id.
         /// </summary>
         private LocalizedText TranslateSymbolicId(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             string symbolicId,
             string namespaceUri,
             object[] args)

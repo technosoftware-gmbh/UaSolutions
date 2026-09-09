@@ -185,17 +185,26 @@ namespace Technosoftware.UaServer
         {
             m_identity = identity;
             Roles = roles;
+
+            // GrantedRoleIds is an immutable ArrayOf<NodeId> in 2.0, so the granted roles
+            // are collected and assigned once instead of being appended to the identity's
+            // own collection. NodeId is a struct, hence the direct IsNullNodeId test.
+            List<NodeId> grantedRoleIds = [.. identity.GrantedRoleIds];
             foreach (Role role in roles)
             {
-                if (!(role.RoleId?.IsNullNodeId ?? true))
+                if (!role.RoleId.IsNullNodeId)
                 {
-                    GrantedRoleIds.Add(role.RoleId);
+                    grantedRoleIds.Add(role.RoleId);
                 }
             }
+            GrantedRoleIds = grantedRoleIds;
         }
 
         /// <inheritdoc/>
-        public NodeIdCollection GrantedRoleIds => m_identity.GrantedRoleIds;
+        public ArrayOf<NodeId> GrantedRoleIds { get; }
+
+        /// <inheritdoc/>
+        public IUserIdentityTokenHandler TokenHandler => m_identity.TokenHandler;
 
         /// <summary>
         /// The role in the context of a server.

@@ -47,7 +47,7 @@ namespace Technosoftware.UaServer
             ChannelContext = secureChannelContext;
             Session = null;
             UserIdentity = identity;
-            PreferredLocales = Array.Empty<string>();
+            PreferredLocales = [];
             DiagnosticsMask = (DiagnosticsMasks)requestHeader.ReturnDiagnostics;
             StringTable = new StringTable();
             AuditEntryId = requestHeader.AuditEntryId;
@@ -231,7 +231,19 @@ namespace Technosoftware.UaServer
         /// The locales to use for the operation.
         /// </summary>
         /// <value>The preferred locales.</value>
-        public IList<string> PreferredLocales { get; }
+        public ArrayOf<string> PreferredLocales { get; }
+
+        /// <summary>
+        /// The lifetime of the request this context belongs to.
+        /// </summary>
+        /// <remarks>
+        /// NOT YET WIRED. 2.0 threads a RequestLifetime through the service call so that a
+        /// client-cancelled request short-circuits server side. Every context currently
+        /// reports RequestLifetime.None, which satisfies the interface but means
+        /// cancellation does not propagate. The service overrides in UaStandardServer
+        /// receive the real instance and should pass it in when the contexts are built.
+        /// </remarks>
+        public RequestLifetime RequestLifetime { get; internal set; } = RequestLifetime.None;
 
         /// <summary>
         /// The diagnostics mask specified with the request.

@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using Opc.Ua.Bindings;
 using KeyValuePair = Opc.Ua.KeyValuePair;
 #endregion Using Directives
@@ -278,7 +279,7 @@ namespace Technosoftware.UaServer
             string globalChannelId,
             EndpointDescription endpointDescription,
             OpenSecureChannelRequest request,
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             Exception exception)
         {
             ServerInternal?.ReportAuditOpenSecureChannelEvent(
@@ -300,7 +301,7 @@ namespace Technosoftware.UaServer
 
         /// <inheritdoc/>
         public override void ReportAuditCertificateEvent(
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             Exception exception)
         {
             ServerInternal?.ReportAuditCertificateEvent(clientCertificate, exception, m_logger);
