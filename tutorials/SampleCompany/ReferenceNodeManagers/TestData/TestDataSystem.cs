@@ -476,7 +476,7 @@ namespace SampleCompany.NodeManagers.TestData
                     case Variables.Data_Static_Structure_ScalarStructure:
                     case Variables.Data_Dynamic_Structure_ScalarStructure:
                     case Variables.StructureValueObjectType_ScalarStructure:
-                        return GetRandomScalarStructureDataType();
+                        return Variant.FromStructure(GetRandomScalarStructureDataType());
                     case Variables.Data_Static_Structure_ScalarStructure_BooleanValue:
                     case Variables.Data_Dynamic_Structure_ScalarStructure_BooleanValue:
                         return m_generator.GetRandomBoolean();
@@ -587,9 +587,9 @@ namespace SampleCompany.NodeManagers.TestData
         {
             return new Vector
             {
-                X = (double)m_generator.GetRandom(BuiltInType.Double),
-                Y = (double)m_generator.GetRandom(BuiltInType.Double),
-                Z = (double)m_generator.GetRandom(BuiltInType.Double)
+                X = m_generator.GetRandomDouble(),
+                Y = m_generator.GetRandomDouble(),
+                Z = m_generator.GetRandomDouble()
             };
         }
 
@@ -598,9 +598,9 @@ namespace SampleCompany.NodeManagers.TestData
             return new VectorUnion
             {
                 SwitchField = (VectorUnionFields)(m_generator.GetRandomUInt16() % 4),
-                X = (double)m_generator.GetRandom(BuiltInType.Double),
-                Y = (double)m_generator.GetRandom(BuiltInType.Double),
-                Z = (double)m_generator.GetRandom(BuiltInType.Double)
+                X = m_generator.GetRandomDouble(),
+                Y = m_generator.GetRandomDouble(),
+                Z = m_generator.GetRandomDouble()
             };
         }
 
@@ -625,9 +625,9 @@ namespace SampleCompany.NodeManagers.TestData
             return new VectorWithOptionalFields
             {
                 EncodingMask = encodingMask,
-                X = (double)m_generator.GetRandom(BuiltInType.Double),
-                Y = (double)m_generator.GetRandom(BuiltInType.Double),
-                Z = (double)m_generator.GetRandom(BuiltInType.Double)
+                X = m_generator.GetRandomDouble(),
+                Y = m_generator.GetRandomDouble(),
+                Z = m_generator.GetRandomDouble()
             };
         }
 
@@ -720,12 +720,12 @@ namespace SampleCompany.NodeManagers.TestData
                 StatusCodeValue = m_generator.GetRandomStatusCodeArray(false, 10, false)
             };
 
-            object[] values = m_generator.GetRandomVariantArray(false, 10, false);
-
-            for (int ii = 0; values != null && ii < values.Length; ii++)
-            {
-                value.VariantValue.Add(new Variant(values[ii]));
-            }
+            // GetRandomVariantArray already yields Variants, and
+            // ArrayOf<Variant> is immutable, so the list is assigned once
+            // rather than appended to.
+            value.VariantValue = m_generator
+                .GetRandomVariantArray(false, 10, false)
+                .ToArrayOf();
 
             return value;
         }
