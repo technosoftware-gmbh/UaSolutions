@@ -1591,12 +1591,12 @@ namespace Technosoftware.UaServer
         protected async ValueTask<(
             ServiceResult serviceResult,
             UaContinuationPoint cp,
-            ReferenceDescriptionCollection references
+            ArrayOf<ReferenceDescription> references
             )> FetchReferencesAsync(
                 UaServerOperationContext context,
                 bool assignContinuationPoint,
                 UaContinuationPoint cp,
-                ReferenceDescriptionCollection references,
+                ArrayOf<ReferenceDescription> references,
                 CancellationToken cancellationToken = default)
         {
             Debug.Assert(context != null);

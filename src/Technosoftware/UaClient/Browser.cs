@@ -200,7 +200,7 @@ namespace Technosoftware.UaClient
         /// Browses the specified node.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public async ValueTask<ReferenceDescriptionCollection> BrowseAsync(
+        public async ValueTask<ArrayOf<ReferenceDescription>> BrowseAsync(
             NodeId nodeId,
             CancellationToken ct = default)
         {
@@ -250,7 +250,7 @@ namespace Technosoftware.UaClient
             }
 
             // fetch initial set of references.
-            byte[]? continuationPoint = results[0].ContinuationPoint;
+            ByteString continuationPoint = results[0].ContinuationPoint;
             ArrayOf<ReferenceDescription> references = results[0].References;
 
             try
@@ -258,7 +258,7 @@ namespace Technosoftware.UaClient
                 // process any continuation point.
                 while (continuationPoint != null)
                 {
-                    ReferenceDescriptionCollection additionalReferences;
+                    ArrayOf<ReferenceDescription> additionalReferences;
 
                     if (!ContinueUntilDone && m_MoreReferences != null)
                     {
@@ -350,7 +350,7 @@ namespace Technosoftware.UaClient
         /// <param name="ct">Cancellation token to use</param>
         /// <returns></returns>
         /// <exception cref="ServiceResultException"></exception>
-        public async ValueTask<ResultSet<ReferenceDescriptionCollection>> BrowseAsync(
+        public async ValueTask<ResultSet<ArrayOf<ReferenceDescription>>> BrowseAsync(
             IReadOnlyList<NodeId> nodesToBrowse,
             CancellationToken ct = default)
         {
@@ -361,7 +361,7 @@ namespace Technosoftware.UaClient
                     "Cannot browse if not connected to a server.");
 
             int count = nodesToBrowse.Count;
-            var result = new List<ReferenceDescriptionCollection>(count);
+            var result = new List<ArrayOf<ReferenceDescription>>(count);
             var errors = new List<ServiceResult>(count);
 
             // first attempt for implementation: create the references for the output in advance.
@@ -376,7 +376,7 @@ namespace Technosoftware.UaClient
             var nodesToBrowseForPass = new List<NodeId>(count);
             nodesToBrowseForPass.AddRange(nodesToBrowse);
 
-            var resultForPass = new List<ReferenceDescriptionCollection>(count);
+            var resultForPass = new List<ArrayOf<ReferenceDescription>>(count);
             resultForPass.AddRange(result);
 
             var errorsForPass = new List<ServiceResult>(count);
@@ -405,7 +405,7 @@ namespace Technosoftware.UaClient
 
                 var nodesToBrowseForNextPass = new List<NodeId>();
                 var referenceDescriptionsForNextPass
-                    = new List<ReferenceDescriptionCollection>();
+                    = new List<ArrayOf<ReferenceDescription>>();
                 var errorsForNextPass = new List<ServiceResult>();
 
                 // loop over the batches
@@ -414,7 +414,7 @@ namespace Technosoftware.UaClient
                 {
                     int nodesToBrowseBatchCount = nodesToBrowseBatch.Count;
 
-                    ResultSet<ReferenceDescriptionCollection> results = await BrowseAsync(
+                    ResultSet<ArrayOf<ReferenceDescription>> results = await BrowseAsync(
                         session,
                         state.RequestHeader,
                         state.View,
@@ -506,7 +506,7 @@ namespace Technosoftware.UaClient
 
                 passCount++;
             } while (nodesToBrowseForPass.Count > 0);
-            return new ResultSet<ReferenceDescriptionCollection>(result, errors);
+            return new ResultSet<ArrayOf<ReferenceDescription>>(result, errors);
         }
 
         /// <summary>
@@ -515,7 +515,7 @@ namespace Technosoftware.UaClient
         /// of specific service results, specifically
         /// BadNoContinuationPoint and BadContinuationPointInvalid
         /// </summary>
-        private static async ValueTask<ResultSet<ReferenceDescriptionCollection>> BrowseAsync(
+        private static async ValueTask<ResultSet<ArrayOf<ReferenceDescription>>> BrowseAsync(
             ISessionClient session,
             RequestHeader? requestHeader,
             ViewDescription? view,
@@ -529,11 +529,11 @@ namespace Technosoftware.UaClient
         {
             requestHeader?.RequestHandle = 0;
 
-            var result = new List<ReferenceDescriptionCollection>(nodeIds.Count);
+            var result = new List<ArrayOf<ReferenceDescription>>(nodeIds.Count);
             (
                 _,
                 List<ByteString> continuationPoints,
-                IList<ReferenceDescriptionCollection> referenceDescriptions,
+                IList<ArrayOf<ReferenceDescription>> referenceDescriptions,
                 IList<ServiceResult> errors
             ) = await session.BrowseAsync(
                     requestHeader,
@@ -550,7 +550,7 @@ namespace Technosoftware.UaClient
             result.AddRange(referenceDescriptions);
 
             // process any continuation point.
-            List<ReferenceDescriptionCollection> previousResults = result;
+            List<ArrayOf<ReferenceDescription>> previousResults = result;
             var errorAnchors = new List<ReferenceWrapper<ServiceResult>>();
             var previousErrors = new List<ReferenceWrapper<ServiceResult>>();
             foreach (ServiceResult error in errors)
@@ -560,7 +560,7 @@ namespace Technosoftware.UaClient
             }
 
             var nextContinuationPoints = new List<ByteString>();
-            var nextResults = new List<ReferenceDescriptionCollection>();
+            var nextResults = new List<ArrayOf<ReferenceDescription>>();
             var nextErrors = new List<ReferenceWrapper<ServiceResult>>();
 
             for (int ii = 0; ii < nodeIds.Count; ii++)
@@ -579,7 +579,7 @@ namespace Technosoftware.UaClient
                 (
                     _,
                     List<ByteString> revisedContinuationPoints,
-                    IList<ReferenceDescriptionCollection> browseNextResults,
+                    IList<ArrayOf<ReferenceDescription>> browseNextResults,
                     IList<ServiceResult> browseNextErrors
                 ) = await session.BrowseNextAsync(
                     requestHeader,
@@ -617,7 +617,7 @@ namespace Technosoftware.UaClient
                 finalErrors.Add(errorReference.Reference);
             }
 
-            return new ResultSet<ReferenceDescriptionCollection>(result, finalErrors);
+            return new ResultSet<ArrayOf<ReferenceDescription>>(result, finalErrors);
         }
 
         /// <summary>
@@ -629,7 +629,7 @@ namespace Technosoftware.UaClient
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The next batch of references</returns>
         /// <exception cref="ServiceResultException"></exception>
-        private static async ValueTask<(ReferenceDescriptionCollection, byte[]?)> BrowseNextAsync(
+        private static async ValueTask<(ArrayOf<ReferenceDescription>, byte[]?)> BrowseNextAsync(
             ISessionClient session,
             byte[] continuationPoint,
             bool cancel,
@@ -716,7 +716,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Creates a new instance.
         /// </summary>
-        internal BrowserEventArgs(ReferenceDescriptionCollection references)
+        internal BrowserEventArgs(ArrayOf<ReferenceDescription> references)
         {
             References = references;
         }
@@ -734,7 +734,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The references that have been fetched so far.
         /// </summary>
-        public ReferenceDescriptionCollection References { get; }
+        public ArrayOf<ReferenceDescription> References { get; }
     }
 
     /// <summary>

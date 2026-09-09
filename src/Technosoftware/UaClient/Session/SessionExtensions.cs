@@ -248,18 +248,12 @@ namespace Technosoftware.UaClient
             var errors = new List<ServiceResult>();
 
             // build list of paths to translate.
-            var pathsToTranslate = new BrowsePathCollection();
-
-            for (int ii = 0; ii < componentPaths.Count; ii++)
-            {
-                var pathToTranslate = new BrowsePath
+            ArrayOf<BrowsePath> pathsToTranslate = componentPaths.ToArrayOf().ConvertAll(
+                componentPath => new BrowsePath
                 {
                     StartingNode = instanceId,
-                    RelativePath = RelativePath.Parse(componentPaths[ii], session.TypeTree)
-                };
-
-                pathsToTranslate.Add(pathToTranslate);
-            }
+                    RelativePath = RelativePath.Parse(componentPath, session.TypeTree)
+                });
 
             // translate the paths.
 
@@ -360,7 +354,7 @@ namespace Technosoftware.UaClient
         /// <param name="variableId">The variable node.</param>
         /// <param name="ct">Cancellation token to use to cancel the operation</param>
         /// <exception cref="ServiceResultException"></exception>
-        public static async Task<ReferenceDescriptionCollection> ReadAvailableEncodingsAsync(
+        public static async Task<ArrayOf<ReferenceDescription>> ReadAvailableEncodingsAsync(
             this IUaSession session,
             NodeId variableId,
             CancellationToken ct = default)
@@ -399,7 +393,7 @@ namespace Technosoftware.UaClient
 
             if (encodings.Count > 0)
             {
-                var references = new ReferenceDescriptionCollection();
+                var references = new List<ReferenceDescription>();
 
                 foreach (INode encoding in encodings)
                 {

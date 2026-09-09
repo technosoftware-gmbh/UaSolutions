@@ -86,7 +86,7 @@ namespace Technosoftware.UaClient
         public static async ValueTask<(
             ResponseHeader,
             byte[],
-            ReferenceDescriptionCollection
+            ArrayOf<ReferenceDescription>
             )> BrowseAsync(
                 this ISessionClient session,
                 RequestHeader? requestHeader,
@@ -101,7 +101,7 @@ namespace Technosoftware.UaClient
         {
             ResponseHeader responseHeader;
             IList<ServiceResult> errors;
-            IList<ReferenceDescriptionCollection> referencesList;
+            IList<ArrayOf<ReferenceDescription>> referencesList;
             List<ByteString> continuationPoints;
             (responseHeader, continuationPoints, referencesList, errors) =
                 await session.BrowseAsync(
@@ -133,17 +133,17 @@ namespace Technosoftware.UaClient
         public static async ValueTask<(
             ResponseHeader,
             byte[],
-            ReferenceDescriptionCollection
+            ArrayOf<ReferenceDescription>
             )> BrowseNextAsync(
                 this ISessionClient session,
                 RequestHeader? requestHeader,
                 bool releaseContinuationPoint,
-                byte[]? continuationPoint,
+                ByteString continuationPoint,
                 CancellationToken ct = default)
         {
             ResponseHeader responseHeader;
             IList<ServiceResult> errors;
-            IList<ReferenceDescriptionCollection> referencesList;
+            IList<ArrayOf<ReferenceDescription>> referencesList;
 
             List<ByteString> revisedContinuationPoints;
             (responseHeader, revisedContinuationPoints, referencesList, errors) =
@@ -167,7 +167,7 @@ namespace Technosoftware.UaClient
         /// Managed browsing using browser
         /// </summary>
         public static async Task<(
-            IList<ReferenceDescriptionCollection>,
+            IList<ArrayOf<ReferenceDescription>>,
             IList<ServiceResult>
             )> ManagedBrowseAsync(
                 this ISessionClient session,
@@ -191,7 +191,7 @@ namespace Technosoftware.UaClient
                 IncludeSubtypes = includeSubtypes,
                 NodeClassMask = (int)nodeClassMask
             });
-            ResultSet<ReferenceDescriptionCollection> result =
+            ResultSet<ArrayOf<ReferenceDescription>> result =
                 await browser.BrowseAsync([.. nodesToBrowse], ct).ConfigureAwait(false);
             return (result.Results.ToList(), result.Errors.ToList());
         }
@@ -202,12 +202,12 @@ namespace Technosoftware.UaClient
         /// <param name="session">session to use</param>
         /// <param name="nodeId">The node id.</param>
         /// <param name="ct">Cancellation token to cancel operation with</param>
-        public static async Task<ReferenceDescriptionCollection> FetchReferencesAsync(
+        public static async Task<ArrayOf<ReferenceDescription>> FetchReferencesAsync(
             this ISessionClient session,
             NodeId nodeId,
             CancellationToken ct = default)
         {
-            (IList<ReferenceDescriptionCollection> descriptions, _) =
+            (IList<ArrayOf<ReferenceDescription>> descriptions, _) =
                 await session.ManagedBrowseAsync(
                     null,
                     null,
@@ -231,7 +231,7 @@ namespace Technosoftware.UaClient
         /// <returns>A list of reference collections and the errors reported
         /// by the server.</returns>
         public static Task<(
-            IList<ReferenceDescriptionCollection>,
+            IList<ArrayOf<ReferenceDescription>>,
             IList<ServiceResult>
             )> FetchReferencesAsync(
                 this ISessionClient session,
@@ -364,20 +364,14 @@ namespace Technosoftware.UaClient
             var errors = new List<ServiceResult>();
 
             // build list of values to read.
-            var valuesToRead = new ReadValueIdCollection();
-
-            for (int ii = 0; ii < nodeIds.Count; ii++)
-            {
-                var valueToRead = new ReadValueId
+            ArrayOf<ReadValueId> valuesToRead = nodeIds.ToArrayOf().ConvertAll(
+                nodeId => new ReadValueId
                 {
-                    NodeId = nodeIds[ii],
+                    NodeId = nodeId,
                     AttributeId = Attributes.DisplayName,
                     IndexRange = null,
                     DataEncoding = QualifiedName.Null
-                };
-
-                valuesToRead.Add(valueToRead);
-            }
+                });
 
             // read the values.
 
@@ -444,7 +438,7 @@ namespace Technosoftware.UaClient
                 NodeClassMask = 0
             });
 
-            ReferenceDescriptionCollection references =
+            ArrayOf<ReferenceDescription> references =
                 await browser.BrowseAsync(encodingId, ct).ConfigureAwait(false);
 
             if (references.Count == 0)
@@ -543,7 +537,7 @@ namespace Technosoftware.UaClient
         public static async Task<(
             ResponseHeader responseHeader,
             List<ByteString> continuationPoints,
-            IList<ReferenceDescriptionCollection> referencesList,
+            IList<ArrayOf<ReferenceDescription>> referencesList,
             IList<ServiceResult> errors
         )> BrowseAsync(
             this ISessionClient session,
@@ -557,10 +551,8 @@ namespace Technosoftware.UaClient
             uint nodeClassMask,
             CancellationToken ct = default)
         {
-            var browseDescriptions = new BrowseDescriptionCollection();
-            foreach (NodeId nodeToBrowse in nodesToBrowse)
-            {
-                var description = new BrowseDescription
+            ArrayOf<BrowseDescription> browseDescriptions = nodesToBrowse.ToArrayOf().ConvertAll(
+                nodeToBrowse => new BrowseDescription
                 {
                     NodeId = nodeToBrowse,
                     BrowseDirection = browseDirection,
@@ -568,10 +560,7 @@ namespace Technosoftware.UaClient
                     IncludeSubtypes = includeSubtypes,
                     NodeClassMask = nodeClassMask,
                     ResultMask = (uint)BrowseResultMask.All
-                };
-
-                browseDescriptions.Add(description);
-            }
+                });
 
             BrowseResponse browseResponse = await session.BrowseAsync(
                 requestHeader,
@@ -589,7 +578,7 @@ namespace Technosoftware.UaClient
             int ii = 0;
             var errors = new List<ServiceResult>();
             var continuationPoints = new List<ByteString>();
-            var referencesList = new List<ReferenceDescriptionCollection>();
+            var referencesList = new List<ArrayOf<ReferenceDescription>>();
             foreach (BrowseResult result in results)
             {
                 if (StatusCode.IsBad(result.StatusCode))
@@ -625,7 +614,7 @@ namespace Technosoftware.UaClient
         public static async Task<(
             ResponseHeader responseHeader,
             List<ByteString> revisedContinuationPoints,
-            IList<ReferenceDescriptionCollection> referencesList,
+            IList<ArrayOf<ReferenceDescription>> referencesList,
             IList<ServiceResult> errors
         )> BrowseNextAsync(
             this ISessionClient session,
@@ -649,7 +638,7 @@ namespace Technosoftware.UaClient
             int ii = 0;
             var errors = new List<ServiceResult>();
             var revisedContinuationPoints = new List<ByteString>();
-            var referencesList = new List<ReferenceDescriptionCollection>();
+            var referencesList = new List<ArrayOf<ReferenceDescription>>();
             foreach (BrowseResult result in results)
             {
                 if (StatusCode.IsBad(result.StatusCode))
@@ -897,25 +886,17 @@ namespace Technosoftware.UaClient
         /// Creates resend data call requests for the subscriptions.
         /// </summary>
         /// <param name="subscriptionIds">The subscriptions to call resend data.</param>
-        private static CallMethodRequestCollection CreateCallRequestsForResendData(
+        private static ArrayOf<CallMethodRequest> CreateCallRequestsForResendData(
             IEnumerable<uint> subscriptionIds)
         {
-            var requests = new CallMethodRequestCollection();
-
-            foreach (uint subscriptionId in subscriptionIds)
-            {
-                var inputArguments = new List<Variant> { new Variant(subscriptionId) };
-
-                var request = new CallMethodRequest
+            return subscriptionIds
+                .Select(subscriptionId => new CallMethodRequest
                 {
                     ObjectId = ObjectIds.Server,
                     MethodId = MethodIds.Server_ResendData,
-                    InputArguments = inputArguments
-                };
-
-                requests.Add(request);
-            }
-            return requests;
+                    InputArguments = ArrayOf.Wrapped(new Variant(subscriptionId))
+                })
+                .ToArrayOf();
         }
     }
 }

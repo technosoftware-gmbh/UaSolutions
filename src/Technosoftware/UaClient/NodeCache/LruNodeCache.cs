@@ -494,7 +494,7 @@ namespace Technosoftware.UaClient
                 nodeId,
                 async (nodeId, context) =>
                 {
-                    ReferenceDescriptionCollection references =
+                    ArrayOf<ReferenceDescription> references =
                         await context.ctx.FetchReferencesAsync(null, nodeId, context.ct)
                             .ConfigureAwait(false) ??
                         [];
