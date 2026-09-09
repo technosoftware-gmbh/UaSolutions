@@ -1292,6 +1292,10 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
                         ref value);
+
+                    // DataValue is a struct in 2.0, so the value the read
+                    // filled in is a local copy and has to be written back.
+                    values[ii] = value;
                 }
 
                 // check for nothing to do.
@@ -1320,6 +1324,9 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
                         ref value);
+
+                    // DataValue is a struct, so the filled value is a copy.
+                    values[operation.Index] = value;
                 }
             }
         }
