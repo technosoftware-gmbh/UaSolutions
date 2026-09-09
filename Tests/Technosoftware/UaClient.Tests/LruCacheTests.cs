@@ -46,7 +46,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.IsAny<IReadOnlyList<NodeId>>(),
+                    It.IsAny<ArrayOf<NodeId>>(),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -309,7 +309,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == id),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == id),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -413,7 +413,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == childId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == childId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -425,7 +425,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == grandChildId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == grandChildId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -506,7 +506,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -593,7 +593,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == referenceSubTypeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == referenceSubTypeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -635,7 +635,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -720,7 +720,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -902,7 +902,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.IsAny<IReadOnlyList<NodeId>>(),
+                    It.IsAny<ArrayOf<NodeId>>(),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {
@@ -940,7 +940,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(i => i.ToHashSet().SetEquals(ids)),
+                    It.Is<ArrayOf<NodeId>>(i => i.ToHashSet().SetEquals(ids)),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {
@@ -979,7 +979,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(i => i.ToHashSet().SetEquals(ids)),
+                    It.Is<ArrayOf<NodeId>>(i => i.ToHashSet().SetEquals(ids)),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {
@@ -1001,7 +1001,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(i => i.Count == 1 && i[0] == ids[1]),
+                    It.Is<ArrayOf<NodeId>>(i => i.Count == 1 && i[0] == ids[1]),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {
@@ -1154,7 +1154,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == subTypeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == subTypeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>

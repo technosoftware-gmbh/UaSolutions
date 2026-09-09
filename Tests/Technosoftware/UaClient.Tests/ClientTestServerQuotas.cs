@@ -88,15 +88,17 @@ namespace Technosoftware.UaClient.Tests
             ServerFixture.Config.TransportQuotas.MaxMessageSize = TransportQuotaMaxMessageSize;
             ServerFixture.Config.TransportQuotas.MaxByteStringLength = MaxByteStringLengthForTest;
             ServerFixture.Config.TransportQuotas.MaxStringLength = TransportQuotaMaxStringLength;
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies
-                .Add(new UserTokenPolicy(UserTokenType.UserName));
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
-                new UserTokenPolicy(UserTokenType.Certificate));
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+            // UserTokenPolicies is an immutable ArrayOf in 2.0, so the
+            // policies are assigned in one go.
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies =
+            [
+                new UserTokenPolicy(UserTokenType.UserName),
+                new UserTokenPolicy(UserTokenType.Certificate),
                 new UserTokenPolicy(UserTokenType.IssuedToken)
                 {
                     IssuedTokenType = Profiles.JwtUserToken
-                });
+                },
+            ];
 
             ReferenceServer = await ServerFixture.StartAsync()
                 .ConfigureAwait(false);

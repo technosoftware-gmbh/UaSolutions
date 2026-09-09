@@ -127,15 +127,17 @@ namespace Technosoftware.UaClient.Tests
                 .TransportQuotas
                 .MaxStringLength = TransportQuotaMaxStringLength;
 
-            ServerFixtureWithLimits.Config.ServerConfiguration.UserTokenPolicies.Add(
-                new UserTokenPolicy(UserTokenType.UserName));
-            ServerFixtureWithLimits.Config.ServerConfiguration.UserTokenPolicies.Add(
-                new UserTokenPolicy(UserTokenType.Certificate));
-            ServerFixtureWithLimits.Config.ServerConfiguration.UserTokenPolicies.Add(
+            // UserTokenPolicies is an immutable ArrayOf in 2.0, so the
+            // policies are assigned in one go.
+            ServerFixtureWithLimits.Config.ServerConfiguration.UserTokenPolicies =
+            [
+                new UserTokenPolicy(UserTokenType.UserName),
+                new UserTokenPolicy(UserTokenType.Certificate),
                 new UserTokenPolicy(UserTokenType.IssuedToken)
                 {
                     IssuedTokenType = Profiles.JwtUserToken
-                });
+                },
+            ];
 
             ServerFixtureWithLimits.Config.ServerConfiguration.MaxBrowseContinuationPoints = 2;
             ServerFixtureWithLimits.Config.ServerConfiguration.OperationLimits.MaxNodesPerBrowse
