@@ -393,7 +393,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <returns>true if the new locale ids are different from the old locale ids.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="localeIds"/> is <c>null</c>.</exception>
-        public bool UpdateLocaleIds(List<string> localeIds)
+        public bool UpdateLocaleIds(ArrayOf<string> localeIds)
         {
             if (localeIds == null)
             {
@@ -539,7 +539,7 @@ namespace Technosoftware.UaServer
             UserIdentityToken identityToken,
             IUserIdentity identity,
             IUserIdentity effectiveIdentity,
-            List<string> localeIds,
+            ArrayOf<string> localeIds,
             Nonce serverNonce)
         {
             lock (m_lock)

@@ -118,7 +118,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public void Read(UaServerOperationContext context, double maxAge, IList<ReadValueId> nodesToRead, IList<DataValue> values, IList<ServiceResult> errors)
+        public void Read(UaServerOperationContext context, double maxAge, ArrayOf<ReadValueId> nodesToRead, IList<DataValue> values, IList<ServiceResult> errors)
         {
             m_nodeManager.ReadAsync(context, maxAge, nodesToRead, values, errors).AsTask().GetAwaiter().GetResult();
         }
@@ -129,7 +129,7 @@ namespace Technosoftware.UaServer
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors)
         {
@@ -138,7 +138,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public void Write(UaServerOperationContext context, IList<WriteValue> nodesToWrite, IList<ServiceResult> errors)
+        public void Write(UaServerOperationContext context, ArrayOf<WriteValue> nodesToWrite, IList<ServiceResult> errors)
         {
             m_nodeManager.WriteAsync(context, nodesToWrite, errors).AsTask().GetAwaiter().GetResult();
         }
@@ -147,7 +147,7 @@ namespace Technosoftware.UaServer
         public void HistoryUpdate(
             UaServerOperationContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors)
         {
@@ -155,7 +155,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public void Call(UaServerOperationContext context, IList<CallMethodRequest> methodsToCall, IList<CallMethodResult> results, IList<ServiceResult> errors)
+        public void Call(UaServerOperationContext context, ArrayOf<CallMethodRequest> methodsToCall, IList<CallMethodResult> results, IList<ServiceResult> errors)
         {
             m_nodeManager.CallAsync(context, methodsToCall, results, errors).AsTask().GetAwaiter().GetResult();
         }
@@ -190,7 +190,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors,
             IList<IUaMonitoredItem> monitoredItems,
@@ -216,7 +216,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors)
         {

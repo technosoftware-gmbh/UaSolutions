@@ -1007,7 +1007,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ServiceResultException"></exception>
         public async Task<PublishResponse> PublishAsync(
             UaServerOperationContext context,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             CancellationToken cancellationToken = default)
         {
             // get publish queue for session.
@@ -1670,7 +1670,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken cancellationToken = default)
         {
             // find subscription.
@@ -1712,7 +1712,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken cancellationToken = default)
         {
             // find subscription.

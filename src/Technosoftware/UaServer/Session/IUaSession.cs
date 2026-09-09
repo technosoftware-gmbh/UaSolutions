@@ -105,7 +105,7 @@ namespace Technosoftware.UaServer
             UserIdentityToken identityToken,
             IUserIdentity identity,
             IUserIdentity effectiveIdentity,
-            List<string> localeIds,
+            ArrayOf<string> localeIds,
             Nonce serverNonce);
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace Technosoftware.UaServer
         /// Updates the requested locale ids.
         /// </summary>
         /// <returns>true if the new locale ids are different from the old locale ids.</returns>
-        bool UpdateLocaleIds(List<string> localeIds);
+        bool UpdateLocaleIds(ArrayOf<string> localeIds);
 
         /// <summary>
         /// Activates the session and binds it to the current secure channel.

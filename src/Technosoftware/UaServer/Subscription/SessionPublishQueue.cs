@@ -277,7 +277,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public void Acknowledge(
             UaServerOperationContext context,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             out List<StatusCode> acknowledgeResults,
             out List<DiagnosticInfo> acknowledgeDiagnosticInfos)
         {

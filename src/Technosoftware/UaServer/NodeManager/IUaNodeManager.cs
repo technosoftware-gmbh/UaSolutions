@@ -167,7 +167,7 @@ namespace Technosoftware.UaServer
         void Read(
             UaServerOperationContext context,
             double maxAge,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors);
 
@@ -179,7 +179,7 @@ namespace Technosoftware.UaServer
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors);
 
@@ -192,7 +192,7 @@ namespace Technosoftware.UaServer
         /// </remarks>
         void Write(
             UaServerOperationContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors);
 
         /// <summary>
@@ -201,7 +201,7 @@ namespace Technosoftware.UaServer
         void HistoryUpdate(
             UaServerOperationContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors);
 
@@ -210,7 +210,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         void Call(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors);
 
@@ -256,7 +256,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors,
             IList<IUaMonitoredItem> monitoredItems,
@@ -278,7 +278,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors);
 

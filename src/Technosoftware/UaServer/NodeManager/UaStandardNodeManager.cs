@@ -1587,7 +1587,7 @@ namespace Technosoftware.UaServer
         public virtual void Read(
             UaServerOperationContext context,
             double maxAge,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors)
         {
@@ -1798,7 +1798,7 @@ namespace Technosoftware.UaServer
         /// <param name="cache">The cache.</param>
         protected virtual void Read(
             UaServerContext context,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToValidate,
@@ -1837,7 +1837,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public virtual void Write(
             UaServerOperationContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors)
         {
             UaServerContext systemContext = SystemContext.Copy(context);
@@ -2174,7 +2174,7 @@ namespace Technosoftware.UaServer
         /// <param name="cache">The cache.</param>
         protected virtual void Write(
             UaServerContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToValidate,
             IDictionary<NodeId, NodeState> cache)
@@ -2217,7 +2217,7 @@ namespace Technosoftware.UaServer
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors)
         {
@@ -2317,7 +2317,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected virtual void HistoryReleaseContinuationPoints(
             UaServerContext context,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
             IDictionary<NodeId, NodeState> cache)
@@ -2345,7 +2345,7 @@ namespace Technosoftware.UaServer
             UaServerContext context,
             ReadRawModifiedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2374,7 +2374,7 @@ namespace Technosoftware.UaServer
             UaServerContext context,
             ReadProcessedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2403,7 +2403,7 @@ namespace Technosoftware.UaServer
             UaServerContext context,
             ReadAtTimeDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2432,7 +2432,7 @@ namespace Technosoftware.UaServer
             UaServerContext context,
             ReadEventDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2463,7 +2463,7 @@ namespace Technosoftware.UaServer
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2617,7 +2617,7 @@ namespace Technosoftware.UaServer
         public virtual void HistoryUpdate(
             UaServerOperationContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors)
         {
@@ -2712,7 +2712,7 @@ namespace Technosoftware.UaServer
         protected virtual void HistoryUpdate(
             UaServerContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2980,7 +2980,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public virtual void Call(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors)
         {
@@ -2999,7 +2999,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected virtual async ValueTask CallInternalAsync(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors,
             bool sync,
@@ -3705,7 +3705,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors,
             IList<IUaMonitoredItem> monitoredItems,
@@ -4239,7 +4239,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors)
         {

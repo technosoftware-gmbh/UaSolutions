@@ -102,7 +102,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         Task<PublishResponse> PublishAsync(
             UaServerOperationContext context,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -178,7 +178,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken cancellationToken = default);
 
         /// <summary>

@@ -703,8 +703,8 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public virtual void RegisterNodes(
             UaServerOperationContext context,
-            List<NodeId> nodesToRegister,
-            out List<NodeId> registeredNodeIds)
+            ArrayOf<NodeId> nodesToRegister,
+            out ArrayOf<NodeId> registeredNodeIds)
         {
             if (nodesToRegister == null)
             {
@@ -742,7 +742,7 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public virtual void UnregisterNodes(
             UaServerOperationContext context,
-            List<NodeId> nodesToUnregister)
+            ArrayOf<NodeId> nodesToUnregister)
         {
             if (nodesToUnregister == null)
             {
@@ -772,7 +772,7 @@ namespace Technosoftware.UaServer
         public virtual async ValueTask<(BrowsePathResultCollection results, List<DiagnosticInfo> diagnosticInfos)>
             TranslateBrowsePathsToNodeIdsAsync(
             UaServerOperationContext context,
-            BrowsePathCollection browsePaths,
+            ArrayOf<BrowsePath> browsePaths,
             CancellationToken cancellationToken = default)
         {
             if (browsePaths == null)
@@ -1151,7 +1151,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             ViewDescription view,
             uint maxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -1335,7 +1335,7 @@ namespace Technosoftware.UaServer
             BrowseNextAsync(
                 UaServerOperationContext context,
                 bool releaseContinuationPoints,
-                List<ByteString> continuationPoints,
+                ArrayOf<ByteString> continuationPoints,
                 CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -1742,7 +1742,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             double maxAge,
             TimestampsToReturn timestampsToReturn,
-            ReadValueIdCollection nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             CancellationToken cancellationToken = default)
         {
             if (nodesToRead == null)
@@ -1883,7 +1883,7 @@ namespace Technosoftware.UaServer
             ExtensionObject historyReadDetails,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            HistoryReadValueIdCollection nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             CancellationToken cancellationToken = default)
         {
             // validate history details parameter.
@@ -2008,7 +2008,7 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public virtual async ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> WriteAsync(
             UaServerOperationContext context,
-            WriteValueCollection nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -2253,7 +2253,7 @@ namespace Technosoftware.UaServer
         public virtual async ValueTask<(CallMethodResultCollection results, List<DiagnosticInfo> diagnosticInfos)>
             CallAsync(
                 UaServerOperationContext context,
-                CallMethodRequestCollection methodsToCall,
+                ArrayOf<CallMethodRequest> methodsToCall,
                 CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -2388,7 +2388,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             IList<IUaMonitoredItem> monitoredItems,
@@ -2505,7 +2505,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             IList<IUaMonitoredItem> monitoredItems,
@@ -2787,7 +2787,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             CancellationToken cancellationToken = default)
@@ -2893,7 +2893,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             CancellationToken cancellationToken = default)

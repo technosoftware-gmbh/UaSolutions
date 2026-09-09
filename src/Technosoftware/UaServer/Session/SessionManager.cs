@@ -279,7 +279,7 @@ namespace Technosoftware.UaServer
             SignatureData clientSignature,
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
-            List<string> localeIds,
+            ArrayOf<string> localeIds,
             CancellationToken cancellationToken = default)
         {
             byte[] serverNonce = null;

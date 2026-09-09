@@ -158,7 +158,7 @@ namespace Technosoftware.UaServer
         ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace Technosoftware.UaServer
         ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken cancellationToken = default);
 
         /// <summary>

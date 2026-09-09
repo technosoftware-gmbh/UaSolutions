@@ -231,7 +231,7 @@ namespace Technosoftware.UaServer
         protected EndpointDescriptionCollection GetEndpointDescriptions(
             string endpointUrl,
             IList<BaseAddress> baseAddresses,
-            List<string> localeIds)
+            ArrayOf<string> localeIds)
         {
             EndpointDescriptionCollection endpoints = null;
 
@@ -1102,7 +1102,7 @@ namespace Technosoftware.UaServer
                 ValidateOperationLimits(nodesToRegister, OperationLimits.MaxNodesPerRegisterNodes);
 
                 m_serverInternal.NodeManager
-                    .RegisterNodes(context, nodesToRegister, out List<NodeId> registeredNodeIds);
+                    .RegisterNodes(context, nodesToRegister, out ArrayOf<NodeId> registeredNodeIds);
 
                 return Task.FromResult(new RegisterNodesResponse
                 {
@@ -2663,15 +2663,15 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Validate operation limits.
         /// </summary>
-        /// <param name="operation">A list of operations.</param>
+        /// <param name="operation">The operations to validate.</param>
         /// <param name="operationLimit">The operation limit property.</param>
         /// <exception cref="ServiceResultException">BadNothingToDo if list is null or empty.</exception>
         /// <exception cref="ServiceResultException">BadTooManyOperations if list is larger than operation limit property.</exception>
-        protected void ValidateOperationLimits(
-            IList operation,
+        protected void ValidateOperationLimits<T>(
+            ArrayOf<T> operation,
             PropertyState<uint> operationLimit = null)
         {
-            if (operation == null || operation.Count == 0)
+            if (operation.IsEmpty)
             {
                 throw new ServiceResultException(StatusCodes.BadNothingToDo);
             }

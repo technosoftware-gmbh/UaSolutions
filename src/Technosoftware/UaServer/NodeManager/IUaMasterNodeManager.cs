@@ -67,7 +67,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             ViewDescription view,
             uint maxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace Technosoftware.UaServer
         ValueTask<(BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos)> BrowseNextAsync(
             UaServerOperationContext context,
             bool releaseContinuationPoints,
-            List<ByteString> continuationPoints,
+            ArrayOf<ByteString> continuationPoints,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace Technosoftware.UaServer
         /// <paramref name="context"/> is <c>null</c>.</exception>
         ValueTask<(CallMethodResultCollection results, List<DiagnosticInfo> diagnosticInfos)> CallAsync(
             UaServerOperationContext context,
-            CallMethodRequestCollection methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             IList<IUaMonitoredItem> monitoredItems,
@@ -152,7 +152,7 @@ namespace Technosoftware.UaServer
             ExtensionObject historyReadDetails,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            HistoryReadValueIdCollection nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             CancellationToken cancellationToken = default);
@@ -186,7 +186,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             double maxAge,
             TimestampsToReturn timestampsToReturn,
-            ReadValueIdCollection nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace Technosoftware.UaServer
         /// Registers a set of node ids.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="nodesToRegister"/> is <c>null</c>.</exception>
-        void RegisterNodes(UaServerOperationContext context, List<NodeId> nodesToRegister, out List<NodeId> registeredNodeIds);
+        void RegisterNodes(UaServerOperationContext context, ArrayOf<NodeId> nodesToRegister, out ArrayOf<NodeId> registeredNodeIds);
 
         /// <summary>
         /// Deletes the specified references.
@@ -304,7 +304,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ServiceResultException"></exception>
         ValueTask<(BrowsePathResultCollection results, List<DiagnosticInfo> diagnosticInfos)> TranslateBrowsePathsToNodeIdsAsync(
             UaServerOperationContext context,
-            BrowsePathCollection browsePaths,
+            ArrayOf<BrowsePath> browsePaths,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -329,7 +329,7 @@ namespace Technosoftware.UaServer
         /// Unregisters a set of node ids.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="nodesToUnregister"/> is <c>null</c>.</exception>
-        void UnregisterNodes(UaServerOperationContext context, List<NodeId> nodesToUnregister);
+        void UnregisterNodes(UaServerOperationContext context, ArrayOf<NodeId> nodesToUnregister);
 
         /// <summary>
         /// Writes a set of values.
@@ -337,7 +337,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> WriteAsync(
             UaServerOperationContext context,
-            WriteValueCollection nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             CancellationToken cancellationToken = default);
     }
 }
