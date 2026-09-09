@@ -45,7 +45,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// <param name="position">A index that must be passed to the NextRaw call. </param>
         /// <returns>The DataValue.</returns>
         public DataValue FirstRaw(
-            DateTime startTime,
+            DateTimeUtc startTime,
             bool isForward,
             bool isReadModified,
             out int position)
@@ -79,7 +79,7 @@ namespace SampleCompany.NodeManagers.TestData
 
                 if (position < 0 || position >= m_entries.Count)
                 {
-                    return null;
+                    return default;
                 }
 
                 HistoryEntry entry = m_entries[position];
@@ -100,7 +100,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// <param name="position">An index previously returned by the reader.</param>
         /// <returns>The DataValue.</returns>
         public DataValue NextRaw(
-            DateTime lastTime,
+            DateTimeUtc lastTime,
             bool isForward,
             bool isReadModified,
             ref int position)
@@ -111,7 +111,7 @@ namespace SampleCompany.NodeManagers.TestData
             {
                 if (position < 0 || position >= m_entries.Count)
                 {
-                    return null;
+                    return default;
                 }
 
                 HistoryEntry entry = m_entries[position];

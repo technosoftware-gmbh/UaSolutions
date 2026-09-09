@@ -29,7 +29,7 @@ namespace SampleCompany.NodeManagers.TestData
     {
         void OnDataChange(
             BaseVariableState variable,
-            object value,
+            Variant value,
             StatusCode statusCode,
             DateTime timestamp);
 
@@ -872,7 +872,7 @@ namespace SampleCompany.NodeManagers.TestData
         private sealed class Sample
         {
             public BaseVariableState Variable;
-            public object Value;
+            public Variant Value;
             public StatusCode StatusCode;
             public DateTime Timestamp;
         }

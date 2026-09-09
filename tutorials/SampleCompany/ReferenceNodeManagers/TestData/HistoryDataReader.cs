@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using Opc.Ua;
 using Technosoftware.UaServer;
 #endregion Using Directives
@@ -79,7 +80,7 @@ namespace SampleCompany.NodeManagers.TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            DataValueCollection values)
+            IList<DataValue> values)
         {
             m_request = request;
 
@@ -126,7 +127,7 @@ namespace SampleCompany.NodeManagers.TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            DataValueCollection values)
+            IList<DataValue> values)
         {
             while (true)
             {
@@ -171,7 +172,7 @@ namespace SampleCompany.NodeManagers.TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            DataValueCollection values,
+            IList<DataValue> values,
             DataValue value)
         {
             // ignore invalid case.
@@ -227,10 +228,10 @@ namespace SampleCompany.NodeManagers.TestData
 
         private readonly IHistoryDataSource m_source;
         private ReadRawModifiedDetails m_request;
-        private DateTime m_startTime;
-        private DateTime m_endTime;
+        private DateTimeUtc m_startTime;
+        private DateTimeUtc m_endTime;
         private bool m_isForward;
         private int m_position;
-        private DateTime m_lastTime;
+        private DateTimeUtc m_lastTime;
     }
 }

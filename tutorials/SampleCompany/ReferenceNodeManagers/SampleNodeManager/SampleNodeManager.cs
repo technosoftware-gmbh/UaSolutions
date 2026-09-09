@@ -522,9 +522,9 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             {
                 // assign a default value to any variable value.
 
-                if (source is BaseVariableState variable && variable.Value == null)
+                if (source is BaseVariableState variable && variable.Value.IsNull)
                 {
-                    variable.Value = Opc.Ua.TypeInfo.GetDefaultValue(
+                    variable.Value = Opc.Ua.TypeInfo.GetDefaultVariantValue(
                         variable.DataType,
                         variable.ValueRank,
                         Server.TypeTree);
@@ -556,7 +556,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     IReference reference = references[ii];
 
                     // nothing to do with external nodes.
-                    if (reference.TargetId == null || reference.TargetId.IsAbsolute)
+                    if (reference.TargetId.IsNull || reference.TargetId.IsAbsolute)
                     {
                         continue;
                     }
@@ -867,7 +867,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                 }
 
                 // read the attributes.
-                List<object> values = target.ReadAttributes(
+                ArrayOf<Variant> values = target.ReadAttributes(
                     systemContext,
                     Attributes.WriteMask,
                     Attributes.UserWriteMask,
@@ -889,34 +889,45 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     DisplayName = target.DisplayName
                 };
 
-                if (values[0] != null && values[1] != null)
+                // ReadAttributes returns Variants in 2.0, so each attribute is
+                // unpacked with TryGetValue rather than unboxed; a Variant that
+                // did not read leaves the metadata at its default.
+                if (values[0].TryGetValue(out uint writeMask) &&
+                    values[1].TryGetValue(out uint userWriteMask))
                 {
-                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0]) &
-                        ((uint)values[1]));
+                    metadata.WriteMask = (AttributeWriteMask)(writeMask & userWriteMask);
                 }
 
-                metadata.DataType = values[2] is NodeId nodeId ? nodeId : default;
-
-                if (values[3] != null)
+                if (values[2].TryGetValue(out NodeId dataType))
                 {
-                    metadata.ValueRank = (int)values[3];
+                    metadata.DataType = dataType;
                 }
 
-                metadata.ArrayDimensions = (IList<uint>)values[4];
-
-                if (values[5] != null && values[6] != null)
+                if (values[3].TryGetValue(out int valueRank))
                 {
-                    metadata.AccessLevel = (byte)(((byte)values[5]) & ((byte)values[6]));
+                    metadata.ValueRank = valueRank;
                 }
 
-                if (values[7] != null)
+                if (values[4].TryGetValue(out ArrayOf<uint> arrayDimensions))
                 {
-                    metadata.EventNotifier = (byte)values[7];
+                    metadata.ArrayDimensions = arrayDimensions;
                 }
 
-                if (values[8] != null && values[9] != null)
+                if (values[5].TryGetValue(out byte accessLevel) &&
+                    values[6].TryGetValue(out byte userAccessLevel))
                 {
-                    metadata.Executable = ((bool)values[8]) && ((bool)values[9]);
+                    metadata.AccessLevel = (byte)(accessLevel & userAccessLevel);
+                }
+
+                if (values[7].TryGetValue(out byte eventNotifier))
+                {
+                    metadata.EventNotifier = eventNotifier;
+                }
+
+                if (values[8].TryGetValue(out bool executable) &&
+                    values[9].TryGetValue(out bool userExecutable))
+                {
+                    metadata.Executable = executable && userExecutable;
                 }
 
                 // get instance references.
@@ -986,7 +997,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                         continuationPoint.ReferenceTypeId,
                         continuationPoint.IncludeSubtypes,
                         continuationPoint.BrowseDirection,
-                        null,
+                        default,
                         null,
                         false);
 
@@ -1856,7 +1867,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         {
             var systemContext = context as UaServerContext;
             var argumentErrors = new List<ServiceResult>();
-            var outputArguments = new VariantCollection();
+            var outputArguments = new List<Variant>();
 
             ServiceResult error = method.Call(
                 context,
@@ -1870,8 +1881,12 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                 return error;
             }
 
-            // check for argument errors.
+            // check for argument errors. The result's argument collections are
+            // immutable ArrayOf values in 2.0, so the errors are gathered here
+            // and assigned in one go below.
             bool argumentsValid = true;
+            var inputArgumentResults = new List<StatusCode>();
+            var inputArgumentDiagnosticInfos = new List<DiagnosticInfo>();
 
             for (int jj = 0; jj < argumentErrors.Count; jj++)
             {
@@ -1879,7 +1894,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
 
                 if (argumentError != null)
                 {
-                    result.InputArgumentResults.Add(argumentError.StatusCode);
+                    inputArgumentResults.Add(argumentError.StatusCode);
 
                     if (ServiceResult.IsBad(argumentError))
                     {
@@ -1892,7 +1907,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     {
                         if (ServiceResult.IsBad(argumentError))
                         {
-                            result.InputArgumentDiagnosticInfos.Add(
+                            inputArgumentDiagnosticInfos.Add(
                                 new DiagnosticInfo(
                                     argumentError,
                                     systemContext.OperationContext.DiagnosticsMask,
@@ -1902,7 +1917,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                         }
                         else
                         {
-                            result.InputArgumentDiagnosticInfos.Add(null);
+                            inputArgumentDiagnosticInfos.Add(null);
                         }
                     }
                 }
@@ -1911,14 +1926,14 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             // check for validation errors.
             if (!argumentsValid)
             {
+                // Per OPC UA Part 4, Section 5.12: InputArgumentResults must be
+                // empty when StatusCode is Good, so they are only assigned on
+                // the error path.
+                result.InputArgumentDiagnosticInfos = inputArgumentDiagnosticInfos;
+                result.InputArgumentResults = inputArgumentResults;
                 result.StatusCode = StatusCodes.BadInvalidArgument;
                 return result.StatusCode;
             }
-
-            // Per OPC UA Part 4, Section 5.12: InputArgumentResults must be empty when StatusCode is Good.
-            // Clear diagnostics and argument results if there are no errors.
-            result.InputArgumentDiagnosticInfos.Clear();
-            result.InputArgumentResults.Clear();
 
             // return output arguments.
             result.OutputArguments = outputArguments;
@@ -2491,9 +2506,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     return StatusCodes.BadMonitoredItemFilterUnsupported;
                 }
 
-                range = euRange.Value as Opc.Ua.Range;
-
-                if (range == null)
+                if (!euRange.Value.TryGetStructure(out range))
                 {
                     return StatusCodes.BadMonitoredItemFilterUnsupported;
                 }

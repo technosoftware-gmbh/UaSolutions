@@ -115,7 +115,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         public void OnDataChange(
             BaseVariableState variable,
-            object value,
+            Variant value,
             StatusCode statusCode,
             DateTime timestamp)
         {
@@ -475,7 +475,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         protected virtual HistoryDataReader RestoreDataReader(
             UaServerContext context,
-            byte[] continuationPoint)
+            ByteString continuationPoint)
         {
             if (context == null ||
                 context.OperationContext == null ||
@@ -542,6 +542,10 @@ namespace SampleCompany.NodeManagers.TestData
 
             var data = new HistoryData();
 
+            // HistoryData.DataValues is an immutable ArrayOf in 2.0, so the
+            // reader fills a list that is assigned to it once reading is done.
+            var dataValues = new List<DataValue>();
+
             HistoryDataReader reader;
             if (nodeToRead.ContinuationPoint != null && nodeToRead.ContinuationPoint.Length > 0)
             {
@@ -590,7 +594,7 @@ namespace SampleCompany.NodeManagers.TestData
                     timestampsToReturn,
                     nodeToRead.ParsedIndexRange,
                     nodeToRead.DataEncoding,
-                    data.DataValues);
+                    dataValues);
             }
 
             // continue reading data until done or max values reached.
@@ -599,7 +603,9 @@ namespace SampleCompany.NodeManagers.TestData
                 timestampsToReturn,
                 nodeToRead.ParsedIndexRange,
                 nodeToRead.DataEncoding,
-                data.DataValues);
+                dataValues);
+
+            data.DataValues = dataValues;
 
             // save continuation point.
             if (!complete)

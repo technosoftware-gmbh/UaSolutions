@@ -14,7 +14,7 @@
 #endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
-using System.Runtime.Serialization;
+using Opc.Ua;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
@@ -22,51 +22,33 @@ namespace SampleCompany.NodeManagers.TestData
     /// <summary>
     /// Stores the configuration the test node manager
     /// </summary>
-    [DataContract(Namespace = Namespaces.TestData)]
-    public class TestDataNodeManagerConfiguration
+    /// <remarks>
+    /// ApplicationConfiguration.ParseExtension&lt;T&gt; constrains T to
+    /// IEncodeable, so the configuration is described with [DataType] and its
+    /// encodeable implementation is generated rather than hand-written; the
+    /// DataContractSerializer attributes it carried before are gone.
+    /// Namespaces.TestData is emitted by the same generator pass and so cannot
+    /// be referenced here - the namespace URI is spelled out instead.
+    /// </remarks>
+    [DataType(Namespace = "http://samplecompany.com/SampleServer/NodeManagers/TestData")]
+    public partial class TestDataNodeManagerConfiguration
     {
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
-        public TestDataNodeManagerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing]
-        private void Initialize(StreamingContext context)
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
-        private void Initialize()
-        {
-            SaveFilePath = null;
-            MaxQueueSize = 100;
-        }
-
         /// <summary>
         /// The path to the file that stores state of the node manager.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataTypeField(Order = 1)]
         public string SaveFilePath { get; set; }
 
         /// <summary>
         /// The maximum length for a monitored item sampling queue.
         /// </summary>
-        [DataMember(Order = 2)]
-        public uint MaxQueueSize { get; set; }
+        [DataTypeField(Order = 2)]
+        public uint MaxQueueSize { get; set; } = 100;
 
         /// <summary>
         /// The next unused value that can be assigned to new nodes.
         /// </summary>
-        [DataMember(Order = 3)]
+        [DataTypeField(Order = 3)]
         public uint NextUnusedId { get; set; }
     }
 }
