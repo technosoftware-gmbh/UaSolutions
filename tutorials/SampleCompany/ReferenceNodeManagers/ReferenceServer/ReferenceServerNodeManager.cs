@@ -66,7 +66,7 @@ namespace SampleCompany.NodeManagers.Reference
             {
                 // TBD
 
-                Utils.SilentDispose(m_simulationTimer);
+                m_simulationTimer?.Dispose();
                 m_simulationTimer = null;
             }
             base.Dispose(disposing);
@@ -3639,7 +3639,7 @@ namespace SampleCompany.NodeManagers.Reference
                     // reset random generator and generate boundary values
                     ResetRandomGenerator(100, 1);
 
-                    Utils.SilentDispose(m_simulationTimer);
+                    m_simulationTimer?.Dispose();
                     m_simulationTimer = new Timer(DoSimulation, null, m_simulationInterval, m_simulationInterval);
                 }
             }
@@ -3648,7 +3648,7 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnWriteInterval(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             try
             {
@@ -3671,7 +3671,7 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnWriteEnabled(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             try
             {
@@ -4115,9 +4115,9 @@ namespace SampleCompany.NodeManagers.Reference
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             var variable = node as MultiStateDiscreteState;
 
@@ -4134,7 +4134,7 @@ namespace SampleCompany.NodeManagers.Reference
                 return StatusCodes.BadTypeMismatch;
             }
 
-            if (indexRange != NumericRange.Empty)
+            if (indexRange != NumericRange.Null)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -4154,9 +4154,9 @@ namespace SampleCompany.NodeManagers.Reference
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             var typeInfo = TypeInfo.Construct(value);
 
@@ -4168,7 +4168,7 @@ namespace SampleCompany.NodeManagers.Reference
                 return StatusCodes.BadTypeMismatch;
             }
 
-            if (indexRange != NumericRange.Empty)
+            if (indexRange != NumericRange.Null)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -4199,9 +4199,9 @@ namespace SampleCompany.NodeManagers.Reference
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             var variable = node as AnalogItemState;
 
@@ -4221,7 +4221,7 @@ namespace SampleCompany.NodeManagers.Reference
             // check index range.
             if (variable.ValueRank >= 0)
             {
-                if (indexRange != NumericRange.Empty)
+                if (indexRange != NumericRange.Null)
                 {
                     object target = variable.Value;
                     ServiceResult result = indexRange.UpdateRange(ref target, value);
@@ -4237,7 +4237,7 @@ namespace SampleCompany.NodeManagers.Reference
             // check instrument range.
             else
             {
-                if (indexRange != NumericRange.Empty)
+                if (indexRange != NumericRange.Null)
                 {
                     return StatusCodes.BadIndexRangeInvalid;
                 }
@@ -4260,9 +4260,9 @@ namespace SampleCompany.NodeManagers.Reference
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             var typeInfo = TypeInfo.Construct(value);
 
@@ -4279,7 +4279,7 @@ namespace SampleCompany.NodeManagers.Reference
                 return StatusCodes.BadTypeMismatch;
             }
 
-            if (indexRange != NumericRange.Empty)
+            if (indexRange != NumericRange.Null)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -4542,8 +4542,8 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnVoidCall(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             return ServiceResult.Good;
         }
@@ -4551,8 +4551,8 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnAddCall(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 2)
@@ -4578,8 +4578,8 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnMultiplyCall(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 2)
@@ -4605,8 +4605,8 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnDivideCall(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 2)
@@ -4632,8 +4632,8 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnSubstractCall(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 2)
@@ -4659,8 +4659,8 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnHelloCall(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 1)
@@ -4685,8 +4685,8 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnInputCall(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 1)
@@ -4700,8 +4700,8 @@ namespace SampleCompany.NodeManagers.Reference
         private ServiceResult OnOutputCall(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             try

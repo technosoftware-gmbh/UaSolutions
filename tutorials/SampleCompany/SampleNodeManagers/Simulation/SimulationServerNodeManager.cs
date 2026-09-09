@@ -67,7 +67,7 @@ namespace SampleCompany.NodeManagers.Simulation
             {
                 // TBD
 
-                Utils.SilentDispose(m_simulationTimer);
+                m_simulationTimer?.Dispose();
                 m_simulationTimer = null;
             }
             base.Dispose(disposing);
@@ -3838,7 +3838,7 @@ namespace SampleCompany.NodeManagers.Simulation
             }
         }
 
-        private ServiceResult OnWriteInterval(ISystemContext context, NodeState node, ref object value)
+        private ServiceResult OnWriteInterval(ISystemContext context, NodeState node, ref Variant value)
         {
             try
             {
@@ -3858,7 +3858,7 @@ namespace SampleCompany.NodeManagers.Simulation
             }
         }
 
-        private ServiceResult OnWriteEnabled(ISystemContext context, NodeState node, ref object value)
+        private ServiceResult OnWriteEnabled(ISystemContext context, NodeState node, ref Variant value)
         {
             try
             {
@@ -3977,9 +3977,9 @@ namespace SampleCompany.NodeManagers.Simulation
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             var variable = node as MultiStateDiscreteState;
 
@@ -3996,7 +3996,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 return StatusCodes.BadTypeMismatch;
             }
 
-            if (indexRange != NumericRange.Empty)
+            if (indexRange != NumericRange.Null)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -4016,9 +4016,9 @@ namespace SampleCompany.NodeManagers.Simulation
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             var typeInfo = TypeInfo.Construct(value);
 
@@ -4030,7 +4030,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 return StatusCodes.BadTypeMismatch;
             }
 
-            if (indexRange != NumericRange.Empty)
+            if (indexRange != NumericRange.Null)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -4056,9 +4056,9 @@ namespace SampleCompany.NodeManagers.Simulation
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             var variable = node as AnalogItemState;
 
@@ -4078,7 +4078,7 @@ namespace SampleCompany.NodeManagers.Simulation
             // check index range.
             if (variable.ValueRank >= 0)
             {
-                if (indexRange != NumericRange.Empty)
+                if (indexRange != NumericRange.Null)
                 {
                     var target = variable.Value;
                     ServiceResult result = indexRange.UpdateRange(ref target, value);
@@ -4095,7 +4095,7 @@ namespace SampleCompany.NodeManagers.Simulation
             // check instrument range.
             else
             {
-                if (indexRange != NumericRange.Empty)
+                if (indexRange != NumericRange.Null)
                 {
                     return StatusCodes.BadIndexRangeInvalid;
                 }
@@ -4116,9 +4116,9 @@ namespace SampleCompany.NodeManagers.Simulation
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             var typeInfo = TypeInfo.Construct(value);
 
@@ -4135,7 +4135,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 return StatusCodes.BadTypeMismatch;
             }
 
-            if (indexRange != NumericRange.Empty)
+            if (indexRange != NumericRange.Null)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -4262,8 +4262,8 @@ namespace SampleCompany.NodeManagers.Simulation
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             return ServiceResult.Good;
         }
@@ -4272,8 +4272,8 @@ namespace SampleCompany.NodeManagers.Simulation
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
 
             // all arguments must be provided.
@@ -4301,8 +4301,8 @@ namespace SampleCompany.NodeManagers.Simulation
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 2)
@@ -4329,8 +4329,8 @@ namespace SampleCompany.NodeManagers.Simulation
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 2)
@@ -4357,8 +4357,8 @@ namespace SampleCompany.NodeManagers.Simulation
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 2)
@@ -4385,8 +4385,8 @@ namespace SampleCompany.NodeManagers.Simulation
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 1)
@@ -4412,8 +4412,8 @@ namespace SampleCompany.NodeManagers.Simulation
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 1)
@@ -4428,8 +4428,8 @@ namespace SampleCompany.NodeManagers.Simulation
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             try

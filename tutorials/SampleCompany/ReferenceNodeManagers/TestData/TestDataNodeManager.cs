@@ -85,20 +85,20 @@ namespace SampleCompany.NodeManagers.TestData
             if (disposing)
             {
 #if CONDITION_SAMPLES
-                Utils.SilentDispose(m_systemStatusTimer);
-                Utils.SilentDispose(m_systemStatusCondition);
-                Utils.SilentDispose(m_dialog);
+                m_systemStatusTimer?.Dispose();
+                m_systemStatusCondition?.Dispose();
+                m_dialog?.Dispose();
 
                 m_systemStatusTimer = null;
                 m_systemStatusCondition = null;
                 m_dialog = null;
 #endif
-                Utils.SilentDispose(m_dataStaticStructureScalarStructure);
-                Utils.SilentDispose(m_dataDynamicStructureScalarStructure);
-                Utils.SilentDispose(m_dataStaticStructureVectorStructure);
-                Utils.SilentDispose(m_dataDynamicStructureVectorStructure);
-                Utils.SilentDispose(m_dataStaticVectorScalarValue);
-                Utils.SilentDispose(m_dataDynamicVectorScalarValue);
+                (m_dataStaticStructureScalarStructure as IDisposable)?.Dispose();
+                (m_dataDynamicStructureScalarStructure as IDisposable)?.Dispose();
+                (m_dataStaticStructureVectorStructure as IDisposable)?.Dispose();
+                (m_dataDynamicStructureVectorStructure as IDisposable)?.Dispose();
+                (m_dataStaticVectorScalarValue as IDisposable)?.Dispose();
+                (m_dataDynamicVectorScalarValue as IDisposable)?.Dispose();
 
                 m_dataStaticStructureScalarStructure = null;
                 m_dataDynamicStructureScalarStructure = null;
@@ -183,7 +183,7 @@ namespace SampleCompany.NodeManagers.TestData
 
                 if (m_systemStatusCondition != null)
                 {
-                    Utils.SilentDispose(m_systemStatusTimer);
+                    m_systemStatusTimer?.Dispose();
                     m_systemStatusTimer = new Timer(OnCheckSystemStatus, null, 5000, 5000);
                     m_systemStatusCondition.Retain.Value = true;
                 }
@@ -556,14 +556,14 @@ namespace SampleCompany.NodeManagers.TestData
                 // node id must match previous node id.
                 if (reader.VariableId != nodeToRead.NodeId)
                 {
-                    Utils.SilentDispose(reader);
+                    reader?.Dispose();
                     return StatusCodes.BadContinuationPointInvalid;
                 }
 
                 // check if releasing continuation points.
                 if (releaseContinuationPoints)
                 {
-                    Utils.SilentDispose(reader);
+                    reader?.Dispose();
                     return ServiceResult.Good;
                 }
             }

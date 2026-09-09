@@ -78,8 +78,8 @@ namespace SampleCompany.NodeManagers.Boiler
             StateMachineState machine,
             uint transitionId,
             uint causeId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             switch (causeId)
             {

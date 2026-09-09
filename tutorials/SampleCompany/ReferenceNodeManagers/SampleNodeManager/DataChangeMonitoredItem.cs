@@ -355,7 +355,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             var value = new DataValue();
 
             ServiceResult error = m_source.Node
-                .ReadAttribute(context, AttributeId, NumericRange.Empty, null, value);
+                .ReadAttribute(context, AttributeId, NumericRange.Null, null, value);
 
             if (ServiceResult.IsBad(error))
             {

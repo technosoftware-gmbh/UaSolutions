@@ -273,11 +273,11 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             {
                 foreach (DurableEventMonitoredItemQueue queue in m_eventQueues.Values)
                 {
-                    Opc.Ua.Utils.SilentDispose(queue);
+                    Opc.Ua.queue?.Dispose();
                 }
                 foreach (DurableDataChangeMonitoredItemQueue queue in m_dataChangeQueues.Values)
                 {
-                    Opc.Ua.Utils.SilentDispose(queue);
+                    Opc.Ua.queue?.Dispose();
                 }
                 m_dataChangeQueues = null;
                 m_eventQueues = null;

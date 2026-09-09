@@ -89,7 +89,7 @@ namespace SampleCompany.NodeManagers.TestData
             // generate structure values here
             ServiceResult result = WriteValueAttribute(
                 context,
-                NumericRange.Empty,
+                NumericRange.Null,
                 system.ReadValue(this),
                 StatusCodes.Good,
                 DateTime.UtcNow);

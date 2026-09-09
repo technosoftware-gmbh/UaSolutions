@@ -68,12 +68,12 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             {
                 lock (Lock)
                 {
-                    Utils.SilentDispose(m_samplingTimer);
+                    m_samplingTimer?.Dispose();
                     m_samplingTimer = null;
 
                     foreach (NodeState node in PredefinedNodes.Values)
                     {
-                        Utils.SilentDispose(node);
+                        (node as IDisposable)?.Dispose();
                     }
                 }
             }

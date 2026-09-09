@@ -341,8 +341,8 @@ namespace SampleCompany.NodeManagers.Alarms
         public ServiceResult OnStart(
             ISystemContext context,
             NodeState node,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             uint seconds;
@@ -403,8 +403,8 @@ namespace SampleCompany.NodeManagers.Alarms
         public ServiceResult OnStartBranch(
             ISystemContext context,
             NodeState node,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             uint seconds;
@@ -467,8 +467,8 @@ namespace SampleCompany.NodeManagers.Alarms
         public ServiceResult OnEnd(
             ISystemContext context,
             NodeState node,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             ServiceResult result = ServiceResult.Good;
 
@@ -514,9 +514,9 @@ namespace SampleCompany.NodeManagers.Alarms
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             Dictionary<string, SourceController> sourceControllers = GetUnitAlarms(node);
             if (sourceControllers == null)
@@ -959,7 +959,7 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             m_logger.LogInformation("Alarms: Starting simulation");
 
-            Utils.SilentDispose(m_simulationTimer);
+            m_simulationTimer?.Dispose();
             m_simulationTimer = new Timer(
                 DoSimulation,
                 null,
@@ -972,7 +972,7 @@ namespace SampleCompany.NodeManagers.Alarms
         /// </summary>
         private void DisposeTimer()
         {
-            Utils.SilentDispose(m_simulationTimer);
+            m_simulationTimer?.Dispose();
             m_simulationTimer = null;
 
             m_logger.LogInformation("Alarms: Stopped simulation");

@@ -227,9 +227,9 @@ namespace SampleCompany.NodeManagers.Alarms
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             if (Trigger.Value != value)
             {

@@ -744,7 +744,7 @@ namespace SampleCompany.ReferenceClient
             }
             finally
             {
-                Utils.SilentDispose(reverseConnectManager);
+                reverseConnectManager?.Dispose();
             }
         }
 

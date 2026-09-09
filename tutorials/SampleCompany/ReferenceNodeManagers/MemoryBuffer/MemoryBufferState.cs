@@ -203,16 +203,16 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             if (node is not MemoryTagState tag)
             {
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            if (NumericRange.Empty != indexRange)
+            if (NumericRange.Null != indexRange)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -254,16 +254,16 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             if (node is not MemoryTagState tag)
             {
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            if (NumericRange.Empty != indexRange)
+            if (NumericRange.Null != indexRange)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -502,7 +502,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             if (m_monitoringTable == null)
             {
                 m_monitoringTable = new MemoryBufferMonitoredItem[elementCount][];
-                Utils.SilentDispose(m_scanTimer);
+                m_scanTimer?.Dispose();
                 m_scanTimer = new Timer(DoScan, null, 100, 100);
             }
 

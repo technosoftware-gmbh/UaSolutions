@@ -84,7 +84,7 @@ namespace SampleCompany.ReferenceClient
             }
             if (disposing)
             {
-                Utils.SilentDispose(Session);
+                Session?.Dispose();
                 m_configuration.CertificateValidator.CertificateValidation -= OnCertificateValidation;
             }
             m_disposed = true;
@@ -435,7 +435,7 @@ namespace SampleCompany.ReferenceClient
                         );
                         IUaSession session = Session;
                         Session = m_reconnectHandler.Session;
-                        Utils.SilentDispose(session);
+                        session?.Dispose();
                     }
                     else
                     {

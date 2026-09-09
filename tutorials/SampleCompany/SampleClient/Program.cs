@@ -786,7 +786,7 @@ namespace SampleCompany.SampleClient
             }
             finally
             {
-                Utils.SilentDispose(reverseConnectManager);
+                reverseConnectManager?.Dispose();
             }
         }
 

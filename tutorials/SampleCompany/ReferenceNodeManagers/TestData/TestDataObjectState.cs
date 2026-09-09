@@ -103,7 +103,7 @@ namespace SampleCompany.NodeManagers.TestData
         public ServiceResult OnWriteAnalogValue(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             try
             {
@@ -213,9 +213,9 @@ namespace SampleCompany.NodeManagers.TestData
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             if (node is not BaseVariableState variable)
             {

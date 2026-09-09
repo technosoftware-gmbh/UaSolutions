@@ -282,7 +282,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             }
 
             // index range not supported.
-            if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Empty)
+            if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Null)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -515,7 +515,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 ServiceResult error = tag.ReadAttribute(
                     context,
                     datachangeItem.AttributeId,
-                    NumericRange.Empty,
+                    NumericRange.Null,
                     null,
                     initialValue);
 
