@@ -120,7 +120,7 @@ namespace Technosoftware.UaServer
             {
                 m_calculator = m_server.AggregateManager.CreateCalculator(
                     aggregateFilter.AggregateType,
-                    aggregateFilter.StartTime,
+                    (DateTime)aggregateFilter.StartTime,
                     DateTime.MaxValue,
                     aggregateFilter.ProcessingInterval,
                     aggregateFilter.Stepped,
@@ -198,7 +198,7 @@ namespace Technosoftware.UaServer
             {
                 m_calculator = m_server.AggregateManager.CreateCalculator(
                     aggregateFilter.AggregateType,
-                    aggregateFilter.StartTime,
+                    (DateTime)aggregateFilter.StartTime,
                     DateTime.MaxValue,
                     aggregateFilter.ProcessingInterval,
                     aggregateFilter.Stepped,
@@ -712,7 +712,7 @@ namespace Technosoftware.UaServer
                     {
                         m_calculator = m_server.AggregateManager.CreateCalculator(
                             aggregateFilter.AggregateType,
-                            aggregateFilter.StartTime,
+                            (DateTime)aggregateFilter.StartTime,
                             DateTime.MaxValue,
                             aggregateFilter.ProcessingInterval,
                             aggregateFilter.Stepped,
@@ -984,7 +984,7 @@ namespace Technosoftware.UaServer
             foreach (SimpleAttributeOperand clause in filter.SelectClauses)
             {
                 // get the value of the attribute (apply localization).
-                object value = instance.GetAttributeValue(
+                Variant value = instance.GetAttributeValue(
                     context,
                     clause.TypeDefinitionId,
                     clause.BrowsePath,
@@ -992,16 +992,18 @@ namespace Technosoftware.UaServer
                     clause.ParsedIndexRange);
 
                 // add the value to the list of event fields.
-                if (value != null)
+                if (!value.IsNull)
                 {
                     // translate any localized text.
-                    if (value is LocalizedText text)
+                    if (value.TryGetValue(out LocalizedText text))
                     {
-                        value = m_server.ResourceManager.Translate(Session?.PreferredLocales, text);
+                        value = m_server.ResourceManager.Translate(
+                            Session?.PreferredLocales ?? default,
+                            text);
                     }
 
                     // add value.
-                    eventFields.Add(Variant.From(value));
+                    eventFields.Add(value);
                 }
                 // add a dummy entry for missing values.
                 else
@@ -1648,31 +1650,33 @@ namespace Technosoftware.UaServer
             }
 
             // get the current status.
-            uint status = StatusCodes.Good;
+            StatusCode status = StatusCodes.Good;
 
             if (error != null)
             {
-                status = error.StatusCode.Code;
+                status = error.StatusCode;
             }
             else if (lastValue != null)
             {
-                status = value.StatusCode.Code;
+                status = value.StatusCode;
             }
 
             // get the last status.
-            uint lastStatus = StatusCodes.Good;
+            StatusCode lastStatus = StatusCodes.Good;
 
             if (lastError != null)
             {
-                lastStatus = lastError.StatusCode.Code;
+                lastStatus = lastError.StatusCode;
             }
             else if (lastValue != null)
             {
-                lastStatus = lastValue.StatusCode.Code;
+                lastStatus = lastValue.StatusCode;
             }
 
-            // value changed if any status change occurrs.
-            if (status != lastStatus)
+            // value changed if any status change occurrs. StatusCode equality
+            // ignores the informational bits by default, so the comparison is
+            // made explicit over all of them, as it was over the raw uint.
+            if (!status.Equals(lastStatus, StatusCodeComparison.AllBits))
             {
                 return true;
             }

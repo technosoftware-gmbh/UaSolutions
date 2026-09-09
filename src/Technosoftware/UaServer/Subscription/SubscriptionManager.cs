@@ -384,8 +384,8 @@ namespace Technosoftware.UaServer
                     continue;
                 }
 
-                subscription.GetMonitoredItems(out uint[] monitoredItemsIds, out _);
-                createdSubscriptions.Add(subscription.Id, monitoredItemsIds);
+                subscription.GetMonitoredItems(out ArrayOf<uint> monitoredItemsIds, out _);
+                createdSubscriptions.Add(subscription.Id, monitoredItemsIds.ToArray() ?? []);
             }
 
             m_lastSubscriptionId = restoreResult.Subscriptions.Max(s => s.Id);
@@ -930,8 +930,11 @@ namespace Technosoftware.UaServer
             var results = new List<StatusCode>(subscriptionIds.Count);
             var diagnosticInfos = new List<DiagnosticInfo>(subscriptionIds.Count);
 
-            foreach (uint subscriptionId in subscriptionIds)
+            // ArrayOf's enumerator is a span enumerator and cannot live across
+            // an await, so this loop indexes instead.
+            for (int ii = 0; ii < subscriptionIds.Count; ii++)
             {
+                uint subscriptionId = subscriptionIds[ii];
                 try
                 {
                     StatusCode result = await DeleteSubscriptionAsync(context, subscriptionId, cancellationToken).ConfigureAwait(false);

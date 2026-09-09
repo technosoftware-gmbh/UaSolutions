@@ -2417,7 +2417,7 @@ namespace Technosoftware.UaServer
                     BrowseNames.SourceName,
                     Utils.Format("Subscription/{0}", Id),
                     false);
-                e.SetChildValue(systemContext, BrowseNames.ReceiveTime, DateTime.UtcNow, false);
+                e.SetChildValue(systemContext, BrowseNames.ReceiveTime, DateTimeUtc.Now, false);
 
                 // build list of items to refresh.
                 foreach (IUaEventMonitoredItem monitoredItem in monitoredItems)
@@ -2470,7 +2470,7 @@ namespace Technosoftware.UaServer
                     BrowseNames.SourceName,
                     Utils.Format("Subscription/{0}", Id),
                     false);
-                e.SetChildValue(systemContext, BrowseNames.ReceiveTime, DateTime.UtcNow, false);
+                e.SetChildValue(systemContext, BrowseNames.ReceiveTime, DateTimeUtc.Now, false);
 
                 // send refresh end event.
                 for (int ii = 0; ii < monitoredItems.Count; ii++)
@@ -2636,11 +2636,11 @@ namespace Technosoftware.UaServer
         private ServiceResult OnUpdateDiagnostics(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             lock (DiagnosticsLock)
             {
-                value = CoreUtils.Clone(Diagnostics);
+                value = Variant.FromStructure(Diagnostics, copy: true);
             }
 
             return ServiceResult.Good;

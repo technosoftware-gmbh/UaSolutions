@@ -367,15 +367,12 @@ namespace Technosoftware.UaServer
         {
             if (value != null)
             {
-                StatusCode status = value.StatusCode;
-                status.Overflow = true;
-                value = value.WithStatus(status);
+                value = value.WithStatus(value.StatusCode.SetOverflow(true));
             }
 
             if (error != null)
             {
-                StatusCode status = error.StatusCode;
-                status.Overflow = true;
+                StatusCode status = error.StatusCode.SetOverflow(true);
 
                 // have to copy before updating because the ServiceResult is invariant.
                 error = new ServiceResult(
