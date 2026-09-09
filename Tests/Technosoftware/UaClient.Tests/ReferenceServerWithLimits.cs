@@ -47,6 +47,15 @@ namespace Technosoftware.UaClient.Tests
     /// </summary>
     public class ReferenceServerWithLimits : ReferenceServer
     {
+        /// <summary>
+        /// Initializes the server with the telemetry context ReferenceServer
+        /// requires in 2.0.
+        /// </summary>
+        public ReferenceServerWithLimits(ITelemetryContext telemetry)
+            : base(telemetry)
+        {
+        }
+
         public uint TestMaxBrowseReferencesPerNode { get; set; } = 10u;
         private MasterNodeManager MasterNodeManagerReference { get; set; }
         private SessionManagerWithLimits SessionManagerForTest { get; set; }
@@ -397,7 +406,7 @@ namespace Technosoftware.UaClient.Tests
             // clear the diagnostics array if no diagnostics requested or no errors occurred.
             UpdateDiagnostics(context, diagnosticsExist, ref diagnosticInfos);
 
-            return (results, diagnosticInfos);
+            return ([.. results], diagnosticInfos);
         }
 
         private readonly ILogger m_logger;

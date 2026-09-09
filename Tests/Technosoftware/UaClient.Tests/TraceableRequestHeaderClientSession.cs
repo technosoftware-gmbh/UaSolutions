@@ -71,7 +71,7 @@ namespace Technosoftware.UaClient
             context.TraceId.CopyTo(traceId);
             var spanContextParameter = new Opc.Ua.KeyValuePair
             {
-                Key = "SpanContext",
+                Key = new QualifiedName("SpanContext"),
                 Value = new Variant(new SpanContextDataType
                 {
                     SpanId = BitConverter.ToUInt64(spanId),

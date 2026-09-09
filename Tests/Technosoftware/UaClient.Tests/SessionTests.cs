@@ -955,7 +955,7 @@ namespace Technosoftware.UaClient.Tests
             sut.SetConnected();
             CancellationToken ct = CancellationToken.None;
 
-            byte[] serverNonce = [1, 2, 3, 4];
+            ByteString serverNonce = new byte[] { 1, 2, 3, 4 }.ToByteString();
 
             sut.Channel
                 .Setup(c => c.ReconnectAsync(
@@ -981,7 +981,7 @@ namespace Technosoftware.UaClient.Tests
 
             await sut.ReconnectAsync(ct).ConfigureAwait(false);
 
-            Assert.That(sut.ServerNonce, Is.EquivalentTo(serverNonce));
+            Assert.That(sut.ServerNonce, Is.EqualTo(serverNonce));
             sut.Channel.Verify();
         }
 
@@ -1193,7 +1193,7 @@ namespace Technosoftware.UaClient.Tests
             };
             var sut = SessionMock.Create(ep);
             CancellationToken ct = CancellationToken.None;
-            byte[] serverNonce = [1, 2, 3, 4];
+            ByteString serverNonce = new byte[] { 1, 2, 3, 4 }.ToByteString();
             var authToken = NodeId.Parse("s=cookie");
 
             sut.Channel
@@ -1259,8 +1259,8 @@ namespace Technosoftware.UaClient.Tests
                 {
                     Results =
                     [
-                        new (new[] { Opc.Ua.Namespaces.OpcUa }),
-                        new(Array.Empty<string>())
+                        new(new[] { Opc.Ua.Namespaces.OpcUa }.ToArrayOf()),
+                        new(Array.Empty<string>().ToArrayOf())
                     ],
                     DiagnosticInfos = []
                 }))
@@ -1288,7 +1288,7 @@ namespace Technosoftware.UaClient.Tests
             };
             var sut = SessionMock.Create(ep);
             CancellationToken ct = CancellationToken.None;
-            byte[] serverNonce = [1, 2, 3, 4];
+            ByteString serverNonce = new byte[] { 1, 2, 3, 4 }.ToByteString();
             var authToken = NodeId.Parse("s=cookie");
 
             sut.Channel
@@ -1354,7 +1354,7 @@ namespace Technosoftware.UaClient.Tests
             };
             var sut = SessionMock.Create(ep);
             CancellationToken ct = CancellationToken.None;
-            byte[] serverNonce = [1, 2, 3, 4];
+            ByteString serverNonce = new byte[] { 1, 2, 3, 4 }.ToByteString();
             var authToken = NodeId.Parse("s=cookie");
 
             sut.Channel

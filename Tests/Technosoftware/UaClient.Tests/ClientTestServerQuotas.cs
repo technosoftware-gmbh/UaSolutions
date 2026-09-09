@@ -17,6 +17,7 @@
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using NUnit.Framework;
+using System.Collections.Generic;
 using Opc.Ua;
 using Technosoftware.UaServer.Tests;
 using SampleCompany.NodeManagers.Reference;
@@ -150,7 +151,7 @@ namespace Technosoftware.UaClient.Tests
             {
                 NodeId = nodeId,
                 AttributeId = Attributes.Value,
-                Value = new DataValue { WrappedValue = new Variant(chunk) },
+                Value = new DataValue(new Variant(chunk)),
                 IndexRange = null
             };
             var writeValues = new List<WriteValue> { writeValue };

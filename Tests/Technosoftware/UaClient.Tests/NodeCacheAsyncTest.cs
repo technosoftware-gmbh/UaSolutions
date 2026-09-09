@@ -277,7 +277,7 @@ namespace Technosoftware.UaClient.Tests
                     NodeId.ToExpandedNodeId(DataTypeIds.Byte, Session.NamespaceUris))
                     .ConfigureAwait(false);
                 Assert.IsFalse(isTypeOf);
-                IList<NodeId> subTypes = await nodeCache.FindSubTypesAsync(
+                ArrayOf<NodeId> subTypes = await nodeCache.FindSubTypesAsync(
                     NodeId.ToExpandedNodeId(refId, Session.NamespaceUris))
                     .ConfigureAwait(false);
                 Assert.NotNull(subTypes);
@@ -596,7 +596,7 @@ namespace Technosoftware.UaClient.Tests
                                     .ConfigureAwait(false);
                                 Assert.AreEqual(DataTypeIds.Structure, nodeId);
                                 Assert.AreEqual(DataTypeIds.Structure, nodeId2);
-                                IList<NodeId> subTypes = await Session.NodeCache.FindSubTypesAsync(
+                                ArrayOf<NodeId> subTypes = await Session.NodeCache.FindSubTypesAsync(
                                     new ExpandedNodeId((int)BuiltInType.Number)).ConfigureAwait(false);
                                 bool isTypeOf = await Session.NodeCache.IsTypeOfAsync(
                                     new ExpandedNodeId((int)BuiltInType.Int32),
@@ -612,7 +612,8 @@ namespace Technosoftware.UaClient.Tests
                                 Assert.False(isEncodingOf);
                                 bool isEncodingFor = await Session.NodeCache.IsEncodingForAsync(
                                     DataTypeIds.Structure,
-                                    new SampleCompany.NodeManagers.TestData.ScalarStructureDataType()).ConfigureAwait(false);
+                                    new ExtensionObject(
+                                        new SampleCompany.NodeManagers.TestData.ScalarStructureDataType())).ConfigureAwait(false);
                                 Assert.True(isEncodingFor);
                                 bool isEncodingFor2 = await Session.NodeCache.IsEncodingForAsync(
                                     new NodeId((int)BuiltInType.UInt32),

@@ -168,7 +168,7 @@ namespace Technosoftware.UaClient.Tests
                 {
                     var reverseConnectUri = new Uri("opc.tcp://localhost:" + testPort);
                     ReverseConnectManager.AddEndpoint(reverseConnectUri);
-                    ReverseConnectManager.StartService(Config);
+                    await ReverseConnectManager.StartServiceAsync(Config).ConfigureAwait(false);
                     ReverseConnectUri = reverseConnectUri.ToString();
                 }
                 catch (ServiceResultException sre)

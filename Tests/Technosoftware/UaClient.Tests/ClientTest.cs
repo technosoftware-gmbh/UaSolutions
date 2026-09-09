@@ -156,7 +156,7 @@ namespace Technosoftware.UaClient.Tests
 
                 if (endpoint.ServerCertificate != null)
                 {
-                    using X509Certificate2 cert = CertificateFactory.Create(
+                    using Certificate cert = CertificateFactory.Create(
                         endpoint.ServerCertificate);
                     TestContext.Out.WriteLine("  [{0}]", cert.Thumbprint);
                 }
@@ -525,7 +525,7 @@ namespace Technosoftware.UaClient.Tests
             // Channel handling checked for TcpTransportChannel only
             if (channel is TcpTransportChannel tcp)
             {
-                Assert.IsNull(tcp.Socket);
+                Assert.IsNull(tcp.Transport);
             }
         }
 
@@ -1871,7 +1871,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.NotNull(variableNodes);
 
             // test build info contains the equal values as the properties
-            var buildInfo = (values[0].Value as ExtensionObject)?.Body as BuildInfo;
+            // Variant carries the extension object's body itself in 2.0.
+            Assert.IsTrue(values[0].WrappedValue.TryGetStructure(out BuildInfo buildInfo));
             Assert.NotNull(buildInfo);
             Assert.AreEqual(buildInfo.ProductName, values[1].Value);
             Assert.AreEqual(buildInfo.ProductUri, values[2].Value);
@@ -2025,12 +2026,24 @@ namespace Technosoftware.UaClient.Tests
                 if (eccurveHashPair.Curve.Oid.FriendlyName
                     .Contains(extractedFriendlyNamae, StringComparison.Ordinal))
                 {
-                    X509Certificate2 cert = CertificateBuilder
+                    Certificate cert = CertificateBuilder
                         .Create("CN=Client Test ECC Subject, O=OPC Foundation")
                         .SetECCurve(eccurveHashPair.Curve)
                         .CreateForECDsa();
 
-                    var userIdentity = new UserIdentity(cert);
+                    // 2.0 does the token's crypto through a handler, which
+                    // reaches the private key through a certificate provider.
+                    using var inProcProvider = new InProcessCertificateProvider(cert);
+                    var certIdentifier = new CertificateIdentifier
+                    {
+                        Thumbprint = cert.Thumbprint,
+                        SubjectName = cert.Subject
+                    };
+                    var userIdentity = new UserIdentity(
+                        new X509IdentityTokenHandler(
+                            certIdentifier,
+                            new CertificatePasswordProvider(),
+                            inProcProvider));
 
                     // the first channel determines the endpoint
                     ConfiguredEndpoint endpoint = await ClientFixture

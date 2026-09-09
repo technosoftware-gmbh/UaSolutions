@@ -107,7 +107,9 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<ReferenceDescription> references = await browser.BrowseAsync(nodesToBrowse[0]).ConfigureAwait(false);
 
             // Fetch the actual nodes
-            foreach (ReferenceDescription reference in references)
+            // ArrayOf's enumerator is a span enumerator and cannot cross an
+            // await, so the references are materialised first.
+            foreach (ReferenceDescription reference in references.ToArray())
             {
                 INode node = await Session.NodeCache.FindAsync(reference.NodeId).ConfigureAwait(false);
                 if (node != null)

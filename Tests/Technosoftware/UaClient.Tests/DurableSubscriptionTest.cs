@@ -194,8 +194,8 @@ namespace Technosoftware.UaClient.Tests
             Dictionary<string, object> modifiedValues =
                 await GetValuesAsync(desiredNodeIds).ConfigureAwait(false);
 
-            var maxLifetimeCountValue = modifiedValues["MaxLifetimeCount"] as DataValue;
-            Assert.IsNotNull(maxLifetimeCountValue);
+            // DataValue is a struct in 2.0, so the cast is direct.
+            var maxLifetimeCountValue = (DataValue)modifiedValues["MaxLifetimeCount"];
             Assert.IsNotNull(maxLifetimeCountValue.Value);
             Assert.AreEqual(
                 expectedLifetime,
@@ -437,7 +437,7 @@ namespace Technosoftware.UaClient.Tests
 
                         foreach (DataValue value in item.DequeueValues())
                         {
-                            list.Add(value.SourceTimestamp);
+                            list.Add((DateTime)value.SourceTimestamp);
                         }
                     };
 
@@ -594,8 +594,7 @@ namespace Technosoftware.UaClient.Tests
             Dictionary<string, object> modifiedValues =
                 await GetValuesAsync(nodeIds).ConfigureAwait(false);
 
-            var dataValue = modifiedValues[desiredValue] as DataValue;
-            Assert.IsNotNull(dataValue);
+            var dataValue = (DataValue)modifiedValues[desiredValue];
             Assert.IsNotNull(dataValue.Value);
             Assert.AreEqual(
                 expectedValue,
@@ -655,7 +654,9 @@ namespace Technosoftware.UaClient.Tests
                 references.Count,
                 subscriptionId);
 
-            foreach (ReferenceDescription reference in references)
+            // ArrayOf's enumerator is a span enumerator and cannot cross an
+            // await, so the references are materialised first.
+            foreach (ReferenceDescription reference in references.ToArray())
             {
                 TestContext.Out
                     .WriteLine("Initial Browse Reference {0}", reference.BrowseName.Name);
@@ -665,7 +666,7 @@ namespace Technosoftware.UaClient.Tests
                 {
                     (
                         _,
-                        byte[] anotherContinuationPoint,
+                        ByteString anotherContinuationPoint,
                         ArrayOf<ReferenceDescription> desiredReferences
                     ) = await Session.BrowseAsync(
                         null,
@@ -793,18 +794,19 @@ namespace Technosoftware.UaClient.Tests
         {
             var whereClause = new ContentFilter();
 
+            // ContentFilter.Push takes Variant operands in 2.0.
             whereClause.Push(
                 FilterOperator.Equals,
-                [
+                Variant.FromStructure(
                     new SimpleAttributeOperand
                     {
                         AttributeId = Attributes.Value,
                         TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                        BrowsePath = [.. new QualifiedName[] { new QualifiedName("EventType" )}]
-                    },
+                        BrowsePath = [new QualifiedName("EventType")]
+                    }),
+                Variant.FromStructure(
                     new LiteralOperand {
-                        Value = new Variant(ObjectTypeIds.BaseEventType) }
-                ]);
+                        Value = new Variant(ObjectTypeIds.BaseEventType) }));
 
             return new MonitoredItem(Session.MessageContext.Telemetry)
             {

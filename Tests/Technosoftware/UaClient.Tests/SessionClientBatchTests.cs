@@ -1381,7 +1381,7 @@ namespace Technosoftware.UaClient.Tests
             const bool releaseContinuationPoints = true;
 
             var continuationPoints = new List<ByteString>(
-                [.. Enumerable.Repeat(Array.Empty<byte>(), 15)]);
+                [.. Enumerable.Repeat(ByteString.Empty, 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1424,7 +1424,7 @@ namespace Technosoftware.UaClient.Tests
             const bool releaseContinuationPoints = true;
 
             var continuationPoints = new List<ByteString>(
-                [.. Enumerable.Repeat(Array.Empty<byte>(), 15)]);
+                [.. Enumerable.Repeat(ByteString.Empty, 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3864,7 +3864,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const bool releaseContinuationPoint = true;
-            byte[] continuationPoint = [];
+            ByteString continuationPoint = ByteString.Empty;
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3894,7 +3894,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const bool releaseContinuationPoint = true;
-            byte[] continuationPoint = [];
+            ByteString continuationPoint = ByteString.Empty;
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3926,7 +3926,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const bool releaseContinuationPoint = true;
-            byte[] continuationPoint = [];
+            ByteString continuationPoint = ByteString.Empty;
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4149,7 +4149,7 @@ namespace Technosoftware.UaClient.Tests
                     It.Is<CancellationToken>(t => t == ct)))
                 .ReturnsAsync(new ReadResponse
                 {
-                    Results = [new DataValue { StatusCode = StatusCodes.Good }],
+                    Results = [new DataValue(Variant.Null, StatusCodes.Good)],
                     DiagnosticInfos = [new DiagnosticInfo()]
                 })
                 .Verifiable(Times.Once);
