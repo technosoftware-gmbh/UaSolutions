@@ -2320,11 +2320,14 @@ namespace Technosoftware.UaServer
         {
             var configuration = new ApplicationConfiguration(Configuration)
             {
-                // use a dedicated certificate validator with the registration, but derive behavior from server config
-                CertificateValidator = new CertificateValidator(MessageContext.Telemetry)
+                // use a dedicated certificate manager for the registration, but derive
+                // behaviour from the server configuration
+                CertificateManager = CertificateManagerFactory.Create(
+                    Configuration.SecurityConfiguration,
+                    MessageContext.Telemetry)
             };
             await configuration
-                .CertificateValidator.UpdateAsync(
+                .CertificateManager.UpdateAsync(
                     configuration.SecurityConfiguration,
                     configuration.ApplicationUri,
                     ct)
@@ -2982,14 +2985,6 @@ namespace Technosoftware.UaServer
         public override ServiceHost CreateServiceHost(ServerBase server, params Uri[] addresses)
         {
             return new ServiceHost(this, typeof(SessionEndpoint), addresses);
-        }
-
-        /// <summary>
-        /// Returns the service contract to use.
-        /// </summary>
-        protected override Type GetServiceContract()
-        {
-            return typeof(ISessionEndpoint);
         }
 
         /// <summary>
