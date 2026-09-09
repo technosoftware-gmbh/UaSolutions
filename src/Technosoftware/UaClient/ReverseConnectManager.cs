@@ -39,7 +39,7 @@ namespace Technosoftware.UaClient
     /// iii) filter for the Url.
     /// Second, any filter can be combined with the Once or Always flag.
     /// </remarks>
-    public class ReverseConnectManager : IDisposable
+    public class ReverseConnectManager : IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// A default value for reverse hello configurations, if undefined.
@@ -205,6 +205,30 @@ namespace Technosoftware.UaClient
         /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         protected virtual void Dispose(bool disposing)
         {
+            DisposeWatcherAndCancellation();
+
+            // The hosts close asynchronously in 2.0. No lock is held here, so
+            // blocking is safe; DisposeAsync is the path that does not block.
+            DisposeHostsAsync().AsTask().GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Asynchronous dispose. Prefer this over <see cref="Dispose()"/>:
+        /// closing a reverse connect host is asynchronous in 2.0, so the
+        /// synchronous path has to block on it.
+        /// </summary>
+        public async ValueTask DisposeAsync()
+        {
+            DisposeWatcherAndCancellation();
+            await DisposeHostsAsync().ConfigureAwait(false);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases everything that does not need to be awaited.
+        /// </summary>
+        private void DisposeWatcherAndCancellation()
+        {
             // close the watcher.
             if (m_configurationWatcher != null)
             {
@@ -215,7 +239,6 @@ namespace Technosoftware.UaClient
             {
                 m_cts?.Dispose();
             }
-            DisposeHosts();
         }
 
         /// <summary>
@@ -237,7 +260,7 @@ namespace Technosoftware.UaClient
                         m_telemetry)
                     .ConfigureAwait(false);
 
-                OnUpdateConfiguration(configuration);
+                await OnUpdateConfigurationAsync(configuration).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -249,13 +272,17 @@ namespace Technosoftware.UaClient
         /// Called when the configuration is changed on disk.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
-        protected virtual void OnUpdateConfiguration(ApplicationConfiguration configuration)
+        protected virtual ValueTask OnUpdateConfigurationAsync(
+            ApplicationConfiguration configuration,
+            CancellationToken ct = default)
         {
             // save types for config watcher
             m_applicationType = configuration.ApplicationType;
             m_configType = configuration.GetType();
 
-            OnUpdateConfiguration(configuration.ClientConfiguration.ReverseConnect);
+            return OnUpdateConfigurationAsync(
+                configuration.ClientConfiguration.ReverseConnect,
+                ct);
         }
 
         /// <summary>
@@ -265,20 +292,26 @@ namespace Technosoftware.UaClient
         ///  An empty configuration or null stops service on all configured endpoints.
         /// </remarks>
         /// <param name="configuration">The client endpoint configuration.</param>
-        protected virtual void OnUpdateConfiguration(
-            ReverseConnectClientConfiguration configuration)
+        protected virtual async ValueTask OnUpdateConfigurationAsync(
+            ReverseConnectClientConfiguration configuration,
+            CancellationToken ct = default)
         {
-            bool restartService = false;
+            bool restartService;
 
             lock (m_lock)
             {
-                if (m_configuration != null)
-                {
-                    StopService();
-                    m_configuration = null;
-                    restartService = true;
-                }
+                restartService = m_configuration != null;
+            }
 
+            // Stopping closes the hosts, which is asynchronous, so it happens
+            // between the two critical sections rather than inside one.
+            if (restartService)
+            {
+                await StopServiceAsync(ct).ConfigureAwait(false);
+            }
+
+            lock (m_lock)
+            {
                 m_configuration = configuration ?? new ReverseConnectClientConfiguration();
 
                 // clear configured endpoints
@@ -295,37 +328,48 @@ namespace Technosoftware.UaClient
                         }
                     }
                 }
+            }
 
-                if (restartService)
-                {
-                    StartService();
-                }
+            if (restartService)
+            {
+                await StartServiceAsync(ct).ConfigureAwait(false);
             }
         }
 
         /// <summary>
         /// Open host ports.
         /// </summary>
-        private void OpenHosts()
+        private async ValueTask OpenHostsAsync(CancellationToken ct = default)
         {
+            // ReverseConnectHost.OpenAsync cannot be awaited while m_lock is
+            // held, so the hosts to open are snapshotted under the lock, opened
+            // outside it, and their states written back under it.
+            List<KeyValuePair<Uri, ReverseConnectInfo>> hostsToOpen;
+
             lock (m_lock)
             {
-                foreach (KeyValuePair<Uri, ReverseConnectInfo> host in m_endpointUrls)
+                hostsToOpen = [.. m_endpointUrls
+                    .Where(host => host.Value.State < ReverseConnectHostState.Open)];
+            }
+
+            foreach (KeyValuePair<Uri, ReverseConnectInfo> host in hostsToOpen)
+            {
+                ReverseConnectInfo value = host.Value;
+                ReverseConnectHostState state;
+                try
                 {
-                    ReverseConnectInfo value = host.Value;
-                    try
-                    {
-                        if (host.Value.State < ReverseConnectHostState.Open)
-                        {
-                            value.ReverseConnectHost.Open();
-                            value.State = ReverseConnectHostState.Open;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        m_logger.LogError(e, "Failed to Open {Uri}.", host.Key);
-                        value.State = ReverseConnectHostState.Errored;
-                    }
+                    await value.ReverseConnectHost.OpenAsync(ct).ConfigureAwait(false);
+                    state = ReverseConnectHostState.Open;
+                }
+                catch (Exception e)
+                {
+                    m_logger.LogError(e, "Failed to Open {Uri}.", host.Key);
+                    state = ReverseConnectHostState.Errored;
+                }
+
+                lock (m_lock)
+                {
+                    value.State = state;
                 }
             }
         }
@@ -333,26 +377,35 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Close host ports.
         /// </summary>
-        private void CloseHosts()
+        private async ValueTask CloseHostsAsync(CancellationToken ct = default)
         {
+            // Same shape as OpenHostsAsync: snapshot, close, write back.
+            List<KeyValuePair<Uri, ReverseConnectInfo>> hostsToClose;
+
             lock (m_lock)
             {
-                foreach (KeyValuePair<Uri, ReverseConnectInfo> host in m_endpointUrls)
+                hostsToClose = [.. m_endpointUrls
+                    .Where(host => host.Value.State == ReverseConnectHostState.Open)];
+            }
+
+            foreach (KeyValuePair<Uri, ReverseConnectInfo> host in hostsToClose)
+            {
+                ReverseConnectInfo value = host.Value;
+                ReverseConnectHostState state;
+                try
                 {
-                    ReverseConnectInfo value = host.Value;
-                    try
-                    {
-                        if (value.State == ReverseConnectHostState.Open)
-                        {
-                            value.ReverseConnectHost.Close();
-                            value.State = ReverseConnectHostState.Closed;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        m_logger.LogError(e, "Failed to Close {Uri}.", host.Key);
-                        value.State = ReverseConnectHostState.Errored;
-                    }
+                    await value.ReverseConnectHost.CloseAsync(ct).ConfigureAwait(false);
+                    state = ReverseConnectHostState.Closed;
+                }
+                catch (Exception e)
+                {
+                    m_logger.LogError(e, "Failed to Close {Uri}.", host.Key);
+                    state = ReverseConnectHostState.Errored;
+                }
+
+                lock (m_lock)
+                {
+                    value.State = state;
                 }
             }
         }
@@ -360,11 +413,12 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Dispose the hosts;
         /// </summary>
-        private void DisposeHosts()
+        private async ValueTask DisposeHostsAsync(CancellationToken ct = default)
         {
+            await CloseHostsAsync(ct).ConfigureAwait(false);
+
             lock (m_lock)
             {
-                CloseHosts();
                 m_endpointUrls.Clear();
             }
         }
@@ -398,42 +452,43 @@ namespace Technosoftware.UaClient
         /// <param name="configuration">The configuration.</param>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
-        public void StartService(ApplicationConfiguration configuration)
+        public async Task StartServiceAsync(
+            ApplicationConfiguration configuration,
+            CancellationToken ct = default)
         {
             if (configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            lock (m_lock)
+            VerifyNotStarted();
+
+            try
             {
-                if (m_state == ReverseConnectManagerState.Started)
-                {
-                    throw new ServiceResultException(StatusCodes.BadInvalidState);
-                }
+                await OnUpdateConfigurationAsync(configuration, ct).ConfigureAwait(false);
+                await StartServiceAsync(ct).ConfigureAwait(false);
 
-                try
+                // monitor the configuration file.
+                if (!string.IsNullOrEmpty(configuration.SourceFilePath))
                 {
-                    OnUpdateConfiguration(configuration);
-                    StartService();
-
-                    // monitor the configuration file.
-                    if (!string.IsNullOrEmpty(configuration.SourceFilePath))
-                    {
-                        m_configurationWatcher = new ConfigurationWatcher(configuration, m_telemetry);
-                        m_configurationWatcher.Changed += OnConfigurationChangedAsync;
-                    }
+                    m_configurationWatcher = new ConfigurationWatcher(configuration, m_telemetry);
+                    m_configurationWatcher.Changed += OnConfigurationChangedAsync;
                 }
-                catch (Exception e)
+            }
+            catch (Exception e)
+            {
+                m_logger.LogError(e, "Unexpected error starting reverse connect manager.");
+
+                lock (m_lock)
                 {
-                    m_logger.LogError(e, "Unexpected error starting reverse connect manager.");
                     m_state = ReverseConnectManagerState.Errored;
-                    var error = ServiceResult.Create(
-                        e,
-                        StatusCodes.BadInternalError,
-                        "Unexpected error starting application");
-                    throw new ServiceResultException(error);
                 }
+
+                var error = ServiceResult.Create(
+                    e,
+                    StatusCodes.BadInternalError,
+                    "Unexpected error starting application");
+                throw new ServiceResultException(error);
             }
         }
 
@@ -443,36 +498,51 @@ namespace Technosoftware.UaClient
         /// <param name="configuration">The configuration.</param>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
-        public void StartService(ReverseConnectClientConfiguration configuration)
+        public async Task StartServiceAsync(
+            ReverseConnectClientConfiguration configuration,
+            CancellationToken ct = default)
         {
             if (configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
+            VerifyNotStarted();
+
+            try
+            {
+                m_configurationWatcher = null;
+                await OnUpdateConfigurationAsync(configuration, ct).ConfigureAwait(false);
+                await StartServiceAsync(ct).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                m_logger.LogError(e, "Unexpected error starting reverse connect manager.");
+
+                lock (m_lock)
+                {
+                    m_state = ReverseConnectManagerState.Errored;
+                }
+
+                var error = ServiceResult.Create(
+                    e,
+                    StatusCodes.BadInternalError,
+                    "Unexpected error starting reverse connect manager");
+                throw new ServiceResultException(error);
+            }
+        }
+
+        /// <summary>
+        /// Throws if the manager is already started.
+        /// </summary>
+        /// <exception cref="ServiceResultException">The manager is started.</exception>
+        private void VerifyNotStarted()
+        {
             lock (m_lock)
             {
                 if (m_state == ReverseConnectManagerState.Started)
                 {
                     throw new ServiceResultException(StatusCodes.BadInvalidState);
-                }
-
-                try
-                {
-                    m_configurationWatcher = null;
-                    OnUpdateConfiguration(configuration);
-                    OpenHosts();
-                    m_state = ReverseConnectManagerState.Started;
-                }
-                catch (Exception e)
-                {
-                    m_logger.LogError(e, "Unexpected error starting reverse connect manager.");
-                    m_state = ReverseConnectManagerState.Errored;
-                    var error = ServiceResult.Create(
-                        e,
-                        StatusCodes.BadInternalError,
-                        "Unexpected error starting reverse connect manager");
-                    throw new ServiceResultException(error);
                 }
             }
         }
@@ -599,12 +669,13 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Called before the server stops
         /// </summary>
-        private void StopService()
+        private async ValueTask StopServiceAsync(CancellationToken ct = default)
         {
             ClearWaitingConnections();
+            await CloseHostsAsync(ct).ConfigureAwait(false);
+
             lock (m_lock)
             {
-                CloseHosts();
                 m_state = ReverseConnectManagerState.Stopped;
             }
         }
@@ -612,11 +683,12 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Called to start hosting the reverse connect ports.
         /// </summary>
-        private void StartService()
+        private async ValueTask StartServiceAsync(CancellationToken ct = default)
         {
+            await OpenHostsAsync(ct).ConfigureAwait(false);
+
             lock (m_lock)
             {
-                OpenHosts();
                 m_state = ReverseConnectManagerState.Started;
             }
         }
