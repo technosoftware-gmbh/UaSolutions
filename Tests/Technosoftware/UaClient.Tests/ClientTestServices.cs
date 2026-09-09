@@ -44,7 +44,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader,
             ViewDescription view,
             uint requestedMaxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken ct = default)
         {
             return new ValueTask<BrowseResponse>(m_session.BrowseAsync(
@@ -58,7 +58,7 @@ namespace Technosoftware.UaClient.Tests
         public ValueTask<BrowseNextResponse> BrowseNextAsync(
             RequestHeader requestHeader,
             bool releaseContinuationPoints,
-            ByteStringCollection continuationPoints,
+            ArrayOf<ByteString> continuationPoints,
             CancellationToken ct = default)
         {
             return new ValueTask<BrowseNextResponse>(m_session.BrowseNextAsync(
@@ -93,7 +93,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken ct = default)
         {
             return new ValueTask<CreateMonitoredItemsResponse>(m_session.CreateMonitoredItemsAsync(
@@ -129,7 +129,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken ct = default)
         {
             return new ValueTask<ModifyMonitoredItemsResponse>(m_session.ModifyMonitoredItemsAsync(
@@ -142,7 +142,7 @@ namespace Technosoftware.UaClient.Tests
 
         public ValueTask<PublishResponse> PublishAsync(
             RequestHeader requestHeader,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             CancellationToken ct = default)
         {
             return new ValueTask<PublishResponse>(m_session.PublishAsync(
@@ -154,7 +154,7 @@ namespace Technosoftware.UaClient.Tests
         public ValueTask<SetPublishingModeResponse> SetPublishingModeAsync(
             RequestHeader requestHeader,
             bool publishingEnabled,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default)
         {
             return new ValueTask<SetPublishingModeResponse>(m_session.SetPublishingModeAsync(
@@ -168,7 +168,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken ct = default)
         {
             return new ValueTask<SetMonitoringModeResponse>(m_session.SetMonitoringModeAsync(
@@ -194,7 +194,7 @@ namespace Technosoftware.UaClient.Tests
 
         public ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default)
         {
             return new ValueTask<DeleteSubscriptionsResponse>(m_session.DeleteSubscriptionsAsync(
@@ -205,7 +205,7 @@ namespace Technosoftware.UaClient.Tests
 
         public ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool sendInitialValues,
             CancellationToken ct = default)
         {
@@ -218,7 +218,7 @@ namespace Technosoftware.UaClient.Tests
 
         public ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
             RequestHeader requestHeader,
-            BrowsePathCollection browsePaths,
+            ArrayOf<BrowsePath> browsePaths,
             CancellationToken ct = default)
         {
             return new ValueTask<TranslateBrowsePathsToNodeIdsResponse>(m_session.TranslateBrowsePathsToNodeIdsAsync(

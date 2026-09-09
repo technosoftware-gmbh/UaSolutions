@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using Technosoftware.UaServer;
 using SampleCompany.NodeManagers.Reference;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient.Tests
@@ -50,13 +51,13 @@ namespace Technosoftware.UaClient.Tests
         private MasterNodeManager MasterNodeManagerReference { get; set; }
         private SessionManagerWithLimits SessionManagerForTest { get; set; }
 
-        public override Task<BrowseResponse> BrowseAsync(
+        public override ValueTask<BrowseResponse> BrowseAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             ViewDescription view,
             uint requestedMaxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
-            CancellationToken ct)
+            ArrayOf<BrowseDescription> nodesToBrowse,
+            RequestLifetime requestLifetime)
         {
             return base.BrowseAsync(
                 secureChannelContext,
@@ -64,7 +65,7 @@ namespace Technosoftware.UaClient.Tests
                 view,
                 TestMaxBrowseReferencesPerNode,
                 nodesToBrowse,
-                ct);
+                requestLifetime);
         }
 
         public void SetMaxNumberOfContinuationPoints(uint maxNumberOfContinuationPoints)
@@ -133,15 +134,15 @@ namespace Technosoftware.UaClient.Tests
         public ServerSessionWithLimits(
             UaServerOperationContext context,
             IUaServerData server,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             NodeId authenticationToken,
-            byte[] clientNonce,
+            ByteString clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double sessionTimeout,
             uint maxResponseMessageSize,
             double maxRequestAge,
@@ -200,15 +201,15 @@ namespace Technosoftware.UaClient.Tests
         protected override UaServer.IUaSession CreateSession(
             UaServerOperationContext context,
             IUaServerData server,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             NodeId sessionCookie,
-            byte[] clientNonce,
+            ByteString clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double sessionTimeout,
             uint maxResponseMessageSize,
             int maxRequestAge, // TBD - Remove unused parameter.
@@ -257,11 +258,11 @@ namespace Technosoftware.UaClient.Tests
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
-        public override async ValueTask<(BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos)> BrowseAsync(
+        public override async ValueTask<(BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos)> BrowseAsync(
             UaServerOperationContext context,
             ViewDescription view,
             uint maxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken cancellationToken = default)
         {
             if (context == null)
