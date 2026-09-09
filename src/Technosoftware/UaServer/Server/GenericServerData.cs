@@ -107,14 +107,14 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(ResourceManager);
-                Utils.SilentDispose(RequestManager);
-                Utils.SilentDispose(AggregateManager);
-                Utils.SilentDispose(ModellingRulesManager);
-                Utils.SilentDispose(NodeManager);
-                Utils.SilentDispose(SessionManager);
-                Utils.SilentDispose(SubscriptionManager);
-                Utils.SilentDispose(MonitoredItemQueueFactory);
+                ResourceManager?.Dispose();
+                RequestManager?.Dispose();
+                AggregateManager?.Dispose();
+                ModellingRulesManager?.Dispose();
+                NodeManager?.Dispose();
+                SessionManager?.Dispose();
+                SubscriptionManager?.Dispose();
+                MonitoredItemQueueFactory?.Dispose();
             }
         }
 

@@ -82,10 +82,10 @@ namespace Technosoftware.UaServer
             {
                 lock (Lock)
                 {
-                    Utils.SilentDispose(m_diagnosticsScanTimer);
+                    m_diagnosticsScanTimer?.Dispose();
                     m_diagnosticsScanTimer = null;
 
-                    Utils.SilentDispose(m_samplingTimer);
+                    m_samplingTimer?.Dispose();
                     m_samplingTimer = null;
                 }
             }

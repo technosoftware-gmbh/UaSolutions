@@ -87,12 +87,12 @@ namespace Technosoftware.UaServer
 
                 foreach (SamplingGroup samplingGroup in samplingGroups)
                 {
-                    Utils.SilentDispose(samplingGroup);
+                    samplingGroup?.Dispose();
                 }
 
                 foreach (IUaSampledDataChangeMonitoredItem monitoredItem in monitoredItems)
                 {
-                    Utils.SilentDispose(monitoredItem);
+                    monitoredItem?.Dispose();
                 }
             }
         }
@@ -108,7 +108,7 @@ namespace Technosoftware.UaServer
                 foreach (SamplingGroup samplingGroup in m_samplingGroups)
                 {
                     samplingGroup.Shutdown();
-                    Utils.SilentDispose(samplingGroup);
+                    samplingGroup?.Dispose();
                 }
 
                 m_samplingGroups.Clear();
@@ -495,7 +495,7 @@ namespace Technosoftware.UaServer
                 foreach (SamplingGroup samplingGroup in unusedGroups)
                 {
                     m_samplingGroups.Remove(samplingGroup);
-                    Utils.SilentDispose(samplingGroup);
+                    samplingGroup?.Dispose();
                 }
             }
         }

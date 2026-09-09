@@ -116,17 +116,17 @@ namespace Technosoftware.UaServer
 
                 foreach (SessionPublishQueue publishQueue in publishQueues)
                 {
-                    Utils.SilentDispose(publishQueue);
+                    publishQueue?.Dispose();
                 }
 
                 foreach (IUaSubscription subscription in subscriptions)
                 {
-                    Utils.SilentDispose(subscription);
+                    subscription?.Dispose();
                 }
 
-                Utils.SilentDispose(m_shutdownEvent);
-                Utils.SilentDispose(m_conditionRefreshEvent);
-                Utils.SilentDispose(m_semaphoreSlim);
+                m_shutdownEvent?.Dispose();
+                m_conditionRefreshEvent?.Dispose();
+                m_semaphoreSlim?.Dispose();
             }
         }
 

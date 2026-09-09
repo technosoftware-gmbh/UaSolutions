@@ -188,10 +188,10 @@ namespace Technosoftware.UaServer
             {
                 lock (Lock)
                 {
-                    Utils.SilentDispose(m_monitoredItemManager);
+                    m_monitoredItemManager?.Dispose();
                     foreach (NodeState node in PredefinedNodes.Values)
                     {
-                        Utils.SilentDispose(node);
+                        (node as IDisposable)?.Dispose();
                     }
 
                     PredefinedNodes.Clear();
@@ -875,7 +875,7 @@ namespace Technosoftware.UaServer
 
             foreach (NodeState node in nodes)
             {
-                Utils.SilentDispose(node);
+                (node as IDisposable)?.Dispose();
             }
         }
 

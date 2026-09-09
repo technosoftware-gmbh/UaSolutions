@@ -85,7 +85,7 @@ namespace Technosoftware.UaServer
 
                 foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValue in sessions)
                 {
-                    Utils.SilentDispose(sessionKeyValue.Value);
+                    sessionKeyValue.Value?.Dispose();
                 }
 
                 m_shutdownEvent.Set();
@@ -133,7 +133,7 @@ namespace Technosoftware.UaServer
 
             foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValue in sessions)
             {
-                Utils.SilentDispose(sessionKeyValue.Value);
+                sessionKeyValue.Value?.Dispose();
             }
         }
 

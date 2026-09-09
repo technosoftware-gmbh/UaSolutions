@@ -208,12 +208,12 @@ namespace Technosoftware.UaClient
             // close the watcher.
             if (m_configurationWatcher != null)
             {
-                Utils.SilentDispose(m_configurationWatcher);
+                m_configurationWatcher?.Dispose();
                 m_configurationWatcher = null;
             }
             if (m_cts != null)
             {
-                Utils.SilentDispose(m_cts);
+                m_cts?.Dispose();
             }
             DisposeHosts();
         }

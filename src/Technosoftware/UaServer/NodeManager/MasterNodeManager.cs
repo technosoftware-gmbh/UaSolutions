@@ -191,18 +191,18 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_namespaceManagersSemaphoreSlim);
+                m_namespaceManagersSemaphoreSlim?.Dispose();
 
                 m_startupShutdownSemaphoreSlim.Wait();
 
                 List<IUaStandardAsyncNodeManager> nodeManagers = [.. m_nodeManagers];
                 m_nodeManagers.Clear();
 
-                Utils.SilentDispose(m_startupShutdownSemaphoreSlim);
+                m_startupShutdownSemaphoreSlim?.Dispose();
 
                 foreach (IUaStandardAsyncNodeManager nodeManager in nodeManagers)
                 {
-                    Utils.SilentDispose(nodeManager);
+                    (nodeManager as IDisposable)?.Dispose();
                 }
             }
         }

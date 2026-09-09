@@ -611,7 +611,7 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(SyncNodeManager);
+                (SyncNodeManager as IDisposable)?.Dispose();
             }
         }
     }

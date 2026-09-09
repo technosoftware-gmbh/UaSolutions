@@ -166,12 +166,12 @@ namespace Technosoftware.UaClient
                 }
 
                 // stop the publish timer.
-                Utils.SilentDispose(m_publishTimer);
+                m_publishTimer?.Dispose();
                 m_publishTimer = null;
 
                 if (m_messageWorkerTask == null)
                 {
-                    Utils.SilentDispose(m_messageWorkerCts);
+                    m_messageWorkerCts?.Dispose();
                     m_messageWorkerCts = null;
                     return;
                 }
@@ -194,7 +194,7 @@ namespace Technosoftware.UaClient
             }
             finally
             {
-                Utils.SilentDispose(workerCts);
+                workerCts?.Dispose();
             }
         }
 
@@ -2046,7 +2046,7 @@ namespace Technosoftware.UaClient
                 // don`t create new KeepAliveTimer if interval did not change and timers are still running
                 if (oldKeepAliveInterval != m_keepAliveInterval || m_publishTimer == null)
                 {
-                    Utils.SilentDispose(m_publishTimer);
+                    m_publishTimer?.Dispose();
                     m_publishTimer = null;
                     Interlocked.Exchange(ref m_lastNotificationTime, DateTime.UtcNow.Ticks);
                     m_lastNotificationTickCount = HiResClock.TickCount;
@@ -2060,7 +2060,7 @@ namespace Technosoftware.UaClient
 
                 if (m_messageWorkerTask == null || m_messageWorkerTask.IsCompleted)
                 {
-                    Utils.SilentDispose(m_messageWorkerCts);
+                    m_messageWorkerCts?.Dispose();
                     m_messageWorkerCts = new CancellationTokenSource();
                     CancellationToken ct = m_messageWorkerCts.Token;
                     m_messageWorkerTask = Task

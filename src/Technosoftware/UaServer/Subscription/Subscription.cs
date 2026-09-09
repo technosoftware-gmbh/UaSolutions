@@ -240,7 +240,7 @@ namespace Technosoftware.UaServer
                 {
                     foreach (KeyValuePair<uint, LinkedListNode<IUaMonitoredItem>> monitoredItemKVP in m_monitoredItems)
                     {
-                        Utils.SilentDispose(monitoredItemKVP.Value?.Value);
+                        monitoredItemKVP.Value?.Value?.Dispose();
                     }
 
                     m_monitoredItems.Clear();

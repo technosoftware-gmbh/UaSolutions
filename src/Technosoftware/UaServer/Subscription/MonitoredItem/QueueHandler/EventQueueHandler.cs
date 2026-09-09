@@ -167,7 +167,7 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_eventQueue);
+                m_eventQueue?.Dispose();
             }
         }
 

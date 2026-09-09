@@ -65,7 +65,7 @@ namespace Technosoftware.UaServer
 
                 foreach (IUaEventMonitoredItem monitoredItem in monitoredItems)
                 {
-                    Utils.SilentDispose(monitoredItem);
+                    monitoredItem?.Dispose();
                 }
             }
         }

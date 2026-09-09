@@ -350,8 +350,8 @@ namespace Technosoftware.UaClient
             {
                 StopKeepAliveTimerAsync().AsTask().GetAwaiter().GetResult();
 
-                Utils.SilentDispose(m_defaultSubscription);
-                Utils.SilentDispose(m_nodeCache);
+                m_defaultSubscription?.Dispose();
+                m_nodeCache?.Dispose();
 
                 List<Subscription>? subscriptions;
                 lock (m_lock)
@@ -362,7 +362,7 @@ namespace Technosoftware.UaClient
 
                 foreach (Subscription subscription in subscriptions)
                 {
-                    Utils.SilentDispose(subscription);
+                    subscription?.Dispose();
                 }
                 subscriptions.Clear();
             }
@@ -621,7 +621,7 @@ namespace Technosoftware.UaClient
             });
             set
             {
-                Utils.SilentDispose(m_defaultSubscription);
+                m_defaultSubscription?.Dispose();
                 m_defaultSubscription = value;
             }
         }

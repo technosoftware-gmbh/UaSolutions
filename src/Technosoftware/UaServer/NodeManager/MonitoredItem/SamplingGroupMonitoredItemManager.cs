@@ -121,7 +121,7 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_samplingGroupManager);
+                m_samplingGroupManager?.Dispose();
             }
         }
 

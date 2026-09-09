@@ -94,10 +94,10 @@ namespace Technosoftware.UaServer
 
                 foreach (INode node in nodes)
                 {
-                    Utils.SilentDispose(node);
+                    (node as IDisposable)?.Dispose();
                 }
 
-                Utils.SilentDispose(m_samplingGroupManager);
+                m_samplingGroupManager?.Dispose();
             }
         }
 

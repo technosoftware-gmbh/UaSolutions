@@ -68,7 +68,7 @@ namespace Technosoftware.UaServer
                     operation.SetStatusCode(StatusCodes.BadSessionClosed);
                 }
 
-                Utils.SilentDispose(m_requestTimer);
+                m_requestTimer?.Dispose();
                 m_requestTimer = null;
             }
         }

@@ -409,7 +409,7 @@ namespace Technosoftware.UaServer
             {
                 if (m_reverseConnectTimer != null)
                 {
-                    Utils.SilentDispose(m_reverseConnectTimer);
+                    m_reverseConnectTimer?.Dispose();
                     m_reverseConnectTimer = null;
                 }
             }

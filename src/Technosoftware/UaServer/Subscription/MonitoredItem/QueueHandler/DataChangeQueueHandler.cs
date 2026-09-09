@@ -401,7 +401,7 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_dataValueQueue);
+                m_dataValueQueue?.Dispose();
             }
         }
 
