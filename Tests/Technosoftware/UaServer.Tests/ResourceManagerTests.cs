@@ -99,7 +99,10 @@ namespace Technosoftware.UaServer.Tests
             var translations = new Dictionary<string, string> {
                 { "en-US", "Hello" },
                 { "de-DE", "Hallo" } };
-            var defaultText = new LocalizedText("greeting", translations);
+            // 2.0 renders the MultiLanguageText form explicitly, so the value
+            // an exact match returns is the multi-language one.
+            LocalizedText defaultText =
+                new LocalizedText("greeting", translations).AsMultiLanguage();
 
             //Act
             LocalizedText resultText = resourceManager.Translate(
@@ -134,7 +137,7 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.AreEqual( /*lang=json,strict*/
-                "{\"t\":[[\"en-US\",\"Hello\"],[\"de-DE\",\"Hallo\"]]}",
+                "{\"t\":[[\"de-DE\",\"Hallo\"],[\"en-US\",\"Hello\"]]}",
                 resultText.Text);
             Assert.AreEqual("mul", resultText.Locale);
         }
@@ -193,7 +196,7 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.AreEqual( /*lang=json,strict*/
-                "{\"t\":[[\"en-US\",\"Hello\"],[\"de-DE\",\"Hallo\"]]}",
+                "{\"t\":[[\"de-DE\",\"Hallo\"],[\"en-US\",\"Hello\"]]}",
                 resultText.Text);
             Assert.AreEqual("mul", resultText.Locale);
         }

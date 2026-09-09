@@ -301,22 +301,25 @@ namespace Technosoftware.UaServer
             LocalizedText defaultText,
             TranslationInfo info)
         {
-            defaultText = FilterByPreferredLocales(defaultText, preferredLocales);
+            // check for trivial case.
+            if (string.IsNullOrEmpty(info.Text) && string.IsNullOrEmpty(info.Key))
+            {
+                return FilterByPreferredLocales(defaultText, preferredLocales);
+            }
+
+            // The default text is not filtered before the exact-match checks
+            // below: filtering reorders the translations into the requested
+            // order, and an exact match has to hand back what it was given.
+            defaultText = defaultText.WithTranslationInfo(info);
 
             bool isMultilanguageRequested =
                 preferredLocales.Count > 0 &&
                 preferredLocales[0].ToLowerInvariant() is "mul" or "qst";
 
-            // check for trivial case.
-            if (info.IsNull || (string.IsNullOrEmpty(info.Text) && string.IsNullOrEmpty(info.Key)))
-            {
-                return defaultText;
-            }
-
             // check for exact match.
-            if (preferredLocales != null && preferredLocales.Count > 0)
+            if (preferredLocales.Count > 0)
             {
-                if (!defaultText.IsNull &&
+                if (!defaultText.IsNullOrEmpty &&
                     !isMultilanguageRequested &&
                     preferredLocales[0] == defaultText.Locale)
                 {
@@ -328,7 +331,7 @@ namespace Technosoftware.UaServer
                     preferredLocales.Count > 1 &&
                     defaultText.Translations?.Count == preferredLocales.Count - 1)
                 {
-                    return defaultText;
+                    return defaultText.AsMultiLanguage();
                 }
 
                 if (preferredLocales[0] == info.Locale)
@@ -408,7 +411,13 @@ namespace Technosoftware.UaServer
                         }
                     }
                 }
-                return new LocalizedText(translations);
+                // 2.0 renders the MultiLanguageText form - the {"t":[...]}
+                // text with the "mul" locale - through AsMultiLanguage rather
+                // than by constructing a LocalizedText from the translations.
+                return FilterByPreferredLocales(
+                        defaultText.WithTranslations(translations),
+                        preferredLocales)
+                    .AsMultiLanguage();
             }
             // single locale requested.
             else
