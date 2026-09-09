@@ -55,14 +55,11 @@ namespace Technosoftware.UaServer
         /// <param name="serverDescription">The server description.</param>
         /// <param name="configuration">The configuration.</param>
         /// <param name="messageContext">The message context.</param>
-        /// <param name="certificateValidator">The certificate validator.</param>
-        /// <param name="instanceCertificateProvider">The certificate type provider.</param>
+
         public GenericServerData(
             ServerProperties serverDescription,
             ApplicationConfiguration configuration,
-            IServiceMessageContext messageContext,
-            CertificateValidator certificateValidator,
-            CertificateTypesProvider instanceCertificateProvider)
+            IServiceMessageContext messageContext)
         {
             m_serverDescription = serverDescription;
             m_configuration = configuration;

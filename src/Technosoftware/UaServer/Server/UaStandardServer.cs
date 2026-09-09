@@ -2914,14 +2914,13 @@ namespace Technosoftware.UaServer
         /// <returns>
         /// Returns IList of a host for a UA service.
         /// </returns>
-        protected override IList<ServiceHost> InitializeServiceHosts(
+        protected override ValueTask<ServiceHostInitializationResult> InitializeServiceHostsAsync(
             ApplicationConfiguration configuration,
-            ITransportListenerBindings bindingFactory,
-            out ApplicationDescription serverDescription,
-            out EndpointDescriptionCollection endpoints)
+            ITransportBindingRegistry bindingFactory,
+            CancellationToken cancellationToken = default)
         {
-            serverDescription = null;
-            endpoints = null;
+            ApplicationDescription serverDescription;
+            EndpointDescriptionCollection endpoints;
 
             var hosts = new Dictionary<string, ServiceHost>();
 
@@ -2973,7 +2972,8 @@ namespace Technosoftware.UaServer
                 }
             }
 
-            return [.. hosts.Values];
+            return new ValueTask<ServiceHostInitializationResult>(
+                new ServiceHostInitializationResult([.. hosts.Values], serverDescription, endpoints));
         }
 
         /// <summary>
@@ -3025,9 +3025,7 @@ namespace Technosoftware.UaServer
                 m_serverInternal = new GenericServerData(
                     ServerProperties,
                     configuration,
-                    MessageContext,
-                    new CertificateValidator(MessageContext.Telemetry),
-                    InstanceCertificateTypesProvider);
+                    MessageContext);
 
                 // create the manager responsible for providing localized string resources.
                 m_logger.LogInformation(Utils.TraceMasks.StartStop, "Server - CreateResourceManager.");
