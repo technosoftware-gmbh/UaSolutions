@@ -288,10 +288,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(720)]
         public async Task NodeCacheFindAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
@@ -306,10 +303,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(730)]
         public async Task NodeCacheFetchNodeAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
@@ -324,10 +318,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(740)]
         public async Task NodeCacheFetchNodesAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSet = ReferenceDescriptions.ToArray().Take(MaxReferences).Select(r => r.NodeId).ToList();
             IList<Node> nodeCollection = await Session.NodeCache.FetchNodesAsync(testSet)
@@ -343,10 +334,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(750)]
         public async Task NodeCacheFindReferencesAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSet = ReferenceDescriptions.ToArray().Take(MaxReferences).Select(r => r.NodeId).ToList();
             IList<INode> nodes = await Session
@@ -397,10 +385,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(1000)]
         public async Task NodeCacheFetchNodesConcurrentAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSet = ReferenceDescriptions
                 .ToArray().OrderBy(_ => UnsecureRandom.Shared.Next())
@@ -427,10 +412,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(1100)]
         public async Task NodeCacheFindNodesConcurrentAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSet = ReferenceDescriptions
                 .ToArray().OrderBy(_ => UnsecureRandom.Shared.Next())
@@ -456,10 +438,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(1200)]
         public async Task NodeCacheFindReferencesConcurrentAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSet = ReferenceDescriptions
                 .ToArray().OrderBy(_ => UnsecureRandom.Shared.Next())
@@ -491,10 +470,7 @@ namespace Technosoftware.UaClient.Tests
             const int testCases = 10;
             const int testCaseRunTime = 5_000;
 
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSetAll = ReferenceDescriptions
                 .ToArray().Where(r => r.NodeClass == NodeClass.Variable)
@@ -612,7 +588,7 @@ namespace Technosoftware.UaClient.Tests
                                 Assert.False(isEncodingOf);
                                 bool isEncodingFor = await Session.NodeCache.IsEncodingForAsync(
                                     DataTypeIds.Structure,
-                                    new ExtensionObject(
+                                    Variant.FromStructure(
                                         new SampleCompany.NodeManagers.TestData.ScalarStructureDataType())).ConfigureAwait(false);
                                 Assert.True(isEncodingFor);
                                 bool isEncodingFor2 = await Session.NodeCache.IsEncodingForAsync(
@@ -636,6 +612,26 @@ namespace Technosoftware.UaClient.Tests
             await Task.WhenAll([.. taskList]).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Browses the address space once per session.
+        /// </summary>
+        /// <remarks>
+        /// This fixture opens a new session for every test, and the browse
+        /// result carries the session's own diagnostics nodes, which the
+        /// server removes when that session closes. A snapshot taken in an
+        /// earlier session therefore names nodes that no longer exist. The
+        /// old guard compared an ArrayOf against null, which a struct never
+        /// is, so it never re-browsed at all.
+        /// </remarks>
+        private async Task EnsureReferenceDescriptionsAsync()
+        {
+            if (ReferenceDescriptions.IsEmpty ||
+                !ReferenceEquals(m_browsedSession, Session))
+            {
+                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
+            }
+        }
+
         private async Task BrowseFullAddressSpaceAsync()
         {
             var requestHeader = new RequestHeader
@@ -649,6 +645,9 @@ namespace Technosoftware.UaClient.Tests
             ReferenceDescriptions = await CommonTestWorkers.BrowseFullAddressSpaceWorkerAsync(
                 clientTestServices,
                 requestHeader).ConfigureAwait(false);
+            m_browsedSession = Session;
         }
+
+        private IUaSession m_browsedSession;
     }
 }

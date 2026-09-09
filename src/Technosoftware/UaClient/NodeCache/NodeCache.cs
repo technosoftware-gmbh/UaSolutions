@@ -1071,13 +1071,9 @@ namespace Technosoftware.UaClient
                 return;
             }
 
-            var predefinedNodes = new NodeStateCollection();
-            Assembly assembly = typeof(ReadRequest).GetTypeInfo().Assembly;
-            predefinedNodes.LoadFromBinaryResource(
-                context,
-                "Opc.Ua.Stack.Generated.Opc.Ua.PredefinedNodes.uanodes",
-                assembly,
-                true);
+            // The .uanodes resource is gone in 2.0; the standard address
+            // space is built by the generated builder instead.
+            NodeStateCollection predefinedNodes = new NodeStateCollection().AddOpcUa(context);
 
             m_cacheLock.EnterWriteLock();
             try

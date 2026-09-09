@@ -1081,7 +1081,7 @@ namespace Technosoftware.UaClient.Tests
 
             await sut.ReconnectAsync(ct).ConfigureAwait(false);
 
-            Assert.That(sut.ServerNonce, Is.Null);
+            Assert.That(sut.ServerNonce.IsEmpty, Is.True);
             sut.Channel.Verify();
         }
 
@@ -1268,7 +1268,7 @@ namespace Technosoftware.UaClient.Tests
 
             await sut.OpenAsync("test", new UserIdentity(), ct).ConfigureAwait(false);
 
-            Assert.That(sut.ServerNonce, Is.EquivalentTo(new byte[] { 1, 2, 3, 4 }));
+            Assert.That(sut.ServerNonce, Is.EqualTo(ByteString.From([1, 2, 3, 4])));
             sut.Channel.Verify();
         }
 
