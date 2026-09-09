@@ -323,7 +323,7 @@ namespace Technosoftware.UaServer
                 monitoredItem.AttributeId,
                 monitoredItem.IndexRange,
                 monitoredItem.DataEncoding,
-                value);
+                ref value);
 
             if (ServiceResult.IsBad(error))
             {

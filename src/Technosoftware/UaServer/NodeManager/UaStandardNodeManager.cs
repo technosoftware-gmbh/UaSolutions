@@ -1654,7 +1654,7 @@ namespace Technosoftware.UaServer
                         nodeToRead.AttributeId,
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
-                        value);
+                        ref value);
 
                     // Set timestamps after ReadAttribute to ensure consistency
                     // For Value attributes, match ServerTimestamp to SourceTimestamp
@@ -1834,7 +1834,7 @@ namespace Technosoftware.UaServer
                         nodeToRead.AttributeId,
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
-                        value);
+                        ref value);
                 }
             }
         }
@@ -1979,7 +1979,7 @@ namespace Technosoftware.UaServer
                             nodeToWrite.AttributeId,
                             nodeToWrite.ParsedIndexRange,
                             null,
-                            oldValue);
+                            ref oldValue);
                     }
 
                     // write the attribute value.
@@ -2163,7 +2163,7 @@ namespace Technosoftware.UaServer
                             Attributes.Value,
                             monitoredItem.IndexRange,
                             null,
-                            value);
+                            ref value);
 
                         monitoredItem.QueueValue(value, ServiceResult.Good, true);
                     }
@@ -3973,7 +3973,7 @@ namespace Technosoftware.UaServer
                 monitoredItem.AttributeId,
                 monitoredItem.IndexRange,
                 monitoredItem.DataEncoding,
-                initialValue);
+                ref initialValue);
 
             monitoredItem.QueueValue(initialValue, error, true);
 

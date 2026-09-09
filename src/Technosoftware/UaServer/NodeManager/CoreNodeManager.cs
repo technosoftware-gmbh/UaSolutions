@@ -494,7 +494,7 @@ namespace Technosoftware.UaServer
                 if (metadata.WriteMask != AttributeWriteMask.None)
                 {
                     var value = new DataValue((uint)(int)target.UserWriteMask);
-                    ServiceResult result = target.Read(context, Attributes.UserWriteMask, value);
+                    ServiceResult result = target.Read(context, Attributes.UserWriteMask, ref value);
 
                     if (ServiceResult.IsBad(result))
                     {
@@ -531,7 +531,7 @@ namespace Technosoftware.UaServer
                         ServiceResult result = variable.Read(
                             context,
                             Attributes.UserAccessLevel,
-                            value);
+                            ref value);
 
                         if (ServiceResult.IsBad(result))
                         {
@@ -553,7 +553,7 @@ namespace Technosoftware.UaServer
                             ServiceResult result = method.Read(
                                 context,
                                 Attributes.UserExecutable,
-                                value);
+                                ref value);
 
                             if (ServiceResult.IsBad(result))
                             {
@@ -705,7 +705,7 @@ namespace Technosoftware.UaServer
                     nodeToRead.Processed = true;
 
                     // read the default value (also verifies that the attribute id is valid for the node).
-                    ServiceResult error = node.Read(context, nodeToRead.AttributeId, value);
+                    ServiceResult error = node.Read(context, nodeToRead.AttributeId, ref value);
 
                     if (ServiceResult.IsBad(error))
                     {
@@ -1491,7 +1491,7 @@ namespace Technosoftware.UaServer
                 .WithSourceTimestamp(DateTime.MinValue)
                 .WithStatus(StatusCodes.BadWaitingForInitialData);
 
-            ServiceResult error = node.Read(context, monitoredItem.AttributeId, initialValue);
+            ServiceResult error = node.Read(context, monitoredItem.AttributeId, ref initialValue);
 
             if (ServiceResult.IsBad(error))
             {
@@ -1860,7 +1860,7 @@ namespace Technosoftware.UaServer
                             ServiceResult error = node.Read(
                                 context,
                                 monitoredItem.AttributeId,
-                                initialValue);
+                                ref initialValue);
 
                             if (ServiceResult.IsBad(error))
                             {

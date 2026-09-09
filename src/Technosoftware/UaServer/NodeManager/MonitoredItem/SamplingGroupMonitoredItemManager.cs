@@ -224,7 +224,7 @@ namespace Technosoftware.UaServer
                     ServiceResult error = node.Read(
                         context,
                         monitoredItem.AttributeId,
-                        initialValue);
+                        ref initialValue);
 
                     if (ServiceResult.IsBad(error))
                     {
