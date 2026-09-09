@@ -138,7 +138,7 @@ namespace Technosoftware.UaServer
             this IUaAuditEventServer server,
             ISystemContext systemContext,
             WriteValue writeValue,
-            object oldValue,
+            Variant oldValue,
             StatusCode statusCode,
             ILogger logger)
         {
@@ -202,10 +202,17 @@ namespace Technosoftware.UaServer
                     writeValue.IndexRange,
                     false);
 
-                object newValue = writeValue.Value.Value;
-                if (writeValue.ParsedIndexRange != NumericRange.Empty)
+                Variant newValue;
+                if (!writeValue.ParsedIndexRange.IsNull)
                 {
-                    writeValue.ParsedIndexRange.UpdateRange(ref newValue, writeValue.Value.Value);
+                    newValue = oldValue;
+                    writeValue.ParsedIndexRange.UpdateRange(
+                        ref newValue,
+                        writeValue.Value.WrappedValue);
+                }
+                else
+                {
+                    newValue = writeValue.Value.WrappedValue;
                 }
 
                 e.SetChildValue(systemContext, BrowseNames.NewValue, newValue, false);
@@ -262,14 +269,13 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.PerformInsertReplace,
-                    updateDataDetails.PerformInsertReplace,
-                    false);
+                    updateDataDetails.PerformInsertReplace);
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.NewValues,
-                    updateDataDetails.UpdateValues.ToArray(),
+                    updateDataDetails.UpdateValues,
                     false);
-                e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
+                e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues.ToArrayOf(), false);
 
                 server.ReportAuditEvent(systemContext, e);
             }
@@ -292,7 +298,7 @@ namespace Technosoftware.UaServer
             this IUaAuditEventServer server,
             ISystemContext systemContext,
             UpdateStructureDataDetails updateStructureDataDetails,
-            DataValue[] oldValues,
+            ArrayOf<DataValue> oldValues,
             StatusCode statusCode,
             ILogger logger)
         {
@@ -317,12 +323,11 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.PerformInsertReplace,
-                    updateStructureDataDetails.PerformInsertReplace,
-                    false);
+                    updateStructureDataDetails.PerformInsertReplace);
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.NewValues,
-                    updateStructureDataDetails.UpdateValues?.ToArray(),
+                    updateStructureDataDetails.UpdateValues,
                     false);
                 e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
 
@@ -347,7 +352,7 @@ namespace Technosoftware.UaServer
             this IUaAuditEventServer server,
             ISystemContext systemContext,
             UpdateEventDetails updateEventDetails,
-            HistoryEventFieldList[] oldValues,
+            ArrayOf<HistoryEventFieldList> oldValues,
             StatusCode statusCode,
             ILogger logger)
         {
@@ -377,8 +382,7 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.PerformInsertReplace,
-                    updateEventDetails.PerformInsertReplace,
-                    false);
+                    updateEventDetails.PerformInsertReplace);
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.Filter,
@@ -387,7 +391,7 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.NewValues,
-                    updateEventDetails.EventData.ToArray(),
+                    updateEventDetails.EventData,
                     false);
                 e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
 
@@ -412,7 +416,7 @@ namespace Technosoftware.UaServer
             this IUaAuditEventServer server,
             ISystemContext systemContext,
             DeleteRawModifiedDetails deleteRawModifiedDetails,
-            DataValue[] oldValues,
+            ArrayOf<DataValue> oldValues,
             StatusCode statusCode,
             ILogger logger)
         {
@@ -507,9 +511,9 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.ReqTimes,
-                    deleteAtTimeDetails.ReqTimes.ToArray(),
+                    deleteAtTimeDetails.ReqTimes,
                     false);
-                e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
+                e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues.ToArrayOf(), false);
 
                 server.ReportAuditEvent(systemContext, e);
             }
@@ -562,9 +566,9 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.EventIds,
-                    deleteEventDetails.EventIds.ToArray(),
+                    Variant.From(deleteEventDetails.EventIds),
                     false);
-                e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues, false);
+                e.SetChildValue(systemContext, BrowseNames.OldValues, oldValues.ToArrayOf(), false);
 
                 server.ReportAuditEvent(systemContext, e);
             }
@@ -704,7 +708,7 @@ namespace Technosoftware.UaServer
                     auditCertificateEventState.SetChildValue(
                         systemContext,
                         BrowseNames.Certificate,
-                        clientCertificate?.RawData,
+                        Variant.From(ByteString.From(clientCertificate?.RawData)),
                         false);
 
                     server.ReportAuditEvent(systemContext, auditCertificateEventState);
@@ -754,7 +758,7 @@ namespace Technosoftware.UaServer
                     systemContext,
                     null,
                     EventSeverity.Min,
-                    null,
+                    LocalizedText.Null,
                     StatusCode.IsGood(statusCode),
                     DateTime.UtcNow
                 ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
@@ -777,7 +781,7 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.Certificate,
-                    clientCertificate?.RawData,
+                    Variant.From(ByteString.From(clientCertificate?.RawData)),
                     false);
                 // set AuditCertificateDataMismatchEventState fields
                 e.SetChildValue(systemContext, BrowseNames.InvalidUri, invalidUri, false);
@@ -868,7 +872,7 @@ namespace Technosoftware.UaServer
             ISystemContext systemContext,
             NodeId roleStateObjectId,
             MethodState method,
-            object[] inputArguments,
+            ArrayOf<Variant> inputArguments,
             bool status,
             ILogger logger)
         {
@@ -901,7 +905,7 @@ namespace Technosoftware.UaServer
                     false);
 
                 // set AuditUpdateMethodEventType fields
-                e.SetChildValue(systemContext, BrowseNames.MethodId, method?.NodeId, false);
+                e.SetChildValue(systemContext, BrowseNames.MethodId, method?.NodeId ?? default, false);
                 e.SetChildValue(systemContext, BrowseNames.InputArguments, inputArguments, false);
 
                 server.ReportAuditEvent(systemContext, e);
@@ -983,7 +987,7 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.ClientCertificate,
-                    session?.ClientCertificate?.RawData,
+                    ByteString.From(session?.ClientCertificate?.RawData),
                     false);
                 e.SetChildValue(
                     systemContext,
@@ -1066,7 +1070,7 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.UserIdentityToken,
-                    Utils.Clone(session?.IdentityToken),
+                    CoreUtils.Clone(session?.IdentityToken),
                     false);
 
                 server.ReportAuditEvent(systemContext, e);
@@ -1137,7 +1141,7 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.ClientCertificate,
-                    session?.ClientCertificate?.RawData,
+                    ByteString.From(session?.ClientCertificate?.RawData),
                     false);
                 e.SetChildValue(
                     systemContext,
@@ -1290,7 +1294,7 @@ namespace Technosoftware.UaServer
             ISystemContext systemContext,
             NodeId objectId,
             MethodState method,
-            object[] inputArguments,
+            ArrayOf<Variant> inputArguments,
             NodeId certificateGroupId,
             NodeId certificateTypeId,
             ILogger logger,
@@ -1375,7 +1379,7 @@ namespace Technosoftware.UaServer
             ISystemContext systemContext,
             NodeId objectId,
             MethodState method,
-            object[] inputArguments,
+            ArrayOf<Variant> inputArguments,
             ILogger logger)
         {
             try
@@ -1401,7 +1405,7 @@ namespace Technosoftware.UaServer
                     TimeZoneDataType.Local,
                     false);
 
-                e.SetChildValue(systemContext, BrowseNames.MethodId, method?.NodeId, false);
+                e.SetChildValue(systemContext, BrowseNames.MethodId, method?.NodeId ?? default, false);
                 e.SetChildValue(systemContext, BrowseNames.InputArguments, inputArguments, false);
 
                 server?.ReportAuditEvent(systemContext, e);
@@ -1426,7 +1430,7 @@ namespace Technosoftware.UaServer
         public static void ReportAuditAddNodesEvent(
             this IUaAuditEventServer server,
             ISystemContext systemContext,
-            AddNodesItem[] addNodesItems,
+            ArrayOf<AddNodesItem> addNodesItems,
             string customMessage,
             StatusCode statusCode,
             ILogger logger)
@@ -1489,7 +1493,7 @@ namespace Technosoftware.UaServer
         public static void ReportAuditDeleteNodesEvent(
             this IUaAuditEventServer server,
             ISystemContext systemContext,
-            DeleteNodesItem[] nodesToDelete,
+            ArrayOf<DeleteNodesItem> nodesToDelete,
             string customMessage,
             StatusCode statusCode,
             ILogger logger)
@@ -1608,7 +1612,7 @@ namespace Technosoftware.UaServer
                 DateTime actionTimestamp = DateTime.UtcNow;
                 if (request?.RequestHeader?.Timestamp != null)
                 {
-                    actionTimestamp = request.RequestHeader.Timestamp;
+                    actionTimestamp = (DateTime)request.RequestHeader.Timestamp;
                 }
 
                 e.Initialize(
@@ -1644,36 +1648,43 @@ namespace Technosoftware.UaServer
                 e.SetChildValue(systemContext, BrowseNames.SecureChannelId, globalChannelId, false);
 
                 // set AuditOpenSecureChannelEventType fields
-                e.SetChildValue(
-                    systemContext,
-                    BrowseNames.ClientCertificate,
-                    clientCertificate?.RawData,
-                    false);
-                e.SetChildValue(
-                    systemContext,
-                    BrowseNames.ClientCertificateThumbprint,
-                    clientCertificate?.Thumbprint,
-                    false);
-                e.SetChildValue(
-                    systemContext,
-                    BrowseNames.RequestType,
-                    request?.RequestType,
-                    false);
-                e.SetChildValue(
-                    systemContext,
-                    BrowseNames.SecurityPolicyUri,
-                    endpointDescription?.SecurityPolicyUri,
-                    false);
-                e.SetChildValue(
-                    systemContext,
-                    BrowseNames.SecurityMode,
-                    endpointDescription?.SecurityMode,
-                    false);
-                e.SetChildValue(
-                    systemContext,
-                    BrowseNames.RequestedLifetime,
-                    request?.RequestedLifetime,
-                    false);
+                if (clientCertificate != null)
+                {
+                    e.SetChildValue(
+                        systemContext,
+                        BrowseNames.ClientCertificate,
+                        clientCertificate.RawData.ToByteString(),
+                        false);
+                    e.SetChildValue(
+                        systemContext,
+                        BrowseNames.ClientCertificateThumbprint,
+                        clientCertificate.Thumbprint,
+                        false);
+                }
+                if (endpointDescription != null)
+                {
+                    e.SetChildValue(
+                        systemContext,
+                        BrowseNames.SecurityPolicyUri,
+                        endpointDescription.SecurityPolicyUri,
+                        false);
+                    e.SetChildValue(
+                        systemContext,
+                        BrowseNames.SecurityMode,
+                        endpointDescription.SecurityMode);
+                }
+                if (request != null)
+                {
+                    e.SetChildValue(
+                        systemContext,
+                        BrowseNames.RequestType,
+                        request.RequestType);
+                    e.SetChildValue(
+                        systemContext,
+                        BrowseNames.RequestedLifetime,
+                        request.RequestedLifetime,
+                        false);
+                }
 
                 server.ReportAuditEvent(systemContext, e);
             }
@@ -1791,7 +1802,7 @@ namespace Technosoftware.UaServer
             ISystemContext systemContext,
             NodeId objectId,
             NodeId methodId,
-            object[] inputArgs,
+            ArrayOf<Variant> inputArgs,
             string customMessage,
             StatusCode statusCode,
             ILogger logger)
@@ -1866,7 +1877,7 @@ namespace Technosoftware.UaServer
             NodeId objectId,
             string sourceName,
             NodeId methodId,
-            object[] inputParameters,
+            ArrayOf<Variant> inputParameters,
             StatusCode statusCode,
             ILogger logger)
         {
@@ -1923,7 +1934,7 @@ namespace Technosoftware.UaServer
             NodeId objectId,
             string sourceName,
             NodeId methodId,
-            object[] inputParameters,
+            ArrayOf<Variant> inputParameters,
             ILogger logger)
         {
             try
@@ -2052,7 +2063,7 @@ namespace Technosoftware.UaServer
                 session?.SecureChannelId,
                 false);
             // set AuditSessionEventType
-            e.SetChildValue(systemContext, BrowseNames.SessionId, session?.Id, false);
+            e.SetChildValue(systemContext, BrowseNames.SessionId, session?.Id ?? default, false);
         }
         #endregion Private helpers
     }
