@@ -637,13 +637,11 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
 
                     if (monitoredItems != null)
                     {
-                        var value = new DataValue
-                        {
-                            WrappedValue = GetValueAtOffset(offset),
-                            StatusCode = StatusCodes.Good,
-                            ServerTimestamp = DateTime.UtcNow,
-                            SourceTimestamp = m_lastScanTime
-                        };
+                        var value = new DataValue(
+                            GetValueAtOffset(offset),
+                            StatusCodes.Good,
+                            m_lastScanTime,
+                            DateTime.UtcNow);
 
                         for (int ii = 0; ii < monitoredItems.Length; ii++)
                         {

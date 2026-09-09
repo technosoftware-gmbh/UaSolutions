@@ -1253,12 +1253,13 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     nodeToRead.Processed = true;
 
                     // create an initial value.
-                    DataValue value = values[ii] = new DataValue();
-
-                    value.Value = null;
-                    value.ServerTimestamp = DateTime.UtcNow;
-                    value.SourceTimestamp = DateTime.MinValue;
-                    value.StatusCode = StatusCodes.Good;
+                    // DataValue is immutable in 2.0; the initial value is built
+                    // in one go rather than assembled field by field.
+                    DataValue value = values[ii] = new DataValue(
+                        Variant.Null,
+                        StatusCodes.Good,
+                        DateTimeUtc.MinValue,
+                        DateTime.UtcNow);
 
                     // check if the node is ready for reading.
                     if (source.ValidationRequired)
@@ -2402,13 +2403,11 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             IUaDataChangeMonitoredItem2 monitoredItem,
             bool ignoreFilters)
         {
-            var initialValue = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.BadWaitingForInitialData
-            };
+            var initialValue = new DataValue(
+                Variant.Null,
+                StatusCodes.BadWaitingForInitialData,
+                DateTimeUtc.MinValue,
+                DateTime.UtcNow);
 
             ServiceResult error = node.Node.ReadAttribute(
                 context,
@@ -2575,13 +2574,11 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             monitoredItem = null;
 
             // read initial value.
-            var initialValue = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.BadWaitingForInitialData
-            };
+            var initialValue = new DataValue(
+                Variant.Null,
+                StatusCodes.BadWaitingForInitialData,
+                DateTimeUtc.MinValue,
+                DateTime.UtcNow);
 
             ServiceResult error = source.ReadAttribute(
                 context,
@@ -2599,8 +2596,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     return error;
                 }
 
-                initialValue.StatusCode = error.StatusCode;
-                _ = ServiceResult.Good;
+                initialValue = initialValue.WithStatus(error.StatusCode);
             }
 
             // validate parameters.

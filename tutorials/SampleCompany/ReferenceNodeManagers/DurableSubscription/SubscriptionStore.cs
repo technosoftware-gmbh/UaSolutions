@@ -122,7 +122,8 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 var jo = JObject.Load(reader);
                 object body = jo["Body"].ToObject<object>(serializer);
                 ExpandedNodeId typeId = jo["TypeId"].ToObject<ExpandedNodeId>(serializer);
-                return new ExtensionObject { Body = body, TypeId = typeId };
+                // ExtensionObject is immutable in 2.0.
+                return new ExtensionObject(typeId, body);
             }
 
             public override void WriteJson(
