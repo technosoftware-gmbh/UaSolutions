@@ -294,13 +294,11 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             }
 
             // read initial value.
-            var initialValue = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.Good
-            };
+            var initialValue = new DataValue(
+                Variant.Null,
+                StatusCodes.Good,
+                DateTimeUtc.MinValue,
+                DateTime.UtcNow);
 
             ServiceResult error = source.ReadAttribute(
                 context,
@@ -506,13 +504,11 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             if (previousMode == MonitoringMode.Disabled &&
                 monitoringMode != MonitoringMode.Disabled)
             {
-                var initialValue = new DataValue
-                {
-                    Value = null,
-                    ServerTimestamp = DateTime.UtcNow,
-                    SourceTimestamp = DateTime.MinValue,
-                    StatusCode = StatusCodes.Good
-                };
+                var initialValue = new DataValue(
+                    Variant.Null,
+                    StatusCodes.Good,
+                    DateTimeUtc.MinValue,
+                    DateTime.UtcNow);
 
                 var tag = new MemoryTagState(buffer, datachangeItem.Offset);
 

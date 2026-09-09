@@ -81,19 +81,18 @@ namespace SampleCompany.NodeManagers.TestData
 
                 for (int ii = 1000; ii >= 0; ii--)
                 {
+                    // DataValue is immutable in 2.0, so the value is built in
+                    // one go rather than assembled field by field.
+                    DateTime serverTimestamp = now.AddSeconds(-(ii * 10));
                     var entry = new HistoryEntry
                     {
-                        Value = new DataValue { ServerTimestamp = now.AddSeconds(-(ii * 10)) }
+                        Value = new DataValue(
+                            dataType == BuiltInType.Int32 ? Variant.From(ii) : Variant.Null,
+                            StatusCodes.Good,
+                            serverTimestamp.AddMilliseconds(1234),
+                            serverTimestamp),
+                        IsModified = false
                     };
-                    entry.Value.SourceTimestamp = entry.Value.ServerTimestamp.AddMilliseconds(1234);
-                    entry.IsModified = false;
-
-                    switch (dataType)
-                    {
-                        case BuiltInType.Int32:
-                            entry.Value.Value = ii;
-                            break;
-                    }
 
                     record.RawData.Add(entry);
                 }
@@ -124,21 +123,23 @@ namespace SampleCompany.NodeManagers.TestData
                             continue;
                         }
 
+                        Variant value = Variant.Null;
+
+                        if (record.DataType == BuiltInType.Int32)
+                        {
+                            var lastValue = (int)record.RawData[^1].Value.Value;
+                            value = Variant.From(lastValue + 1);
+                        }
+
                         var entry = new HistoryEntry
                         {
-                            Value = new DataValue { ServerTimestamp = now }
+                            Value = new DataValue(
+                                value,
+                                StatusCodes.Good,
+                                now.AddMilliseconds(-4567),
+                                now),
+                            IsModified = false
                         };
-                        entry.Value.SourceTimestamp = entry.Value.ServerTimestamp
-                            .AddMilliseconds(-4567);
-                        entry.IsModified = false;
-
-                        switch (record.DataType)
-                        {
-                            case BuiltInType.Int32:
-                                int lastValue = (int)record.RawData[^1].Value.Value;
-                                entry.Value.Value = lastValue + 1;
-                                break;
-                        }
 
                         record.RawData.Add(entry);
                     }

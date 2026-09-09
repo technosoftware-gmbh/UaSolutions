@@ -175,7 +175,7 @@ namespace SampleCompany.NodeManagers.TestData
             DataValue value)
         {
             // ignore invalid case.
-            if (value == null)
+            if (value.IsNull)
             {
                 return;
             }
@@ -183,44 +183,42 @@ namespace SampleCompany.NodeManagers.TestData
             // save the last timestamp returned.
             m_lastTime = value.ServerTimestamp;
 
+            // DataValue is immutable in 2.0, so each step returns a new value
+            // rather than mutating the one it was handed.
+
             // check if the index range or data encoding can be applied.
             if (StatusCode.IsGood(value.StatusCode))
             {
-                object valueToReturn = value.Value;
+                Variant valueToReturn = value.WrappedValue;
 
                 // apply the index range.
-                if (indexRange != NumericRange.Empty)
+                if (indexRange != NumericRange.Null)
                 {
                     StatusCode error = indexRange.ApplyRange(ref valueToReturn);
 
-                    if (StatusCode.IsBad(error))
-                    {
-                        value.Value = null;
-                        value.StatusCode = error;
-                    }
-                    else
-                    {
-                        value.Value = valueToReturn;
-                    }
+                    value = StatusCode.IsBad(error)
+                        ? value.WithWrappedValue(Variant.Null).WithStatus(error)
+                        : value.WithWrappedValue(valueToReturn);
                 }
 
                 // apply the data encoding.
                 if (!QualifiedName.IsNull(dataEncoding))
                 {
-                    value.Value = null;
-                    value.StatusCode = StatusCodes.BadDataEncodingUnsupported;
+                    value = value
+                        .WithWrappedValue(Variant.Null)
+                        .WithStatus(StatusCodes.BadDataEncodingUnsupported);
                 }
             }
 
             // apply the timestamps filter.
             if (timestampsToReturn is TimestampsToReturn.Neither or TimestampsToReturn.Server)
             {
-                value.SourceTimestamp = DateTime.MinValue;
+                value = value.WithSourceTimestamp(DateTime.MinValue);
             }
 
             if (timestampsToReturn is TimestampsToReturn.Neither or TimestampsToReturn.Source)
             {
-                value.ServerTimestamp = DateTime.MinValue;
+                value = value.WithServerTimestamp(DateTime.MinValue);
             }
 
             // add result.

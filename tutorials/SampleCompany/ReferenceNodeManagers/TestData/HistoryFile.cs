@@ -84,13 +84,10 @@ namespace SampleCompany.NodeManagers.TestData
 
                 HistoryEntry entry = m_entries[position];
 
-                return new DataValue
-                {
-                    Value = entry.Value.Value,
-                    ServerTimestamp = entry.Value.ServerTimestamp,
-                    SourceTimestamp = entry.Value.SourceTimestamp,
-                    StatusCode = entry.Value.StatusCode
-                };
+                // DataValue is immutable in 2.0, so the defensive field-by-field
+                // copy this used to make is unnecessary - the caller cannot
+                // mutate what it is handed.
+                return entry.Value;
             }
         }
 
@@ -119,13 +116,10 @@ namespace SampleCompany.NodeManagers.TestData
 
                 HistoryEntry entry = m_entries[position];
 
-                return new DataValue
-                {
-                    Value = entry.Value.Value,
-                    ServerTimestamp = entry.Value.ServerTimestamp,
-                    SourceTimestamp = entry.Value.SourceTimestamp,
-                    StatusCode = entry.Value.StatusCode
-                };
+                // DataValue is immutable in 2.0, so the defensive field-by-field
+                // copy this used to make is unnecessary - the caller cannot
+                // mutate what it is handed.
+                return entry.Value;
             }
         }
 
