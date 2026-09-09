@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -40,7 +41,7 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(2000u)),
                 new DataValue(new Variant(3000u)),
@@ -128,8 +129,8 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection();
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var dataValues = new List<DataValue>();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -155,7 +156,7 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(1000u)),
                 new DataValue(new Variant(2000u)),
@@ -190,12 +191,12 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(StatusCodes.BadUnexpectedError)
             };
 
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -221,12 +222,12 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue("InvalidDataType")
             };
 
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -305,7 +306,7 @@ namespace Technosoftware.UaClient.Tests
             CancellationToken ct = CancellationToken.None;
 
             // Server returns larger values
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(1000u)), // MaxNodesPerHistoryReadData - no client limit
                 new DataValue(new Variant(1000u)), // MaxNodesPerHistoryReadEvents - no client limit
@@ -405,7 +406,7 @@ namespace Technosoftware.UaClient.Tests
             CancellationToken ct = CancellationToken.None;
 
             // Server returns smaller values
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(1000u)), // MaxNodesPerHistoryReadData
                 new DataValue(new Variant(1000u)), // MaxNodesPerHistoryReadEvents
@@ -675,8 +676,8 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection();
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var dataValues = new List<DataValue>();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -1072,7 +1073,7 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(new ValueTask<IServiceResponse>(new ActivateSessionResponse
                 {
-                    ServerNonce = null,
+                    ServerNonce = default,
                     Results = [],
                     DiagnosticInfos = []
                 }))
@@ -1402,7 +1403,7 @@ namespace Technosoftware.UaClient.Tests
                     "test",
                     60000,
                     new UserIdentity(),
-                    null,
+                    default,
                     true,
                     closeChannel: true,
                     default).ConfigureAwait(false));
@@ -1519,7 +1520,7 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(new ValueTask<IServiceResponse>(new CreateSessionResponse
                 {
-                    ServerNonce = null,
+                    ServerNonce = default,
                     SessionId = NodeId.Parse("s=connected")
                 }))
                 .Verifiable(Times.Once);

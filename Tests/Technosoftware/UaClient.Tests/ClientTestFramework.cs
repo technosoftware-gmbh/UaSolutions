@@ -56,8 +56,8 @@ namespace Technosoftware.UaClient.Tests
         public ServerFixture<ReferenceServer> ServerFixture { get; set; }
         public ClientFixture ClientFixture { get; set; }
         public ReferenceServer ReferenceServer { get; set; }
-        public EndpointDescriptionCollection Endpoints { get; set; }
-        public ReferenceDescriptionCollection ReferenceDescriptions { get; set; }
+        public ArrayOf<EndpointDescription> Endpoints { get; set; }
+        public ArrayOf<ReferenceDescription> ReferenceDescriptions { get; set; }
         public IUaSession Session { get; protected set; }
         public OperationLimits OperationLimits { get; private set; }
         public int SecurityTokenLifetime { get; set; } = 3_600_000;

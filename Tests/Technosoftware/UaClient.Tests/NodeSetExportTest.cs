@@ -100,11 +100,11 @@ namespace Technosoftware.UaClient.Tests
                 NodeClassMask = 0
             };
 
-            var nodesToBrowse = new NodeIdCollection { ObjectIds.Server };
+            var nodesToBrowse = new List<NodeId> { ObjectIds.Server };
             var allNodes = new List<INode>();
 
             // Browse starting from Server object
-            ReferenceDescriptionCollection references = await browser.BrowseAsync(nodesToBrowse[0]).ConfigureAwait(false);
+            ArrayOf<ReferenceDescription> references = await browser.BrowseAsync(nodesToBrowse[0]).ConfigureAwait(false);
 
             // Fetch the actual nodes
             foreach (ReferenceDescription reference in references)

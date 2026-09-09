@@ -25,7 +25,7 @@ namespace Technosoftware.UaClient.Tests
     public static class Extensions
     {
         public static bool HasArgsOfType(
-            this CallMethodRequestCollection requests,
+            this ArrayOf<CallMethodRequest> requests,
             params Type[] argTypes)
         {
             if (requests.Count != 1 || requests[0].InputArguments.Count != argTypes.Length)
@@ -57,7 +57,7 @@ namespace Technosoftware.UaClient.Tests
                     {
                         StatusCode = result,
                         OutputArguments = outputArguments == null ?
-                            null :
+                            default :
                             [.. outputArguments.Select(o => new Variant(o))]
                     }
                 ]

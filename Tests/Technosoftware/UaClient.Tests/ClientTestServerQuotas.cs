@@ -151,11 +151,11 @@ namespace Technosoftware.UaClient.Tests
                 Value = new DataValue { WrappedValue = new Variant(chunk) },
                 IndexRange = null
             };
-            var writeValues = new WriteValueCollection { writeValue };
+            var writeValues = new List<WriteValue> { writeValue };
 
             WriteResponse result = await theSession.WriteAsync(null, writeValues, default)
                 .ConfigureAwait(false);
-            StatusCodeCollection results = result.Results;
+            ArrayOf<StatusCode> results = result.Results;
 
             if (results[0] != StatusCodes.Good)
             {

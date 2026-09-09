@@ -316,8 +316,8 @@ namespace Technosoftware.UaClient.Tests
             }
 
             bool diagnosticsExist = false;
-            var results = new BrowseResultCollection(nodesToBrowse.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(nodesToBrowse.Count);
+            var results = new List<BrowseResult>(nodesToBrowse.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(nodesToBrowse.Count);
 
             uint continuationPointsAssigned = 0;
 

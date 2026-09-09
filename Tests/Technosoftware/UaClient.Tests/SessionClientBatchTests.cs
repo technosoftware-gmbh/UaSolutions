@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -69,7 +70,7 @@ namespace Technosoftware.UaClient.Tests
             ActivateSessionResponse response = await sessionMock.ActivateSessionAsync(
                 requestHeader,
                 clientSignature,
-                null,
+                default,
                 localeIds,
                 userIdentityToken,
                 userTokenSignature,
@@ -111,7 +112,7 @@ namespace Technosoftware.UaClient.Tests
                 async () => await sessionMock.ActivateSessionAsync(
                     requestHeader,
                     clientSignature,
-                    null,
+                    default,
                     localeIds,
                     userIdentityToken,
                     userTokenSignature,
@@ -142,7 +143,7 @@ namespace Technosoftware.UaClient.Tests
                 async () => await sessionMock.ActivateSessionAsync(
                     requestHeader,
                     clientSignature,
-                    null,
+                    default,
                     localeIds,
                     userIdentityToken,
                     userTokenSignature,
@@ -156,7 +157,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task AddNodesAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var nodesToAdd = new AddNodesItemCollection(
+            var nodesToAdd = new List<AddNodesItem>(
                 [.. Enumerable.Repeat(new AddNodesItem(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -169,12 +170,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new AddNodesResponse
                 {
-                    Results = new AddNodesResultCollection(
+                    Results = new List<AddNodesResult>(
                     [.. Enumerable.Repeat(new AddNodesResult(), 10)])
                 })
                 .ReturnsAsync(new AddNodesResponse
                 {
-                    Results = new AddNodesResultCollection(
+                    Results = new List<AddNodesResult>(
                     [.. Enumerable.Repeat(new AddNodesResult(), 5)])
                 });
 
@@ -197,7 +198,7 @@ namespace Technosoftware.UaClient.Tests
         public void AddNodesAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var nodesToAdd = new AddNodesItemCollection(
+            var nodesToAdd = new List<AddNodesItem>(
                 [.. Enumerable.Repeat(new AddNodesItem(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -210,12 +211,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new AddNodesResponse
                 {
-                    Results = new AddNodesResultCollection(
+                    Results = new List<AddNodesResult>(
                         [.. Enumerable.Repeat(new AddNodesResult(), 10)])
                 })
                 .ReturnsAsync(new AddNodesResponse
                 {
-                    Results = new AddNodesResultCollection(
+                    Results = new List<AddNodesResult>(
                         [.. Enumerable.Repeat(new AddNodesResult(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -239,7 +240,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task AddNodesAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var nodesToAdd = new AddNodesItemCollection();
+            var nodesToAdd = new List<AddNodesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -267,7 +268,7 @@ namespace Technosoftware.UaClient.Tests
         public void AddNodesAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var nodesToAdd = new AddNodesItemCollection();
+            var nodesToAdd = new List<AddNodesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -296,7 +297,7 @@ namespace Technosoftware.UaClient.Tests
         public void AddNodesAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var nodesToAdd = new AddNodesItemCollection();
+            var nodesToAdd = new List<AddNodesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -319,7 +320,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task AddNodesAsyncShouldValidateResponseAndHandleDiagnosticInfoAsync(
             RequestHeader requestHeader)
         {
-            var nodesToAdd = new AddNodesItemCollection();
+            var nodesToAdd = new List<AddNodesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -348,7 +349,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task AddReferencesAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var referencesToAdd = new AddReferencesItemCollection(
+            var referencesToAdd = new List<AddReferencesItem>(
                 [.. Enumerable.Repeat(new AddReferencesItem(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -361,12 +362,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new AddReferencesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                     [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new AddReferencesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                     [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 5)])
                 });
 
@@ -389,7 +390,7 @@ namespace Technosoftware.UaClient.Tests
         public void AddReferencesAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var referencesToAdd = new AddReferencesItemCollection(
+            var referencesToAdd = new List<AddReferencesItem>(
                 [.. Enumerable.Repeat(new AddReferencesItem(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -402,12 +403,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new AddReferencesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new AddReferencesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Bad, 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -432,7 +433,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task AddReferencesAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var referencesToAdd = new AddReferencesItemCollection();
+            var referencesToAdd = new List<AddReferencesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -458,7 +459,7 @@ namespace Technosoftware.UaClient.Tests
         public void AddReferencesAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var referencesToAdd = new AddReferencesItemCollection();
+            var referencesToAdd = new List<AddReferencesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -488,7 +489,7 @@ namespace Technosoftware.UaClient.Tests
         public void AddReferencesAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var referencesToAdd = new AddReferencesItemCollection();
+            var referencesToAdd = new List<AddReferencesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -513,7 +514,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task AddReferencesAsyncShouldValidateResponseAndHandleDiagnosticInfoAsync(
             RequestHeader requestHeader)
         {
-            var referencesToAdd = new AddReferencesItemCollection();
+            var referencesToAdd = new List<AddReferencesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -544,7 +545,7 @@ namespace Technosoftware.UaClient.Tests
         {
             var view = new ViewDescription();
             const uint requestedMaxReferencesPerNode = 10u;
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 [.. Enumerable.Repeat(new BrowseDescription(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -557,12 +558,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                     [.. Enumerable.Repeat(new BrowseResult(), 10)])
                 })
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                     [.. Enumerable.Repeat(new BrowseResult(), 5)])
                 });
 
@@ -588,7 +589,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 [.. Enumerable.Repeat(new BrowseDescription(), 5)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -615,7 +616,7 @@ namespace Technosoftware.UaClient.Tests
                     requestHeader = r.RequestHeader;
                     return new ValueTask<IServiceResponse>(new BrowseResponse
                     {
-                        Results = new BrowseResultCollection(
+                        Results = new List<BrowseResult>(
                             [.. Enumerable.Repeat(new BrowseResult(), 5)])
                     });
                 });
@@ -648,7 +649,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 [.. Enumerable.Repeat(new BrowseDescription(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -672,12 +673,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 10)])
                 })
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 5)])
                 });
 
@@ -710,7 +711,7 @@ namespace Technosoftware.UaClient.Tests
         {
             var view = new ViewDescription();
             const uint requestedMaxReferencesPerNode = 10u;
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 [.. Enumerable.Repeat(new BrowseDescription(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -724,12 +725,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 10)])
                 })
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -757,7 +758,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 [.. Enumerable.Repeat(new BrowseDescription(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -787,16 +788,16 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 10)]),
-                    DiagnosticInfos = new DiagnosticInfoCollection(
+                    DiagnosticInfos = new List<DiagnosticInfo>(
                         [.. Enumerable.Repeat(diagnosticInfo1, 10)])
                 })
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 5)]),
-                    DiagnosticInfos = new DiagnosticInfoCollection(
+                    DiagnosticInfos = new List<DiagnosticInfo>(
                         [.. Enumerable.Repeat(diagnosticInfo2, 5)])
                 });
 
@@ -827,7 +828,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 [.. Enumerable.Repeat(new BrowseDescription(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -840,13 +841,13 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 10)]),
                     DiagnosticInfos = []
                 })
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 5)]),
                     DiagnosticInfos = []
                 });
@@ -874,7 +875,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 [.. Enumerable.Repeat(new BrowseDescription(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -895,9 +896,9 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 10)]),
-                    DiagnosticInfos = new DiagnosticInfoCollection(
+                    DiagnosticInfos = new List<DiagnosticInfo>(
                         [.. Enumerable.Repeat(diagnosticInfo1, 10)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -906,9 +907,9 @@ namespace Technosoftware.UaClient.Tests
                 })
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 5)]),
-                    DiagnosticInfos = new DiagnosticInfoCollection(
+                    DiagnosticInfos = new List<DiagnosticInfo>(
                         [.. Enumerable.Repeat(diagnosticInfo1, 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -946,7 +947,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 [.. Enumerable.Repeat(new BrowseDescription(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -967,14 +968,14 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 10)]),
-                    DiagnosticInfos = new DiagnosticInfoCollection(
+                    DiagnosticInfos = new List<DiagnosticInfo>(
                         [.. Enumerable.Repeat(diagnosticInfo1, 10)])
                 })
                 .ReturnsAsync(new BrowseResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 5)]),
                     DiagnosticInfos = []
                 });
@@ -1003,7 +1004,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 Enumerable.Range(0, 15).Select(_ => new BrowseDescription()));
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -1078,7 +1079,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 Enumerable.Range(0, 15).Select(_ => new BrowseDescription()));
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -1161,7 +1162,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 Enumerable.Range(0, 15).Select(_ => new BrowseDescription()));
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -1251,7 +1252,7 @@ namespace Technosoftware.UaClient.Tests
         {
             var view = new ViewDescription();
             const uint requestedMaxReferencesPerNode = 10u;
-            var nodesToBrowse = new BrowseDescriptionCollection();
+            var nodesToBrowse = new List<BrowseDescription>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1283,7 +1284,7 @@ namespace Technosoftware.UaClient.Tests
         {
             var view = new ViewDescription();
             const uint requestedMaxReferencesPerNode = 10u;
-            var nodesToBrowse = new BrowseDescriptionCollection();
+            var nodesToBrowse = new List<BrowseDescription>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1317,7 +1318,7 @@ namespace Technosoftware.UaClient.Tests
         {
             var view = new ViewDescription();
             const uint requestedMaxReferencesPerNode = 10u;
-            var nodesToBrowse = new BrowseDescriptionCollection();
+            var nodesToBrowse = new List<BrowseDescription>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1346,7 +1347,7 @@ namespace Technosoftware.UaClient.Tests
         {
             var view = new ViewDescription();
             const uint requestedMaxReferencesPerNode = 10u;
-            var nodesToBrowse = new BrowseDescriptionCollection();
+            var nodesToBrowse = new List<BrowseDescription>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1379,7 +1380,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const bool releaseContinuationPoints = true;
 
-            var continuationPoints = new ByteStringCollection(
+            var continuationPoints = new List<ByteString>(
                 [.. Enumerable.Repeat(Array.Empty<byte>(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -1392,12 +1393,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseNextResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 10)])
                 })
                 .ReturnsAsync(new BrowseNextResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 5)])
                 });
 
@@ -1422,7 +1423,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const bool releaseContinuationPoints = true;
 
-            var continuationPoints = new ByteStringCollection(
+            var continuationPoints = new List<ByteString>(
                 [.. Enumerable.Repeat(Array.Empty<byte>(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -1435,12 +1436,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseNextResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 10)])
                 })
                 .ReturnsAsync(new BrowseNextResponse
                 {
-                    Results = new BrowseResultCollection(
+                    Results = new List<BrowseResult>(
                         [.. Enumerable.Repeat(new BrowseResult(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -1468,7 +1469,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const bool releaseContinuationPoints = true;
 
-            var continuationPoints = new ByteStringCollection();
+            var continuationPoints = new List<ByteString>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1496,7 +1497,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const bool releaseContinuationPoints = true;
 
-            var continuationPoints = new ByteStringCollection();
+            var continuationPoints = new List<ByteString>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1529,7 +1530,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const bool releaseContinuationPoints = true;
 
-            var continuationPoints = new ByteStringCollection();
+            var continuationPoints = new List<ByteString>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1557,7 +1558,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const bool releaseContinuationPoints = true;
 
-            var continuationPoints = new ByteStringCollection();
+            var continuationPoints = new List<ByteString>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1587,7 +1588,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task CallAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var methodsToCall = new CallMethodRequestCollection(
+            var methodsToCall = new List<CallMethodRequest>(
                 [.. Enumerable.Repeat(new CallMethodRequest(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -1600,12 +1601,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CallResponse
                 {
-                    Results = new CallMethodResultCollection(
+                    Results = new List<CallMethodResult>(
                     [.. Enumerable.Repeat(new CallMethodResult(), 10)])
                 })
                 .ReturnsAsync(new CallResponse
                 {
-                    Results = new CallMethodResultCollection(
+                    Results = new List<CallMethodResult>(
                     [.. Enumerable.Repeat(new CallMethodResult(), 5)])
                 });
 
@@ -1627,7 +1628,7 @@ namespace Technosoftware.UaClient.Tests
         public void CallAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var methodsToCall = new CallMethodRequestCollection(
+            var methodsToCall = new List<CallMethodRequest>(
                 [.. Enumerable.Repeat(new CallMethodRequest(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -1640,12 +1641,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CallResponse
                 {
-                    Results = new CallMethodResultCollection(
+                    Results = new List<CallMethodResult>(
                         [.. Enumerable.Repeat(new CallMethodResult(), 10)])
                 })
                 .ReturnsAsync(new CallResponse
                 {
-                    Results = new CallMethodResultCollection(
+                    Results = new List<CallMethodResult>(
                         [.. Enumerable.Repeat(new CallMethodResult(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -1670,7 +1671,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task CallAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var methodsToCall = new CallMethodRequestCollection();
+            var methodsToCall = new List<CallMethodRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1696,7 +1697,7 @@ namespace Technosoftware.UaClient.Tests
         public void CallAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var methodsToCall = new CallMethodRequestCollection();
+            var methodsToCall = new List<CallMethodRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1726,7 +1727,7 @@ namespace Technosoftware.UaClient.Tests
         public void CallAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var methodsToCall = new CallMethodRequestCollection();
+            var methodsToCall = new List<CallMethodRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1751,7 +1752,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task CallAsyncShouldValidateResponseAndHandleDiagnosticInfoAsync(
             RequestHeader requestHeader)
         {
-            var methodsToCall = new CallMethodRequestCollection();
+            var methodsToCall = new List<CallMethodRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -1944,7 +1945,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToCreate = new MonitoredItemCreateRequestCollection(
+            var itemsToCreate = new List<MonitoredItemCreateRequest>(
                 [.. Enumerable.Repeat(new MonitoredItemCreateRequest(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -1957,12 +1958,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CreateMonitoredItemsResponse
                 {
-                    Results = new MonitoredItemCreateResultCollection(
+                    Results = new List<MonitoredItemCreateResult>(
                         [.. Enumerable.Repeat(new MonitoredItemCreateResult(), 10)])
                 })
                 .ReturnsAsync(new CreateMonitoredItemsResponse
                 {
-                    Results = new MonitoredItemCreateResultCollection(
+                    Results = new List<MonitoredItemCreateResult>(
                         [.. Enumerable.Repeat(new MonitoredItemCreateResult(), 5)])
                 });
 
@@ -1989,7 +1990,7 @@ namespace Technosoftware.UaClient.Tests
             const uint subscriptionId = 1u;
 
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToCreate = new MonitoredItemCreateRequestCollection(
+            var itemsToCreate = new List<MonitoredItemCreateRequest>(
                 [.. Enumerable.Repeat(new MonitoredItemCreateRequest(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -2002,12 +2003,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CreateMonitoredItemsResponse
                 {
-                    Results = new MonitoredItemCreateResultCollection(
+                    Results = new List<MonitoredItemCreateResult>(
                         [.. Enumerable.Repeat(new MonitoredItemCreateResult(), 10)])
                 })
                 .ReturnsAsync(new CreateMonitoredItemsResponse
                 {
-                    Results = new MonitoredItemCreateResultCollection(
+                    Results = new List<MonitoredItemCreateResult>(
                         [.. Enumerable.Repeat(new MonitoredItemCreateResult(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -2036,7 +2037,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToCreate = new MonitoredItemCreateRequestCollection();
+            var itemsToCreate = new List<MonitoredItemCreateRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2068,7 +2069,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToCreate = new MonitoredItemCreateRequestCollection();
+            var itemsToCreate = new List<MonitoredItemCreateRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2102,7 +2103,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToCreate = new MonitoredItemCreateRequestCollection();
+            var itemsToCreate = new List<MonitoredItemCreateRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2131,7 +2132,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToCreate = new MonitoredItemCreateRequestCollection();
+            var itemsToCreate = new List<MonitoredItemCreateRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2276,7 +2277,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const uint subscriptionId = 1u;
-            var monitoredItemIds = new UInt32Collection([.. Enumerable.Repeat(1u, 15)]);
+            var monitoredItemIds = new List<uint>([.. Enumerable.Repeat(1u, 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2288,12 +2289,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DeleteMonitoredItemsResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new DeleteMonitoredItemsResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 5)])
                 });
 
@@ -2317,7 +2318,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const uint subscriptionId = 1u;
-            var monitoredItemIds = new UInt32Collection([.. Enumerable.Repeat(1u, 15)]);
+            var monitoredItemIds = new List<uint>([.. Enumerable.Repeat(1u, 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2329,12 +2330,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DeleteMonitoredItemsResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new DeleteMonitoredItemsResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Bad, 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -2361,7 +2362,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const uint subscriptionId = 1u;
-            var monitoredItemIds = new UInt32Collection();
+            var monitoredItemIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2391,7 +2392,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const uint subscriptionId = 1u;
-            var monitoredItemIds = new UInt32Collection();
+            var monitoredItemIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2423,7 +2424,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const uint subscriptionId = 1u;
-            var monitoredItemIds = new UInt32Collection();
+            var monitoredItemIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2449,7 +2450,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task DeleteNodesAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var nodesToDelete = new DeleteNodesItemCollection(
+            var nodesToDelete = new List<DeleteNodesItem>(
                 [.. Enumerable.Repeat(new DeleteNodesItem(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -2462,12 +2463,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DeleteNodesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new DeleteNodesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 5)])
                 });
 
@@ -2489,7 +2490,7 @@ namespace Technosoftware.UaClient.Tests
         public void DeleteNodesAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var nodesToDelete = new DeleteNodesItemCollection(
+            var nodesToDelete = new List<DeleteNodesItem>(
                 [.. Enumerable.Repeat(new DeleteNodesItem(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -2502,12 +2503,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DeleteNodesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new DeleteNodesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Bad, 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -2532,7 +2533,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task DeleteNodesAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var nodesToDelete = new DeleteNodesItemCollection();
+            var nodesToDelete = new List<DeleteNodesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2560,7 +2561,7 @@ namespace Technosoftware.UaClient.Tests
         public void DeleteNodesAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var nodesToDelete = new DeleteNodesItemCollection();
+            var nodesToDelete = new List<DeleteNodesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2590,7 +2591,7 @@ namespace Technosoftware.UaClient.Tests
         public void DeleteNodesAsyncShouldThrowExceptionWhenSendRequestAsyncThrows
             (RequestHeader requestHeader)
         {
-            var nodesToDelete = new DeleteNodesItemCollection();
+            var nodesToDelete = new List<DeleteNodesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2615,7 +2616,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task DeleteNodesAsyncShouldValidateResponseAndHandleDiagnosticInfoAsync(
             RequestHeader requestHeader)
         {
-            var nodesToDelete = new DeleteNodesItemCollection();
+            var nodesToDelete = new List<DeleteNodesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2644,7 +2645,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task DeleteReferencesAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var referencesToDelete = new DeleteReferencesItemCollection(
+            var referencesToDelete = new List<DeleteReferencesItem>(
                 [.. Enumerable.Repeat(new DeleteReferencesItem(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -2657,12 +2658,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DeleteReferencesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new DeleteReferencesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 5)])
                 });
 
@@ -2685,7 +2686,7 @@ namespace Technosoftware.UaClient.Tests
         public void DeleteReferencesAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var referencesToDelete = new DeleteReferencesItemCollection(
+            var referencesToDelete = new List<DeleteReferencesItem>(
                 [.. Enumerable.Repeat(new DeleteReferencesItem(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -2698,12 +2699,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DeleteReferencesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new DeleteReferencesResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Bad, 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -2728,7 +2729,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task DeleteReferencesAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var referencesToDelete = new DeleteReferencesItemCollection();
+            var referencesToDelete = new List<DeleteReferencesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2756,7 +2757,7 @@ namespace Technosoftware.UaClient.Tests
         public void DeleteReferencesAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var referencesToDelete = new DeleteReferencesItemCollection();
+            var referencesToDelete = new List<DeleteReferencesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2786,7 +2787,7 @@ namespace Technosoftware.UaClient.Tests
         public void DeleteReferencesAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var referencesToDelete = new DeleteReferencesItemCollection();
+            var referencesToDelete = new List<DeleteReferencesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2811,7 +2812,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task DeleteReferencesAsyncShouldValidateResponseAndHandleDiagnosticInfoAsync(
             RequestHeader requestHeader)
         {
-            var referencesToDelete = new DeleteReferencesItemCollection();
+            var referencesToDelete = new List<DeleteReferencesItem>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2840,7 +2841,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task DeleteSubscriptionsAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2868,7 +2869,7 @@ namespace Technosoftware.UaClient.Tests
         public void DeleteSubscriptionsAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2898,7 +2899,7 @@ namespace Technosoftware.UaClient.Tests
         public void DeleteSubscriptionsAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -2926,7 +2927,7 @@ namespace Technosoftware.UaClient.Tests
             var historyReadDetails = new ExtensionObject();
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
             const bool releaseContinuationPoints = true;
-            var nodesToRead = new HistoryReadValueIdCollection(
+            var nodesToRead = new List<HistoryReadValueId>(
                 [.. Enumerable.Repeat(new HistoryReadValueId(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -2939,12 +2940,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new HistoryReadResponse
                 {
-                    Results = new HistoryReadResultCollection(
+                    Results = new List<HistoryReadResult>(
                     [.. Enumerable.Repeat(new HistoryReadResult(), 10)])
                 })
                 .ReturnsAsync(new HistoryReadResponse
                 {
-                    Results = new HistoryReadResultCollection(
+                    Results = new List<HistoryReadResult>(
                     [.. Enumerable.Repeat(new HistoryReadResult(), 5)])
                 });
 
@@ -2973,7 +2974,7 @@ namespace Technosoftware.UaClient.Tests
             var historyReadDetails = new ExtensionObject(new ReadEventDetails());
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
             const bool releaseContinuationPoints = true;
-            var nodesToRead = new HistoryReadValueIdCollection(
+            var nodesToRead = new List<HistoryReadValueId>(
                 [.. Enumerable.Repeat(new HistoryReadValueId(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -2986,12 +2987,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new HistoryReadResponse
                 {
-                    Results = new HistoryReadResultCollection(
+                    Results = new List<HistoryReadResult>(
                         [.. Enumerable.Repeat(new HistoryReadResult(), 10)])
                 })
                 .ReturnsAsync(new HistoryReadResponse
                 {
-                    Results = new HistoryReadResultCollection(
+                    Results = new List<HistoryReadResult>(
                         [.. Enumerable.Repeat(new HistoryReadResult(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -3022,7 +3023,7 @@ namespace Technosoftware.UaClient.Tests
             var historyReadDetails = new ExtensionObject();
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
             const bool releaseContinuationPoints = true;
-            var nodesToRead = new HistoryReadValueIdCollection();
+            var nodesToRead = new List<HistoryReadValueId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3052,7 +3053,7 @@ namespace Technosoftware.UaClient.Tests
             var historyReadDetails = new ExtensionObject();
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
             const bool releaseContinuationPoints = true;
-            var nodesToRead = new HistoryReadValueIdCollection();
+            var nodesToRead = new List<HistoryReadValueId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3088,7 +3089,7 @@ namespace Technosoftware.UaClient.Tests
             var historyReadDetails = new ExtensionObject();
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
             const bool releaseContinuationPoints = true;
-            var nodesToRead = new HistoryReadValueIdCollection();
+            var nodesToRead = new List<HistoryReadValueId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3119,7 +3120,7 @@ namespace Technosoftware.UaClient.Tests
             var historyReadDetails = new ExtensionObject();
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
             const bool releaseContinuationPoints = true;
-            var nodesToRead = new HistoryReadValueIdCollection();
+            var nodesToRead = new List<HistoryReadValueId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3146,7 +3147,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task HistoryUpdateAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var historyUpdateDetails = new ExtensionObjectCollection(
+            var historyUpdateDetails = new List<ExtensionObject>(
                 [.. Enumerable.Repeat(new ExtensionObject(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -3159,12 +3160,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new HistoryUpdateResponse
                 {
-                    Results = new HistoryUpdateResultCollection(
+                    Results = new List<HistoryUpdateResult>(
                         [.. Enumerable.Repeat(new HistoryUpdateResult(), 10)])
                 })
                 .ReturnsAsync(new HistoryUpdateResponse
                 {
-                    Results = new HistoryUpdateResultCollection(
+                    Results = new List<HistoryUpdateResult>(
                         [.. Enumerable.Repeat(new HistoryUpdateResult(), 5)])
                 });
 
@@ -3187,7 +3188,7 @@ namespace Technosoftware.UaClient.Tests
         public void HistoryUpdateAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var historyUpdateDetails = new ExtensionObjectCollection(
+            var historyUpdateDetails = new List<ExtensionObject>(
                 [.. Enumerable.Repeat(new ExtensionObject(new UpdateEventDetails()), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -3200,11 +3201,11 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new HistoryUpdateResponse
                 {
-                    Results = new HistoryUpdateResultCollection([.. Enumerable.Repeat(new HistoryUpdateResult(), 10)])
+                    Results = new List<HistoryUpdateResult>([.. Enumerable.Repeat(new HistoryUpdateResult(), 10)])
                 })
                 .ReturnsAsync(new HistoryUpdateResponse
                 {
-                    Results = new HistoryUpdateResultCollection([.. Enumerable.Repeat(new HistoryUpdateResult(), 5)]),
+                    Results = new List<HistoryUpdateResult>([.. Enumerable.Repeat(new HistoryUpdateResult(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
                         ServiceResult = StatusCodes.Bad
@@ -3228,7 +3229,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task HistoryUpdateAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var historyUpdateDetails = new ExtensionObjectCollection();
+            var historyUpdateDetails = new List<ExtensionObject>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3256,7 +3257,7 @@ namespace Technosoftware.UaClient.Tests
         public void HistoryUpdateAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var historyUpdateDetails = new ExtensionObjectCollection();
+            var historyUpdateDetails = new List<ExtensionObject>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3286,7 +3287,7 @@ namespace Technosoftware.UaClient.Tests
         public void HistoryUpdateAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var historyUpdateDetails = new ExtensionObjectCollection();
+            var historyUpdateDetails = new List<ExtensionObject>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3311,7 +3312,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task HistoryUpdateAsyncShouldValidateResponseAndHandleDiagnosticInfoAsync(
             RequestHeader requestHeader)
         {
-            var historyUpdateDetails = new ExtensionObjectCollection();
+            var historyUpdateDetails = new List<ExtensionObject>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3342,7 +3343,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToModify = new MonitoredItemModifyRequestCollection(
+            var itemsToModify = new List<MonitoredItemModifyRequest>(
                 [.. Enumerable.Repeat(new MonitoredItemModifyRequest(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -3355,12 +3356,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ModifyMonitoredItemsResponse
                 {
-                    Results = new MonitoredItemModifyResultCollection(
+                    Results = new List<MonitoredItemModifyResult>(
                         [.. Enumerable.Repeat(new MonitoredItemModifyResult(), 10)])
                 })
                 .ReturnsAsync(new ModifyMonitoredItemsResponse
                 {
-                    Results = new MonitoredItemModifyResultCollection(
+                    Results = new List<MonitoredItemModifyResult>(
                         [.. Enumerable.Repeat(new MonitoredItemModifyResult(), 5)])
                 });
 
@@ -3387,7 +3388,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToModify = new MonitoredItemModifyRequestCollection(
+            var itemsToModify = new List<MonitoredItemModifyRequest>(
                 [.. Enumerable.Repeat(new MonitoredItemModifyRequest(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -3400,12 +3401,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ModifyMonitoredItemsResponse
                 {
-                    Results = new MonitoredItemModifyResultCollection(
+                    Results = new List<MonitoredItemModifyResult>(
                         [.. Enumerable.Repeat(new MonitoredItemModifyResult(), 10)])
                 })
                 .ReturnsAsync(new ModifyMonitoredItemsResponse
                 {
-                    Results = new MonitoredItemModifyResultCollection(
+                    Results = new List<MonitoredItemModifyResult>(
                         [.. Enumerable.Repeat(new MonitoredItemModifyResult(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -3434,7 +3435,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToModify = new MonitoredItemModifyRequestCollection();
+            var itemsToModify = new List<MonitoredItemModifyRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3466,7 +3467,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToModify = new MonitoredItemModifyRequestCollection();
+            var itemsToModify = new List<MonitoredItemModifyRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3500,7 +3501,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToModify = new MonitoredItemModifyRequestCollection();
+            var itemsToModify = new List<MonitoredItemModifyRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3529,7 +3530,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var itemsToModify = new MonitoredItemModifyRequestCollection();
+            var itemsToModify = new List<MonitoredItemModifyRequest>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3672,7 +3673,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task PublishAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var subscriptionAcknowledgements = new SubscriptionAcknowledgementCollection();
+            var subscriptionAcknowledgements = new List<SubscriptionAcknowledgement>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3700,7 +3701,7 @@ namespace Technosoftware.UaClient.Tests
         public void PublishAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var subscriptionAcknowledgements = new SubscriptionAcknowledgementCollection();
+            var subscriptionAcknowledgements = new List<SubscriptionAcknowledgement>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3730,7 +3731,7 @@ namespace Technosoftware.UaClient.Tests
         public void PublishAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var subscriptionAcknowledgements = new SubscriptionAcknowledgementCollection();
+            var subscriptionAcknowledgements = new List<SubscriptionAcknowledgement>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -3756,7 +3757,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodeTypes = new NodeTypeDescriptionCollection();
+            var nodeTypes = new List<NodeTypeDescription>();
             var filter = new ContentFilter();
             const uint maxDataSetsToReturn = 10u;
             const uint maxReferencesToReturn = 10u;
@@ -3792,7 +3793,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodeTypes = new NodeTypeDescriptionCollection();
+            var nodeTypes = new List<NodeTypeDescription>();
             var filter = new ContentFilter();
             const uint maxDataSetsToReturn = 10u;
             const uint maxReferencesToReturn = 10u;
@@ -3830,7 +3831,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             var view = new ViewDescription();
-            var nodeTypes = new NodeTypeDescriptionCollection();
+            var nodeTypes = new List<NodeTypeDescription>();
             var filter = new ContentFilter();
             const uint maxDataSetsToReturn = 10u;
             const uint maxReferencesToReturn = 10u;
@@ -3953,7 +3954,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const double maxAge = 1000.0;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var nodesToRead = new ReadValueIdCollection(
+            var nodesToRead = new List<ReadValueId>(
                 [.. Enumerable.Repeat(new ReadValueId(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -3966,12 +3967,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReadResponse
                 {
-                    Results = new DataValueCollection(
+                    Results = new List<DataValue>(
                     [.. Enumerable.Repeat(new DataValue(), 10)])
                 })
                 .ReturnsAsync(new ReadResponse
                 {
-                    Results = new DataValueCollection(
+                    Results = new List<DataValue>(
                     [.. Enumerable.Repeat(new DataValue(), 5)])
                 });
 
@@ -3997,7 +3998,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const double maxAge = 1000.0;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var nodesToRead = new ReadValueIdCollection(
+            var nodesToRead = new List<ReadValueId>(
                 [.. Enumerable.Repeat(new ReadValueId(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -4010,12 +4011,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReadResponse
                 {
-                    Results = new DataValueCollection(
+                    Results = new List<DataValue>(
                         [.. Enumerable.Repeat(new DataValue(), 10)])
                 })
                 .ReturnsAsync(new ReadResponse
                 {
-                    Results = new DataValueCollection(
+                    Results = new List<DataValue>(
                         [.. Enumerable.Repeat(new DataValue(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -4043,7 +4044,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const double maxAge = 1000.0;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var nodesToRead = new ReadValueIdCollection();
+            var nodesToRead = new List<ReadValueId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4075,7 +4076,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const double maxAge = 1000.0;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var nodesToRead = new ReadValueIdCollection();
+            var nodesToRead = new List<ReadValueId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4109,7 +4110,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const double maxAge = 1000.0;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var nodesToRead = new ReadValueIdCollection();
+            var nodesToRead = new List<ReadValueId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4138,7 +4139,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const double maxAge = 1000.0;
             const TimestampsToReturn timestampsToReturn = TimestampsToReturn.Both;
-            var nodesToRead = new ReadValueIdCollection();
+            var nodesToRead = new List<ReadValueId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4169,7 +4170,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task RegisterNodesAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var nodesToRegister = new NodeIdCollection([.. Enumerable.Repeat(new NodeId(), 15)]);
+            var nodesToRegister = new List<NodeId>([.. Enumerable.Repeat(new NodeId(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4181,11 +4182,11 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new RegisterNodesResponse
                 {
-                    RegisteredNodeIds = new NodeIdCollection([.. Enumerable.Repeat(new NodeId(), 10)])
+                    RegisteredNodeIds = new List<NodeId>([.. Enumerable.Repeat(new NodeId(), 10)])
                 })
                 .ReturnsAsync(new RegisterNodesResponse
                 {
-                    RegisteredNodeIds = new NodeIdCollection([.. Enumerable.Repeat(new NodeId(), 5)])
+                    RegisteredNodeIds = new List<NodeId>([.. Enumerable.Repeat(new NodeId(), 5)])
                 });
 
             RegisterNodesResponse response = await sessionMock.RegisterNodesAsync(
@@ -4207,7 +4208,7 @@ namespace Technosoftware.UaClient.Tests
         public void RegisterNodesAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var nodesToRegister = new NodeIdCollection([.. Enumerable.Repeat(new NodeId(), 15)]);
+            var nodesToRegister = new List<NodeId>([.. Enumerable.Repeat(new NodeId(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4219,11 +4220,11 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new RegisterNodesResponse
                 {
-                    RegisteredNodeIds = new NodeIdCollection([.. Enumerable.Repeat(new NodeId(), 10)])
+                    RegisteredNodeIds = new List<NodeId>([.. Enumerable.Repeat(new NodeId(), 10)])
                 })
                 .ReturnsAsync(new RegisterNodesResponse
                 {
-                    RegisteredNodeIds = new NodeIdCollection([.. Enumerable.Repeat(new NodeId(), 5)]),
+                    RegisteredNodeIds = new List<NodeId>([.. Enumerable.Repeat(new NodeId(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
                         ServiceResult = StatusCodes.Bad
@@ -4247,7 +4248,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task RegisterNodesAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var nodesToRegister = new NodeIdCollection();
+            var nodesToRegister = new List<NodeId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4273,7 +4274,7 @@ namespace Technosoftware.UaClient.Tests
         public void RegisterNodesAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var nodesToRegister = new NodeIdCollection();
+            var nodesToRegister = new List<NodeId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4303,7 +4304,7 @@ namespace Technosoftware.UaClient.Tests
         public void RegisterNodesAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var nodesToRegister = new NodeIdCollection();
+            var nodesToRegister = new List<NodeId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4419,7 +4420,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const MonitoringMode monitoringMode = MonitoringMode.Reporting;
-            var monitoredItemIds = new UInt32Collection([.. Enumerable.Repeat(1u, 15)]);
+            var monitoredItemIds = new List<uint>([.. Enumerable.Repeat(1u, 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4431,12 +4432,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new SetMonitoringModeResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                     [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new SetMonitoringModeResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                     [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 5)])
                 });
 
@@ -4463,7 +4464,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const MonitoringMode monitoringMode = MonitoringMode.Reporting;
-            var monitoredItemIds = new UInt32Collection([.. Enumerable.Repeat(1u, 15)]);
+            var monitoredItemIds = new List<uint>([.. Enumerable.Repeat(1u, 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4475,12 +4476,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new SetMonitoringModeResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new SetMonitoringModeResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Bad, 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -4509,7 +4510,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const MonitoringMode monitoringMode = MonitoringMode.Reporting;
-            var monitoredItemIds = new UInt32Collection();
+            var monitoredItemIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4541,7 +4542,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const MonitoringMode monitoringMode = MonitoringMode.Reporting;
-            var monitoredItemIds = new UInt32Collection();
+            var monitoredItemIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4575,7 +4576,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const MonitoringMode monitoringMode = MonitoringMode.Reporting;
-            var monitoredItemIds = new UInt32Collection();
+            var monitoredItemIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4604,7 +4605,7 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const MonitoringMode monitoringMode = MonitoringMode.Reporting;
-            var monitoredItemIds = new UInt32Collection();
+            var monitoredItemIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4636,7 +4637,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const bool publishingEnabled = true;
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4666,7 +4667,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const bool publishingEnabled = true;
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4698,7 +4699,7 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader)
         {
             const bool publishingEnabled = true;
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4726,8 +4727,8 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const uint triggeringItemId = 1u;
-            var linksToAdd = new UInt32Collection([.. Enumerable.Repeat(1u, 15)]);
-            var linksToRemove = new UInt32Collection([.. Enumerable.Repeat(1u, 15)]);
+            var linksToAdd = new List<uint>([.. Enumerable.Repeat(1u, 15)]);
+            var linksToRemove = new List<uint>([.. Enumerable.Repeat(1u, 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4739,19 +4740,19 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new SetTriggeringResponse
                 {
-                    AddResults = new StatusCodeCollection(
+                    AddResults = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new SetTriggeringResponse
                 {
-                    AddResults = new StatusCodeCollection(
+                    AddResults = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 5)]),
-                    RemoveResults = new StatusCodeCollection(
+                    RemoveResults = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 5)])
                 })
                 .ReturnsAsync(new SetTriggeringResponse
                 {
-                    RemoveResults = new StatusCodeCollection(
+                    RemoveResults = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 });
 
@@ -4780,8 +4781,8 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const uint triggeringItemId = 1u;
-            var linksToAdd = new UInt32Collection([.. Enumerable.Repeat(1u, 15)]);
-            var linksToRemove = new UInt32Collection([.. Enumerable.Repeat(1u, 15)]);
+            var linksToAdd = new List<uint>([.. Enumerable.Repeat(1u, 15)]);
+            var linksToRemove = new List<uint>([.. Enumerable.Repeat(1u, 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4793,7 +4794,7 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new SetTriggeringResponse
                 {
-                    AddResults = new StatusCodeCollection(
+                    AddResults = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new SetTriggeringResponse
@@ -4826,8 +4827,8 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const uint triggeringItemId = 1u;
-            var linksToAdd = new UInt32Collection();
-            var linksToRemove = new UInt32Collection();
+            var linksToAdd = new List<uint>();
+            var linksToRemove = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4860,8 +4861,8 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const uint triggeringItemId = 1u;
-            var linksToAdd = new UInt32Collection();
-            var linksToRemove = new UInt32Collection();
+            var linksToAdd = new List<uint>();
+            var linksToRemove = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4896,8 +4897,8 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const uint triggeringItemId = 1u;
-            var linksToAdd = new UInt32Collection();
-            var linksToRemove = new UInt32Collection();
+            var linksToAdd = new List<uint>();
+            var linksToRemove = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4927,8 +4928,8 @@ namespace Technosoftware.UaClient.Tests
         {
             const uint subscriptionId = 1u;
             const uint triggeringItemId = 1u;
-            var linksToAdd = new UInt32Collection();
-            var linksToRemove = new UInt32Collection();
+            var linksToAdd = new List<uint>();
+            var linksToRemove = new List<uint>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -4964,7 +4965,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task TransferSubscriptionsAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             const bool sendInitialValues = true;
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -4994,7 +4995,7 @@ namespace Technosoftware.UaClient.Tests
         public void TransferSubscriptionsAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             const bool sendInitialValues = true;
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -5026,7 +5027,7 @@ namespace Technosoftware.UaClient.Tests
         public void TransferSubscriptionsAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             const bool sendInitialValues = true;
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -5053,7 +5054,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task TransferSubscriptionsAsyncShouldValidateResponseAndHandleDiagnosticInfoAsync(
             RequestHeader requestHeader)
         {
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             const bool sendInitialValues = true;
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -5084,7 +5085,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task TranslateBrowsePathsToNodeIdsAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var browsePaths = new BrowsePathCollection([.. Enumerable.Repeat(new BrowsePath(), 15)]);
+            var browsePaths = new List<BrowsePath>([.. Enumerable.Repeat(new BrowsePath(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5096,12 +5097,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TranslateBrowsePathsToNodeIdsResponse
                 {
-                    Results = new BrowsePathResultCollection(
+                    Results = new List<BrowsePathResult>(
                         [.. Enumerable.Repeat(new BrowsePathResult(), 10)])
                 })
                 .ReturnsAsync(new TranslateBrowsePathsToNodeIdsResponse
                 {
-                    Results = new BrowsePathResultCollection(
+                    Results = new List<BrowsePathResult>(
                         [.. Enumerable.Repeat(new BrowsePathResult(), 5)])
                 });
 
@@ -5123,7 +5124,7 @@ namespace Technosoftware.UaClient.Tests
         public void TranslateBrowsePathsToNodeIdsAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var browsePaths = new BrowsePathCollection([.. Enumerable.Repeat(new BrowsePath(), 15)]);
+            var browsePaths = new List<BrowsePath>([.. Enumerable.Repeat(new BrowsePath(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5135,12 +5136,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TranslateBrowsePathsToNodeIdsResponse
                 {
-                    Results = new BrowsePathResultCollection(
+                    Results = new List<BrowsePathResult>(
                         [.. Enumerable.Repeat(new BrowsePathResult(), 10)])
                 })
                 .ReturnsAsync(new TranslateBrowsePathsToNodeIdsResponse
                 {
-                    Results = new BrowsePathResultCollection(
+                    Results = new List<BrowsePathResult>(
                         [.. Enumerable.Repeat(new BrowsePathResult(), 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -5165,7 +5166,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task TranslateBrowsePathsToNodeIdsAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var browsePaths = new BrowsePathCollection();
+            var browsePaths = new List<BrowsePath>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5188,7 +5189,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task TranslateBrowsePathsToNodeIdsAsyncShouldValidateResponseAndHandleDiagnosticInfoAsync(
             RequestHeader requestHeader)
         {
-            var browsePaths = new BrowsePathCollection();
+            var browsePaths = new List<BrowsePath>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5217,7 +5218,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task UnregisterNodesAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var nodesToUnregister = new NodeIdCollection([.. Enumerable.Repeat(new NodeId(), 15)]);
+            var nodesToUnregister = new List<NodeId>([.. Enumerable.Repeat(new NodeId(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5248,7 +5249,7 @@ namespace Technosoftware.UaClient.Tests
         public void UnregisterNodesAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var nodesToUnregister = new NodeIdCollection([.. Enumerable.Repeat(new NodeId(), 15)]);
+            var nodesToUnregister = new List<NodeId>([.. Enumerable.Repeat(new NodeId(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5284,7 +5285,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task UnregisterNodesAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var nodesToUnregister = new NodeIdCollection();
+            var nodesToUnregister = new List<NodeId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5312,7 +5313,7 @@ namespace Technosoftware.UaClient.Tests
         public void UnregisterNodesAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var nodesToUnregister = new NodeIdCollection();
+            var nodesToUnregister = new List<NodeId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5342,7 +5343,7 @@ namespace Technosoftware.UaClient.Tests
         public void UnregisterNodesAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var nodesToUnregister = new NodeIdCollection();
+            var nodesToUnregister = new List<NodeId>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5367,7 +5368,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task WriteAsyncShouldBatchRequestsWhenExceedingOperationLimitsAsync(
             RequestHeader requestHeader)
         {
-            var nodesToWrite = new WriteValueCollection([.. Enumerable.Repeat(new WriteValue(), 15)]);
+            var nodesToWrite = new List<WriteValue>([.. Enumerable.Repeat(new WriteValue(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5379,12 +5380,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new WriteResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                     [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new WriteResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                     [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 5)])
                 });
 
@@ -5407,7 +5408,7 @@ namespace Technosoftware.UaClient.Tests
         public void WriteAsyncShouldHandleBatchingWhenSecondOperationFails(
             RequestHeader requestHeader)
         {
-            var nodesToWrite = new WriteValueCollection(
+            var nodesToWrite = new List<WriteValue>(
                 [.. Enumerable.Repeat(new WriteValue(), 15)]);
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
@@ -5420,12 +5421,12 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new WriteResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Good, 10)])
                 })
                 .ReturnsAsync(new WriteResponse
                 {
-                    Results = new StatusCodeCollection(
+                    Results = new List<StatusCode>(
                         [.. Enumerable.Repeat((StatusCode)StatusCodes.Bad, 5)]),
                     ResponseHeader = new ResponseHeader
                     {
@@ -5450,7 +5451,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task WriteAsyncShouldSimplyCallBaseMethodWhenNoLimitsSetAsync(
             RequestHeader requestHeader)
         {
-            var nodesToWrite = new WriteValueCollection();
+            var nodesToWrite = new List<WriteValue>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5476,7 +5477,7 @@ namespace Technosoftware.UaClient.Tests
         public void WriteAsyncShouldThrowExceptionWhenResponseContainsBadStatusCode(
             RequestHeader requestHeader)
         {
-            var nodesToWrite = new WriteValueCollection();
+            var nodesToWrite = new List<WriteValue>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5506,7 +5507,7 @@ namespace Technosoftware.UaClient.Tests
         public void WriteAsyncShouldThrowExceptionWhenSendRequestAsyncThrows(
             RequestHeader requestHeader)
         {
-            var nodesToWrite = new WriteValueCollection();
+            var nodesToWrite = new List<WriteValue>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 
@@ -5531,7 +5532,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task WriteAsyncShouldValidateResponseAndHandleDiagnosticInfoAsync(
             RequestHeader requestHeader)
         {
-            var nodesToWrite = new WriteValueCollection();
+            var nodesToWrite = new List<WriteValue>();
             CancellationToken ct = CancellationToken.None;
             var sessionMock = SessionMock.Create();
 

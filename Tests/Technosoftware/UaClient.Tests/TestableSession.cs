@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua;
@@ -44,7 +45,7 @@ namespace Technosoftware.UaClient.Tests
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
             X509Certificate2 clientCertificate,
-            EndpointDescriptionCollection availableEndpoints = null,
+            ArrayOf<EndpointDescription> availableEndpoints = default,
             StringCollection discoveryProfileUris = null)
             : base(
                 channel,

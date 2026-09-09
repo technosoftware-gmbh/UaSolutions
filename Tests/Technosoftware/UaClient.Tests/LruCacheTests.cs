@@ -236,7 +236,7 @@ namespace Technosoftware.UaClient.Tests
 
             // Arrange
             var id = new NodeId("test", 0);
-            var browsePath = new QualifiedNameCollection { new QualifiedName("invalid") };
+            var browsePath = new List<QualifiedName> { new QualifiedName("invalid") };
             var context = new Mock<IUaNodeCacheContext>();
 
             context
@@ -277,7 +277,7 @@ namespace Technosoftware.UaClient.Tests
                 NodeId = id,
                 NodeClass = NodeClass.Variable
             };
-            var browsePath = new QualifiedNameCollection { new QualifiedName("child") };
+            var browsePath = new List<QualifiedName> { new QualifiedName("child") };
             var references = new List<ReferenceDescription>
             {
                 new()
@@ -346,7 +346,7 @@ namespace Technosoftware.UaClient.Tests
             var rootId = new NodeId("root", 0);
             var childId = new NodeId("child", 0);
             var grandChildId = new NodeId("grandChild", 0);
-            var browsePath = new QualifiedNameCollection
+            var browsePath = new List<QualifiedName>
             {
                 new QualifiedName("child"),
                 new QualifiedName("grandChild")
@@ -1124,7 +1124,7 @@ namespace Technosoftware.UaClient.Tests
             // Arrange
             var typeId = new NodeId("type", 0);
             var subTypeId = new NodeId("subType", 0);
-            var references = new ReferenceDescriptionCollection
+            var references = new List<ReferenceDescription>
             {
                 new()
                 {

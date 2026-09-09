@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -116,7 +117,7 @@ namespace Technosoftware.UaClient.Tests
         [Test]
         public void AddNodesAsyncThrows()
         {
-            var nodesToAdd = new AddNodesItemCollection();
+            var nodesToAdd = new List<AddNodesItem>();
             var addNodesItem = new AddNodesItem();
             for (int ii = 0; ii < kOperationLimit * 2; ii++)
             {
@@ -132,8 +133,8 @@ namespace Technosoftware.UaClient.Tests
                             .ConfigureAwait(false);
 
                         Assert.NotNull(response);
-                        AddNodesResultCollection results = response.Results;
-                        DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                        ArrayOf<AddNodesResult> results = response.Results;
+                        ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                         Assert.AreEqual(nodesToAdd.Count, results.Count);
                         Assert.AreEqual(diagnosticInfos.Count, diagnosticInfos.Count);
@@ -148,7 +149,7 @@ namespace Technosoftware.UaClient.Tests
         [Test]
         public void AddReferencesAsyncThrows()
         {
-            var referencesToAdd = new AddReferencesItemCollection();
+            var referencesToAdd = new List<AddReferencesItem>();
             var addReferencesItem = new AddReferencesItem();
             for (int ii = 0; ii < kOperationLimit * 2; ii++)
             {
@@ -167,8 +168,8 @@ namespace Technosoftware.UaClient.Tests
                             .ConfigureAwait(false);
 
                         Assert.NotNull(response);
-                        StatusCodeCollection results = response.Results;
-                        DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                        ArrayOf<StatusCode> results = response.Results;
+                        ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                         Assert.AreEqual(referencesToAdd.Count, results.Count);
                         Assert.AreEqual(diagnosticInfos.Count, diagnosticInfos.Count);
@@ -182,7 +183,7 @@ namespace Technosoftware.UaClient.Tests
         [Test]
         public void DeleteNodesAsyncThrows()
         {
-            var nodesTDelete = new DeleteNodesItemCollection();
+            var nodesTDelete = new List<DeleteNodesItem>();
             var deleteNodesItem = new DeleteNodesItem();
             for (int ii = 0; ii < kOperationLimit * 2; ii++)
             {
@@ -197,8 +198,8 @@ namespace Technosoftware.UaClient.Tests
                             .DeleteNodesAsync(requestHeader, nodesTDelete, CancellationToken.None)
                             .ConfigureAwait(false);
 
-                        StatusCodeCollection results = response.Results;
-                        DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                        ArrayOf<StatusCode> results = response.Results;
+                        ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                         Assert.NotNull(response.ResponseHeader);
                         Assert.AreEqual(nodesTDelete.Count, results.Count);
@@ -213,7 +214,7 @@ namespace Technosoftware.UaClient.Tests
         [Test]
         public void DeleteReferencesAsyncThrows()
         {
-            var referencesToDelete = new DeleteReferencesItemCollection();
+            var referencesToDelete = new List<DeleteReferencesItem>();
             var deleteReferencesItem = new DeleteReferencesItem();
             for (int ii = 0; ii < kOperationLimit * 2; ii++)
             {
@@ -231,8 +232,8 @@ namespace Technosoftware.UaClient.Tests
                         CancellationToken.None)
                             .ConfigureAwait(false);
 
-                        StatusCodeCollection results = response.Results;
-                        DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                        ArrayOf<StatusCode> results = response.Results;
+                        ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                         Assert.NotNull(response.ResponseHeader);
                         Assert.AreEqual(referencesToDelete.Count, results.Count);
@@ -254,7 +255,7 @@ namespace Technosoftware.UaClient.Tests
             const uint startingNode = Objects.RootFolder;
             var browseTemplate = new BrowseDescription
             {
-                NodeId = startingNode,
+                NodeId = new NodeId(startingNode),
                 BrowseDirection = BrowseDirection.Forward,
                 ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
                 IncludeSubtypes = true,
@@ -263,16 +264,16 @@ namespace Technosoftware.UaClient.Tests
             };
 
             var requestHeader = new RequestHeader();
-            var referenceDescriptions = new ReferenceDescriptionCollection();
+            var referenceDescriptions = new List<ReferenceDescription>();
 
-            BrowseDescriptionCollection browseDescriptionCollection =
+            ArrayOf<BrowseDescription> browseDescriptionCollection =
                 ServerFixtureUtils.CreateBrowseDescriptionCollectionFromNodeId(
-                    [.. new NodeId[] { Objects.RootFolder }],
+                    [.. new NodeId[] { new NodeId(Objects.RootFolder )}],
                     browseTemplate);
             while (browseDescriptionCollection.Count > 0)
             {
                 TestContext.Out.WriteLine("Browse {0} Nodes...", browseDescriptionCollection.Count);
-                var allResults = new BrowseResultCollection();
+                var allResults = new List<BrowseResult>();
                 BrowseResponse response = await Session
                     .BrowseAsync(
                         requestHeader,
@@ -282,12 +283,12 @@ namespace Technosoftware.UaClient.Tests
                         CancellationToken.None)
                     .ConfigureAwait(false);
 
-                BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                ArrayOf<BrowseResult> results = response.Results;
+                ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 allResults.AddRange(results);
 
-                ByteStringCollection continuationPoints = ServerFixtureUtils.PrepareBrowseNext(
+                ArrayOf<ByteString> continuationPoints = ServerFixtureUtils.PrepareBrowseNext(
                     results);
                 while (continuationPoints.Count > 0)
                 {
@@ -299,7 +300,7 @@ namespace Technosoftware.UaClient.Tests
                             continuationPoints,
                             CancellationToken.None)
                         .ConfigureAwait(false);
-                    BrowseResultCollection browseNextResultCollection = nextResponse.Results;
+                    ArrayOf<BrowseResult> browseNextResultCollection = nextResponse.Results;
                     diagnosticInfos = nextResponse.DiagnosticInfos;
                     ServerFixtureUtils.ValidateResponse(
                         response.ResponseHeader,
@@ -316,7 +317,7 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 // Build browse request for next level
-                var browseTable = new NodeIdCollection();
+                var browseTable = new List<NodeId>();
                 foreach (BrowseResult result in allResults)
                 {
                     referenceDescriptions.AddRange(result.References);
@@ -335,7 +336,7 @@ namespace Technosoftware.UaClient.Tests
             referenceDescriptions.Sort((x, y) => x.NodeId.CompareTo(y.NodeId));
 
             // read values
-            var nodesToRead = new ReadValueIdCollection(
+            var nodesToRead = new List<ReadValueId>(
                 referenceDescriptions.Select(r => new ReadValueId
                 {
                     NodeId = ExpandedNodeId.ToNodeId(r.NodeId, Session.NamespaceUris),
@@ -355,7 +356,7 @@ namespace Technosoftware.UaClient.Tests
 
             // test register nodes
             TestContext.Out.WriteLine("Test Register Nodes...");
-            var nodesToRegister = new NodeIdCollection(nodesToRead.Select(n => n.NodeId));
+            var nodesToRegister = new List<NodeId>(nodesToRead.Select(n => n.NodeId));
             RegisterNodesResponse registerResponse = await Session
                 .RegisterNodesAsync(requestHeader, nodesToRegister, CancellationToken.None)
                 .ConfigureAwait(false);
@@ -367,7 +368,7 @@ namespace Technosoftware.UaClient.Tests
                 .ConfigureAwait(false);
 
             // test writes
-            var nodesToWrite = new WriteValueCollection();
+            var nodesToWrite = new List<WriteValue>();
             int ii = 0;
             foreach (DataValue result in readResponse.Results)
             {
@@ -409,11 +410,11 @@ namespace Technosoftware.UaClient.Tests
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
             ILogger logger = telemetry.CreateLogger<ClientBatchTest>();
 
-            var browsePaths = new BrowsePathCollection();
+            var browsePaths = new List<BrowsePath>();
             var browsePath = new BrowsePath
             {
                 StartingNode = ObjectIds.RootFolder,
-                RelativePath = new RelativePath("Types")
+                RelativePath = new RelativePath(new QualifiedName("Types"))
             };
 
             for (int ii = 0; ii < kOperationLimit * 2; ii++)
@@ -428,8 +429,8 @@ namespace Technosoftware.UaClient.Tests
                     browsePaths,
                     CancellationToken.None)
                 .ConfigureAwait(false);
-            BrowsePathResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<BrowsePathResult> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ServerFixtureUtils.ValidateResponse(response.ResponseHeader, results, browsePaths);
             ServerFixtureUtils.ValidateDiagnosticInfos(
@@ -449,7 +450,7 @@ namespace Technosoftware.UaClient.Tests
             // there are no historizing nodes, but create some real ones
             System.Collections.Generic.IList<NodeId> testSet = GetTestSetSimulation(
                 Session.NamespaceUris);
-            var nodesToRead = new HistoryReadValueIdCollection(
+            var nodesToRead = new List<HistoryReadValueId>(
                 testSet.Select(nodeId => new HistoryReadValueId { NodeId = nodeId }));
 
             // add a some real history nodes
@@ -490,7 +491,7 @@ namespace Technosoftware.UaClient.Tests
 
             // see https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.1/ as to why
             // history update of event, data or annotations should be called individually
-            ExtensionObjectCollection historyUpdateDetails;
+            ArrayOf<ExtensionObject> historyUpdateDetails;
             if (eventDetails)
             {
                 historyUpdateDetails =
@@ -558,15 +559,15 @@ namespace Technosoftware.UaClient.Tests
         {
             EventFilter filter = _ = new EventFilter();
 
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.EventId);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.EventType);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.SourceNode);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.SourceName);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Time);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.ReceiveTime);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.LocalTime);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Message);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Severity);
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.EventId));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.EventType));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.SourceNode));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.SourceName));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.Time));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.ReceiveTime));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.LocalTime));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.Message));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.Severity));
 
             return filter;
         }

@@ -142,13 +142,13 @@ namespace Technosoftware.UaClient.Tests
         public async Task NodeCacheBrowseAllVariablesAsync()
         {
             var result = new List<INode>();
-            var nodesToBrowse = new ExpandedNodeIdCollection { ObjectIds.ObjectsFolder };
+            var nodesToBrowse = new List<ExpandedNodeId> { ObjectIds.ObjectsFolder };
 
             await Session.FetchTypeTreeAsync(ReferenceTypeIds.References).ConfigureAwait(false);
 
             while (nodesToBrowse.Count > 0)
             {
-                var nextNodesToBrowse = new ExpandedNodeIdCollection();
+                var nextNodesToBrowse = new List<ExpandedNodeId>();
                 foreach (ExpandedNodeId node in nodesToBrowse)
                 {
                     try
@@ -190,14 +190,14 @@ namespace Technosoftware.UaClient.Tests
         public async Task NodeCacheBrowseAllVariablesMultipleNodesAsync()
         {
             var result = new List<INode>();
-            var nodesToBrowse = new ExpandedNodeIdCollection { ObjectIds.ObjectsFolder };
+            var nodesToBrowse = new List<ExpandedNodeId> { ObjectIds.ObjectsFolder };
 
             await Session.FetchTypeTreeAsync(ReferenceTypeIds.References).ConfigureAwait(false);
 
-            var referenceTypeIds = new NodeIdCollection { ReferenceTypeIds.HierarchicalReferences };
+            var referenceTypeIds = new List<NodeId> { ReferenceTypeIds.HierarchicalReferences };
             while (nodesToBrowse.Count > 0)
             {
-                var nextNodesToBrowse = new ExpandedNodeIdCollection();
+                var nextNodesToBrowse = new List<ExpandedNodeId>();
                 try
                 {
                     IList<INode> organizers = await Session

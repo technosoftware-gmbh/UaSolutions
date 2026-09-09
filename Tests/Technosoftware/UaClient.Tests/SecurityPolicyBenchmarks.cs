@@ -133,9 +133,9 @@ namespace Technosoftware.UaClient.Tests
         private IList<NodeId> m_smallTestSet;
         private IList<NodeId> m_mediumTestSet;
         private IList<NodeId> m_largeTestSet;
-        private ReadValueIdCollection m_smallReadValueIds;
-        private ReadValueIdCollection m_mediumReadValueIds;
-        private ReadValueIdCollection m_largeReadValueIds;
+        private ArrayOf<ReadValueId> m_smallReadValueIds;
+        private ArrayOf<ReadValueId> m_mediumReadValueIds;
+        private ArrayOf<ReadValueId> m_largeReadValueIds;
 
         public SecurityPolicyBenchmarks()
             : base(Utils.UriSchemeOpcTcp)
@@ -417,7 +417,7 @@ namespace Technosoftware.UaClient.Tests
         [Benchmark(Description = "Write 10 nodes")]
         public async Task WriteSmallMessageAsync()
         {
-            var writeValues = new WriteValueCollection(
+            var writeValues = new List<WriteValue>(
                 m_smallTestSet.Select(nodeId => new WriteValue
                 {
                     NodeId = nodeId,
@@ -446,7 +446,7 @@ namespace Technosoftware.UaClient.Tests
         {
             for (int i = 0; i < kMessageCount; i++)
             {
-                var writeValues = new WriteValueCollection(
+                var writeValues = new List<WriteValue>(
                     m_smallTestSet.Select(nodeId => new WriteValue
                     {
                         NodeId = nodeId,
@@ -474,7 +474,7 @@ namespace Technosoftware.UaClient.Tests
         [Benchmark(Description = "Browse Objects folder")]
         public async Task BrowseAsync()
         {
-            var nodesToBrowse = new BrowseDescriptionCollection
+            var nodesToBrowse = new List<BrowseDescription>
             {
                 new BrowseDescription
                 {
@@ -509,7 +509,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task BrowseMultipleNodesAsync()
         {
             //await Task.Delay(5000);
-            var nodesToBrowse = new BrowseDescriptionCollection(
+            var nodesToBrowse = new List<BrowseDescription>(
                 m_smallTestSet.Select(nodeId => new BrowseDescription
                 {
                     NodeId = nodeId,
@@ -544,12 +544,12 @@ namespace Technosoftware.UaClient.Tests
         [Benchmark(Description = "Call GetMonitoredItems method")]
         public async Task CallMethodAsync()
         {
-            var inputArguments = new VariantCollection
+            var inputArguments = new List<Variant>
             {
                 new Variant((uint)0) // subscriptionId
             };
 
-            var requests = new CallMethodRequestCollection
+            var requests = new List<CallMethodRequest>
             {
                 new CallMethodRequest
                 {
@@ -641,7 +641,7 @@ namespace Technosoftware.UaClient.Tests
             ).ConfigureAwait(false);
 
             // Write
-            var writeValues = new WriteValueCollection(
+            var writeValues = new List<WriteValue>(
                 m_smallTestSet.Take(5).Select(nodeId => new WriteValue
                 {
                     NodeId = nodeId,
@@ -657,7 +657,7 @@ namespace Technosoftware.UaClient.Tests
             ).ConfigureAwait(false);
 
             // Browse
-            var nodesToBrowse = new BrowseDescriptionCollection
+            var nodesToBrowse = new List<BrowseDescription>
             {
                 new BrowseDescription
                 {
@@ -679,8 +679,8 @@ namespace Technosoftware.UaClient.Tests
             ).ConfigureAwait(false);
 
             // Call
-            var inputArguments = new VariantCollection { new Variant((uint)0) };
-            var requests = new CallMethodRequestCollection
+            var inputArguments = new List<Variant> { new Variant((uint)0) };
+            var requests = new List<CallMethodRequest>
             {
                 new CallMethodRequest
                 {
@@ -737,7 +737,7 @@ namespace Technosoftware.UaClient.Tests
             const int operationCount = 100;
             for (int i = 0; i < operationCount; i++)
             {
-                var writeValues = new WriteValueCollection(
+                var writeValues = new List<WriteValue>(
                     m_smallTestSet.Select(nodeId => new WriteValue
                     {
                         NodeId = nodeId,
@@ -765,7 +765,7 @@ namespace Technosoftware.UaClient.Tests
         [Benchmark(Description = "Browse 100 ops (for throughput)")]
         public async Task BrowseThroughputAsync()
         {
-            var nodesToBrowse = new BrowseDescriptionCollection
+            var nodesToBrowse = new List<BrowseDescription>
             {
                 new BrowseDescription
                 {
@@ -802,8 +802,8 @@ namespace Technosoftware.UaClient.Tests
         [Benchmark(Description = "Call 100 ops (for throughput)")]
         public async Task CallThroughputAsync()
         {
-            var inputArguments = new VariantCollection { new Variant((uint)0) };
-            var requests = new CallMethodRequestCollection
+            var inputArguments = new List<Variant> { new Variant((uint)0) };
+            var requests = new List<CallMethodRequest>
             {
                 new CallMethodRequest
                 {

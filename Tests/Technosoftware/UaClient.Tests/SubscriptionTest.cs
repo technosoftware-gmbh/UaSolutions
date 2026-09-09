@@ -295,7 +295,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task SequentialPublishingSubscriptionAsync(bool enabled)
         {
             var subscriptionList = new List<Subscription>();
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             var sequenceBroken = new AutoResetEvent(false);
             long numOfNotifications = 0L;
             const int testWaitTime = 10000;

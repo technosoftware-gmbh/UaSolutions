@@ -244,13 +244,13 @@ namespace Technosoftware.UaClient.Tests
             };
 
             var result = new List<INode>();
-            var nodesToBrowse = new ExpandedNodeIdCollection { ObjectIds.ObjectsFolder };
+            var nodesToBrowse = new List<ExpandedNodeId> { ObjectIds.ObjectsFolder };
 
             await Session.FetchTypeTreeAsync(ReferenceTypeIds.References).ConfigureAwait(false);
 
             while (nodesToBrowse.Count > 0)
             {
-                var nextNodesToBrowse = new ExpandedNodeIdCollection();
+                var nextNodesToBrowse = new List<ExpandedNodeId>();
                 foreach (ExpandedNodeId node in nodesToBrowse)
                 {
                     try
@@ -347,7 +347,7 @@ namespace Technosoftware.UaClient.Tests
 
             List<NodeId> nodeIds = GetMassFolderNodesToBrowse();
 
-            IList<ReferenceDescriptionCollection> referenceDescriptionCollectionsPass1;
+            IList<ArrayOf<ReferenceDescription>> referenceDescriptionCollectionsPass1;
             // browse with test settings
             (referenceDescriptionCollectionsPass1, _) = await theSession.ManagedBrowseAsync(
                 null,
@@ -371,7 +371,7 @@ namespace Technosoftware.UaClient.Tests
             theSession.ServerCapabilities.MaxBrowseContinuationPoints = (ushort)pass2ExpectedResults
                 .InputMaxNumberOfContinuationPoints;
 
-            IList<ReferenceDescriptionCollection> referenceDescriptionsPass2;
+            IList<ArrayOf<ReferenceDescription>> referenceDescriptionsPass2;
             (referenceDescriptionsPass2, _) = await theSession.ManagedBrowseAsync(
                 null,
                 null,
@@ -384,7 +384,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.AreEqual(nodeIds.Count, referenceDescriptionsPass2.Count);
 
             // finally browse again with a simple browse service call.
-            IList<ReferenceDescriptionCollection> referenceDescriptionCollections2ndBrowse;
+            IList<ArrayOf<ReferenceDescription>> referenceDescriptionCollections2ndBrowse;
 
             (_, _, referenceDescriptionCollections2ndBrowse, _) =
                 await theSession.BrowseAsync(
@@ -399,7 +399,7 @@ namespace Technosoftware.UaClient.Tests
 
             int index = 0;
             foreach (
-                ReferenceDescriptionCollection referenceDescriptionCollection in referenceDescriptionCollectionsPass1)
+                ArrayOf<ReferenceDescription> referenceDescriptionCollection in referenceDescriptionCollectionsPass1)
             {
                 NUnit.Framework.Assert.That(
                     referenceDescriptionCollection.Count,
@@ -489,7 +489,7 @@ namespace Technosoftware.UaClient.Tests
             List<NodeId> nodeIds = GetMassFolderNodesToBrowse();
 
             // browse with test settings
-            IList<ReferenceDescriptionCollection> referenceDescriptionCollectionsPass1;
+            IList<ArrayOf<ReferenceDescription>> referenceDescriptionCollectionsPass1;
             (referenceDescriptionCollectionsPass1, _) = await theSession.ManagedBrowseAsync(
                 null,
                 null,
@@ -514,7 +514,7 @@ namespace Technosoftware.UaClient.Tests
 
             theSession.ContinuationPointPolicy = ContinuationPointPolicy.Balanced;
 
-            IList<ReferenceDescriptionCollection> referenceDescriptionsPass2;
+            IList<ArrayOf<ReferenceDescription>> referenceDescriptionsPass2;
             (referenceDescriptionsPass2, _) = await theSession.ManagedBrowseAsync(
                 null,
                 null,
@@ -526,7 +526,7 @@ namespace Technosoftware.UaClient.Tests
                 0).ConfigureAwait(false);
             Assert.AreEqual(nodeIds.Count, referenceDescriptionsPass2.Count);
 
-            IList<ReferenceDescriptionCollection> referenceDescriptionCollections2ndBrowse;
+            IList<ArrayOf<ReferenceDescription>> referenceDescriptionCollections2ndBrowse;
             // finally browse again with a simple browse service call.
             (_, _, referenceDescriptionCollections2ndBrowse, _) = await theSession.BrowseAsync(
                 null,
@@ -540,7 +540,7 @@ namespace Technosoftware.UaClient.Tests
 
             int index = 0;
             foreach (
-                ReferenceDescriptionCollection referenceDescriptionCollection in referenceDescriptionCollectionsPass1)
+                ArrayOf<ReferenceDescription> referenceDescriptionCollection in referenceDescriptionCollectionsPass1)
             {
                 NUnit.Framework.Assert.That(
                     referenceDescriptionCollection.Count,
@@ -630,8 +630,8 @@ namespace Technosoftware.UaClient.Tests
             List<NodeId> nodeIds1 = nodeIds.GetRange(0, nodeIds.Count / 2);
             var nodeIds2 = nodeIds.Skip(nodeIds.Count / 2).ToList();
 
-            IList<ReferenceDescriptionCollection> referenceDescriptionCollectionsPass1 = [];
-            IList<ReferenceDescriptionCollection> referenceDescriptionCollectionsPass2 = [];
+            IList<ArrayOf<ReferenceDescription>> referenceDescriptionCollectionsPass1 = [];
+            IList<ArrayOf<ReferenceDescription>> referenceDescriptionCollectionsPass2 = [];
 
             IList<ServiceResult> errorsPass1 = [];
             IList<ServiceResult> errorsPass2 = [];
@@ -664,7 +664,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.AreEqual(nodeIds1.Count, referenceDescriptionCollectionsPass1.Count);
             Assert.AreEqual(nodeIds2.Count, referenceDescriptionCollectionsPass2.Count);
 
-            ((List<ReferenceDescriptionCollection>)referenceDescriptionCollectionsPass1).AddRange(
+            ((List<ArrayOf<ReferenceDescription>>)referenceDescriptionCollectionsPass1).AddRange(
                 referenceDescriptionCollectionsPass2);
             ((List<ServiceResult>)errorsPass1).AddRange(errorsPass2);
 
@@ -679,8 +679,8 @@ namespace Technosoftware.UaClient.Tests
             theSession.ServerCapabilities.MaxBrowseContinuationPoints = (ushort)pass2ExpectedResults
                 .InputMaxNumberOfContinuationPoints;
 
-            ByteStringCollection continuationPoints2ndBrowse;
-            IList<ReferenceDescriptionCollection> referenceDescriptionCollections2ndBrowse;
+            ArrayOf<ByteString> continuationPoints2ndBrowse;
+            IList<ArrayOf<ReferenceDescription>> referenceDescriptionCollections2ndBrowse;
             IList<ServiceResult> errors2ndBrowse;
             (_, continuationPoints2ndBrowse, referenceDescriptionCollections2ndBrowse, errors2ndBrowse) =
                 await theSession.BrowseAsync(
@@ -695,7 +695,7 @@ namespace Technosoftware.UaClient.Tests
 
             int index = 0;
             foreach (
-                ReferenceDescriptionCollection referenceDescriptionCollection in referenceDescriptionCollectionsPass1)
+                ArrayOf<ReferenceDescription> referenceDescriptionCollection in referenceDescriptionCollectionsPass1)
             {
                 NUnit.Framework.Assert.That(
                     referenceDescriptionCollection.Count,
@@ -760,16 +760,16 @@ namespace Technosoftware.UaClient.Tests
                 .InputMaxNumberOfContinuationPoints;
 
             var result = new List<INode>();
-            var nodesToBrowse = new ExpandedNodeIdCollection { ObjectIds.ObjectsFolder };
+            var nodesToBrowse = new List<ExpandedNodeId> { ObjectIds.ObjectsFolder };
 
             await Session
                 .FetchTypeTreeAsync(ReferenceTypeIds.References, new CancellationToken())
                 .ConfigureAwait(false);
 
-            var referenceTypeIds = new NodeIdCollection { ReferenceTypeIds.HierarchicalReferences };
+            var referenceTypeIds = new List<NodeId> { ReferenceTypeIds.HierarchicalReferences };
             while (nodesToBrowse.Count > 0)
             {
-                var nextNodesToBrowse = new ExpandedNodeIdCollection();
+                var nextNodesToBrowse = new List<ExpandedNodeId>();
                 try
                 {
                     IList<INode> organizers = await Session

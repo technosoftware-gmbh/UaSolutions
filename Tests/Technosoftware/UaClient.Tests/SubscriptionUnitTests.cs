@@ -138,12 +138,12 @@ namespace Technosoftware.UaClient.Tests
                         ct
                       ) => new() { SubscriptionId = ++subscriptionIdSeed });
             session
-                .Setup(x => x.SetPublishingModeAsync(It.IsAny<RequestHeader>(), It.IsAny<bool>(), It.IsAny<UInt32Collection>(), It.IsAny<CancellationToken>())
+                .Setup(x => x.SetPublishingModeAsync(It.IsAny<RequestHeader>(), It.IsAny<bool>(), It.IsAny<ArrayOf<uint>>(), It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync<
                     RequestHeader,
                     bool,
-                    UInt32Collection,
+                    ArrayOf<uint>,
                     CancellationToken,
                     IUaSession,
                     SetPublishingModeResponse
@@ -199,7 +199,7 @@ namespace Technosoftware.UaClient.Tests
                 //simplified republish emulation
                 if (subscription.Id == subscriptionId && availableSequenceNumbers.Remove(sequenceNumber))
                 {
-                    subscription.SaveMessageInCache(null, messagesToProcess[sequenceNumber]);
+                    subscription.SaveMessageInCache(default, messagesToProcess[sequenceNumber]);
                     return true;
                 }
                 return false;

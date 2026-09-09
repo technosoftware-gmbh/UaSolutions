@@ -126,7 +126,7 @@ namespace Technosoftware.UaClient.Tests
                         .ConnectAsync(
                             ServerUrl,
                             SecurityPolicies.Basic256Sha256,
-                            null,
+                            default,
                             new UserIdentity("sysadmin", "demo"u8))
                         .ConfigureAwait(false);
                     Session.DeleteSubscriptionsOnClose = false;
@@ -482,7 +482,7 @@ namespace Technosoftware.UaClient.Tests
                 .ConnectAsync(
                     ServerUrl,
                     SecurityPolicies.Basic256Sha256,
-                    null,
+                    default,
                     new UserIdentity("sysadmin", "demo"u8))
                 .ConfigureAwait(false);
 #else // TODO: Remove once failure is understood.
@@ -635,7 +635,7 @@ namespace Technosoftware.UaClient.Tests
             NodeId currentLifetimeCountNodeId = default;
             NodeId publishingIntervalNodeId = default;
 
-            (_, _, ReferenceDescriptionCollection references) = await Session.BrowseAsync(
+            (_, _, ArrayOf<ReferenceDescription> references) = await Session.BrowseAsync(
                 null,
                 null,
                 serverDiags,
@@ -664,7 +664,7 @@ namespace Technosoftware.UaClient.Tests
                     (
                         _,
                         byte[] anotherContinuationPoint,
-                        ReferenceDescriptionCollection desiredReferences
+                        ArrayOf<ReferenceDescription> desiredReferences
                     ) = await Session.BrowseAsync(
                         null,
                         null,
@@ -798,7 +798,7 @@ namespace Technosoftware.UaClient.Tests
                     {
                         AttributeId = Attributes.Value,
                         TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                        BrowsePath = [.. new QualifiedName[] { "EventType" }]
+                        BrowsePath = [.. new QualifiedName[] { new QualifiedName("EventType" )}]
                     },
                     new LiteralOperand {
                         Value = new Variant(ObjectTypeIds.BaseEventType) }
@@ -821,7 +821,7 @@ namespace Technosoftware.UaClient.Tests
                             {
                                 AttributeId = Attributes.Value,
                                 TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                                BrowsePath = [.. new QualifiedName[] { BrowseNames.Message }]
+                                BrowsePath = [.. new QualifiedName[] { new QualifiedName(BrowseNames.Message )}]
                             }
                         }
                     ],
