@@ -69,7 +69,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
             Assert.That(queue.IsDurable, Is.EqualTo(false));
             Assert.That(queue.Dequeue(out _, out _), Is.EqualTo(false));
-            Assert.That(queue.PeekLastValue(), Is.EqualTo(null));
+            Assert.That(queue.PeekLastValue(), Is.EqualTo(default(DataValue)));
             Assert.Throws<InvalidOperationException>(
                 () => queue.OverwriteLastValue(new DataValue(), null));
             Assert.Throws<InvalidOperationException>(() => queue.Enqueue(new DataValue(), null));
@@ -115,7 +115,7 @@ namespace Technosoftware.UaServer.Tests
             bool status3 = queue.Dequeue(out DataValue result3, out ServiceResult resultError3);
 
             Assert.That(status3, Is.False);
-            Assert.That(result3, Is.Null);
+            Assert.That(result3, Is.EqualTo(default(DataValue)));
             Assert.That(resultError3, Is.Null);
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
         }
@@ -180,7 +180,7 @@ namespace Technosoftware.UaServer.Tests
             bool status4 = queue.Dequeue(out DataValue result4, out ServiceResult resultError4);
 
             Assert.That(status4, Is.False);
-            Assert.That(result4, Is.Null);
+            Assert.That(result4, Is.EqualTo(default(DataValue)));
             Assert.That(resultError4, Is.Null);
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
         }
@@ -226,7 +226,7 @@ namespace Technosoftware.UaServer.Tests
             bool status2 = queue.Dequeue(out DataValue result2, out ServiceResult resultError2);
 
             Assert.That(status2, Is.False);
-            Assert.That(result2, Is.Null);
+            Assert.That(result2, Is.EqualTo(default(DataValue)));
             Assert.That(resultError2, Is.Null);
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
         }
@@ -267,7 +267,7 @@ namespace Technosoftware.UaServer.Tests
             bool status2 = queue.Dequeue(out DataValue result2, out ServiceResult resultError2);
 
             Assert.That(status2, Is.False);
-            Assert.That(result2, Is.Null);
+            Assert.That(result2, Is.EqualTo(default(DataValue)));
             Assert.That(resultError2, Is.Null);
             Assert.That(queue.ItemsInQueue, Is.EqualTo(0));
         }
@@ -1063,7 +1063,7 @@ namespace Technosoftware.UaServer.Tests
                 out ServiceResult resultError2);
 
             Assert.That(status2, Is.False);
-            Assert.That(result2, Is.Null);
+            Assert.That(result2, Is.EqualTo(default(DataValue)));
             Assert.That(resultError2, Is.Null);
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(0));
         }
@@ -1128,7 +1128,7 @@ namespace Technosoftware.UaServer.Tests
                 out ServiceResult resultError2);
 
             Assert.That(status2, Is.False);
-            Assert.That(result2, Is.Null);
+            Assert.That(result2, Is.EqualTo(default(DataValue)));
             Assert.That(resultError2, Is.Null);
             Assert.That(queueHandler.ItemsInQueue, Is.EqualTo(0));
         }
