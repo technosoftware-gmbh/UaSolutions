@@ -102,7 +102,7 @@ namespace Technosoftware.UaServer
             var folderState = new FolderState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = ObjectTypeIds.FolderType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -121,8 +121,8 @@ namespace Technosoftware.UaServer
             }
             else
             {
-                folderState.AddReference(ReferenceTypes.Organizes, true, ObjectIds.ObjectsFolder);
-                References.Add(new NodeStateReference(ReferenceTypes.Organizes, false, folderState.NodeId));
+                folderState.AddReference(new NodeId(ReferenceTypes.Organizes), true, ObjectIds.ObjectsFolder);
+                References.Add(new NodeStateReference(new NodeId(ReferenceTypes.Organizes), false, folderState.NodeId));
                 folderState.EventNotifier = EventNotifiers.SubscribeToEvents;
                 AddRootNotifier(folderState);
             }
@@ -192,7 +192,7 @@ namespace Technosoftware.UaServer
             var baseObjectState = new BaseObjectState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = ObjectTypeIds.BaseObjectType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -302,7 +302,7 @@ namespace Technosoftware.UaServer
                 UserWriteMask = userWriteMask,
                 RolePermissions = rolePermissions,
                 UserRolePermissions = userRolePermissions,
-                DataType = (uint)dataType,
+                DataType = new NodeId((uint)dataType),
                 ValueRank = valueRank,
                 AccessLevel = accessLevel,
                 UserAccessLevel = accessLevel,
@@ -416,8 +416,8 @@ namespace Technosoftware.UaServer
 
             if (parent != null)
             {
-                parent.AddReference(ReferenceTypes.Organizes, false, viewState.NodeId);
-                viewState.AddReference(ReferenceTypes.Organizes, true, parent.NodeId);
+                parent.AddReference(new NodeId(ReferenceTypes.Organizes), false, viewState.NodeId);
+                viewState.AddReference(new NodeId(ReferenceTypes.Organizes), true, parent.NodeId);
             }
 
             AddPredefinedNode(SystemContext, viewState);
@@ -496,7 +496,7 @@ namespace Technosoftware.UaServer
             var baseDataVariableTypeState = new BaseDataVariableState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -506,7 +506,7 @@ namespace Technosoftware.UaServer
                 UserWriteMask = userWriteMask,
                 RolePermissions = rolePermissions,
                 UserRolePermissions = userRolePermissions,
-                DataType = (uint)dataType,
+                DataType = new NodeId((uint)dataType),
                 ValueRank = valueRank,
                 AccessLevel = accessLevel,
                 UserAccessLevel = accessLevel,
@@ -602,7 +602,7 @@ namespace Technosoftware.UaServer
             var baseDataVariableTypeState = new BaseDataVariableState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -708,7 +708,7 @@ namespace Technosoftware.UaServer
             var baseDataVariableTypeState = new BaseDataVariableState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -851,7 +851,7 @@ namespace Technosoftware.UaServer
                 true);
 
             variable.SymbolicName = displayName.ToString();
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.TypeDefinitionId = VariableTypeIds.BaseDataVariableType;
             variable.NodeId = new NodeId(browseName, NamespaceIndex);
             variable.BrowseName = new QualifiedName(browseName, NamespaceIndex);
@@ -861,14 +861,14 @@ namespace Technosoftware.UaServer
             variable.UserWriteMask = userWriteMask;
             variable.RolePermissions = rolePermissions;
             variable.UserRolePermissions = userRolePermissions;
-            variable.DataType = (uint)dataType;
+            variable.DataType = new NodeId((uint)dataType);
             variable.ValueRank = valueRank;
             variable.AccessLevel = accessLevel;
             variable.UserAccessLevel = accessLevel;
             variable.Historizing = false;
 
             variable.Value = initialValue ??
-                             Opc.Ua.TypeInfo.GetDefaultValue((uint)dataType, valueRank, ServerData.TypeTree);
+                             Opc.Ua.TypeInfo.GetDefaultValue(new NodeId((uint)dataType), valueRank, ServerData.TypeTree);
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
 
@@ -1161,7 +1161,7 @@ namespace Technosoftware.UaServer
             variable.UserWriteMask = userWriteMask;
             variable.RolePermissions = rolePermissions;
             variable.UserRolePermissions = userRolePermissions;
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = dataType;
             variable.ValueRank = valueRank;
             variable.AccessLevel = accessLevel;
@@ -1286,7 +1286,7 @@ namespace Technosoftware.UaServer
             }
 
             variable.SymbolicName = displayName.ToString();
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = DataTypeIds.Boolean;
             variable.ValueRank = ValueRanks.Scalar;
             variable.Description = description;
@@ -1302,11 +1302,11 @@ namespace Technosoftware.UaServer
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
 
-            variable.TrueState.Value = trueState;
+            variable.TrueState.Value = new LocalizedText(trueState);
             variable.TrueState.AccessLevel = accessLevel;
             variable.TrueState.UserAccessLevel = accessLevel;
 
-            variable.FalseState.Value = falseState;
+            variable.FalseState.Value = new LocalizedText(falseState);
             variable.FalseState.AccessLevel = accessLevel;
             variable.FalseState.UserAccessLevel = accessLevel;
 
@@ -1402,7 +1402,7 @@ namespace Technosoftware.UaServer
             }
 
             variable.SymbolicName = displayName.ToString();
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = DataTypeIds.UInt32;
             variable.ValueRank = ValueRanks.Scalar;
             variable.Description = description;
@@ -1524,7 +1524,7 @@ namespace Technosoftware.UaServer
             }
 
             variable.SymbolicName = displayName.ToString();
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = dataType ?? DataTypeIds.UInt32;
             variable.ValueRank = ValueRanks.Scalar;
             variable.Description = description;
@@ -1642,7 +1642,7 @@ namespace Technosoftware.UaServer
         /// <returns>The created argument</returns>
         protected Argument CreateArgument(string name, string description, BuiltInType dataType, int valueRank)
         {
-            var argument = new Argument { Name = name, Description = description, DataType = (uint)dataType, ValueRank = valueRank };
+            var argument = new Argument { Name = name, Description = new LocalizedText(description), DataType = new NodeId((uint)dataType), ValueRank = valueRank };
 
             return argument;
         }
@@ -1658,9 +1658,9 @@ namespace Technosoftware.UaServer
                 parent.InputArguments = new PropertyState<Argument[]>(parent)
                 {
                     NodeId = new NodeId(parent.BrowseName.Name + "InArgs", NamespaceIndex),
-                    BrowseName = BrowseNames.InputArguments
+                    BrowseName = new QualifiedName(BrowseNames.InputArguments)
                 };
-                parent.InputArguments.DisplayName = parent.InputArguments.BrowseName.Name;
+                parent.InputArguments.DisplayName = new LocalizedText(parent.InputArguments.BrowseName.Name);
                 parent.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                 parent.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                 parent.InputArguments.DataType = DataTypeIds.Argument;
@@ -1684,9 +1684,9 @@ namespace Technosoftware.UaServer
                 parent.OutputArguments = new PropertyState<Argument[]>(parent)
                 {
                     NodeId = new NodeId(parent.BrowseName.Name + "OutArgs", NamespaceIndex),
-                    BrowseName = BrowseNames.OutputArguments
+                    BrowseName = new QualifiedName(BrowseNames.OutputArguments)
                 };
-                parent.OutputArguments.DisplayName = parent.OutputArguments.BrowseName.Name;
+                parent.OutputArguments.DisplayName = new LocalizedText(parent.OutputArguments.BrowseName.Name);
                 parent.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                 parent.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                 parent.OutputArguments.DataType = DataTypeIds.Argument;

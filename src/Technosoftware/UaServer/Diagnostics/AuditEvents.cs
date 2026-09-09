@@ -682,7 +682,7 @@ namespace Technosoftware.UaServer
                         systemContext,
                         null,
                         EventSeverity.Min,
-                        sre.Message,
+                        new LocalizedText(sre.Message),
                         false,
                         DateTime.UtcNow
                     ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
@@ -825,7 +825,7 @@ namespace Technosoftware.UaServer
                     systemContext,
                     null,
                     EventSeverity.Min,
-                    $"Cancel requested for sessionId: {sessionId} with requestHandle: {requestHandle}",
+                    new LocalizedText($"Cancel requested for sessionId: {sessionId} with requestHandle: {requestHandle}"),
                     StatusCode.IsGood(statusCode),
                     DateTime.UtcNow
                 ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
@@ -887,7 +887,7 @@ namespace Technosoftware.UaServer
                     systemContext,
                     null,
                     EventSeverity.Min,
-                    $"RoleMappingRuleChanged - {method?.BrowseName}",
+                    new LocalizedText($"RoleMappingRuleChanged - {method?.BrowseName}"),
                     status,
                     DateTime.UtcNow
                 ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId

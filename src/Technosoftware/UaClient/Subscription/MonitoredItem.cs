@@ -871,8 +871,8 @@ namespace Technosoftware.UaClient
             // get event type.
             var eventTypeId = GetFieldValue(
                 eventFields,
-                ObjectTypes.BaseEventType,
-                BrowseNames.EventType) as NodeId;
+                new NodeId(ObjectTypes.BaseEventType),
+                new QualifiedName(BrowseNames.EventType)) as NodeId;
 
             if (!eventTypeId.IsNull &&
                 Subscription != null &&
@@ -895,8 +895,8 @@ namespace Technosoftware.UaClient
             // get event time.
             var eventTime = GetFieldValue(
                 eventFields,
-                ObjectTypes.BaseEventType,
-                BrowseNames.Time) as DateTime?;
+                new NodeId(ObjectTypes.BaseEventType),
+                new QualifiedName(BrowseNames.Time)) as DateTime?;
 
             if (eventTime != null)
             {
@@ -1033,15 +1033,15 @@ namespace Technosoftware.UaClient
         {
             var filter = new EventFilter();
 
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.EventId);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.EventType);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.SourceNode);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.SourceName);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Time);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.ReceiveTime);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.LocalTime);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Message);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Severity);
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.EventId));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.EventType));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.SourceNode));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.SourceName));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.Time));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.ReceiveTime));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.LocalTime));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.Message));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.Severity));
 
             return filter;
         }

@@ -1114,7 +1114,7 @@ namespace Technosoftware.UaClient
             var clientDescription = new ApplicationDescription
             {
                 ApplicationUri = m_configuration.ApplicationUri,
-                ApplicationName = m_configuration.ApplicationName,
+                ApplicationName = new LocalizedText(m_configuration.ApplicationName),
                 ApplicationType = ApplicationType.Client,
                 ProductUri = m_configuration.ProductUri
             };
@@ -2672,7 +2672,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 // read the server state.
                 new ReadValueId
                 {
-                    NodeId = Variables.Server_ServerStatus_State,
+                    NodeId = new NodeId(Variables.Server_ServerStatus_State),
                     AttributeId = Attributes.Value,
                     DataEncoding = QualifiedName.Null,
                     IndexRange = null
@@ -3231,7 +3231,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             // request namespace array.
             var valueId = new ReadValueId
             {
-                NodeId = Variables.Server_NamespaceArray,
+                NodeId = new NodeId(Variables.Server_NamespaceArray),
                 AttributeId = Attributes.Value
             };
 
@@ -3240,7 +3240,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             // request server array.
             valueId = new ReadValueId
             {
-                NodeId = Variables.Server_ServerArray,
+                NodeId = new NodeId(Variables.Server_ServerArray),
                 AttributeId = Attributes.Value
             };
 
@@ -4776,7 +4776,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             {
                 var parameters = new AdditionalParametersType();
                 parameters.Parameters.Add(
-                    new Opc.Ua.KeyValuePair { Key = "ECDHPolicyUri", Value = userTokenSecurityPolicyUri });
+                    new Opc.Ua.KeyValuePair { Key = new QualifiedName("ECDHPolicyUri"), Value = userTokenSecurityPolicyUri });
                 requestHeader.AdditionalHeader = new ExtensionObject(parameters);
             }
 

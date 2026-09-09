@@ -645,7 +645,7 @@ namespace Technosoftware.UaServer
                             response.Parameters.Add(
                                 new KeyValuePair
                                 {
-                                    Key = "ECDHKey",
+                                    Key = new QualifiedName("ECDHKey"),
                                     Value = new ExtensionObject(key)
                                 });
                         }
@@ -654,7 +654,7 @@ namespace Technosoftware.UaServer
                             response.Parameters.Add(
                                 new KeyValuePair
                                 {
-                                    Key = "ECDHKey",
+                                    Key = new QualifiedName("ECDHKey"),
                                     Value = StatusCodes.BadSecurityPolicyRejected
                                 });
                         }
@@ -683,7 +683,7 @@ namespace Technosoftware.UaServer
             {
                 response = new AdditionalParametersType();
                 response.Parameters
-                    .Add(new KeyValuePair { Key = "ECDHKey", Value = new ExtensionObject(key) });
+                    .Add(new KeyValuePair { Key = new QualifiedName("ECDHKey"), Value = new ExtensionObject(key) });
             }
 
             return response;

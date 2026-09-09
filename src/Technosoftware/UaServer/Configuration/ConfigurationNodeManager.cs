@@ -362,7 +362,7 @@ namespace Technosoftware.UaServer
                     namespaceMetadataState.BrowseName,
                     null,
                     true);
-                namespaceMetadataState.DisplayName = namespaceUri;
+                namespaceMetadataState.DisplayName = new LocalizedText(namespaceUri);
                 namespaceMetadataState.SymbolicName = namespaceUri;
                 namespaceMetadataState.NamespaceUri.Value = namespaceUri;
 

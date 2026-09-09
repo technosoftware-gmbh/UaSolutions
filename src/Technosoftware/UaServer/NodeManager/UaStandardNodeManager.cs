@@ -4168,7 +4168,7 @@ namespace Technosoftware.UaServer
             if (deadbandFilter.DeadbandType == (uint)DeadbandType.Percent)
             {
                 if (handle.Node
-                    .FindChild(context, BrowseNames.EURange) is not PropertyState property)
+                    .FindChild(context, new QualifiedName(BrowseNames.EURange)) is not PropertyState property)
                 {
                     return StatusCodes.BadMonitoredItemFilterUnsupported;
                 }

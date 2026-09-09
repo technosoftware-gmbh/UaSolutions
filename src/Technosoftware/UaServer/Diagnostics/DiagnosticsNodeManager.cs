@@ -128,7 +128,7 @@ namespace Technosoftware.UaServer
                 {
                     NodeState samplingDiagnosticsArrayNode = serverDiagnosticsNode.FindChild(
                         SystemContext,
-                        BrowseNames.SamplingIntervalDiagnosticsArray);
+                        new QualifiedName(BrowseNames.SamplingIntervalDiagnosticsArray));
 
                     if (samplingDiagnosticsArrayNode != null)
                     {
@@ -188,7 +188,7 @@ namespace Technosoftware.UaServer
                     {
                         NodeState setSubscriptionDurableNode = serverObject.FindChild(
                             SystemContext,
-                            BrowseNames.SetSubscriptionDurable);
+                            new QualifiedName(BrowseNames.SetSubscriptionDurable));
 
                         if (setSubscriptionDurableNode != null)
                         {
@@ -808,7 +808,7 @@ namespace Technosoftware.UaServer
 
                 // initialize diagnostics node.
                 var diagnosticsNode =
-                    sessionNode.CreateChild(systemContext, BrowseNames.SessionDiagnostics) as
+                    sessionNode.CreateChild(systemContext, new QualifiedName(BrowseNames.SessionDiagnostics)) as
                     SessionDiagnosticsVariableState;
 
                 // wrap diagnostics in a thread safe object.
@@ -828,7 +828,7 @@ namespace Technosoftware.UaServer
                 var securityDiagnosticsNode =
                     sessionNode.CreateChild(
                         systemContext,
-                        BrowseNames.SessionSecurityDiagnostics) as
+                        new QualifiedName(BrowseNames.SessionSecurityDiagnostics)) as
                     SessionSecurityDiagnosticsState;
 
                 // wrap diagnostics in a thread safe object.
@@ -962,7 +962,7 @@ namespace Technosoftware.UaServer
                     array = (SubscriptionDiagnosticsArrayState)
                         sessionNode.CreateChild(
                             systemContext,
-                            BrowseNames.SubscriptionDiagnosticsArray);
+                            new QualifiedName(BrowseNames.SubscriptionDiagnosticsArray));
 
                     array?.AddReference(
                         ReferenceTypeIds.HasComponent,
@@ -1045,11 +1045,11 @@ namespace Technosoftware.UaServer
                     if (parent != null)
                     {
                         parent.AddReference(
-                            ReferenceTypes.HasComponent,
+                            new NodeId(ReferenceTypes.HasComponent),
                             false,
                             historyServerCapabilitiesNode.NodeId);
                         historyServerCapabilitiesNode.AddReference(
-                            ReferenceTypes.HasComponent,
+                            new NodeId(ReferenceTypes.HasComponent),
                             true,
                             parent.NodeId);
                     }
@@ -1121,12 +1121,12 @@ namespace Technosoftware.UaServer
                 var state = new FolderState(null)
                 {
                     SymbolicName = aggregateName,
-                    ReferenceTypeId = ReferenceTypes.HasComponent,
+                    ReferenceTypeId = new NodeId(ReferenceTypes.HasComponent),
                     TypeDefinitionId = ObjectTypeIds.AggregateFunctionType,
                     NodeId = aggregateId,
                     BrowseName = new QualifiedName(aggregateName, aggregateId.NamespaceIndex)
                 };
-                state.DisplayName = state.BrowseName.Name;
+                state.DisplayName = new LocalizedText(state.BrowseName.Name);
                 state.WriteMask = AttributeWriteMask.None;
                 state.UserWriteMask = AttributeWriteMask.None;
                 state.EventNotifier = EventNotifiers.None;
@@ -1136,8 +1136,8 @@ namespace Technosoftware.UaServer
 
                 if (folder != null)
                 {
-                    folder.AddReference(ReferenceTypes.Organizes, false, state.NodeId);
-                    state.AddReference(ReferenceTypes.Organizes, true, folder.NodeId);
+                    folder.AddReference(new NodeId(ReferenceTypes.Organizes), false, state.NodeId);
+                    state.AddReference(new NodeId(ReferenceTypes.Organizes), true, folder.NodeId);
                 }
 
                 if (isHistorical)
@@ -1147,8 +1147,8 @@ namespace Technosoftware.UaServer
 
                     if (folder != null)
                     {
-                        folder.AddReference(ReferenceTypes.Organizes, false, state.NodeId);
-                        state.AddReference(ReferenceTypes.Organizes, true, folder.NodeId);
+                        folder.AddReference(new NodeId(ReferenceTypes.Organizes), false, state.NodeId);
+                        state.AddReference(new NodeId(ReferenceTypes.Organizes), true, folder.NodeId);
                     }
                 }
 
@@ -1166,12 +1166,12 @@ namespace Technosoftware.UaServer
                 var state = new FolderState(null)
                 {
                     SymbolicName = modellingRuleName,
-                    ReferenceTypeId = ReferenceTypes.HasComponent,
+                    ReferenceTypeId = new NodeId(ReferenceTypes.HasComponent),
                     TypeDefinitionId = ObjectTypeIds.ModellingRuleType,
                     NodeId = modellingRuleId,
                     BrowseName = new QualifiedName(modellingRuleName, modellingRuleId.NamespaceIndex)
                 };
-                state.DisplayName = state.BrowseName.Name;
+                state.DisplayName = new LocalizedText(state.BrowseName.Name);
                 state.WriteMask = AttributeWriteMask.None;
                 state.UserWriteMask = AttributeWriteMask.None;
                 state.EventNotifier = EventNotifiers.None;
@@ -1181,8 +1181,8 @@ namespace Technosoftware.UaServer
 
                 if (folder != null)
                 {
-                    folder.AddReference(ReferenceTypes.Organizes, false, state.NodeId);
-                    state.AddReference(ReferenceTypes.Organizes, true, folder.NodeId);
+                    folder.AddReference(new NodeId(ReferenceTypes.Organizes), false, state.NodeId);
+                    state.AddReference(new NodeId(ReferenceTypes.Organizes), true, folder.NodeId);
                 }
 
                 AddPredefinedNode(SystemContext, state);
@@ -1754,7 +1754,7 @@ namespace Technosoftware.UaServer
                             subscriptionsNode = (SubscriptionDiagnosticsArrayState)
                                 diagnostics.Summary.CreateChild(
                                     SystemContext,
-                                    BrowseNames.SubscriptionDiagnosticsArray);
+                                    new QualifiedName(BrowseNames.SubscriptionDiagnosticsArray));
 
                             if (subscriptionsNode != null &&
                                 (

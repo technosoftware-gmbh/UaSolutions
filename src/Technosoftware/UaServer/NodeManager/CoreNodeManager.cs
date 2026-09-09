@@ -3564,7 +3564,7 @@ namespace Technosoftware.UaServer
         {
             range = null;
 
-            if (GetTargetNode(node, ReferenceTypes.HasProperty, false, true, BrowseNames.EURange)
+            if (GetTargetNode(node, new NodeId(ReferenceTypes.HasProperty), false, true, new QualifiedName(BrowseNames.EURange))
                 is not IVariable target)
             {
                 return StatusCodes.BadNodeIdUnknown;

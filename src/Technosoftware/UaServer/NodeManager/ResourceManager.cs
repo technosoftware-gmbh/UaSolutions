@@ -606,7 +606,7 @@ namespace Technosoftware.UaServer
                 }
             }
 
-            return Utils.Format("{0:X8}", statusCode.Code);
+            return new LocalizedText(Utils.Format("{0:X8}", statusCode.Code));
         }
 
         /// <summary>
@@ -635,7 +635,7 @@ namespace Technosoftware.UaServer
                 }
             }
 
-            return symbolicId;
+            return new LocalizedText(symbolicId);
         }
 
         private readonly Lock m_lock = new();
