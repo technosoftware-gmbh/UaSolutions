@@ -718,8 +718,8 @@ namespace Technosoftware.UaClient.Tests
                 session2.DeleteSubscriptionsOnClose = true;
                 await session1.CloseAsync(1000, true).ConfigureAwait(false);
                 await session2.CloseAsync(1000, true).ConfigureAwait(false);
-                Utils.SilentDispose(session1);
-                Utils.SilentDispose(session2);
+                session1?.Dispose();
+                session2?.Dispose();
             }
 
             Assert.AreEqual(0, session1ConfigChanged);
@@ -893,8 +893,8 @@ namespace Technosoftware.UaClient.Tests
             }
             finally
             {
-                Utils.SilentDispose(originSession);
-                Utils.SilentDispose(targetSession);
+                originSession?.Dispose();
+                targetSession?.Dispose();
             }
         }
 

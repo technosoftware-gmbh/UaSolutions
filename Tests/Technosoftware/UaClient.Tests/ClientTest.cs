@@ -950,11 +950,11 @@ namespace Technosoftware.UaClient.Tests
 
             session1.DeleteSubscriptionsOnClose = true;
             await session1.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session1);
+            session1?.Dispose();
 
             session2.DeleteSubscriptionsOnClose = true;
             await session2.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session2);
+            session2?.Dispose();
         }
 
         /// <summary>
@@ -1021,7 +1021,7 @@ namespace Technosoftware.UaClient.Tests
             {
                 session1.DeleteSubscriptionsOnClose = true;
                 await session1.CloseAsync(1000).ConfigureAwait(false);
-                Utils.SilentDispose(session1);
+                session1?.Dispose();
             }
         }
 
@@ -1093,15 +1093,15 @@ namespace Technosoftware.UaClient.Tests
 
             session1.DeleteSubscriptionsOnClose = true;
             await session1.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session1);
+            session1?.Dispose();
 
             session2.DeleteSubscriptionsOnClose = true;
             await session2.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session2);
+            session2?.Dispose();
 
             session3.DeleteSubscriptionsOnClose = true;
             await session3.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session3);
+            session3?.Dispose();
         }
 
         [Test]

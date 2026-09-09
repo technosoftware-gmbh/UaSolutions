@@ -97,7 +97,7 @@ namespace Technosoftware.UaClient.Tests
         [OneTimeTearDown]
         public override Task OneTimeTearDownAsync()
         {
-            Utils.SilentDispose(ClientFixture);
+            ClientFixture?.Dispose();
             return base.OneTimeTearDownAsync();
         }
 
