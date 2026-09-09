@@ -981,7 +981,12 @@ namespace Technosoftware.UaServer
                 // check for an exact match.
                 if (CompareTimestamps(timestamp, ii) == 0)
                 {
-                    return new DataValue(ii.Value);
+                    // DataValue had a copy constructor in 1.5. It is a struct
+                    // in 2.0 and new DataValue(dataValue) binds
+                    // DataValue(Variant) instead, wrapping the whole DataValue
+                    // inside a Variant - the same source text, a different
+                    // meaning, and no diagnostic.
+                    return ii.Value.Copy();
                 }
 
                 // looking for an end bound.
