@@ -117,8 +117,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            DataValueCollection nodeClassValues = readResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
+            List<DataValue> nodeClassValues = readResponse.Results;
+            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(nodeClassValues, itemsToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
@@ -149,7 +149,7 @@ namespace Technosoftware.UaClient
                     ct)
                     .ConfigureAwait(false);
 
-                DataValueCollection values = readResponse.Results;
+                List<DataValue> values = readResponse.Results;
                 diagnosticInfos = readResponse.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(values, attributesToRead);
@@ -211,8 +211,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            DataValueCollection values = readResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
+            List<DataValue> values = readResponse.Results;
+            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, attributesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, attributesToRead);
@@ -260,8 +260,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            DataValueCollection values = readResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
+            List<DataValue> values = readResponse.Results;
+            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, itemsToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
@@ -296,8 +296,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            DataValueCollection values = readResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
+            List<DataValue> values = readResponse.Results;
+            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, itemsToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
@@ -342,8 +342,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            DataValueCollection values = readResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = readResponse.DiagnosticInfos;
+            List<DataValue> values = readResponse.Results;
+            List<DiagnosticInfo> diagnosticInfos = readResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, itemsToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, itemsToRead);
@@ -371,8 +371,8 @@ namespace Technosoftware.UaClient
         private static void CreateAttributesReadNodesRequest(
             ResponseHeader responseHeader,
             ReadValueIdCollection itemsToRead,
-            DataValueCollection nodeClassValues,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<DataValue> nodeClassValues,
+            List<DiagnosticInfo> diagnosticInfos,
             ReadValueIdCollection attributesToRead,
             List<IDictionary<uint, DataValue?>?> attributesPerNodeId,
             NodeCollection nodeCollection,
@@ -453,8 +453,8 @@ namespace Technosoftware.UaClient
             ResponseHeader responseHeader,
             ReadValueIdCollection attributesToRead,
             List<IDictionary<uint, DataValue?>?> attributesPerNodeId,
-            DataValueCollection values,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<DataValue> values,
+            List<DiagnosticInfo> diagnosticInfos,
             NodeCollection nodeCollection,
             List<ServiceResult> errors)
         {
@@ -470,8 +470,8 @@ namespace Technosoftware.UaClient
                 int readCount = attributes.Count;
                 var subRangeAttributes = new ReadValueIdCollection(
                     attributesToRead.GetRange(readIndex, readCount));
-                var subRangeValues = new DataValueCollection(values.GetRange(readIndex, readCount));
-                DiagnosticInfoCollection subRangeDiagnostics =
+                var subRangeValues = new List<DataValue>(values.GetRange(readIndex, readCount));
+                List<DiagnosticInfo> subRangeDiagnostics =
                     diagnosticInfos.Count > 0
                         ? [.. diagnosticInfos.GetRange(readIndex, readCount)]
                         : diagnosticInfos;
@@ -501,8 +501,8 @@ namespace Technosoftware.UaClient
             ResponseHeader responseHeader,
             IDictionary<uint, DataValue?> attributes,
             ReadValueIdCollection itemsToRead,
-            DataValueCollection values,
-            DiagnosticInfoCollection diagnosticInfos)
+            List<DataValue> values,
+            List<DiagnosticInfo> diagnosticInfos)
         {
             // process results.
             NodeClass? nodeClass = null;

@@ -49,7 +49,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         ValueTask<INode?> GetNodeWithBrowsePathAsync(
             NodeId nodeId,
-            QualifiedNameCollection browsePath,
+            List<QualifiedName> browsePath,
             CancellationToken ct = default);
 
         /// <summary>

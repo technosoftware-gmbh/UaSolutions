@@ -423,7 +423,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public async ValueTask<INode?> GetNodeWithBrowsePathAsync(
             NodeId nodeId,
-            QualifiedNameCollection browsePath,
+            List<QualifiedName> browsePath,
             CancellationToken ct)
         {
             INode? found = null;
@@ -501,7 +501,7 @@ namespace Technosoftware.UaClient
                     foreach (ReferenceDescription? reference in references)
                     {
                         // transform absolute identifiers.
-                        if (reference.NodeId?.IsAbsolute == true)
+                        if (reference.NodeId.IsAbsolute == true)
                         {
                             reference.NodeId = ExpandedNodeId.ToNodeId(
                                 reference.NodeId,
@@ -524,7 +524,7 @@ namespace Technosoftware.UaClient
             Debug.Assert(result.Count(r => r == null) == remainingIds.Count);
 
             // fetch nodes and references from server.
-            var localIds = new NodeIdCollection(remainingIds);
+            var localIds = new List<NodeId>(remainingIds);
             (IReadOnlyList<Node>? nodes, IReadOnlyList<ServiceResult>? readErrors) =
                 await m_context.FetchNodesAsync(null, localIds, ct: ct)
                     .ConfigureAwait(false);

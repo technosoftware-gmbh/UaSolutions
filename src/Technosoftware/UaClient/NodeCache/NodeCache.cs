@@ -141,7 +141,7 @@ namespace Technosoftware.UaClient
 
             int count = nodeIds.Count;
             var nodes = new List<INode?>(count);
-            var fetchNodeIds = new ExpandedNodeIdCollection();
+            var fetchNodeIds = new List<ExpandedNodeId>();
 
             int ii;
             for (ii = 0; ii < count; ii++)
@@ -358,7 +358,7 @@ namespace Technosoftware.UaClient
         {
             var localId = ExpandedNodeId.ToNodeId(nodeId, m_context.NamespaceUris);
 
-            if (localId == null)
+            if (localId.IsNull)
             {
                 return null;
             }
@@ -382,7 +382,7 @@ namespace Technosoftware.UaClient
                         if (!m_nodes.Exists(reference.NodeId))
                         {
                             // transform absolute identifiers.
-                            if (reference.NodeId != null && reference.NodeId.IsAbsolute)
+                            if (!reference.NodeId.IsNull && reference.NodeId.IsAbsolute)
                             {
                                 reference.NodeId = ExpandedNodeId.ToNodeId(
                                     reference.NodeId,
@@ -428,7 +428,7 @@ namespace Technosoftware.UaClient
                 return [];
             }
 
-            var localIds = new NodeIdCollection(
+            var localIds = new List<NodeId>(
                 nodeIds.Select(nodeId => ExpandedNodeId.ToNodeId(nodeId, m_context.NamespaceUris)));
 
             // fetch nodes and references from server.
@@ -458,7 +458,7 @@ namespace Technosoftware.UaClient
                             if (!m_nodes.Exists(reference.NodeId))
                             {
                                 // transform absolute identifiers.
-                                if (reference.NodeId != null && reference.NodeId.IsAbsolute)
+                                if (!reference.NodeId.IsNull && reference.NodeId.IsAbsolute)
                                 {
                                     reference.NodeId = ExpandedNodeId.ToNodeId(
                                         reference.NodeId,
@@ -518,7 +518,7 @@ namespace Technosoftware.UaClient
                 m_cacheLock.ExitReadLock();
             }
 
-            var targetIds = new ExpandedNodeIdCollection(
+            var targetIds = new List<ExpandedNodeId>(
                 references.Select(reference => reference.TargetId));
 
             IList<INode?> result = await FindAsync(targetIds, ct).ConfigureAwait(false);
@@ -546,7 +546,7 @@ namespace Technosoftware.UaClient
             {
                 return targets;
             }
-            var targetIds = new ExpandedNodeIdCollection();
+            var targetIds = new List<ExpandedNodeId>();
             IList<INode?> sources = await FindAsync(nodeIds, ct).ConfigureAwait(false);
             foreach (INode? source in sources)
             {
@@ -932,7 +932,7 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             // null actual datatype matches nothing.
-            if (value == null)
+            if (value.IsNull)
             {
                 return false;
             }

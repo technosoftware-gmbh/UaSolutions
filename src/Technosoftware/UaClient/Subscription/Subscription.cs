@@ -800,7 +800,7 @@ namespace Technosoftware.UaClient
             try
             {
                 // delete the subscription.
-                UInt32Collection subscriptionIds = new uint[] { Id };
+                List<uint> subscriptionIds = new uint[] { Id };
 
                 DeleteSubscriptionsResponse response = await Session
                     .DeleteSubscriptionsAsync(null, subscriptionIds, ct)
@@ -886,7 +886,7 @@ namespace Technosoftware.UaClient
             VerifySessionAndSubscriptionState(true);
 
             // modify the subscription.
-            UInt32Collection subscriptionIds = new uint[] { Id };
+            List<uint> subscriptionIds = new uint[] { Id };
 
             SetPublishingModeResponse response = await Session
                 .SetPublishingModeAsync(null, enabled, new uint[] { Id }, ct)
@@ -1108,7 +1108,7 @@ namespace Technosoftware.UaClient
             List<MonitoredItem> itemsToDelete = m_deletedItems;
             m_deletedItems = [];
 
-            var monitoredItemIds = new UInt32Collection();
+            var monitoredItemIds = new List<uint>();
 
             foreach (MonitoredItem monitoredItem in itemsToDelete)
             {
@@ -1119,7 +1119,7 @@ namespace Technosoftware.UaClient
                 .DeleteMonitoredItemsAsync(null, Id, monitoredItemIds, ct)
                 .ConfigureAwait(false);
 
-            StatusCodeCollection results = response.Results;
+            List<StatusCode> results = response.Results;
             ClientBase.ValidateResponse(results, monitoredItemIds);
             ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, monitoredItemIds);
 
@@ -1187,7 +1187,7 @@ namespace Technosoftware.UaClient
             foreach (KeyValuePair<uint, List<uint>> kvp in triggeringGroups)
             {
                 uint triggeringItemId = kvp.Key;
-                var linksToAdd = new UInt32Collection(kvp.Value);
+                var linksToAdd = new List<uint>(kvp.Value);
 
                 try
                 {
@@ -1240,7 +1240,7 @@ namespace Technosoftware.UaClient
             }
 
             // get list of items to update.
-            var monitoredItemIds = new UInt32Collection();
+            var monitoredItemIds = new List<uint>();
             foreach (MonitoredItem monitoredItem in monitoredItems)
             {
                 monitoredItemIds.Add(monitoredItem.Status.Id);
@@ -1250,7 +1250,7 @@ namespace Technosoftware.UaClient
                 .SetMonitoringModeAsync(null, Id, monitoringMode, monitoredItemIds, ct)
                 .ConfigureAwait(false);
 
-            StatusCodeCollection results = response.Results;
+            List<StatusCode> results = response.Results;
             ClientBase.ValidateResponse(results, monitoredItemIds);
             ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, monitoredItemIds);
 
@@ -1310,8 +1310,8 @@ namespace Technosoftware.UaClient
             }
 
             // Convert monitored items to server IDs
-            var serverIdsToAdd = new UInt32Collection();
-            var clientHandlesToAdd = new UInt32Collection();
+            var serverIdsToAdd = new List<uint>();
+            var clientHandlesToAdd = new List<uint>();
             if (linksToAdd != null)
             {
                 foreach (MonitoredItem item in linksToAdd)
@@ -1327,8 +1327,8 @@ namespace Technosoftware.UaClient
                 }
             }
 
-            var serverIdsToRemove = new UInt32Collection();
-            var clientHandlesToRemove = new UInt32Collection();
+            var serverIdsToRemove = new List<uint>();
+            var clientHandlesToRemove = new List<uint>();
             if (linksToRemove != null)
             {
                 foreach (MonitoredItem item in linksToRemove)
@@ -1467,7 +1467,7 @@ namespace Technosoftware.UaClient
         public async Task<bool> TransferAsync(
             IUaSession session,
             uint id,
-            UInt32Collection availableSequenceNumbers,
+            List<uint> availableSequenceNumbers,
             CancellationToken ct = default)
         {
             using Activity? activity = m_telemetry.StartActivity();
@@ -1510,8 +1510,8 @@ namespace Technosoftware.UaClient
             {
                 // handle the case when the client restarts and loads the saved subscriptions from storage
                 bool success;
-                UInt32Collection serverHandles;
-                UInt32Collection clientHandles;
+                List<uint> serverHandles;
+                List<uint> clientHandles;
                 (success, serverHandles, clientHandles) = await GetMonitoredItemsAsync(ct)
                     .ConfigureAwait(false);
                 if (!success)
@@ -1871,14 +1871,14 @@ namespace Technosoftware.UaClient
         /// </summary>
         public async Task<(
             bool,
-            UInt32Collection,
-            UInt32Collection
+            List<uint>,
+            List<uint>
             )> GetMonitoredItemsAsync(CancellationToken ct = default)
         {
             using Activity? activity = m_telemetry.StartActivity();
             VerifySession();
-            var serverHandles = new UInt32Collection();
-            var clientHandles = new UInt32Collection();
+            var serverHandles = new List<uint>();
+            var clientHandles = new List<uint>();
             try
             {
                 IList<object> outputArguments = await Session.CallAsync(
@@ -1951,7 +1951,7 @@ namespace Technosoftware.UaClient
         /// </remarks>
         /// <param name="availableSequenceNumbers">The list of available sequence
         /// numbers on the server.</param>
-        private void ProcessTransferredSequenceNumbers(UInt32Collection availableSequenceNumbers)
+        private void ProcessTransferredSequenceNumbers(List<uint> availableSequenceNumbers)
         {
             lock (m_cache)
             {
@@ -1960,7 +1960,7 @@ namespace Technosoftware.UaClient
                 m_resyncLastSequenceNumberProcessed = true;
 
                 // save available sequence numbers
-                m_availableSequenceNumbers = (UInt32Collection)availableSequenceNumbers
+                m_availableSequenceNumbers = (List<uint>)availableSequenceNumbers
                     .MemberwiseClone();
 
                 if (availableSequenceNumbers.Count != 0 && RepublishAfterTransfer)
@@ -2774,8 +2774,8 @@ namespace Technosoftware.UaClient
         private static bool UpdateMonitoringMode(
             IList<MonitoredItem> monitoredItems,
             List<ServiceResult?> errors,
-            StatusCodeCollection results,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<StatusCode> results,
+            List<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader,
             MonitoringMode monitoringMode)
         {
@@ -2907,8 +2907,8 @@ namespace Technosoftware.UaClient
         /// requests if transfer of client handles is not possible.
         /// </summary>
         private void TransferItems(
-            UInt32Collection serverHandles,
-            UInt32Collection clientHandles,
+            List<uint> serverHandles,
+            List<uint> clientHandles,
             out IList<MonitoredItem> itemsToModify)
         {
             lock (m_cache)

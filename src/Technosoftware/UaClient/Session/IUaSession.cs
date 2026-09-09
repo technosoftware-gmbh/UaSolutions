@@ -170,7 +170,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets the locales that the server should use when returning localized text.
         /// </summary>
-        StringCollection PreferredLocales { get; }
+        List<string> PreferredLocales { get; }
 
         /// <summary>
         /// Gets the subscriptions owned by the session.
@@ -374,7 +374,7 @@ namespace Technosoftware.UaClient
         /// <remarks>
         /// This method can be used to ensure the TypeTree is populated.
         /// </remarks>
-        Task FetchTypeTreeAsync(ExpandedNodeIdCollection typeIds, CancellationToken ct = default);
+        Task FetchTypeTreeAsync(List<ExpandedNodeId> typeIds, CancellationToken ct = default);
 
         /// <summary>
         /// Establishes a session with the server.
@@ -405,7 +405,7 @@ namespace Technosoftware.UaClient
         /// <param name="ct">The cancellation token.</param>
         Task UpdateSessionAsync(
             IUserIdentity identity,
-            StringCollection preferredLocales,
+            List<string> preferredLocales,
             CancellationToken ct = default);
 
         /// <summary>
@@ -414,7 +414,7 @@ namespace Technosoftware.UaClient
         /// <param name="preferredLocales">The preferred locales.</param>
         /// <param name="ct">The cancellation token.</param>
         Task ChangePreferredLocalesAsync(
-            StringCollection preferredLocales,
+            List<string> preferredLocales,
             CancellationToken ct = default);
 
         /// <summary>

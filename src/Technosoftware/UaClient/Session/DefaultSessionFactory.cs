@@ -218,11 +218,11 @@ namespace Technosoftware.UaClient
 
             // checks the domains in the certificate.
             if (checkDomain &&
-                endpoint.Description.ServerCertificate != null &&
+                !endpoint.Description.ServerCertificate.IsNull &&
                 endpoint.Description.ServerCertificate.Length > 0)
             {
-                configuration.CertificateValidator?.ValidateDomains(
-                    CertificateFactory.Create(endpoint.Description.ServerCertificate),
+                configuration.CertificateManager?.ValidateDomains(
+                    DefaultCertificateFactory.Instance.Create(endpoint.Description.ServerCertificate),
                     endpoint);
             }
 
@@ -326,7 +326,7 @@ namespace Technosoftware.UaClient
             X509Certificate2? clientCertificate = null,
             X509Certificate2Collection? clientCertificateChain = null,
             EndpointDescriptionCollection? availableEndpoints = null,
-            StringCollection? discoveryProfileUris = null)
+            List<string>? discoveryProfileUris = null)
         {
             return new Session(
                 channel,

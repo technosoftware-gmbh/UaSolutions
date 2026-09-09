@@ -57,7 +57,7 @@ namespace Technosoftware.UaClient
             X509Certificate2? clientCertificate = null,
             X509Certificate2Collection? clientCertificateChain = null,
             EndpointDescriptionCollection? availableEndpoints = null,
-            StringCollection? discoveryProfileUris = null);
+            List<string>? discoveryProfileUris = null);
 
         /// <summary>
         /// Creates a new communication session with a server by invoking the CreateSession service

@@ -44,7 +44,7 @@ namespace Technosoftware.UaClient
                 IList<Type> expectedTypes,
                 CancellationToken ct = default)
         {
-            (DataValueCollection dataValues, IList<ServiceResult> errors) =
+            (List<DataValue> dataValues, IList<ServiceResult> errors) =
                 await session.ReadValuesAsync(
                     variableIds,
                     ct).ConfigureAwait(false);
@@ -102,7 +102,7 @@ namespace Technosoftware.UaClient
             ResponseHeader responseHeader;
             IList<ServiceResult> errors;
             IList<ReferenceDescriptionCollection> referencesList;
-            ByteStringCollection continuationPoints;
+            List<ByteString> continuationPoints;
             (responseHeader, continuationPoints, referencesList, errors) =
                 await session.BrowseAsync(
                     requestHeader,
@@ -145,7 +145,7 @@ namespace Technosoftware.UaClient
             IList<ServiceResult> errors;
             IList<ReferenceDescriptionCollection> referencesList;
 
-            ByteStringCollection revisedContinuationPoints;
+            List<ByteString> revisedContinuationPoints;
             (responseHeader, revisedContinuationPoints, referencesList, errors) =
                 await session.BrowseNextAsync(
                     requestHeader,
@@ -388,8 +388,8 @@ namespace Technosoftware.UaClient
                 valuesToRead,
                 ct).ConfigureAwait(false);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = response.Results;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
 
             // verify that the server returned the correct number of results.
@@ -513,7 +513,7 @@ namespace Technosoftware.UaClient
         /// <param name="session">The session to use</param>
         /// <param name="nodeIds">The node Id.</param>
         /// <param name="ct">The cancellation token for the request.</param>
-        public static async Task<(DataValueCollection, IList<ServiceResult>)> ReadValuesAsync(
+        public static async Task<(List<DataValue>, IList<ServiceResult>)> ReadValuesAsync(
             this ISessionClient session,
             IList<NodeId> nodeIds,
             CancellationToken ct = default)
@@ -523,7 +523,7 @@ namespace Technosoftware.UaClient
                 null,
                 [.. nodeIds],
                 ct).ConfigureAwait(false);
-            return (new DataValueCollection(result.Results), result.Errors.ToList());
+            return (new List<DataValue>(result.Results), result.Errors.ToList());
         }
 
         /// <summary>
@@ -542,7 +542,7 @@ namespace Technosoftware.UaClient
         /// <returns></returns>
         public static async Task<(
             ResponseHeader responseHeader,
-            ByteStringCollection continuationPoints,
+            List<ByteString> continuationPoints,
             IList<ReferenceDescriptionCollection> referencesList,
             IList<ServiceResult> errors
         )> BrowseAsync(
@@ -581,14 +581,14 @@ namespace Technosoftware.UaClient
                 ct).ConfigureAwait(false);
 
             BrowseResultCollection results = browseResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = browseResponse.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, browseDescriptions);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, browseDescriptions);
 
             int ii = 0;
             var errors = new List<ServiceResult>();
-            var continuationPoints = new ByteStringCollection();
+            var continuationPoints = new List<ByteString>();
             var referencesList = new List<ReferenceDescriptionCollection>();
             foreach (BrowseResult result in results)
             {
@@ -624,13 +624,13 @@ namespace Technosoftware.UaClient
         /// <returns></returns>
         public static async Task<(
             ResponseHeader responseHeader,
-            ByteStringCollection revisedContinuationPoints,
+            List<ByteString> revisedContinuationPoints,
             IList<ReferenceDescriptionCollection> referencesList,
             IList<ServiceResult> errors
         )> BrowseNextAsync(
             this ISessionClient session,
             RequestHeader? requestHeader,
-            ByteStringCollection continuationPoints,
+            List<ByteString> continuationPoints,
             bool releaseContinuationPoint,
             CancellationToken ct = default)
         {
@@ -641,14 +641,14 @@ namespace Technosoftware.UaClient
                 ct).ConfigureAwait(false);
 
             BrowseResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, continuationPoints);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
 
             int ii = 0;
             var errors = new List<ServiceResult>();
-            var revisedContinuationPoints = new ByteStringCollection();
+            var revisedContinuationPoints = new List<ByteString>();
             var referencesList = new List<ReferenceDescriptionCollection>();
             foreach (BrowseResult result in results)
             {
@@ -731,8 +731,8 @@ namespace Technosoftware.UaClient
                         .ConfigureAwait(false);
 
                     ResponseHeader responseHeader = result.ResponseHeader;
-                    DataValueCollection results = result.Results;
-                    DiagnosticInfoCollection diagnosticInfos = result.DiagnosticInfos;
+                    List<DataValue> results = result.Results;
+                    List<DiagnosticInfo> diagnosticInfos = result.DiagnosticInfos;
                     ClientBase.ValidateResponse(results, readValueIds);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, readValueIds);
 
@@ -811,13 +811,13 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default,
             params object[] args)
         {
-            var inputArguments = new VariantCollection();
+            var inputArguments = new List<Variant>();
 
             if (args != null)
             {
                 for (int ii = 0; ii < args.Length; ii++)
                 {
-                    inputArguments.Add(new Variant(args[ii]));
+                    inputArguments.Add(Variant.From(args[ii]));
                 }
             }
 
@@ -831,7 +831,7 @@ namespace Technosoftware.UaClient
             var requests = new CallMethodRequestCollection { request };
 
             CallMethodResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos;
 
             CallResponse response = await session.CallAsync(null, requests, ct).ConfigureAwait(false);
 
@@ -873,7 +873,7 @@ namespace Technosoftware.UaClient
             var errors = new List<ServiceResult>(requests.Count);
             CallResponse response = await session.CallAsync(null, requests, ct).ConfigureAwait(false);
             CallMethodResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
             ClientBase.ValidateResponse(results, requests);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, requests);
@@ -904,7 +904,7 @@ namespace Technosoftware.UaClient
 
             foreach (uint subscriptionId in subscriptionIds)
             {
-                var inputArguments = new VariantCollection { new Variant(subscriptionId) };
+                var inputArguments = new List<Variant> { new Variant(subscriptionId) };
 
                 var request = new CallMethodRequest
                 {

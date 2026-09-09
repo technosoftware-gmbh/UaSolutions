@@ -619,7 +619,7 @@ namespace Technosoftware.UaClient
         protected internal void SetResolvePathResult(
             BrowsePathResult result,
             int index,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             ServiceResult? error = null;
@@ -655,7 +655,7 @@ namespace Technosoftware.UaClient
             MonitoredItemCreateRequest request,
             MonitoredItemCreateResult result,
             int index,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             ServiceResult? error = null;
@@ -680,7 +680,7 @@ namespace Technosoftware.UaClient
             MonitoredItemModifyRequest request,
             MonitoredItemModifyResult result,
             int index,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             ServiceResult? error = null;
@@ -716,7 +716,7 @@ namespace Technosoftware.UaClient
         protected internal void SetDeleteResult(
             StatusCode result,
             int index,
-            DiagnosticInfoCollection? diagnosticInfos,
+            List<DiagnosticInfo>? diagnosticInfos,
             ResponseHeader? responseHeader)
         {
             ServiceResult? error = null;
@@ -758,7 +758,7 @@ namespace Technosoftware.UaClient
             string browsePath,
             uint attributeId)
         {
-            QualifiedNameCollection browseNames = SimpleAttributeOperand.Parse(browsePath);
+            List<QualifiedName> browseNames = SimpleAttributeOperand.Parse(browsePath);
             return GetFieldValue(eventFields, eventTypeId, browseNames, attributeId);
         }
 
@@ -770,7 +770,7 @@ namespace Technosoftware.UaClient
             NodeId eventTypeId,
             QualifiedName browseName)
         {
-            var browsePath = new QualifiedNameCollection { browseName };
+            var browsePath = new List<QualifiedName> { browseName };
             return GetFieldValue(eventFields, eventTypeId, browsePath, Attributes.Value);
         }
 
@@ -874,7 +874,7 @@ namespace Technosoftware.UaClient
                 ObjectTypes.BaseEventType,
                 BrowseNames.EventType) as NodeId;
 
-            if (eventTypeId != null &&
+            if (!eventTypeId.IsNull &&
                 Subscription != null &&
                 Subscription.Session != null)
             {

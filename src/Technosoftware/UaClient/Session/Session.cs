@@ -74,7 +74,7 @@ namespace Technosoftware.UaClient
             X509Certificate2? clientCertificate = null,
             X509Certificate2Collection? clientCertificateChain = null,
             EndpointDescriptionCollection? availableEndpoints = null,
-            StringCollection? discoveryProfileUris = null)
+            List<string>? discoveryProfileUris = null)
             : this(
                   channel,
                   configuration,
@@ -258,7 +258,7 @@ namespace Technosoftware.UaClient
             {
                 configurationField = "SecurityConfiguration";
             }
-            else if (configuration.CertificateValidator == null)
+            else if (configuration.CertificateManager == null)
             {
                 configurationField = "CertificateValidator";
             }
@@ -547,7 +547,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets the locales that the server should use when returning localized text.
         /// </summary>
-        public StringCollection PreferredLocales => m_preferredLocales;
+        public List<string> PreferredLocales => m_preferredLocales;
 
         /// <summary>
         /// Gets the subscriptions owned by the session.
@@ -887,7 +887,7 @@ namespace Technosoftware.UaClient
             m_sessionName = sessionConfiguration.SessionName ?? "SessionName";
             m_serverCertificate =
                 serverCertificate != null
-                    ? CertificateFactory.Create(serverCertificate)
+                    ? DefaultCertificateFactory.Instance.Create(serverCertificate)
                     : null;
             m_identity = sessionConfiguration.Identity ?? new UserIdentity();
             m_checkDomain = sessionConfiguration.CheckDomain;
@@ -1085,7 +1085,7 @@ namespace Technosoftware.UaClient
                     if (checkDomain)
                     {
                         await m_configuration
-                            .CertificateValidator.ValidateAsync(
+                            .CertificateManager.ValidateAsync(
                                 serverCertificateChain,
                                 m_endpoint,
                                 ct)
@@ -1094,7 +1094,7 @@ namespace Technosoftware.UaClient
                     else
                     {
                         await m_configuration
-                            .CertificateValidator.ValidateAsync(serverCertificateChain, ct)
+                            .CertificateManager.ValidateAsync(serverCertificateChain, ct)
                             .ConfigureAwait(false);
                     }
                     // save for reconnect
@@ -1144,7 +1144,7 @@ namespace Technosoftware.UaClient
                         m_endpoint.Description.Server.ApplicationUri,
                         m_endpoint.EndpointUrl.ToString(),
                         sessionName,
-                        clientNonce,
+clientNonce.ToByteString(),
                         null,
                         sessionTimeout,
                         maxMessageSize,
@@ -1167,8 +1167,8 @@ namespace Technosoftware.UaClient
                     m_endpoint.Description.Server.ApplicationUri,
                     m_endpoint.EndpointUrl.ToString(),
                     sessionName,
-                    clientNonce,
-                    clientCertificateChainData ?? clientCertificateData,
+clientNonce.ToByteString(),
+clientCertificateChainData ?? clientCertificateData.ToByteString(),
                     sessionTimeout,
                     maxMessageSize,
                     ct).ConfigureAwait(false);
@@ -1286,8 +1286,8 @@ namespace Technosoftware.UaClient
                 ProcessResponseAdditionalHeader(activateResponse.ResponseHeader, serverCertificate);
 
                 serverNonce = activateResponse.ServerNonce;
-                StatusCodeCollection certificateResults = activateResponse.Results;
-                DiagnosticInfoCollection certificateDiagnosticInfos = activateResponse
+                List<StatusCode> certificateResults = activateResponse.Results;
+                List<DiagnosticInfo> certificateDiagnosticInfos = activateResponse
                     .DiagnosticInfos;
 
                 if (certificateResults != null)
@@ -1360,7 +1360,7 @@ namespace Technosoftware.UaClient
 
         /// <inheritdoc/>
         public Task ChangePreferredLocalesAsync(
-            StringCollection preferredLocales,
+            List<string> preferredLocales,
             CancellationToken ct)
         {
             return UpdateSessionAsync(Identity, preferredLocales, ct);
@@ -1369,7 +1369,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public async Task UpdateSessionAsync(
             IUserIdentity? identity,
-            StringCollection preferredLocales,
+            List<string> preferredLocales,
             CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -1430,7 +1430,7 @@ namespace Technosoftware.UaClient
                 requireEncryption &&
                 identity.TokenType != UserTokenType.Anonymous)
             {
-                await m_configuration.CertificateValidator.ValidateAsync(
+                await m_configuration.CertificateManager.ValidateAsync(
                     m_serverCertificate,
                     ct).ConfigureAwait(false);
             }
@@ -1567,7 +1567,7 @@ namespace Technosoftware.UaClient
         {
             ThrowIfDisposed();
             using Activity? activity = m_telemetry.StartActivity();
-            UInt32Collection subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
+            List<uint> subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
             int failedSubscriptions = 0;
 
             if (subscriptionIds.Count > 0)
@@ -1644,7 +1644,7 @@ namespace Technosoftware.UaClient
             CancellationToken ct)
         {
             using Activity? activity = m_telemetry.StartActivity();
-            UInt32Collection subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
+            List<uint> subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
             int failedSubscriptions = 0;
 
             if (subscriptionIds.Count > 0)
@@ -1663,7 +1663,7 @@ namespace Technosoftware.UaClient
                             ct)
                         .ConfigureAwait(false);
                     TransferResultCollection results = response.Results;
-                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                    List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
                     ResponseHeader responseHeader = response.ResponseHeader;
 
                     if (!StatusCode.IsGood(responseHeader.ServiceResult))
@@ -1764,8 +1764,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            DataValueCollection values = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> values = response.Results;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
 
             ValidateResponse(values, nodesToRead);
@@ -1780,7 +1780,7 @@ namespace Technosoftware.UaClient
             using Activity? activity = m_telemetry.StartActivity();
             if (await NodeCache.FindAsync(typeId, ct).ConfigureAwait(false) is Node node)
             {
-                var subTypes = new ExpandedNodeIdCollection();
+                var subTypes = new List<ExpandedNodeId>();
                 foreach (IReference reference in node.Find(ReferenceTypeIds.HasSubtype, false))
                 {
                     subTypes.Add(reference.TargetId);
@@ -1794,15 +1794,15 @@ namespace Technosoftware.UaClient
 
         /// <inheritdoc/>
         public async Task FetchTypeTreeAsync(
-            ExpandedNodeIdCollection typeIds,
+            List<ExpandedNodeId> typeIds,
             CancellationToken ct = default)
         {
             using Activity? activity = m_telemetry.StartActivity();
-            var referenceTypeIds = new NodeIdCollection { ReferenceTypeIds.HasSubtype };
+            var referenceTypeIds = new List<NodeId> { ReferenceTypeIds.HasSubtype };
             IList<INode> nodes = await NodeCache
                 .FindReferencesAsync(typeIds, referenceTypeIds, false, false, ct)
                 .ConfigureAwait(false);
-            var subTypes = new ExpandedNodeIdCollection();
+            var subTypes = new List<ExpandedNodeId>();
             foreach (INode inode in nodes)
             {
                 if (inode is Node node)
@@ -1860,7 +1860,7 @@ namespace Technosoftware.UaClient
             {
         VariableIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead
             };
-            (DataValueCollection values, IList<ServiceResult> errors) =
+            (List<DataValue> values, IList<ServiceResult> errors) =
                 await this.ReadValuesAsync(nodeIds, ct).ConfigureAwait(false);
             int index = 0;
             OperationLimits.MaxNodesPerRead = ApplyOperationLimit(OperationLimits.MaxNodesPerRead, Get<uint>(ref index, values, errors));
@@ -2429,8 +2429,8 @@ namespace Technosoftware.UaClient
                         timeout.Token).ConfigureAwait(false);
 
                     byte[]? serverNonce = activateResult.ServerNonce;
-                    StatusCodeCollection certificateResults = activateResult.Results;
-                    DiagnosticInfoCollection certificateDiagnosticInfos = activateResult.DiagnosticInfos;
+                    List<StatusCode> certificateResults = activateResult.Results;
+                    List<DiagnosticInfo> certificateDiagnosticInfos = activateResult.DiagnosticInfos;
 
                     m_logger.LogInformation("Session RECONNECT {SessionId} completed successfully.", SessionId);
 
@@ -3049,8 +3049,8 @@ namespace Technosoftware.UaClient
                         ct).ConfigureAwait(false);
 
                     // read the server status.
-                    DataValueCollection values = result.Results;
-                    DiagnosticInfoCollection diagnosticInfos = result.DiagnosticInfos;
+                    List<DataValue> values = result.Results;
+                    List<DiagnosticInfo> diagnosticInfos = result.DiagnosticInfos;
                     ResponseHeader responseHeader = result.ResponseHeader;
 
                     ValidateResponse(values, nodesToRead);
@@ -3257,8 +3257,8 @@ namespace Technosoftware.UaClient
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
         private void UpdateNamespaceTable(
-            DataValueCollection values,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<DataValue> values,
+            List<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             // validate namespace array.
@@ -3477,11 +3477,11 @@ namespace Technosoftware.UaClient
                 PublishResponse response = task.Result;
                 ResponseHeader responseHeader = response.ResponseHeader;
                 subscriptionId = response.SubscriptionId;
-                UInt32Collection availableSequenceNumbers = response.AvailableSequenceNumbers;
+                List<uint> availableSequenceNumbers = response.AvailableSequenceNumbers;
                 bool moreNotifications = response.MoreNotifications;
                 NotificationMessage notificationMessage = response.NotificationMessage;
-                StatusCodeCollection acknowledgeResults = response.Results;
-                DiagnosticInfoCollection acknowledgeDiagnosticInfos = response.DiagnosticInfos;
+                List<StatusCode> acknowledgeResults = response.Results;
+                List<DiagnosticInfo> acknowledgeDiagnosticInfos = response.DiagnosticInfos;
 
                 LogLevel logLevel = LogLevel.Warning;
                 foreach (StatusCode code in acknowledgeResults)
@@ -3837,7 +3837,7 @@ namespace Technosoftware.UaClient
         private void ValidateServerCertificateData(byte[]? serverCertificateData)
         {
             if (serverCertificateData != null &&
-                m_endpoint.Description.ServerCertificate != null &&
+                !m_endpoint.Description.ServerCertificate.IsNull &&
                 !Utils.IsEqual(serverCertificateData, m_endpoint.Description.ServerCertificate))
             {
                 try
@@ -3876,7 +3876,7 @@ namespace Technosoftware.UaClient
             byte[]? clientCertificateChainData,
             byte[] clientNonce)
         {
-            if (serverSignature == null || serverSignature.Signature == null)
+            if (serverSignature == null || serverSignature.Signature.IsNull)
             {
                 m_logger.LogInformation("Server signature is null or empty.");
 
@@ -3931,7 +3931,7 @@ namespace Technosoftware.UaClient
         {
             if (serverCertificate != null)
             {
-                m_configuration.CertificateValidator.ValidateApplicationUri(serverCertificate, endpoint);
+                m_configuration.CertificateManager.ValidateApplicationUri(serverCertificate, endpoint);
             }
         }
 
@@ -4180,7 +4180,7 @@ namespace Technosoftware.UaClient
         private void ProcessPublishResponse(
             ResponseHeader responseHeader,
             uint subscriptionId,
-            UInt32Collection? availableSequenceNumbers,
+            List<uint>? availableSequenceNumbers,
             bool moreNotifications,
             NotificationMessage notificationMessage)
         {
@@ -4449,7 +4449,7 @@ namespace Technosoftware.UaClient
                     subscriptionId);
 
                 // delete the subscription.
-                UInt32Collection subscriptionIds = new uint[] { subscriptionId };
+                List<uint> subscriptionIds = new uint[] { subscriptionId };
 
                 DeleteSubscriptionsResponse response = await DeleteSubscriptionsAsync(
                     null,
@@ -4457,8 +4457,8 @@ namespace Technosoftware.UaClient
                     ct).ConfigureAwait(false);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                StatusCodeCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<StatusCode> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // validate response.
                 ValidateResponse(results, subscriptionIds);
@@ -4577,7 +4577,7 @@ namespace Technosoftware.UaClient
                 clientCertificateChain = new X509Certificate2Collection(clientCertificate);
                 List<CertificateIdentifier> issuers = [];
                 await configuration
-                    .CertificateValidator.GetIssuersAsync(clientCertificate, issuers, ct)
+                    .CertificateManager.GetIssuersAsync(clientCertificate, issuers, ct)
                     .ConfigureAwait(false);
 
                 for (int i = 0; i < issuers.Count; i++)
@@ -4693,10 +4693,10 @@ namespace Technosoftware.UaClient
         /// <param name="subscriptions">The subscriptions to transfer.</param>
         /// <returns>The subscription ids for the transfer.</returns>
         /// <exception cref="ServiceResultException">Thrown if a subscription is in invalid state.</exception>
-        private UInt32Collection CreateSubscriptionIdsForTransfer(
+        private List<uint> CreateSubscriptionIdsForTransfer(
             SubscriptionCollection subscriptions)
         {
-            var subscriptionIds = new UInt32Collection();
+            var subscriptionIds = new List<uint>();
             lock (m_lock)
             {
                 foreach (Subscription subscription in subscriptions)
@@ -4848,7 +4848,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The locales that the server should use when returning localized text.
         /// </summary>
-        protected StringCollection m_preferredLocales;
+        protected List<string> m_preferredLocales;
 
         /// <summary>
         /// The Application Configuration.
@@ -4937,7 +4937,7 @@ namespace Technosoftware.UaClient
         private Nonce? m_eccServerEphemeralKey;
         private Subscription? m_defaultSubscription;
         private readonly EndpointDescriptionCollection? m_discoveryServerEndpoints;
-        private readonly StringCollection? m_discoveryProfileUris;
+        private readonly List<string>? m_discoveryProfileUris;
         private new readonly ILogger m_logger;
 
         private sealed class AsyncRequestState : IDisposable

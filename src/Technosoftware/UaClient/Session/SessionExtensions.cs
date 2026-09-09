@@ -238,13 +238,13 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Finds the NodeIds for the components for an instance.
         /// </summary>
-        public static async Task<(NodeIdCollection, IList<ServiceResult>)> FindComponentIdsAsync(
+        public static async Task<(List<NodeId>, IList<ServiceResult>)> FindComponentIdsAsync(
             this IUaSession session,
             NodeId instanceId,
             IList<string> componentPaths,
             CancellationToken ct = default)
         {
-            var componentIds = new NodeIdCollection();
+            var componentIds = new List<NodeId>();
             var errors = new List<ServiceResult>();
 
             // build list of paths to translate.
@@ -269,7 +269,7 @@ namespace Technosoftware.UaClient
                 ct).ConfigureAwait(false);
 
             BrowsePathResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
 
             // verify that the server returned the correct number of results.

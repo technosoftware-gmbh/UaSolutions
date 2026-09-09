@@ -232,7 +232,7 @@ namespace Technosoftware.UaClient
                 ct).ConfigureAwait(false);
 
             BrowseResultCollection results = browseResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = browseResponse.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
             ResponseHeader responseHeader = browseResponse.ResponseHeader;
 
             // ensure that the server returned valid results.
@@ -532,7 +532,7 @@ namespace Technosoftware.UaClient
             var result = new List<ReferenceDescriptionCollection>(nodeIds.Count);
             (
                 _,
-                ByteStringCollection continuationPoints,
+                List<ByteString> continuationPoints,
                 IList<ReferenceDescriptionCollection> referenceDescriptions,
                 IList<ServiceResult> errors
             ) = await session.BrowseAsync(
@@ -559,13 +559,13 @@ namespace Technosoftware.UaClient
                 errorAnchors.Add(previousErrors[^1]);
             }
 
-            var nextContinuationPoints = new ByteStringCollection();
+            var nextContinuationPoints = new List<ByteString>();
             var nextResults = new List<ReferenceDescriptionCollection>();
             var nextErrors = new List<ReferenceWrapper<ServiceResult>>();
 
             for (int ii = 0; ii < nodeIds.Count; ii++)
             {
-                if (continuationPoints[ii] != null &&
+                if (!continuationPoints[ii].IsNull &&
                     !StatusCode.IsBad(previousErrors[ii].Reference.StatusCode))
                 {
                     nextContinuationPoints.Add(continuationPoints[ii]);
@@ -578,7 +578,7 @@ namespace Technosoftware.UaClient
                 requestHeader?.RequestHandle = 0;
                 (
                     _,
-                    ByteStringCollection revisedContinuationPoints,
+                    List<ByteString> revisedContinuationPoints,
                     IList<ReferenceDescriptionCollection> browseNextResults,
                     IList<ServiceResult> browseNextErrors
                 ) = await session.BrowseNextAsync(
@@ -602,7 +602,7 @@ namespace Technosoftware.UaClient
 
                 for (int ii = 0; ii < revisedContinuationPoints.Count; ii++)
                 {
-                    if (revisedContinuationPoints[ii] != null &&
+                    if (!revisedContinuationPoints[ii].IsNull &&
                         !StatusCode.IsBad(browseNextErrors[ii].StatusCode))
                     {
                         nextContinuationPoints.Add(revisedContinuationPoints[ii]);
@@ -635,7 +635,7 @@ namespace Technosoftware.UaClient
             bool cancel,
             CancellationToken ct = default)
         {
-            var continuationPoints = new ByteStringCollection { continuationPoint };
+            var continuationPoints = new List<ByteString> { continuationPoint };
 
             // make the call to the server.
             BrowseNextResponse browseResponse = await session.BrowseNextAsync(
@@ -646,7 +646,7 @@ namespace Technosoftware.UaClient
                 .ConfigureAwait(false);
 
             BrowseResultCollection results = browseResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = browseResponse.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
             ResponseHeader responseHeader = browseResponse.ResponseHeader;
 
             // ensure that the server returned valid results.
