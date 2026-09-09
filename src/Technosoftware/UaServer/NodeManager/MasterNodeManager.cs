@@ -3832,7 +3832,7 @@ namespace Technosoftware.UaServer
                 }
             }
 
-            List<NodeId> currentRoleIds = context?.UserIdentity?.GrantedRoleIds;
+            ArrayOf<NodeId>? currentRoleIds = context?.UserIdentity?.GrantedRoleIds;
             if (currentRoleIds == null || currentRoleIds.Count == 0)
             {
                 return ServiceResult.Create(

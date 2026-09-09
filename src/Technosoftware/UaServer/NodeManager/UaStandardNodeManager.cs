@@ -1038,7 +1038,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // read the attributes.
-                List<object> values = target.ReadAttributes(
+                ArrayOf<Variant> values = target.ReadAttributes(
                     systemContext,
                     Attributes.WriteMask,
                     Attributes.UserWriteMask,
@@ -1062,52 +1062,59 @@ namespace Technosoftware.UaServer
                     DisplayName = target.DisplayName
                 };
 
-                if (values[0] != null && values[1] != null)
+                if (values[0].TryGetValue(out uint writeMask) &&
+                    values[1].TryGetValue(out uint userWriteMask))
                 {
-                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0]) &
-                        ((uint)values[1]));
+                    metadata.WriteMask = (AttributeWriteMask)(writeMask & userWriteMask);
                 }
 
-                metadata.DataType = values[2] is NodeId nodeId ? nodeId : default;
-
-                if (values[3] != null)
+                if (values[2].TryGetValue(out NodeId dataType))
                 {
-                    metadata.ValueRank = (int)values[3];
+                    metadata.DataType = dataType;
                 }
 
-                metadata.ArrayDimensions = (IList<uint>)values[4];
-
-                if (values[5] != null && values[6] != null)
+                if (values[3].TryGetValue(out int valueRank))
                 {
-                    metadata.AccessLevel = (byte)(((byte)values[5]) & ((byte)values[6]));
+                    metadata.ValueRank = valueRank;
                 }
 
-                if (values[7] != null)
+                if (values[4].TryGetValue(out ArrayOf<uint> arrayDimensions))
                 {
-                    metadata.EventNotifier = (byte)values[7];
+                    metadata.ArrayDimensions = arrayDimensions;
                 }
 
-                if (values[8] != null && values[9] != null)
+                if (values[5].TryGetValue(out byte accessLevel) &&
+                    values[6].TryGetValue(out byte userAccessLevel))
                 {
-                    metadata.Executable = ((bool)values[8]) && ((bool)values[9]);
+                    metadata.AccessLevel = (byte)(accessLevel & userAccessLevel);
                 }
 
-                if (values[10] != null)
+                if (values[7].TryGetValue(out byte eventNotifier))
                 {
-                    metadata.AccessRestrictions = (AccessRestrictionType)
-                        Enum.ToObject(typeof(AccessRestrictionType), values[10]);
+                    metadata.EventNotifier = eventNotifier;
                 }
 
-                if (values[11] != null)
+                if (values[8].TryGetValue(out bool executable) &&
+                    values[9].TryGetValue(out bool userExecutable))
                 {
-                    metadata.RolePermissions = [.. ExtensionObject.ToList<RolePermissionType>(
-                        values[11])];
+                    metadata.Executable = executable && userExecutable;
                 }
 
-                if (values[12] != null)
+                if (values[10].TryGetValue(out ushort accessRestriction))
                 {
-                    metadata.UserRolePermissions = [.. ExtensionObject.ToList<RolePermissionType>(
-                        values[12])];
+                    metadata.AccessRestrictions = (AccessRestrictionType)accessRestriction;
+                }
+
+                if (values[11].TryGetStructure(
+                    out ArrayOf<RolePermissionType> rolePermissions))
+                {
+                    metadata.RolePermissions = rolePermissions;
+                }
+
+                if (values[12].TryGetStructure(
+                    out ArrayOf<RolePermissionType> userRolePermissions))
+                {
+                    metadata.UserRolePermissions = userRolePermissions;
                 }
 
                 SetDefaultPermissions(systemContext, target, metadata);

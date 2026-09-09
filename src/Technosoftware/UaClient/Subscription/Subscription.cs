@@ -800,7 +800,7 @@ namespace Technosoftware.UaClient
             try
             {
                 // delete the subscription.
-                List<uint> subscriptionIds = new uint[] { Id };
+                ArrayOf<uint> subscriptionIds = [Id];
 
                 DeleteSubscriptionsResponse response = await Session
                     .DeleteSubscriptionsAsync(null, subscriptionIds, ct)
@@ -886,7 +886,7 @@ namespace Technosoftware.UaClient
             VerifySessionAndSubscriptionState(true);
 
             // modify the subscription.
-            List<uint> subscriptionIds = new uint[] { Id };
+            ArrayOf<uint> subscriptionIds = [Id];
 
             SetPublishingModeResponse response = await Session
                 .SetPublishingModeAsync(null, enabled, new uint[] { Id }, ct)

@@ -367,7 +367,7 @@ namespace Technosoftware.UaServer
                 DiagnosticsMasks.ServiceAdditionalInfo | DiagnosticsMasks.OperationAdditionalInfo);
             if ((requestHeader.ReturnDiagnostics & additionalInfoDiagnosticsMask) != 0)
             {
-                List<NodeId> currentRoleIds = EffectiveIdentity?.GrantedRoleIds;
+                ArrayOf<NodeId>? currentRoleIds = EffectiveIdentity?.GrantedRoleIds;
                 if ((currentRoleIds?.Contains(ObjectIds.WellKnownRole_SecurityAdmin)) == true ||
                     (currentRoleIds?.Contains(ObjectIds.WellKnownRole_ConfigureAdmin)) == true)
                 {

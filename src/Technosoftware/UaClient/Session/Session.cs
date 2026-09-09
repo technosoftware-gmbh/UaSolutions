@@ -3407,7 +3407,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             try
             {
                 Activity? activity = m_telemetry.StartActivity();
-                Task<PublishResponse> task = PublishAsync(
+                ValueTask<PublishResponse> task = PublishAsync(
                     requestHeader,
                     acknowledgementsToSend,
                     default); // TODO: Need a session scoped cancellation token.
@@ -4449,7 +4449,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                     subscriptionId);
 
                 // delete the subscription.
-                List<uint> subscriptionIds = new uint[] { subscriptionId };
+                ArrayOf<uint> subscriptionIds = [subscriptionId];
 
                 DeleteSubscriptionsResponse response = await DeleteSubscriptionsAsync(
                     null,
