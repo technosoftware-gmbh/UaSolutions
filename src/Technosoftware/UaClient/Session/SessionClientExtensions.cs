@@ -173,7 +173,7 @@ namespace Technosoftware.UaClient
                 this ISessionClient session,
                 RequestHeader? requestHeader,
                 ViewDescription? view,
-                IList<NodeId> nodesToBrowse,
+                ArrayOf<NodeId> nodesToBrowse,
                 uint maxResultsToReturn,
                 BrowseDirection browseDirection,
                 NodeId? referenceTypeId,
@@ -235,7 +235,7 @@ namespace Technosoftware.UaClient
             IList<ServiceResult>
             )> FetchReferencesAsync(
                 this ISessionClient session,
-                IList<NodeId> nodeIds,
+                ArrayOf<NodeId> nodeIds,
                 CancellationToken ct = default)
         {
             return session.ManagedBrowseAsync(
@@ -268,7 +268,7 @@ namespace Technosoftware.UaClient
         /// <returns>The node collection and associated errors.</returns>
         public static async Task<(IList<Node>, IList<ServiceResult>)> ReadNodesAsync(
             this ISessionClient session,
-            IList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             NodeClass nodeClass,
             bool optionalAttributes = false,
             CancellationToken ct = default)
@@ -294,7 +294,7 @@ namespace Technosoftware.UaClient
         /// <param name="ct">The cancellation token.</param>
         public static async Task<(IList<Node>, IList<ServiceResult>)> ReadNodesAsync(
             this ISessionClient session,
-            IList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             bool optionalAttributes = false,
             CancellationToken ct = default)
         {
@@ -357,7 +357,7 @@ namespace Technosoftware.UaClient
         /// <returns>Paired list of displaynames and potential errors per node</returns>
         public static async Task<(IList<string>, IList<ServiceResult>)> ReadDisplayNameAsync(
             this ISessionClient session,
-            IList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             CancellationToken ct = default)
         {
             var displayNames = new List<string>();
@@ -509,7 +509,7 @@ namespace Technosoftware.UaClient
         /// <param name="ct">The cancellation token for the request.</param>
         public static async Task<(List<DataValue>, IList<ServiceResult>)> ReadValuesAsync(
             this ISessionClient session,
-            IList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             CancellationToken ct = default)
         {
             var nodeCacheContext = new NodeCacheContext(session);
@@ -543,7 +543,7 @@ namespace Technosoftware.UaClient
             this ISessionClient session,
             RequestHeader? requestHeader,
             ViewDescription? view,
-            IList<NodeId> nodesToBrowse,
+            ArrayOf<NodeId> nodesToBrowse,
             uint maxResultsToReturn,
             BrowseDirection browseDirection,
             NodeId referenceTypeId,
