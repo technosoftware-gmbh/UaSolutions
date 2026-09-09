@@ -43,6 +43,15 @@ namespace SampleCompany.NodeManagers.Reference
     /// </remarks>
     public class ReferenceServer : UaReverseConnectServer
     {
+        /// <summary>
+        /// Creates the server. UaStandardServer requires an ITelemetryContext
+        /// in 2.0, so the parameterless constructor is gone.
+        /// </summary>
+        public ReferenceServer(ITelemetryContext telemetry)
+            : base(telemetry)
+        {
+        }
+
         public ITokenValidator TokenValidator { get; set; }
 
         /// <summary>
@@ -237,24 +246,24 @@ namespace SampleCompany.NodeManagers.Reference
             // In provisioning mode, remove anonymous authentication
             if (ProvisioningMode)
             {
-                return [.. policies.Where(u => u.TokenType != UserTokenType.Anonymous)];
+                return policies.Filter(u => u.TokenType != UserTokenType.Anonymous);
             }
 
             // sample how to modify default user token policies
             if (description.SecurityPolicyUri == SecurityPolicies.Aes256_Sha256_RsaPss &&
                 description.SecurityMode == MessageSecurityMode.SignAndEncrypt)
             {
-                return [.. policies.Where(u => u.TokenType != UserTokenType.Certificate)];
+                return policies.Filter(u => u.TokenType != UserTokenType.Certificate);
             }
             else if (description.SecurityPolicyUri == SecurityPolicies.Aes128_Sha256_RsaOaep &&
                 description.SecurityMode == MessageSecurityMode.Sign)
             {
-                return [.. policies.Where(u => u.TokenType != UserTokenType.Anonymous)];
+                return policies.Filter(u => u.TokenType != UserTokenType.Anonymous);
             }
             else if (description.SecurityPolicyUri == SecurityPolicies.Aes128_Sha256_RsaOaep &&
                 description.SecurityMode == MessageSecurityMode.SignAndEncrypt)
             {
-                return [.. policies.Where(u => u.TokenType != UserTokenType.UserName)];
+                return policies.Filter(u => u.TokenType != UserTokenType.UserName);
             }
             return policies;
         }
@@ -298,7 +307,9 @@ namespace SampleCompany.NodeManagers.Reference
 
             if (args.NewIdentity is UserNameIdentityToken userNameToken)
             {
-                args.Identity = VerifyPassword(userNameToken);
+                args.Identity = VerifyPassword(
+                    userNameToken,
+                    args.NewIdentityTokenHandler);
 
                 m_logger.LogInformation(
                     Utils.TraceMasks.Security,
@@ -328,10 +339,17 @@ namespace SampleCompany.NodeManagers.Reference
             // check for issued identity token.
             if (args.NewIdentity is IssuedIdentityToken issuedToken)
             {
-                args.Identity = VerifyIssuedToken(issuedToken);
+                args.Identity = VerifyIssuedToken(issuedToken, args.UserTokenPolicy);
 
-                // set AuthenticatedUser role for accepted identity token
-                args.Identity.GrantedRoleIds.Add(ObjectIds.WellKnownRole_AuthenticatedUser);
+                // set AuthenticatedUser role for accepted identity token.
+                // GrantedRoleIds is an immutable ArrayOf in 2.0, so the role is
+                // granted by wrapping the identity rather than appending to it.
+                if (args.Identity != null)
+                {
+                    args.Identity = new RoleBasedIdentity(
+                        args.Identity,
+                        [Role.AuthenticatedUser]);
+                }
 
                 return;
             }
@@ -355,10 +373,17 @@ namespace SampleCompany.NodeManagers.Reference
         /// Validates the password for a username token.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        private IUserIdentity VerifyPassword(UserNameIdentityToken userNameToken)
+        private IUserIdentity VerifyPassword(
+            UserNameIdentityToken userNameToken,
+            IUserIdentityTokenHandler tokenHandler)
         {
             string userName = userNameToken.UserName;
-            byte[] password = userNameToken.DecryptedPassword;
+
+            // 2.0 leaves UserNameIdentityToken.Password as it arrived on the
+            // wire and keeps the decrypted secret on the handler, so the
+            // plaintext is read from there.
+            byte[] password = (tokenHandler as UserNameIdentityTokenHandler)
+                ?.DecryptedPassword;
             if (string.IsNullOrEmpty(userName))
             {
                 // an empty username is not accepted.
@@ -397,7 +422,7 @@ namespace SampleCompany.NodeManagers.Reference
                 throw new ServiceResultException(
                     new ServiceResult(
                         LoadServerProperties().ProductUri,
-                        new StatusCode(StatusCodes.BadUserAccessDenied, "InvalidPassword"),
+                        new StatusCode(StatusCodes.BadUserAccessDenied.Code, "InvalidPassword"),
                         new LocalizedText(info)));
             }
             return new RoleBasedIdentity(
@@ -411,10 +436,10 @@ namespace SampleCompany.NodeManagers.Reference
         /// <exception cref="ServiceResultException"></exception>
         private void VerifyX509IdentityToken(X509IdentityToken token)
         {
-            X509Certificate2 certificate = token.GetOrCreateCertificate(MessageContext.Telemetry);
+            using Certificate certificate = Certificate.FromRawData(token.CertificateData);
             try
             {
-                CertificateValidationResult result = CertificateManager
+                Opc.Ua.CertificateValidationResult result = CertificateManager
                     .ValidateAsync(
                         certificate,
                         m_validateUserCertificates
@@ -459,7 +484,9 @@ namespace SampleCompany.NodeManagers.Reference
             }
         }
 
-        private IUserIdentity VerifyIssuedToken(IssuedIdentityToken issuedToken)
+        private IUserIdentity VerifyIssuedToken(
+            IssuedIdentityToken issuedToken,
+            UserTokenPolicy userTokenPolicy)
         {
             if (TokenValidator == null)
             {
@@ -468,7 +495,9 @@ namespace SampleCompany.NodeManagers.Reference
             }
             try
             {
-                if (issuedToken.IssuedTokenType == IssuedTokenType.JWT)
+                // IssuedIdentityToken.IssuedTokenType is gone in 2.0; the
+                // profile is carried by the user token policy the client chose.
+                if (userTokenPolicy?.IssuedTokenType == Profiles.JwtUserToken)
                 {
                     m_logger.LogDebug(Utils.TraceMasks.Security, "VerifyIssuedToken: ValidateToken");
                     return TokenValidator.ValidateToken(issuedToken);

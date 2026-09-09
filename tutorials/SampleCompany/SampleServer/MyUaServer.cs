@@ -34,7 +34,7 @@ namespace SampleCompany.SampleServer
     /// </summary>
     /// <typeparam name="T">Any class based on the UaStandardServer class.</typeparam>
     public class MyUaServer<T>
-        where T : UaStandardServer, new()
+        where T : UaStandardServer
     {
         #region Public Properties
         /// <summary>
@@ -158,8 +158,10 @@ namespace SampleCompany.SampleServer
         {
             try
             {
-                // create the server.
-                Server = new T();
+                // create the server. UaStandardServer takes an
+                // ITelemetryContext in 2.0, which a new() constraint cannot
+                // express, so T is constructed through its telemetry ctor.
+                Server = (T)Activator.CreateInstance(typeof(T), m_telemetry);
                 if (nodeManagerFactories != null)
                 {
                     foreach (IUaNodeManagerFactory factory in nodeManagerFactories)

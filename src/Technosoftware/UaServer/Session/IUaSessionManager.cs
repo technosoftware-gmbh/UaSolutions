@@ -220,19 +220,30 @@ namespace Technosoftware.UaServer
         /// Creates a new instance.
         /// </summary>
         public ImpersonateUserEventArgs(
-            UserIdentityToken newIdentity,
+            IUserIdentityTokenHandler newIdentityTokenHandler,
             UserTokenPolicy userTokenPolicy,
             EndpointDescription endpointDescription = null)
         {
-            NewIdentity = newIdentity;
+            NewIdentityTokenHandler = newIdentityTokenHandler;
             UserTokenPolicy = userTokenPolicy;
             EndpointDescription = endpointDescription;
         }
 
         /// <summary>
+        /// The handler for the new user identity token.
+        /// </summary>
+        /// <remarks>
+        /// 2.0 keeps a decrypted secret on the handler rather than writing it
+        /// back onto the token - <see cref="UserNameIdentityToken.Password"/>
+        /// stays as it arrived on the wire - so a handler that needs the
+        /// plaintext password, or the token's signature, reaches it here.
+        /// </remarks>
+        public IUserIdentityTokenHandler NewIdentityTokenHandler { get; }
+
+        /// <summary>
         /// The new user identity for the session.
         /// </summary>
-        public UserIdentityToken NewIdentity { get; }
+        public UserIdentityToken NewIdentity => NewIdentityTokenHandler?.Token;
 
         /// <summary>
         /// The user token policy selected by the client.

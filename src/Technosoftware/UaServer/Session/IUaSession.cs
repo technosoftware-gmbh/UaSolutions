@@ -175,7 +175,7 @@ namespace Technosoftware.UaServer
         /// Activates the session and binds it to the current secure channel.
         /// </summary>
         ValueTask<(
-            UserIdentityToken IdentityToken,
+            IUserIdentityTokenHandler IdentityTokenHandler,
             UserTokenPolicy UserTokenPolicy)> ValidateBeforeActivateAsync(
             UaServerOperationContext context,
             SignatureData clientSignature,

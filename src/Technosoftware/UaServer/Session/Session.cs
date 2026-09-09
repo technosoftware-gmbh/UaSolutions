@@ -432,7 +432,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
         public async ValueTask<(
-            UserIdentityToken IdentityToken,
+            IUserIdentityTokenHandler IdentityTokenHandler,
             UserTokenPolicy UserTokenPolicy)> ValidateBeforeActivateAsync(
                 UaServerOperationContext context,
                 SignatureData clientSignature,
@@ -550,7 +550,7 @@ namespace Technosoftware.UaServer
 
             // the identity token is decrypted and its signature verified with
             // asynchronous crypto in 2.0, so this half cannot run under m_lock.
-            (UserIdentityToken identityToken, UserTokenPolicy userTokenPolicy) =
+            (IUserIdentityTokenHandler identityToken, UserTokenPolicy userTokenPolicy) =
                 await ValidateUserIdentityTokenAsync(
                     context,
                     userIdentityToken,
@@ -842,7 +842,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
         private async ValueTask<(
-            UserIdentityToken IdentityToken,
+            IUserIdentityTokenHandler IdentityTokenHandler,
             UserTokenPolicy UserTokenPolicy)> ValidateUserIdentityTokenAsync(
                 UaServerOperationContext context,
                 ExtensionObject identityToken,
@@ -882,10 +882,13 @@ namespace Technosoftware.UaServer
                 }
 
                 // create an anonymous token to use for subsequent validation.
-                return (new AnonymousIdentityToken { PolicyId = policy.PolicyId }, policy);
+                return (
+                    AnonymousIdentityTokenHandler.Create(policy),
+                    policy);
             }
 
             UserIdentityToken token;
+            IUserIdentityTokenHandler handler;
             // check for unrecognized token.
             if (!typeof(UserIdentityToken).IsInstanceOfType(identityToken.Body))
             {
@@ -984,6 +987,11 @@ namespace Technosoftware.UaServer
                     "User token policy not supported.");
             }
 
+            // 2.0 does the token's own crypto through a handler rather than on
+            // UserIdentityToken itself, and keeps a decrypted secret on the
+            // handler rather than writing it back onto the token.
+            handler = token.AsTokenHandler(m_securityPolicies);
+
             // determine the security policy uri.
             string securityPolicyUri = policy.SecurityPolicyUri;
 
@@ -1000,10 +1008,6 @@ namespace Technosoftware.UaServer
                     throw ServiceResultException.ConfigurationError(
                         "ApplicationCertificate cannot be found.");
 
-                // 2.0 does the token's own crypto through a handler rather
-                // than on UserIdentityToken itself; the handler mutates the
-                // token it wraps, so `token` is the decrypted one afterwards.
-                IUserIdentityTokenHandler handler = token.AsTokenHandler(m_securityPolicies);
                 handler.UpdatePolicy(policy);
 
                 try
@@ -1027,7 +1031,6 @@ namespace Technosoftware.UaServer
                         "Could not decrypt identity token.");
                 }
 
-                token = handler.Token;
 
                 // verify the signature.
                 if (securityPolicyUri != SecurityPolicies.None)
@@ -1101,7 +1104,7 @@ namespace Technosoftware.UaServer
             }
 
             // validate user identity token.
-            return (token, policy);
+            return (handler, policy);
         }
 
         /// <summary>

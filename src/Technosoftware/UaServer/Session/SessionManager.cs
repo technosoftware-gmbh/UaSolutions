@@ -288,7 +288,7 @@ namespace Technosoftware.UaServer
             Nonce serverNonceObject = null;
 
             IUaSession session = null;
-            UserIdentityToken newIdentity = null;
+            IUserIdentityTokenHandler newIdentity = null;
             UserTokenPolicy userTokenPolicy = null;
 
             // fast path no lock
@@ -396,7 +396,7 @@ namespace Technosoftware.UaServer
 
             bool contextChanged = session.Activate(
                 context,
-                newIdentity,
+                newIdentity.Token,
                 identity,
                 effectiveIdentity,
                 localeIds,
