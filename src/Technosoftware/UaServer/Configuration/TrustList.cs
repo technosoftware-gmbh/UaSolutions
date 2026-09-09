@@ -308,7 +308,7 @@ namespace Technosoftware.UaServer
             NodeId objectId,
             uint fileHandle,
             int length,
-            ref byte[] data)
+            ref ByteString data)
         {
             ReadMethodStateResult result = ReadAsync(
                 context,
@@ -331,12 +331,12 @@ namespace Technosoftware.UaServer
         {
             HasSecureReadAccess(context);
 
-            byte[] data;
+            ByteString data;
 
             lock (m_lock)
             {
                 if (context is ISessionSystemContext session &&
-                    m_sessionId != session.SessionId)
+                    !m_sessionId.Equals(session.SessionId))
                 {
                     return new ValueTask<ReadMethodStateResult>(new ReadMethodStateResult
                     {
@@ -371,19 +371,16 @@ namespace Technosoftware.UaServer
                     });
                 }
 
-                data = new byte[length];
+                byte[] buffer = new byte[length];
 
-                int bytesRead = m_strm.Read(data, 0, length);
+                int bytesRead = m_strm.Read(buffer, 0, length);
                 Debug.Assert(bytesRead >= 0);
 
                 m_totalBytesProcessed += bytesRead;
 
-                if (bytesRead < length)
-                {
-                    byte[] bytes = new byte[bytesRead];
-                    Array.Copy(data, bytes, bytesRead);
-                    data = bytes;
-                }
+                data = bytesRead < length
+                    ? ByteString.From(buffer.AsSpan(0, bytesRead))
+                    : ByteString.From(buffer);
             }
 
             return new ValueTask<ReadMethodStateResult>(new ReadMethodStateResult
@@ -398,7 +395,7 @@ namespace Technosoftware.UaServer
             MethodState method,
             NodeId objectId,
             uint fileHandle,
-            byte[] data)
+            ByteString data)
         {
             WriteMethodStateResult result = WriteAsync(
                 context,
@@ -415,7 +412,7 @@ namespace Technosoftware.UaServer
             MethodState method,
             NodeId objectId,
             uint fileHandle,
-            byte[] data,
+            ByteString data,
             CancellationToken cancellationToken)
         {
             HasSecureWriteAccess(context);
@@ -423,7 +420,7 @@ namespace Technosoftware.UaServer
             lock (m_lock)
             {
                 if (context is ISessionSystemContext session &&
-                    m_sessionId != session.SessionId)
+                    !m_sessionId.Equals(session.SessionId))
                 {
                     return new ValueTask<WriteMethodStateResult>(new WriteMethodStateResult
                     {
@@ -451,7 +448,7 @@ namespace Technosoftware.UaServer
                     });
                 }
 
-                m_strm.Write(data, 0, data.Length);
+                m_strm.Write(data.Span);
                 m_totalBytesProcessed += data.Length;
             }
 
@@ -488,7 +485,7 @@ namespace Technosoftware.UaServer
             lock (m_lock)
             {
                 if (context is ISessionSystemContext session &&
-                    m_sessionId != session.SessionId)
+                    !m_sessionId.Equals(session.SessionId))
                 {
                     return new ValueTask<CloseMethodStateResult>(new CloseMethodStateResult
                     {
@@ -539,7 +536,7 @@ namespace Technosoftware.UaServer
             uint fileHandle,
             CancellationToken cancellationToken)
         {
-            object[] inputParameters = [fileHandle];
+            ArrayOf<Variant> inputParameters = [Variant.From(fileHandle)];
             m_node.ReportTrustListUpdateRequestedAuditEvent(
                 context,
                 objectId,
@@ -556,7 +553,7 @@ namespace Technosoftware.UaServer
             lock (m_lock)
             {
                 if (context is ISessionSystemContext session &&
-                    m_sessionId != session.SessionId)
+                    !m_sessionId.Equals(session.SessionId))
                 {
                     return new CloseAndUpdateMethodStateResult
                     {
@@ -591,33 +588,35 @@ namespace Technosoftware.UaServer
                 if ((masks & (int)TrustListMasks.IssuerCertificates) != 0)
                 {
                     issuerCertificates = [];
-                    foreach (byte[] cert in trustList.IssuerCertificates)
+                    foreach (ByteString cert in trustList.IssuerCertificates)
                     {
-                        issuerCertificates.Add(X509CertificateLoader.LoadCertificate(cert));
+                        using var certificate = Certificate.FromRawData(cert);
+                        issuerCertificates.Add(certificate);
                     }
                 }
                 if ((masks & (int)TrustListMasks.IssuerCrls) != 0)
                 {
                     issuerCrls = [];
-                    foreach (byte[] crl in trustList.IssuerCrls)
+                    foreach (ByteString crl in trustList.IssuerCrls)
                     {
-                        issuerCrls.Add(new X509CRL(crl));
+                        issuerCrls.Add(new X509CRL(crl.ToArray()));
                     }
                 }
                 if ((masks & (int)TrustListMasks.TrustedCertificates) != 0)
                 {
                     trustedCertificates = [];
-                    foreach (byte[] cert in trustList.TrustedCertificates)
+                    foreach (ByteString cert in trustList.TrustedCertificates)
                     {
-                        trustedCertificates.Add(DefaultCertificateFactory.Instance.CreateFromRawData(cert));
+                        using var certificate = Certificate.FromRawData(cert);
+                        trustedCertificates.Add(certificate);
                     }
                 }
                 if ((masks & (int)TrustListMasks.TrustedCrls) != 0)
                 {
                     trustedCrls = [];
-                    foreach (byte[] crl in trustList.TrustedCrls)
+                    foreach (ByteString crl in trustList.TrustedCrls)
                     {
-                        trustedCrls.Add(new X509CRL(crl));
+                        trustedCrls.Add(new X509CRL(crl.ToArray()));
                     }
                 }
 
@@ -687,7 +686,7 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            byte[] certificate,
+            ByteString certificate,
             bool isTrustedCertificate)
         {
             AddCertificateMethodStateResult result = AddCertificateAsync(
@@ -704,11 +703,12 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            byte[] certificate,
+            ByteString certificate,
             bool isTrustedCertificate,
             CancellationToken cancellationToken)
         {
-            object[] inputParameters = [certificate, isTrustedCertificate];
+            ArrayOf<Variant> inputParameters =
+                [Variant.From(certificate), Variant.From(isTrustedCertificate)];
             m_node.ReportTrustListUpdateRequestedAuditEvent(
                 context,
                 objectId,
@@ -815,7 +815,8 @@ namespace Technosoftware.UaServer
             bool isTrustedCertificate,
             CancellationToken cancellationToken)
         {
-            object[] inputParameters = [thumbprint, isTrustedCertificate];
+            ArrayOf<Variant> inputParameters =
+                [Variant.From(thumbprint), Variant.From(isTrustedCertificate)];
             m_node.ReportTrustListUpdateRequestedAuditEvent(
                 context,
                 objectId,
@@ -932,12 +933,12 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             TrustListDataType trustList)
         {
-            IServiceMessageContext messageContext = new ServiceMessageContext(context.Telemetry)
-            {
-                NamespaceUris = context.NamespaceUris,
-                ServerUris = context.ServerUris,
-                Factory = context.EncodeableFactory
-            };
+            IServiceMessageContext messageContext =
+                new ServiceMessageContext(context.Telemetry, context.EncodeableFactory)
+                {
+                    NamespaceUris = context.NamespaceUris,
+                    ServerUris = context.ServerUris
+                };
             var strm = new MemoryStream();
             using (var encoder = new BinaryEncoder(strm, messageContext, true))
             {
@@ -952,12 +953,12 @@ namespace Technosoftware.UaServer
             MemoryStream strm)
         {
             var trustList = new TrustListDataType();
-            IServiceMessageContext messageContext = new ServiceMessageContext(context.Telemetry)
-            {
-                NamespaceUris = context.NamespaceUris,
-                ServerUris = context.ServerUris,
-                Factory = context.EncodeableFactory
-            };
+            IServiceMessageContext messageContext =
+                new ServiceMessageContext(context.Telemetry, context.EncodeableFactory)
+                {
+                    NamespaceUris = context.NamespaceUris,
+                    ServerUris = context.ServerUris
+                };
             strm.Position = 0;
             using (var decoder = new BinaryDecoder(strm, messageContext))
             {
