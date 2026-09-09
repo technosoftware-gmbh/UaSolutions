@@ -17,11 +17,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -143,13 +143,13 @@ namespace Technosoftware.UaServer
         /// <exception cref="ServiceResultException"></exception>
         public virtual async ValueTask<CreateSessionResult> CreateSessionAsync(
             UaServerOperationContext context,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             string sessionName,
             byte[] clientNonce,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double requestedSessionTimeout,
             uint maxResponseMessageSize,
             CancellationToken cancellationToken = default)
@@ -532,15 +532,15 @@ namespace Technosoftware.UaServer
         protected virtual IUaSession CreateSession(
             UaServerOperationContext context,
             IUaServerData server,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             NodeId sessionCookie,
             byte[] clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double sessionTimeout,
             uint maxResponseMessageSize,
             int maxRequestAge, // TBD - Remove unused parameter.

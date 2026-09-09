@@ -16,10 +16,10 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient
@@ -222,12 +222,12 @@ namespace Technosoftware.UaClient
                 endpoint.Description.ServerCertificate.Length > 0)
             {
                 configuration.CertificateManager?.ValidateDomains(
-                    DefaultCertificateFactory.Instance.Create(endpoint.Description.ServerCertificate),
+                    DefaultCertificateFactory.Instance.CreateFromRawData(endpoint.Description.ServerCertificate),
                     endpoint);
             }
 
-            X509Certificate2? clientCertificate = null;
-            X509Certificate2Collection? clientCertificateChain = null;
+            Certificate? clientCertificate = null;
+            CertificateCollection? clientCertificateChain = null;
             if (endpointDescription.SecurityPolicyUri is not null and not SecurityPolicies.None)
             {
                 clientCertificate = await Session.LoadInstanceCertificateAsync(
@@ -323,8 +323,8 @@ namespace Technosoftware.UaClient
             ITransportChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
-            X509Certificate2? clientCertificate = null,
-            X509Certificate2Collection? clientCertificateChain = null,
+            Certificate? clientCertificate = null,
+            CertificateCollection? clientCertificateChain = null,
             EndpointDescriptionCollection? availableEndpoints = null,
             List<string>? discoveryProfileUris = null)
         {

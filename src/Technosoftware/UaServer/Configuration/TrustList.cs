@@ -212,9 +212,9 @@ namespace Technosoftware.UaServer
 
                     if (((int)masks & (int)TrustListMasks.TrustedCertificates) != 0)
                     {
-                        X509Certificate2Collection certificates = await store.EnumerateAsync(cancellationToken)
+                        CertificateCollection certificates = await store.EnumerateAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (X509Certificate2 certificate in certificates)
+                        foreach (Certificate certificate in certificates)
                         {
                             trustList.TrustedCertificates.Add(certificate.RawData);
                         }
@@ -247,9 +247,9 @@ namespace Technosoftware.UaServer
 
                     if (((int)masks & (int)TrustListMasks.IssuerCertificates) != 0)
                     {
-                        X509Certificate2Collection certificates = await store.EnumerateAsync(cancellationToken)
+                        CertificateCollection certificates = await store.EnumerateAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (X509Certificate2 certificate in certificates)
+                        foreach (Certificate certificate in certificates)
                         {
                             trustList.IssuerCertificates.Add(certificate.RawData);
                         }
@@ -589,9 +589,9 @@ namespace Technosoftware.UaServer
                 TrustListDataType trustList = DecodeTrustListData(context, strm);
                 int masks = (int)trustList.SpecifiedLists;
 
-                X509Certificate2Collection issuerCertificates = null;
+                CertificateCollection issuerCertificates = null;
                 X509CRLCollection issuerCrls = null;
-                X509Certificate2Collection trustedCertificates = null;
+                CertificateCollection trustedCertificates = null;
                 X509CRLCollection trustedCrls = null;
 
                 // test integrity of all CRLs
@@ -616,7 +616,7 @@ namespace Technosoftware.UaServer
                     trustedCertificates = [];
                     foreach (byte[] cert in trustList.TrustedCertificates)
                     {
-                        trustedCertificates.Add(DefaultCertificateFactory.Instance.Create(cert));
+                        trustedCertificates.Add(DefaultCertificateFactory.Instance.CreateFromRawData(cert));
                     }
                 }
                 if ((masks & (int)TrustListMasks.TrustedCrls) != 0)
@@ -743,10 +743,10 @@ namespace Technosoftware.UaServer
             }
             else
             {
-                X509Certificate2 cert = null;
+                Certificate cert = null;
                 try
                 {
-                    cert = DefaultCertificateFactory.Instance.Create(certificate);
+                    cert = DefaultCertificateFactory.Instance.CreateFromRawData(certificate);
                 }
                 catch
                 {
@@ -862,7 +862,7 @@ namespace Technosoftware.UaServer
                             "Failed to open certificate store.");
                     }
 
-                    X509Certificate2Collection certCollection = await store
+                    CertificateCollection certCollection = await store
                         .FindByThumbprintAsync(thumbprint, cancellationToken)
                         .ConfigureAwait(false);
 
@@ -878,7 +878,7 @@ namespace Technosoftware.UaServer
                             .ConfigureAwait(false);
                         foreach (X509CRL crl in crls)
                         {
-                            foreach (X509Certificate2 cert in certCollection)
+                            foreach (Certificate cert in certCollection)
                             {
                                 if (X509Utils.CompareDistinguishedName(
                                         cert.SubjectName,
@@ -1019,7 +1019,7 @@ namespace Technosoftware.UaServer
 
         private async Task<bool> UpdateStoreCertificatesAsync(
             CertificateStoreIdentifier storeIdentifier,
-            X509Certificate2Collection updatedCerts,
+            CertificateCollection updatedCerts,
             CancellationToken cancellationToken = default)
         {
             bool result = true;
@@ -1034,9 +1034,9 @@ namespace Technosoftware.UaServer
                             "Failed to open certificate store.");
                     }
 
-                    X509Certificate2Collection storeCerts = await store.EnumerateAsync(cancellationToken)
+                    CertificateCollection storeCerts = await store.EnumerateAsync(cancellationToken)
                         .ConfigureAwait(false);
-                    foreach (X509Certificate2 cert in storeCerts)
+                    foreach (Certificate cert in storeCerts)
                     {
                         if (!updatedCerts.Contains(cert))
                         {
@@ -1050,7 +1050,7 @@ namespace Technosoftware.UaServer
                             updatedCerts.Remove(cert);
                         }
                     }
-                    foreach (X509Certificate2 cert in updatedCerts)
+                    foreach (Certificate cert in updatedCerts)
                     {
                         await store.AddAsync(cert, null, cancellationToken).ConfigureAwait(false);
                     }

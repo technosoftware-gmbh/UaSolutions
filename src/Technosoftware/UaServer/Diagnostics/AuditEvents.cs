@@ -17,9 +17,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -584,7 +584,7 @@ namespace Technosoftware.UaServer
         /// <param name="logger">A contextual logger to log to</param>
         public static void ReportAuditCertificateEvent(
             this IUaAuditEventServer server,
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             Exception exception,
             ILogger logger)
         {
@@ -629,7 +629,7 @@ namespace Technosoftware.UaServer
             this IUaAuditEventServer server,
             ILogger logger,
             ISystemContext systemContext,
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             ServiceResultException sre)
         {
             try
@@ -731,7 +731,7 @@ namespace Technosoftware.UaServer
         /// <param name="logger">A contextual logger to log to</param>
         public static void ReportAuditCertificateDataMismatchEvent(
             this IUaAuditEventServer server,
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             string invalidHostName,
             string invalidUri,
             StatusCode statusCode,
@@ -1555,7 +1555,7 @@ namespace Technosoftware.UaServer
             string globalChannelId,
             EndpointDescription endpointDescription,
             OpenSecureChannelRequest request,
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             Exception exception,
             ILogger logger)
         {

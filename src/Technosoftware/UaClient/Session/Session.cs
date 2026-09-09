@@ -21,13 +21,13 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Bindings;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient
@@ -62,7 +62,7 @@ namespace Technosoftware.UaClient
         /// The application configuration is used to look up the certificate if none
         /// is provided. The clientCertificate must have the private key. This will
         /// require that the certificate be loaded from a certicate store. Converting
-        /// a DER encoded blob to a X509Certificate2 will not include a private key.
+        /// a DER encoded blob to a Certificate will not include a private key.
         /// The <i>availableEndpoints</i> and <i>discoveryProfileUris</i> parameters are
         /// used to validate that the list of EndpointDescriptions returned at GetEndpoints
         /// matches the list returned at CreateSession.
@@ -71,8 +71,8 @@ namespace Technosoftware.UaClient
             ITransportChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
-            X509Certificate2? clientCertificate = null,
-            X509Certificate2Collection? clientCertificateChain = null,
+            Certificate? clientCertificate = null,
+            CertificateCollection? clientCertificateChain = null,
             EndpointDescriptionCollection? availableEndpoints = null,
             List<string>? discoveryProfileUris = null)
             : this(
@@ -887,7 +887,7 @@ namespace Technosoftware.UaClient
             m_sessionName = sessionConfiguration.SessionName ?? "SessionName";
             m_serverCertificate =
                 serverCertificate != null
-                    ? DefaultCertificateFactory.Instance.Create(serverCertificate)
+                    ? DefaultCertificateFactory.Instance.CreateFromRawData(serverCertificate)
                     : null;
             m_identity = sessionConfiguration.Identity ?? new UserIdentity();
             m_checkDomain = sessionConfiguration.CheckDomain;
@@ -1066,12 +1066,12 @@ namespace Technosoftware.UaClient
                 out bool requireEncryption);
 
             // validate the server certificate /certificate chain.
-            X509Certificate2? serverCertificate = null;
+            Certificate? serverCertificate = null;
             byte[]? certificateData = m_endpoint.Description.ServerCertificate;
 
             if (certificateData != null && certificateData.Length > 0)
             {
-                X509Certificate2Collection serverCertificateChain = Utils.ParseCertificateChainBlob(
+                CertificateCollection serverCertificateChain = Utils.ParseCertificateChainBlob(
                     certificateData,
                     m_telemetry);
 
@@ -3843,7 +3843,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 try
                 {
                     // verify for certificate chain in endpoint.
-                    X509Certificate2Collection serverCertificateChain =
+                    CertificateCollection serverCertificateChain =
                         Utils.ParseCertificateChainBlob(
                             m_endpoint.Description.ServerCertificate,
                             m_telemetry);
@@ -3870,7 +3870,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
         private void ValidateServerSignature(
-            X509Certificate2? serverCertificate,
+            Certificate? serverCertificate,
             SignatureData serverSignature,
             byte[]? clientCertificateData,
             byte[]? clientCertificateChainData,
@@ -3926,7 +3926,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// with the applicationUri of the server description before the validation.
         /// </summary>
         private void ValidateServerCertificateApplicationUri(
-            X509Certificate2? serverCertificate,
+            Certificate? serverCertificate,
             ConfiguredEndpoint endpoint)
         {
             if (serverCertificate != null)
@@ -4546,7 +4546,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// Load certificate for connection.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        internal static async Task<X509Certificate2> LoadInstanceCertificateAsync(
+        internal static async Task<Certificate> LoadInstanceCertificateAsync(
             ApplicationConfiguration configuration,
             string securityProfile,
             ITelemetryContext telemetry,
@@ -4565,16 +4565,16 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <summary>
         /// Load certificate chain for connection.
         /// </summary>
-        internal static async Task<X509Certificate2Collection?> LoadCertificateChainAsync(
+        internal static async Task<CertificateCollection?> LoadCertificateChainAsync(
             ApplicationConfiguration configuration,
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             CancellationToken ct = default)
         {
-            X509Certificate2Collection? clientCertificateChain = null;
+            CertificateCollection? clientCertificateChain = null;
             // load certificate chain.
             if (configuration.SecurityConfiguration.SendCertificateChain)
             {
-                clientCertificateChain = new X509Certificate2Collection(clientCertificate);
+                clientCertificateChain = new CertificateCollection([clientCertificate]);
                 List<CertificateIdentifier> issuers = [];
                 await configuration
                     .CertificateManager.GetIssuersAsync(clientCertificate, issuers, ct)
@@ -4797,7 +4797,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <exception cref="ServiceResultException"></exception>
         protected virtual void ProcessResponseAdditionalHeader(
             ResponseHeader responseHeader,
-            X509Certificate2? serverCertificate)
+            Certificate? serverCertificate)
         {
             if (ExtensionObject.ToEncodeable(
                 responseHeader?.AdditionalHeader) is AdditionalParametersType parameters)
@@ -4868,12 +4868,12 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <summary>
         /// The Instance Certificate.
         /// </summary>
-        protected X509Certificate2? m_instanceCertificate;
+        protected Certificate? m_instanceCertificate;
 
         /// <summary>
         /// The Instance Certificate Chain.
         /// </summary>
-        protected X509Certificate2Collection? m_instanceCertificateChain;
+        protected CertificateCollection? m_instanceCertificateChain;
 
         /// <summary>
         /// The session telemetry context
@@ -4917,7 +4917,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         private readonly List<IUserIdentity> m_identityHistory = [];
         private byte[]? m_serverNonce;
         private byte[]? m_previousServerNonce;
-        private X509Certificate2? m_serverCertificate;
+        private Certificate? m_serverCertificate;
         private uint m_publishCounter;
         private int m_tooManyPublishRequests;
         private long m_lastKeepAliveTime;

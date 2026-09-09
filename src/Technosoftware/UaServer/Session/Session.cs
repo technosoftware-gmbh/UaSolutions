@@ -20,6 +20,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -49,15 +50,15 @@ namespace Technosoftware.UaServer
         public Session(
             UaServerOperationContext context,
             IUaServerData server,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             NodeId authenticationToken,
             byte[] clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double sessionTimeout,
             int maxBrowseContinuationPoints,
             int maxHistoryContinuationPoints)
@@ -230,7 +231,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The application instance certificate associated with the client.
         /// </summary>
-        public X509Certificate2 ClientCertificate { get; }
+        public Certificate ClientCertificate { get; }
 
         /// <summary>
         /// The locales requested when the session was created.
@@ -472,7 +473,7 @@ namespace Technosoftware.UaServer
                     {
                         // verify for certificate chain in endpoint.
                         // validate the signature with complete chain if the check with leaf certificate failed.
-                        X509Certificate2Collection serverCertificateChain =
+                        CertificateCollection serverCertificateChain =
                             Utils.ParseCertificateChainBlob(
                                 EndpointDescription.ServerCertificate,
                                 m_server.Telemetry);
@@ -1011,7 +1012,7 @@ namespace Technosoftware.UaServer
                     {
                         // verify for certificate chain in endpoint.
                         // validate the signature with complete chain if the check with leaf certificate failed.
-                        X509Certificate2Collection serverCertificateChain =
+                        CertificateCollection serverCertificateChain =
                             Utils.ParseCertificateChainBlob(
                                 EndpointDescription.ServerCertificate,
                                 m_server.Telemetry);
@@ -1245,11 +1246,11 @@ namespace Technosoftware.UaServer
         private readonly ILogger m_logger;
         private readonly IUaServerData m_server;
         private readonly string m_sessionName;
-        private X509Certificate2 m_serverCertificate;
+        private Certificate m_serverCertificate;
         private Nonce m_serverNonce;
         private string m_eccUserTokenSecurityPolicyUri;
         private Nonce m_eccUserTokenNonce;
-        private readonly X509Certificate2Collection m_clientIssuerCertificates;
+        private readonly CertificateCollection m_clientIssuerCertificates;
         private readonly int m_maxHistoryContinuationPoints;
         private readonly SessionSecurityDiagnosticsDataType m_securityDiagnostics;
         private List<UaContinuationPoint> m_browseContinuationPoints;

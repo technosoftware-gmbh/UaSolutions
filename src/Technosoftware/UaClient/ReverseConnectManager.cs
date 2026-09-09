@@ -23,6 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient
@@ -151,7 +152,7 @@ namespace Technosoftware.UaClient
             /// <param name="endpointUrl">The endpoint Url of the server.</param>
             /// <param name="onConnectionWaiting">The connection to use.</param>
             public Registration(
-                X509Certificate2 serverCertificate,
+                Certificate serverCertificate,
                 Uri endpointUrl,
                 EventHandler<ConnectionWaitingEventArgs> onConnectionWaiting)
                 : this(endpointUrl, onConnectionWaiting)

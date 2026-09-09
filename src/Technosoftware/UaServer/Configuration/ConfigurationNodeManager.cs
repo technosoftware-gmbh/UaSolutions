@@ -25,6 +25,7 @@ using Opc.Ua.Security.Certificates;
 using System.Security.Cryptography;
 using System.Diagnostics;
 using Opc.Ua;
+using Opc.Ua.Redaction;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -434,8 +435,8 @@ namespace Technosoftware.UaServer
                 privateKeyFormat,
                 privateKey
             ];
-            X509Certificate2 newCert = null;
-            X509Certificate2 certWithPrivateKey = null;
+            Certificate newCert = null;
+            Certificate certWithPrivateKey = null;
 
             ServerData.ReportCertificateUpdateRequestedAuditEvent(
                 context,
@@ -465,7 +466,7 @@ namespace Technosoftware.UaServer
 
                 try
                 {
-                    newCert = DefaultCertificateFactory.Instance.Create(certificate);
+                    newCert = DefaultCertificateFactory.Instance.CreateFromRawData(certificate);
                 }
                 catch
                 {
@@ -498,7 +499,7 @@ namespace Technosoftware.UaServer
                         StatusCodes.BadInvalidArgument,
                         "No existing certificate found for the specified certificate type and subject name.");
 
-                var newIssuerCollection = new X509Certificate2Collection();
+                var newIssuerCollection = new CertificateCollection();
 
                 try
                 {
@@ -507,7 +508,7 @@ namespace Technosoftware.UaServer
                     {
                         foreach (byte[] issuerRawCert in issuerCertificates)
                         {
-                            newIssuerCollection.Add(DefaultCertificateFactory.Instance.Create(issuerRawCert));
+                            newIssuerCollection.Add(DefaultCertificateFactory.Instance.CreateFromRawData(issuerRawCert));
                         }
                     }
                 }
@@ -535,7 +536,7 @@ namespace Technosoftware.UaServer
                         var certValidator = new CertificateValidator(ServerData.Telemetry);
                         var issuerStore = new CertificateTrustList();
                         var issuerCollection = new CertificateIdentifierCollection();
-                        foreach (X509Certificate2 issuerCert in newIssuerCollection)
+                        foreach (Certificate issuerCert in newIssuerCollection)
                         {
                             issuerCollection.Add(new CertificateIdentifier(issuerCert));
                         }
@@ -549,7 +550,7 @@ namespace Technosoftware.UaServer
                             Utils.TraceMasks.Security,
                             ex,
                             "Failed to verify integrity of the new certificate {Certificate} and the issuer list.",
-                            newCert.AsLogSafeString());
+                            Redact.Create(newCert));
                         throw new ServiceResultException(
                             StatusCodes.BadSecurityChecksFailed,
                             "Failed to verify integrity of the new certificate and the issuer list.",
@@ -573,7 +574,7 @@ namespace Technosoftware.UaServer
                         case "":
                             for (int attempt = 0; ; attempt++)
                             {
-                                X509Certificate2 exportableKey;
+                                Certificate exportableKey;
                                 // use the new generated private key if one exists and matches the provided public key
                                 if (certificateGroup.TemporaryApplicationCertificate != null &&
                                     X509Utils.VerifyKeyPair(
@@ -622,7 +623,7 @@ namespace Technosoftware.UaServer
                                         Utils.TraceMasks.Security,
                                         ex,
                                         "Failed to update certificate {Certificate}. Retrying...",
-                                        newCert.AsLogSafeString());
+                                        Redact.Create(newCert));
                                 }
                             }
                             break;
@@ -652,7 +653,7 @@ namespace Technosoftware.UaServer
                                         Utils.TraceMasks.Security,
                                         ex,
                                         "Failed to update certificate {Certificate} with PFX private key. Retrying...",
-                                        newCert.AsLogSafeString());
+                                        Redact.Create(newCert));
                                 }
                             }
                             break;
@@ -678,7 +679,7 @@ namespace Technosoftware.UaServer
                                         Utils.TraceMasks.Security,
                                         ex,
                                         "Failed to update certificate {Certificate} with PEM private key. Retrying...",
-                                        newCert.AsLogSafeString());
+                                        Redact.Create(newCert));
                                 }
                             }
                             break;
@@ -753,7 +754,7 @@ namespace Technosoftware.UaServer
                         m_logger.LogInformation(
                             Utils.TraceMasks.Security,
                             "Delete application certificate {Certificate}",
-                            existingCertIdentifier.Certificate.AsLogSafeString());
+                            Redact.Create(existingCertIdentifier.Certificate));
                         await appStore.DeleteAsync(
                             existingCertIdentifier.Thumbprint,
                             ct)
@@ -764,7 +765,7 @@ namespace Technosoftware.UaServer
                         m_logger.LogInformation(
                             Utils.TraceMasks.Security,
                             "Add new application certificate {Certificate}",
-                            updateCertificate.CertificateWithPrivateKey.AsLogSafeString());
+                            Redact.Create(updateCertificate.CertificateWithPrivateKey));
                         Debug.Assert(updateCertificate.CertificateWithPrivateKey.HasPrivateKey);
                         await appStore.AddAsync(
                             updateCertificate.CertificateWithPrivateKey,
@@ -772,7 +773,7 @@ namespace Technosoftware.UaServer
                             ct)
                             .ConfigureAwait(false);
                         // keep only track of cert without private key
-                        X509Certificate2 certOnly = DefaultCertificateFactory.Instance.Create(
+                        Certificate certOnly = DefaultCertificateFactory.Instance.CreateFromRawData(
                             updateCertificate.CertificateWithPrivateKey.RawData);
                         updateCertificate.CertificateWithPrivateKey.Dispose();
                         updateCertificate.CertificateWithPrivateKey = certOnly;
@@ -793,14 +794,14 @@ namespace Technosoftware.UaServer
                                 "Failed to open issuer certificate store.");
                         }
 
-                        foreach (X509Certificate2 issuer in updateCertificate.IssuerCollection)
+                        foreach (Certificate issuer in updateCertificate.IssuerCollection)
                         {
                             try
                             {
                                 m_logger.LogInformation(
                                     Utils.TraceMasks.Security,
                                     "Add new issuer certificate {Certificate}",
-                                    issuer.AsLogSafeString());
+                                    Redact.Create(issuer));
                                 await issuerStore.AddAsync(issuer, ct: ct).ConfigureAwait(false);
                             }
                             catch (ArgumentException)
@@ -829,7 +830,7 @@ namespace Technosoftware.UaServer
                         Utils.TraceMasks.Security,
                         ex,
                         "Failed to update certificate {Certificate}.",
-                        newCert.AsLogSafeString());
+                        Redact.Create(newCert));
                     throw new ServiceResultException(
                         StatusCodes.BadSecurityChecksFailed,
                         "Failed to update certificate.",
@@ -869,7 +870,7 @@ namespace Technosoftware.UaServer
             certificateGroup.TemporaryApplicationCertificate?.Dispose();
             certificateGroup.TemporaryApplicationCertificate = null;
 
-            X509Certificate2 certWithPrivateKey;
+            Certificate certWithPrivateKey;
             if (regeneratePrivateKey)
             {
                 IList<string> domainNames = X509Utils.GetDomainsFromCertificate(existingCertIdentifier.Certificate);
@@ -901,7 +902,7 @@ namespace Technosoftware.UaServer
             m_logger.LogInformation(
                 Utils.TraceMasks.Security,
                 "Create signing request {Certificate}",
-                certWithPrivateKey.AsLogSafeString());
+                Redact.Create(certWithPrivateKey));
             byte[] certificateRequest = CertificateFactory.CreateSigningRequest(
                 certWithPrivateKey,
                 X509Utils.GetDomainsFromCertificate(certWithPrivateKey));
@@ -913,13 +914,13 @@ namespace Technosoftware.UaServer
             };
         }
 
-        private X509Certificate2 GenerateTemporaryApplicationCertificate(
+        private Certificate GenerateTemporaryApplicationCertificate(
             NodeId certificateTypeId,
             ServerCertificateGroup certificateGroup,
             string subjectName,
             IList<string> domainNames)
         {
-            X509Certificate2 certificate;
+            Certificate certificate;
 
             ICertificateBuilder certificateBuilder = CertificateFactory
                 .CreateCertificate(m_configuration.ApplicationUri, m_configuration.ApplicationName, subjectName, domainNames)
@@ -971,7 +972,7 @@ namespace Technosoftware.UaServer
                         m_logger.LogInformation(
                             Utils.TraceMasks.Security,
                             "Apply Changes for certificate {Certificate}",
-                            updateCertificate.CertificateWithPrivateKey.AsLogSafeString());
+                            Redact.Create(updateCertificate.CertificateWithPrivateKey));
                     }
                 }
                 finally
@@ -1056,9 +1057,9 @@ namespace Technosoftware.UaServer
             {
                 if (store != null)
                 {
-                    X509Certificate2Collection collection = store.EnumerateAsync().Result;
+                    CertificateCollection collection = store.EnumerateAsync().Result;
                     var rawList = new List<byte[]>();
-                    foreach (X509Certificate2 cert in collection)
+                    foreach (Certificate cert in collection)
                     {
                         rawList.Add(cert.RawData);
                     }
@@ -1234,8 +1235,8 @@ namespace Technosoftware.UaServer
         private class UpdateCertificateData
         {
             public NodeId SessionId { get; set; }
-            public X509Certificate2 CertificateWithPrivateKey { get; set; }
-            public X509Certificate2Collection IssuerCollection { get; set; }
+            public Certificate CertificateWithPrivateKey { get; set; }
+            public CertificateCollection IssuerCollection { get; set; }
         }
 
         private class ServerCertificateGroup
@@ -1248,7 +1249,7 @@ namespace Technosoftware.UaServer
             public CertificateStoreIdentifier IssuerStore { get; set; }
             public CertificateStoreIdentifier TrustedStore { get; set; }
             public UpdateCertificateData UpdateCertificate { get; set; }
-            public X509Certificate2 TemporaryApplicationCertificate { get; set; }
+            public Certificate TemporaryApplicationCertificate { get; set; }
         }
 
         private ServerConfigurationState m_serverConfigurationNode;
