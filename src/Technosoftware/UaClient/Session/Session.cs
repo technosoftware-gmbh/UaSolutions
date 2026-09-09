@@ -222,7 +222,7 @@ namespace Technosoftware.UaClient
             m_keepAliveTimer = new Timer(_ => m_keepAliveEvent.Set(), this, Timeout.Infinite, Timeout.Infinite);
 
             // set the default preferred locales.
-            m_preferredLocales = new string[] { CultureInfo.CurrentCulture.Name };
+            m_preferredLocales = ArrayOf.Wrapped(CultureInfo.CurrentCulture.Name);
 
             // create a context to use.
             m_systemContext = new SessionSystemContext(m_telemetry)
@@ -296,7 +296,7 @@ namespace Technosoftware.UaClient
                 if (!Nonce.ValidateNonce(
                     serverNonce,
                     MessageSecurityMode.SignAndEncrypt,
-                    (uint)m_configuration.SecurityConfiguration.NonceLength))
+                    m_configuration.SecurityConfiguration.NonceLength))
                 {
                     if (channelSecurityMode == MessageSecurityMode.SignAndEncrypt ||
                         m_configuration.SecurityConfiguration.SuppressNonceValidationErrors)
@@ -547,7 +547,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets the locales that the server should use when returning localized text.
         /// </summary>
-        public List<string> PreferredLocales => m_preferredLocales;
+        public ArrayOf<string> PreferredLocales => m_preferredLocales;
 
         /// <summary>
         /// Gets the subscriptions owned by the session.
@@ -1103,7 +1103,7 @@ namespace Technosoftware.UaClient
             }
 
             // create a nonce.
-            uint length = (uint)m_configuration.SecurityConfiguration.NonceLength;
+            int length = m_configuration.SecurityConfiguration.NonceLength;
             byte[] clientNonce = Nonce.CreateRandomNonceData(length);
 
             // send the application instance certificate for the client.
@@ -1567,7 +1567,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         {
             ThrowIfDisposed();
             using Activity? activity = m_telemetry.StartActivity();
-            List<uint> subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
+            ArrayOf<uint> subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
             int failedSubscriptions = 0;
 
             if (subscriptionIds.Count > 0)
@@ -1644,7 +1644,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             CancellationToken ct)
         {
             using Activity? activity = m_telemetry.StartActivity();
-            List<uint> subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
+            ArrayOf<uint> subscriptionIds = CreateSubscriptionIdsForTransfer(subscriptions);
             int failedSubscriptions = 0;
 
             if (subscriptionIds.Count > 0)
@@ -1753,7 +1753,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         public async Task FetchNamespaceTablesAsync(CancellationToken ct = default)
         {
             using Activity? activity = m_telemetry.StartActivity();
-            ReadValueIdCollection nodesToRead = PrepareNamespaceTableNodesToRead();
+            ArrayOf<ReadValueId> nodesToRead = PrepareNamespaceTableNodesToRead();
 
             // read from server.
             ReadResponse response = await ReadAsync(
@@ -1957,8 +1957,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             CancellationToken ct = default)
         {
             ServiceMessageContext messageContext = m_configuration
-                .CreateMessageContext();
-            messageContext.Factory = Factory;
+                .CreateMessageContext(Factory);
 
             // create the channel object used to connect to the server.
             ITransportChannel channel = await UaChannelBase.CreateUaBinaryChannelAsync(
@@ -2013,8 +2012,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             CancellationToken ct = default)
         {
             ServiceMessageContext messageContext = m_configuration
-                .CreateMessageContext();
-            messageContext.Factory = Factory;
+                .CreateMessageContext(Factory);
 
             // create the channel object used to connect to the server.
             ITransportChannel channel = await UaChannelBase.CreateUaBinaryChannelAsync(
@@ -3059,7 +3057,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                     // validate value returned.
                     ServiceResult error = ValidateDataValue(
                         values[0],
-                        typeof(int),
+                        TypeInfo.Scalars.Int32,
                         0,
                         diagnosticInfos,
                         responseHeader);
@@ -3224,29 +3222,21 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <summary>
         /// Prepares the list of node ids to read to fetch the namespace table.
         /// </summary>
-        private static ReadValueIdCollection PrepareNamespaceTableNodesToRead()
+        private static ArrayOf<ReadValueId> PrepareNamespaceTableNodesToRead()
         {
-            var nodesToRead = new ReadValueIdCollection();
-
-            // request namespace array.
-            var valueId = new ReadValueId
-            {
-                NodeId = new NodeId(Variables.Server_NamespaceArray),
-                AttributeId = Attributes.Value
-            };
-
-            nodesToRead.Add(valueId);
-
-            // request server array.
-            valueId = new ReadValueId
-            {
-                NodeId = new NodeId(Variables.Server_ServerArray),
-                AttributeId = Attributes.Value
-            };
-
-            nodesToRead.Add(valueId);
-
-            return nodesToRead;
+            return ArrayOf.Wrapped(
+                // request namespace array.
+                new ReadValueId
+                {
+                    NodeId = new NodeId(Variables.Server_NamespaceArray),
+                    AttributeId = Attributes.Value
+                },
+                // request server array.
+                new ReadValueId
+                {
+                    NodeId = new NodeId(Variables.Server_ServerArray),
+                    AttributeId = Attributes.Value
+                });
         }
 
         /// <summary>
@@ -3264,7 +3254,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             // validate namespace array.
             ServiceResult result = ValidateDataValue(
                 values[0],
-                typeof(string[]),
+                TypeInfo.Arrays.String,
                 0,
                 diagnosticInfos,
                 responseHeader);
@@ -3300,7 +3290,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             // validate server array.
             result = ValidateDataValue(
                 values[1],
-                typeof(string[]),
+                TypeInfo.Arrays.String,
                 1,
                 diagnosticInfos,
                 responseHeader);
@@ -3407,10 +3397,11 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             try
             {
                 Activity? activity = m_telemetry.StartActivity();
-                ValueTask<PublishResponse> task = PublishAsync(
+                Task<PublishResponse> task = PublishAsync(
                     requestHeader,
                     acknowledgementsToSend,
-                    default); // TODO: Need a session scoped cancellation token.
+                    default) // TODO: Need a session scoped cancellation token.
+                    .AsTask();
                 AsyncRequestStarted(task, activity, requestHeader.RequestHandle, DataTypes.PublishRequest);
                 task.ConfigureAwait(false)
                     .GetAwaiter()
@@ -3944,29 +3935,31 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             if (m_discoveryServerEndpoints != null && m_discoveryServerEndpoints.Count > 0)
             {
                 // Compare EndpointDescriptions returned at GetEndpoints with values returned at CreateSession
-                ArrayOf<EndpointDescription>? expectedServerEndpoints;
-                if (serverEndpoints != null &&
+                ArrayOf<EndpointDescription> expectedServerEndpoints;
+                if (!serverEndpoints.IsNull &&
                     m_discoveryProfileUris != null &&
                     m_discoveryProfileUris.Count > 0)
                 {
                     // Select EndpointDescriptions with a transportProfileUri that matches the
                     // profileUris specified in the original GetEndpoints() request.
-                    expectedServerEndpoints = [];
+                    var matchingEndpoints = new List<EndpointDescription>(serverEndpoints.Count);
 
                     foreach (EndpointDescription serverEndpoint in serverEndpoints)
                     {
                         if (m_discoveryProfileUris.Contains(serverEndpoint.TransportProfileUri))
                         {
-                            expectedServerEndpoints.Add(serverEndpoint);
+                            matchingEndpoints.Add(serverEndpoint);
                         }
                     }
+
+                    expectedServerEndpoints = matchingEndpoints.ToArrayOf();
                 }
                 else
                 {
                     expectedServerEndpoints = serverEndpoints;
                 }
 
-                if (expectedServerEndpoints == null ||
+                if (expectedServerEndpoints.IsNull ||
                     m_discoveryServerEndpoints.Count != expectedServerEndpoints.Count)
                 {
                     throw ServiceResultException.Create(
@@ -4693,7 +4686,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <param name="subscriptions">The subscriptions to transfer.</param>
         /// <returns>The subscription ids for the transfer.</returns>
         /// <exception cref="ServiceResultException">Thrown if a subscription is in invalid state.</exception>
-        private List<uint> CreateSubscriptionIdsForTransfer(
+        private ArrayOf<uint> CreateSubscriptionIdsForTransfer(
             SubscriptionCollection subscriptions)
         {
             var subscriptionIds = new List<uint>();
@@ -4719,7 +4712,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                     subscriptionIds.Add(subscription.TransferId);
                 }
             }
-            return subscriptionIds;
+            return subscriptionIds.ToArrayOf();
         }
 
         /// <summary>
@@ -4847,7 +4840,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <summary>
         /// The locales that the server should use when returning localized text.
         /// </summary>
-        protected List<string> m_preferredLocales;
+        protected ArrayOf<string> m_preferredLocales;
 
         /// <summary>
         /// The Application Configuration.

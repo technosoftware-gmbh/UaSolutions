@@ -170,7 +170,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets the locales that the server should use when returning localized text.
         /// </summary>
-        List<string> PreferredLocales { get; }
+        ArrayOf<string> PreferredLocales { get; }
 
         /// <summary>
         /// Gets the subscriptions owned by the session.
