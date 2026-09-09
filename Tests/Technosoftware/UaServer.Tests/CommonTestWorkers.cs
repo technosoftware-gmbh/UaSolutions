@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -238,8 +239,8 @@ namespace Technosoftware.UaServer.Tests
                             requestHeader,
                             null,
                             0,
-                            browseDescriptionCollection.Take(0).ToArray()).ConfigureAwait(false));
-                Assert.AreEqual((StatusCode)StatusCodes.BadNothingToDo, (StatusCode)sre.StatusCode);
+                            default).ConfigureAwait(false));
+                Assert.AreEqual(StatusCodes.BadNothingToDo, sre.StatusCode.Code);
             }
 
             while (browseDescriptionCollection.Count > 0)
@@ -261,11 +262,9 @@ namespace Technosoftware.UaServer.Tests
                         (StatusCode)sre.StatusCode);
 
                     // Test if server responds with BadTooManyOperations
-                    BrowseDescription[] tempBrowsePath =
-                    [
-                        .. browseDescriptionCollection.Take(
-                            (int)operationLimits.MaxNodesPerBrowse + 1)
-                    ];
+                    ArrayOf<BrowseDescription> tempBrowsePath =
+                        browseDescriptionCollection[
+                            ..((int)operationLimits.MaxNodesPerBrowse + 1)];
                     sre = NUnit.Framework.Assert.ThrowsAsync<ServiceResultException>(async () =>
                         _ = await services.BrowseAsync(
                             requestHeader,
@@ -285,7 +284,7 @@ namespace Technosoftware.UaServer.Tests
                     ArrayOf<BrowseDescription> browseCollection =
                         maxNodesPerBrowse == 0
                             ? browseDescriptionCollection
-                            : browseDescriptionCollection.Take((int)maxNodesPerBrowse).ToArray();
+                            : browseDescriptionCollection[..(int)maxNodesPerBrowse];
                     repeatBrowse = false;
                     try
                     {
@@ -307,9 +306,11 @@ namespace Technosoftware.UaServer.Tests
 
                         allResults.AddRange(browseResponse.Results);
                     }
+                    // StatusCode is a struct in 2.0, so the well-known codes
+                    // are no longer constants a pattern can match against.
                     catch (ServiceResultException sre)
-                        when (sre.StatusCode is StatusCodes.BadEncodingLimitsExceeded or StatusCodes
-                            .BadResponseTooLarge)
+                        when (sre.StatusCode == StatusCodes.BadEncodingLimitsExceeded ||
+                            sre.StatusCode == StatusCodes.BadResponseTooLarge)
                     {
                         // try to address by overriding operation limit
                         maxNodesPerBrowse =
@@ -320,15 +321,9 @@ namespace Technosoftware.UaServer.Tests
                     }
                 } while (repeatBrowse);
 
-                if (maxNodesPerBrowse == 0)
-                {
-                    browseDescriptionCollection.Clear();
-                }
-                else
-                {
-                    browseDescriptionCollection = browseDescriptionCollection.Skip(
-                        (int)maxNodesPerBrowse).ToArray();
-                }
+                browseDescriptionCollection = maxNodesPerBrowse == 0
+                    ? default
+                    : browseDescriptionCollection[(int)maxNodesPerBrowse..];
 
                 // Browse next
                 ArrayOf<ByteString> continuationPoints = ServerFixtureUtils.PrepareBrowseNext(
@@ -405,7 +400,7 @@ namespace Technosoftware.UaServer.Tests
             bool verifyMaxNodesPerBrowse = operationLimits
                 .MaxNodesPerTranslateBrowsePathsToNodeIds > 0;
             var browsePaths = new List<BrowsePath>(
-                referenceDescriptions.Select(r => new BrowsePath
+                referenceDescriptions.ToArray().Select(r => new BrowsePath
                 {
                     RelativePath = new RelativePath(r.BrowseName),
                     StartingNode = new NodeId(startingNode)
@@ -443,7 +438,7 @@ namespace Technosoftware.UaServer.Tests
                 allBrowsePaths.AddRange(translateResponse.Results);
                 foreach (BrowsePathResult result in translateResponse.Results)
                 {
-                    if (result.Targets?.Count > 0)
+                    if (result.Targets.Count > 0)
                     {
                         TestContext.Out.WriteLine("BrowsePath {0}", result.Targets[0].ToString());
                     }
@@ -455,9 +450,8 @@ namespace Technosoftware.UaServer.Tests
                 }
                 else
                 {
-                    browsePaths = browsePaths
-                        .Skip((int)operationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds)
-                        .ToArray();
+                    browsePaths = [.. browsePaths
+                        .Skip((int)operationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds)];
                 }
             }
             return allBrowsePaths;
@@ -674,7 +668,7 @@ namespace Technosoftware.UaServer.Tests
 
             // disable monitoring
             var monitoredItemIds = new List<uint>(
-                createMonitoredItemsResponse.Results.Select(r => r.MonitoredItemId));
+                createMonitoredItemsResponse.Results.ToArray().Select(r => r.MonitoredItemId));
             SetMonitoringModeResponse setMonitoringModeResponse = await services.SetMonitoringModeAsync(
                 requestHeader,
                 id,
@@ -829,12 +823,13 @@ namespace Technosoftware.UaServer.Tests
             Assert.AreEqual(sendInitialData ? 1 : 0, publishResponse.NotificationMessage.NotificationData.Count);
             if (sendInitialData)
             {
-                ExtensionObject items = publishResponse.NotificationMessage.NotificationData.FirstOrDefault();
+                ExtensionObject items = publishResponse.NotificationMessage.NotificationData
+                    .Find(_ => true, default);
                 Assert.IsTrue(items.Body is DataChangeNotification);
                 ArrayOf<MonitoredItemNotification> monitoredItemsCollection = (
                     (DataChangeNotification)items.Body
                 ).MonitoredItems;
-                Assert.IsNotEmpty(monitoredItemsCollection);
+                Assert.IsNotEmpty(monitoredItemsCollection.ToArray());
             }
             //Assert.AreEqual(0, availableSequenceNumbers.Count);
 
@@ -978,7 +973,7 @@ namespace Technosoftware.UaServer.Tests
                     {
                         AttributeId = Attributes.Value,
                         TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                        BrowsePath = [.. new QualifiedName[] { new QualifiedName("EventType" )}]
+                        BrowsePath = [new QualifiedName("EventType")]
                     },
                     new LiteralOperand {
                         Value = new Variant(new NodeId(ObjectTypeIds.BaseEventType)) }

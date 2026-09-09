@@ -61,12 +61,12 @@ namespace Technosoftware.UaServer.Tests
             // Find TCP endpoint
             ArrayOf<EndpointDescription> endpoints = server.GetEndpoints();
             EndpointDescription endpoint =
-                endpoints.FirstOrDefault(e =>
-                    e.TransportProfileUri
-                        .Equals(Profiles.UaTcpTransport, StringComparison.Ordinal) ||
-                    e.TransportProfileUri
-                        .Equals(Profiles.HttpsBinaryTransport, StringComparison.Ordinal)
-                ) ??
+                endpoints.Find(
+                    e => e.TransportProfileUri
+                            .Equals(Profiles.UaTcpTransport, StringComparison.Ordinal) ||
+                        e.TransportProfileUri
+                            .Equals(Profiles.HttpsBinaryTransport, StringComparison.Ordinal),
+                    null) ??
                 throw new NotSupportedException("Unsupported transport profile.");
 
             // fake profiles
@@ -98,7 +98,7 @@ namespace Technosoftware.UaServer.Tests
                 default,
                 sessionTimeout,
                 maxResponseMessageSize,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
             ValidateResponse(createSessionResponse.ResponseHeader);
 
             // Activate session
@@ -111,7 +111,7 @@ namespace Technosoftware.UaServer.Tests
                 [],
                 identityToken != null ? new ExtensionObject(identityToken) : default,
                 null,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
             ValidateResponse(activateSessionResponse.ResponseHeader);
 
             return (requestHeader, secureChannelContext);
@@ -129,7 +129,8 @@ namespace Technosoftware.UaServer.Tests
             CancellationToken ct)
         {
             // close session
-            CloseSessionResponse response = await server.CloseSessionAsync(secureChannelContext, requestHeader, true, ct).ConfigureAwait(false);
+            using var lifetime = new RequestLifetime(ct);
+            CloseSessionResponse response = await server.CloseSessionAsync(secureChannelContext, requestHeader, true, lifetime).ConfigureAwait(false);
             ValidateResponse(response.ResponseHeader);
         }
 
@@ -175,6 +176,31 @@ namespace Technosoftware.UaServer.Tests
             ArrayOf<TResponse> response,
             ArrayOf<TRequest> request)
         {
+            ValidateResponse(header, response, request.Count);
+        }
+
+        /// <summary>
+        /// Validate the response of a service call whose request was built as a
+        /// list rather than an ArrayOf.
+        /// </summary>
+        /// <remarks>
+        /// ArrayOf does not implement IReadOnlyList, so a request still under
+        /// construction cannot bind to the overload above; only the element
+        /// count is needed of it either way.
+        /// </remarks>
+        public static void ValidateResponse<TRequest, TResponse>(
+            ResponseHeader header,
+            ArrayOf<TResponse> response,
+            IReadOnlyList<TRequest> request)
+        {
+            ValidateResponse(header, response, request.Count);
+        }
+
+        private static void ValidateResponse<TResponse>(
+            ResponseHeader header,
+            ArrayOf<TResponse> response,
+            int requestCount)
+        {
             ValidateResponse(header);
 
             if (response is ArrayOf<DiagnosticInfo>)
@@ -184,7 +210,7 @@ namespace Technosoftware.UaServer.Tests
                     nameof(response));
             }
 
-            if (response.Count != request.Count)
+            if (response.Count != requestCount)
             {
                 throw ServiceResultException.Unexpected(
                     "The server returned a list without the expected number of elements.");
@@ -201,10 +227,32 @@ namespace Technosoftware.UaServer.Tests
             ArrayOf<string> stringTable,
             ILogger logger)
         {
+            ValidateDiagnosticInfos(response, request.Count, stringTable, logger);
+        }
+
+        /// <summary>
+        /// Validate the diagnostic response of a service call whose request was
+        /// built as a list rather than an ArrayOf.
+        /// </summary>
+        public static void ValidateDiagnosticInfos<TRequest>(
+            ArrayOf<DiagnosticInfo> response,
+            IReadOnlyList<TRequest> request,
+            ArrayOf<string> stringTable,
+            ILogger logger)
+        {
+            ValidateDiagnosticInfos(response, request.Count, stringTable, logger);
+        }
+
+        private static void ValidateDiagnosticInfos(
+            ArrayOf<DiagnosticInfo> response,
+            int requestCount,
+            ArrayOf<string> stringTable,
+            ILogger logger)
+        {
             // returning an empty list for diagnostic info arrays is allowed.
             if (response.Count != 0)
             {
-                if (response.Count != request.Count)
+                if (response.Count != requestCount)
                 {
                     throw ServiceResultException.Unexpected(
                         "The server forgot to fill in the DiagnosticInfos array correctly when returning an operation level error.");
