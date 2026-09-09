@@ -354,18 +354,211 @@ namespace Technosoftware.UaServer
         }
 
         /// <summary>
-        /// Loads a node set from a file or resource and adds them to the set of predefined nodes.
+        /// Builds the standard address space and adds it to the set of predefined nodes.
         /// </summary>
+        /// <remarks>
+        /// The standard address space used to be an embedded .uanodes resource in
+        /// Opc.Ua.Core. The model source generator replaced it, so the nodes are built
+        /// rather than deserialized. The generated builder emits only the mandatory
+        /// children, so the optional ones this SDK implements are added afterwards -
+        /// see <see cref="AddSdkImplementedOptionalChildren"/>.
+        /// </remarks>
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
-            var predefinedNodes = new NodeStateCollection();
-            Assembly assembly = typeof(ReadRequest).GetTypeInfo().Assembly;
-            predefinedNodes.LoadFromBinaryResource(
-                context,
-                "Opc.Ua.Stack.Generated.Opc.Ua.PredefinedNodes.uanodes",
-                assembly,
-                true);
+            NodeStateCollection predefinedNodes = new NodeStateCollection().AddOpcUa(context);
+
+            AddSdkImplementedOptionalChildren(context, predefinedNodes);
+
             return predefinedNodes;
+        }
+
+        /// <summary>
+        /// Programmatically adds the optional children of the well-known singletons that
+        /// this SDK implements.
+        /// </summary>
+        /// <remarks>
+        /// A hook for subclasses that override <see cref="LoadPredefinedNodes"/>: call it
+        /// after the base collection is built to preserve the SDK-visible behaviour.
+        /// </remarks>
+        /// <param name="context">The system context.</param>
+        /// <param name="nodes">The predefined nodes to add the optional children to.</param>
+        protected virtual void AddSdkImplementedOptionalChildren(
+            ISystemContext context,
+            NodeStateCollection nodes)
+        {
+            foreach (NodeState node in nodes)
+            {
+                switch (node)
+                {
+                    case ServerObjectState serverObject:
+                        AddServerSdkOptionalChildren(context, serverObject);
+                        break;
+                    case HistoryServerCapabilitiesState historyCapabilities:
+                        historyCapabilities.AddServerTimestampSupported(context);
+                        break;
+                    case RoleState roleState:
+                        AddWellKnownRoleSdkOptionalChildren(context, roleState);
+                        break;
+                    case NamespaceMetadataState metadataState:
+                        AddOpcUaNamespaceMetadataSdkOptionalChildren(context, metadataState);
+                        break;
+                    case AliasNameCategoryState aliasCategory:
+                        AddAliasNameCategorySdkOptionalChildren(context, aliasCategory);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds the optional children of the Server object that this SDK implements.
+        /// </summary>
+        private void AddServerSdkOptionalChildren(
+            ISystemContext context,
+            ServerObjectState serverObject)
+        {
+            serverObject
+                .AddGetMonitoredItems(context)
+                .AddResendData(context)
+                .AddSetSubscriptionDurable(context, m_durableSubscriptionsEnabled, _ => { })
+                .AddNamespaces(context)
+                .AddUrisVersion(context)
+                .AddEstimatedReturnTime(context)
+                .AddRequestServerStateChange(context)
+                .AddLocalTime(context);
+
+            if (serverObject.ServerCapabilities != null)
+            {
+                AddServerCapabilitiesSdkOptionalChildren(context, serverObject.ServerCapabilities);
+            }
+
+            serverObject.ServerRedundancy?.AddRedundantServerArray(context);
+        }
+
+        /// <summary>
+        /// Adds the optional children of the ServerCapabilities object that this SDK implements.
+        /// </summary>
+        private static void AddServerCapabilitiesSdkOptionalChildren(
+            ISystemContext context,
+            ServerCapabilitiesState serverCapabilities)
+        {
+            serverCapabilities
+                .AddMaxArrayLength(context)
+                .AddMaxStringLength(context)
+                .AddMaxByteStringLength(context)
+                .AddMaxSessions(context)
+                .AddMaxSubscriptions(context)
+                .AddMaxMonitoredItems(context)
+                .AddMaxSubscriptionsPerSession(context)
+                .AddMaxMonitoredItemsPerSubscription(context)
+                .AddMaxSelectClauseParameters(context)
+                .AddMaxWhereClauseParameters(context)
+                .AddMaxMonitoredItemsQueueSize(context)
+                .AddConformanceUnits(context)
+                .AddRoleSet(context)
+                .AddOperationLimits(context)
+                .OperationLimits
+                    .AddMaxNodesPerRead(context)
+                    .AddMaxNodesPerHistoryReadData(context)
+                    .AddMaxNodesPerHistoryReadEvents(context)
+                    .AddMaxNodesPerWrite(context)
+                    .AddMaxNodesPerHistoryUpdateData(context)
+                    .AddMaxNodesPerHistoryUpdateEvents(context)
+                    .AddMaxNodesPerMethodCall(context)
+                    .AddMaxNodesPerBrowse(context)
+                    .AddMaxNodesPerRegisterNodes(context)
+                    .AddMaxNodesPerTranslateBrowsePathsToNodeIds(context)
+                    .AddMaxNodesPerNodeManagement(context)
+                    .AddMaxMonitoredItemsPerCall(context);
+        }
+
+        /// <summary>
+        /// Adds the optional children of the OPC UA namespace metadata object.
+        /// </summary>
+        private static void AddOpcUaNamespaceMetadataSdkOptionalChildren(
+            ISystemContext context,
+            NamespaceMetadataState metadataState)
+        {
+            if (metadataState.NodeId.IdType != IdType.Numeric ||
+                metadataState.NodeId.NamespaceIndex != 0 ||
+                !metadataState.NodeId.TryGetValue(out uint numericId) ||
+                numericId != Objects.OPCUANamespaceMetadata)
+            {
+                return;
+            }
+
+            metadataState
+                .AddDefaultRolePermissions(context)
+                .AddDefaultUserRolePermissions(context)
+                .AddDefaultAccessRestrictions(context);
+        }
+
+        /// <summary>
+        /// Adds the optional children of the alias name category object.
+        /// </summary>
+        private static void AddAliasNameCategorySdkOptionalChildren(
+            ISystemContext context,
+            AliasNameCategoryState category)
+        {
+            if (category.NodeId.IdType != IdType.Numeric ||
+                category.NodeId.NamespaceIndex != 0 ||
+                !category.NodeId.TryGetValue(out uint numericId) ||
+                numericId != Objects.Aliases)
+            {
+                return;
+            }
+
+            category.AddLastChange(context);
+        }
+
+        /// <summary>
+        /// Re-adds the optional RoleType children of the six modifiable well-known roles.
+        /// </summary>
+        /// <remarks>
+        /// Observer, Operator, Engineer, Supervisor, ConfigureAdmin and SecurityAdmin. The
+        /// three immutable roles - Anonymous, AuthenticatedUser and TrustedApplication -
+        /// have no well-known instance NodeIds for the optional methods and properties.
+        /// </remarks>
+        private static void AddWellKnownRoleSdkOptionalChildren(
+            ISystemContext context,
+            RoleState roleState)
+        {
+            if (roleState.NodeId.IdType != IdType.Numeric ||
+                roleState.NodeId.NamespaceIndex != 0 ||
+                !roleState.NodeId.TryGetValue(out uint numericId))
+            {
+                return;
+            }
+
+            switch (numericId)
+            {
+                case Objects.WellKnownRole_Observer:
+                case Objects.WellKnownRole_Operator:
+                case Objects.WellKnownRole_Engineer:
+                case Objects.WellKnownRole_Supervisor:
+                case Objects.WellKnownRole_ConfigureAdmin:
+                case Objects.WellKnownRole_SecurityAdmin:
+                    AddWellKnownRoleChildren(context, roleState);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Adds the optional children of a modifiable well-known role.
+        /// </summary>
+        private static void AddWellKnownRoleChildren(ISystemContext context, RoleState role)
+        {
+            role
+                .AddApplications(context)
+                .AddApplicationsExclude(context)
+                .AddEndpoints(context)
+                .AddEndpointsExclude(context)
+                .AddCustomConfiguration(context)
+                .AddAddIdentity(context)
+                .AddRemoveIdentity(context)
+                .AddAddApplication(context)
+                .AddRemoveApplication(context)
+                .AddAddEndpoint(context)
+                .AddRemoveEndpoint(context);
         }
 
         /// <summary>

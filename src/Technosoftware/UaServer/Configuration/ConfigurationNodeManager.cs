@@ -187,53 +187,54 @@ namespace Technosoftware.UaServer
                         }
                         case ObjectTypes.CertificateGroupFolderType:
                         {
-                            var activeNode = new CertificateGroupFolderState(passiveNode.Parent);
-                            activeNode.Create(context, passiveNode);
-
-                            // delete unsupported groups
-                            if (m_certificateGroups.All(group =>
-                                    group.BrowseName !=
-                                        activeNode.DefaultHttpsGroup?.BrowseName.Name))
+                            // The standard address space carries
+                            // CertificateGroupFolderType instances under several
+                            // types. Only the server's own certificate groups
+                            // folder is managed here; the others keep the
+                            // structure they were built with.
+                            if (passiveNode.NodeId !=
+                                ObjectIds.ServerConfiguration_CertificateGroups)
                             {
-                                activeNode.DefaultHttpsGroup = null;
-                            }
-                            if (m_certificateGroups.All(group =>
-                                    group.BrowseName !=
-                                        activeNode.DefaultUserTokenGroup?.BrowseName.Name))
-                            {
-                                activeNode.DefaultUserTokenGroup = null;
-                            }
-                            if (m_certificateGroups.All(group =>
-                                    group.BrowseName !=
-                                        activeNode.DefaultApplicationGroup?.BrowseName.Name))
-                            {
-                                activeNode.DefaultApplicationGroup = null;
+                                break;
                             }
 
-                            // replace the node in the parent.
-                            passiveNode.Parent?.ReplaceChild(context, activeNode);
+                            // The node arrives fully built from the generated
+                            // model, so it is taken as it is rather than being
+                            // recreated. DefaultApplicationGroup is mandatory;
+                            // the HTTPS and user token groups are optional and
+                            // exist only once they are added, which is what
+                            // replaces the 1.5 code that deleted the groups the
+                            // configuration did not ask for.
+                            var activeNode = (CertificateGroupFolderState)passiveNode;
+
+                            ServerCertificateGroup applicationGroup = m_certificateGroups
+                                .FirstOrDefault(group =>
+                                    group.BrowseName == BrowseNames.DefaultApplicationGroup);
+                            if (applicationGroup != null)
+                            {
+                                applicationGroup.Node = activeNode.DefaultApplicationGroup;
+                            }
+
+                            ServerCertificateGroup httpsGroup = m_certificateGroups
+                                .FirstOrDefault(group =>
+                                    group.BrowseName == BrowseNames.DefaultHttpsGroup);
+                            if (httpsGroup != null)
+                            {
+                                activeNode.AddDefaultHttpsGroup(context);
+                                httpsGroup.Node = activeNode.DefaultHttpsGroup;
+                            }
+
+                            ServerCertificateGroup userTokenGroup = m_certificateGroups
+                                .FirstOrDefault(group =>
+                                    group.BrowseName == BrowseNames.DefaultUserTokenGroup);
+                            if (userTokenGroup != null)
+                            {
+                                activeNode.AddDefaultUserTokenGroup(context);
+                                userTokenGroup.Node = activeNode.DefaultUserTokenGroup;
+                            }
+
                             return activeNode;
                         }
-                        case ObjectTypes.CertificateGroupType:
-                        {
-                            ServerCertificateGroup result = m_certificateGroups
-                                .FirstOrDefault(group =>
-                                    group.NodeId == passiveNode.NodeId);
-
-                            if (result != null)
-                            {
-                                var activeNode = new CertificateGroupState(passiveNode.Parent);
-                                activeNode.Create(context, passiveNode);
-
-                                result.NodeId = activeNode.NodeId;
-                                result.Node = activeNode;
-
-                                // replace the node in the parent.
-                                passiveNode.Parent?.ReplaceChild(context, activeNode);
-                                return activeNode;
-                            }
-                        }
-                        break;
                     }
                 }
             }
