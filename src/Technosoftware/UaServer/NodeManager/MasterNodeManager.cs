@@ -971,7 +971,7 @@ namespace Technosoftware.UaServer
             IUaStandardAsyncNodeManager nodeManager,
             object sourceHandle,
             RelativePath relativePath,
-            BrowsePathTargetCollection targets,
+            IList<BrowsePathTarget> targets,
             int index,
             CancellationToken cancellationToken)
         {
@@ -1295,7 +1295,7 @@ namespace Technosoftware.UaServer
         /// <param name="uniqueNodesServiceAttributes">The resulting cache that holds the values of the AccessRestrictions and RolePermissions attributes needed for Read service</param>
         /// <exception cref="ArgumentException"></exception>
         private static void PrepareValidationCache<T>(
-            List<T> nodesCollection,
+            ArrayOf<T> nodesCollection,
             out Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributes)
         {
             var uniqueNodes = new HashSet<NodeId>();
@@ -1312,7 +1312,7 @@ namespace Technosoftware.UaServer
                 if (nodeId.IsNull)
                 {
                     throw new ArgumentException(
-                        "Provided List<T> nodesCollection is of wrong type, T should be type BrowseDescription, ReadValueId or CallMethodRequest",
+                        "Provided ArrayOf<T> nodesCollection is of wrong type, T should be type BrowseDescription, ReadValueId or CallMethodRequest",
                         nameof(nodesCollection));
                 }
 
@@ -1475,7 +1475,7 @@ namespace Technosoftware.UaServer
                 if (cp != null)
                 {
                     result.StatusCode = StatusCodes.Good;
-                    result.ContinuationPoint = cp.Id.ToByteArray();
+                    result.ContinuationPoint = cp.Id.ToByteArray().ToByteString();
                 }
             }
 
@@ -1578,7 +1578,7 @@ namespace Technosoftware.UaServer
             if (cp != null)
             {
                 result.StatusCode = StatusCodes.Good;
-                result.ContinuationPoint = cp.Id.ToByteArray();
+                result.ContinuationPoint = cp.Id.ToByteArray().ToByteString();
             }
 
             // all is good.
@@ -1607,18 +1607,24 @@ namespace Technosoftware.UaServer
             var nodeClassMask = (NodeClass)cp.NodeClassMask;
             BrowseResultMask resultMask = cp.ResultMask;
 
+            // the node managers append to the list they are handed, and
+            // ArrayOf is immutable, so the loop works on a List and wraps
+            // once on return.
+            List<ReferenceDescription> referenceList = references.ToList();
+
             // loop until browse is complete or max results.
             while (cp != null)
             {
-                cp = await nodeManager.BrowseAsync(context, cp, references, cancellationToken)
+                cp = await nodeManager
+                    .BrowseAsync(context, cp, referenceList, cancellationToken)
                     .ConfigureAwait(false);
 
-                var referencesToKeep = new ReferenceDescriptionCollection(references.Count);
+                var referencesToKeep = new List<ReferenceDescription>(referenceList.Count);
 
                 // check for incomplete reference descriptions.
-                for (int ii = 0; ii < references.Count; ii++)
+                for (int ii = 0; ii < referenceList.Count; ii++)
                 {
-                    ReferenceDescription reference = references[ii];
+                    ReferenceDescription reference = referenceList[ii];
 
                     // check if filtering must be applied.
                     if (reference.Unfiltered)
@@ -1650,14 +1656,17 @@ namespace Technosoftware.UaServer
                 }
 
                 // replace list.
-                references = referencesToKeep;
+                referenceList = referencesToKeep;
 
                 // check if browse limit reached.
-                if (cp != null && references.Count >= cp.MaxResultsToReturn)
+                if (cp != null && referenceList.Count >= cp.MaxResultsToReturn)
                 {
                     if (!assignContinuationPoint)
                     {
-                        return (StatusCodes.BadNoContinuationPoints, cp, references);
+                        return (
+                            StatusCodes.BadNoContinuationPoints,
+                            cp,
+                            referenceList.ToArrayOf());
                     }
 
                     cp.Id = Guid.NewGuid();
@@ -1667,7 +1676,7 @@ namespace Technosoftware.UaServer
             }
 
             // all is good.
-            return (ServiceResult.Good, cp, references);
+            return (ServiceResult.Good, cp, referenceList.ToArrayOf());
         }
 
         /// <summary>
@@ -1840,9 +1849,14 @@ namespace Technosoftware.UaServer
                 // update the diagnostic info and ensure the status code in the data value is the same as the error code.
                 if (errors[ii] != null && errors[ii].Code != StatusCodes.Good)
                 {
-                    value ??= values[ii] = DataValue.FromStatusCode(errors[ii].Code, DateTime.UtcNow);
+                    if (value.IsNull)
+                    {
+                        value = values[ii] = DataValue.FromStatusCode(
+                            errors[ii].Code,
+                            DateTime.UtcNow);
+                    }
 
-                    value = value.WithStatus(errors[ii].Code);
+                    value = values[ii] = value.WithStatus(errors[ii].Code);
 
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
@@ -3415,7 +3429,10 @@ namespace Technosoftware.UaServer
 
             // Initialize input arguments to empty collection if null.
             // Methods with only output parameters (no input parameters) are valid.
-            callMethodRequest.InputArguments ??= [];
+            if (callMethodRequest.InputArguments.IsNull)
+            {
+                callMethodRequest.InputArguments = [];
+            }
 
             return StatusCodes.Good;
         }
@@ -3739,30 +3756,22 @@ namespace Technosoftware.UaServer
             }
 
             // get the intersection of user role permissions and role permissions
-            RolePermissionTypeCollection userRolePermissions = null;
-            if (nodeMetadata.UserRolePermissions != null &&
-                nodeMetadata.UserRolePermissions.Count > 0)
+            ArrayOf<RolePermissionType> userRolePermissions = default;
+            if (nodeMetadata.UserRolePermissions.Count > 0)
             {
                 userRolePermissions = nodeMetadata.UserRolePermissions;
             }
-            else if (nodeMetadata.DefaultUserRolePermissions != null &&
-                nodeMetadata.DefaultUserRolePermissions.Count > 0)
+            else if (nodeMetadata.DefaultUserRolePermissions.Count > 0)
             {
                 userRolePermissions = nodeMetadata.DefaultUserRolePermissions;
             }
 
-            RolePermissionTypeCollection rolePermissions;
-            if (nodeMetadata.RolePermissions != null && nodeMetadata.RolePermissions.Count > 0)
-            {
-                rolePermissions = nodeMetadata.RolePermissions;
-            }
-            else
-            {
-                rolePermissions = nodeMetadata.DefaultRolePermissions;
-            }
+            ArrayOf<RolePermissionType> rolePermissions =
+                nodeMetadata.RolePermissions.Count > 0
+                    ? nodeMetadata.RolePermissions
+                    : nodeMetadata.DefaultRolePermissions;
 
-            if ((userRolePermissions == null || userRolePermissions.Count == 0) &&
-                (rolePermissions == null || rolePermissions.Count == 0))
+            if (userRolePermissions.Count == 0 && rolePermissions.Count == 0)
             {
                 // there is no restriction from role permissions
                 return StatusCodes.Good;
@@ -3832,8 +3841,9 @@ namespace Technosoftware.UaServer
                 }
             }
 
-            ArrayOf<NodeId>? currentRoleIds = context?.UserIdentity?.GrantedRoleIds;
-            if (currentRoleIds == null || currentRoleIds.Count == 0)
+            ArrayOf<NodeId> currentRoleIds =
+                context?.UserIdentity?.GrantedRoleIds ?? default;
+            if (currentRoleIds.Count == 0)
             {
                 return ServiceResult.Create(
                     StatusCodes.BadUserAccessDenied,

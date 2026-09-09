@@ -666,7 +666,7 @@ namespace Technosoftware.UaServer
         /// <remarks>
         /// The caller is responsible for disposing the continuation point returned.
         /// </remarks>
-        public UaContinuationPoint RestoreContinuationPoint(byte[] continuationPoint)
+        public UaContinuationPoint RestoreContinuationPoint(ByteString continuationPoint)
         {
             lock (m_lock)
             {
@@ -675,12 +675,12 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                if (continuationPoint == null || continuationPoint.Length != 16)
+                if (continuationPoint.Length != 16)
                 {
                     return null;
                 }
 
-                var id = new Guid(continuationPoint);
+                var id = new Guid(continuationPoint.Span);
 
                 for (int ii = 0; ii < m_browseContinuationPoints.Count; ii++)
                 {
@@ -742,7 +742,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="continuationPoint">The identifier for the continuation point.</param>
         /// <returns>The save continuation point. null if not found.</returns>
-        public object RestoreHistoryContinuationPoint(byte[] continuationPoint)
+        public object RestoreHistoryContinuationPoint(ByteString continuationPoint)
         {
             lock (m_lock)
             {
@@ -751,12 +751,12 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                if (continuationPoint == null || continuationPoint.Length != 16)
+                if (continuationPoint.Length != 16)
                 {
                     return null;
                 }
 
-                var id = new Guid(continuationPoint);
+                var id = new Guid(continuationPoint.Span);
 
                 for (int ii = 0; ii < m_historyContinuationPoints.Count; ii++)
                 {

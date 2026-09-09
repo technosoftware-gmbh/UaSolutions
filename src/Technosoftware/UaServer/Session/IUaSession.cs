@@ -132,14 +132,14 @@ namespace Technosoftware.UaServer
         /// <remarks>
         /// The caller is responsible for disposing the continuation point returned.
         /// </remarks>
-        UaContinuationPoint RestoreContinuationPoint(byte[] continuationPoint);
+        UaContinuationPoint RestoreContinuationPoint(ByteString continuationPoint);
 
         /// <summary>
         /// Restores a previously saves history continuation point.
         /// </summary>
         /// <param name="continuationPoint">The identifier for the continuation point.</param>
         /// <returns>The save continuation point. null if not found.</returns>
-        object RestoreHistoryContinuationPoint(byte[] continuationPoint);
+        object RestoreHistoryContinuationPoint(ByteString continuationPoint);
 
         /// <summary>
         /// Saves a continuation point for a session.
