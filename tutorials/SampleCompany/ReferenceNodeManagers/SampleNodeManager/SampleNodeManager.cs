@@ -213,7 +213,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     parent.AddChild(instance);
                 }
 
-                instance.Create(contextToUse, default, browseName, null, true);
+                instance.Create(contextToUse, default, browseName, default, true);
                 AddPredefinedNode(contextToUse, instance);
 
                 return instance.NodeId;
@@ -1280,7 +1280,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                         nodeToRead.AttributeId,
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
-                        value);
+                        ref value);
                 }
 
                 // check for nothing to do.
@@ -1308,7 +1308,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                         nodeToRead.AttributeId,
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
-                        value);
+                        ref value);
                 }
             }
         }
@@ -2414,7 +2414,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                 monitoredItem.AttributeId,
                 monitoredItem.IndexRange,
                 monitoredItem.DataEncoding,
-                initialValue);
+                ref initialValue);
 
             monitoredItem.QueueValue(initialValue, error, ignoreFilters);
 
@@ -2585,7 +2585,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                 itemToCreate.ItemToMonitor.AttributeId,
                 itemToCreate.ItemToMonitor.ParsedIndexRange,
                 itemToCreate.ItemToMonitor.DataEncoding,
-                initialValue);
+                ref initialValue);
 
             if (ServiceResult.IsBad(error))
             {

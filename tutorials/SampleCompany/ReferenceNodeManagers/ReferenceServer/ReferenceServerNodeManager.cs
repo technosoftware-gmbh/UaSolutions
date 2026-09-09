@@ -3765,7 +3765,7 @@ namespace SampleCompany.NodeManagers.Reference
             _ = variable.CreateOrReplaceValuePrecision(SystemContext, null, false);
             _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
 
-            variable.Create(SystemContext, default, variable.BrowseName, null, true);
+            variable.Create(SystemContext, default, variable.BrowseName, default, true);
 
             variable.SymbolicName = name;
             variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
@@ -3873,7 +3873,7 @@ namespace SampleCompany.NodeManagers.Reference
                 SystemContext,
                 new NodeId(path, NamespaceIndex),
                 variable.BrowseName,
-                null,
+                default,
                 true);
 
             variable.NodeId = new NodeId(path, NamespaceIndex);
@@ -3962,7 +3962,7 @@ namespace SampleCompany.NodeManagers.Reference
                 UserWriteMask = AttributeWriteMask.None
             };
 
-            variable.Create(SystemContext, default, variable.BrowseName, null, true);
+            variable.Create(SystemContext, default, variable.BrowseName, default, true);
 
             variable.SymbolicName = name;
             variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
@@ -4005,7 +4005,7 @@ namespace SampleCompany.NodeManagers.Reference
                 UserWriteMask = AttributeWriteMask.None
             };
 
-            variable.Create(SystemContext, default, variable.BrowseName, null, true);
+            variable.Create(SystemContext, default, variable.BrowseName, default, true);
 
             variable.SymbolicName = name;
             variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
@@ -4065,7 +4065,7 @@ namespace SampleCompany.NodeManagers.Reference
                 UserWriteMask = AttributeWriteMask.None
             };
 
-            variable.Create(SystemContext, default, variable.BrowseName, null, true);
+            variable.Create(SystemContext, default, variable.BrowseName, default, true);
 
             variable.SymbolicName = name;
             variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);

@@ -110,7 +110,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                             SystemContext,
                             new NodeId(bufferNode.SymbolicName, namespaceIndex),
                             new QualifiedName(bufferNode.SymbolicName, namespaceIndex),
-                            null,
+                            default,
                             true);
 
                         bufferNode.CreateBuffer(instance.DataType, instance.TagCount);
@@ -305,7 +305,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 itemToCreate.ItemToMonitor.AttributeId,
                 itemToCreate.ItemToMonitor.ParsedIndexRange,
                 itemToCreate.ItemToMonitor.DataEncoding,
-                initialValue);
+                ref initialValue);
 
             if (ServiceResult.IsBad(error))
             {
@@ -516,8 +516,8 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                     context,
                     datachangeItem.AttributeId,
                     NumericRange.Null,
-                    null,
-                    initialValue);
+                    default,
+                    ref initialValue);
 
                 datachangeItem.QueueValue(initialValue, error);
             }
