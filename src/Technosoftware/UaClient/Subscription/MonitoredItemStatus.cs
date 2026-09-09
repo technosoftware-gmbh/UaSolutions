@@ -149,9 +149,9 @@ namespace Technosoftware.UaClient
             FilterResult = null;
             Error = error;
 
-            if (request.RequestedParameters.Filter != null)
+            if (request.RequestedParameters.Filter.TryGetValue(out MonitoringFilter? filter))
             {
-                Filter = CoreUtils.Clone(request.RequestedParameters.Filter.Body) as MonitoringFilter;
+                Filter = CoreUtils.Clone(filter);
             }
 
             if (ServiceResult.IsGood(error))
@@ -160,9 +160,9 @@ namespace Technosoftware.UaClient
                 SamplingInterval = result.RevisedSamplingInterval;
                 QueueSize = result.RevisedQueueSize;
 
-                if (result.FilterResult != null)
+                if (result.FilterResult.TryGetValue(out MonitoringFilterResult? filterResult))
                 {
-                    FilterResult = CoreUtils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
+                    FilterResult = CoreUtils.Clone(filterResult);
                 }
             }
 
@@ -229,18 +229,18 @@ namespace Technosoftware.UaClient
                 Filter = null;
                 FilterResult = null;
 
-                if (request.RequestedParameters.Filter != null)
+                if (request.RequestedParameters.Filter.TryGetValue(
+                    out MonitoringFilter? modifiedFilter))
                 {
-                    Filter = CoreUtils.Clone(
-                        request.RequestedParameters.Filter.Body) as MonitoringFilter;
+                    Filter = CoreUtils.Clone(modifiedFilter);
                 }
 
                 SamplingInterval = result.RevisedSamplingInterval;
                 QueueSize = result.RevisedQueueSize;
 
-                if (result.FilterResult != null)
+                if (result.FilterResult.TryGetValue(out MonitoringFilterResult? modifiedFilterResult))
                 {
-                    FilterResult = CoreUtils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
+                    FilterResult = CoreUtils.Clone(modifiedFilterResult);
                 }
             }
         }

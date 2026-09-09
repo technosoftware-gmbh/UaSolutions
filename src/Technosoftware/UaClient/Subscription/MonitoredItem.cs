@@ -154,7 +154,7 @@ namespace Technosoftware.UaClient
         public NodeId StartNodeId
         {
             get => State.StartNodeId;
-            set => State = State with { StartNodeId = value ?? NodeId.Null };
+            set => State = State with { StartNodeId = value };
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace Technosoftware.UaClient
         public QualifiedName Encoding
         {
             get => State.Encoding;
-            set => State = State with { Encoding = value ?? QualifiedName.Null };
+            set => State = State with { Encoding = value };
         }
 
         /// <summary>
@@ -770,8 +770,11 @@ namespace Technosoftware.UaClient
             NodeId eventTypeId,
             QualifiedName browseName)
         {
-            var browsePath = new List<QualifiedName> { browseName };
-            return GetFieldValue(eventFields, eventTypeId, browsePath, Attributes.Value);
+            return GetFieldValue(
+                eventFields,
+                eventTypeId,
+                ArrayOf.Wrapped(browseName),
+                Attributes.Value);
         }
 
         /// <summary>
@@ -780,7 +783,7 @@ namespace Technosoftware.UaClient
         public object? GetFieldValue(
             EventFieldList eventFields,
             NodeId eventTypeId,
-            IList<QualifiedName> browsePath,
+            ArrayOf<QualifiedName> browsePath,
             uint attributeId)
         {
             if (eventFields == null)
@@ -869,10 +872,13 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             // get event type.
-            var eventTypeId = GetFieldValue(
+            if (GetFieldValue(
                 eventFields,
                 new NodeId(ObjectTypes.BaseEventType),
-                new QualifiedName(BrowseNames.EventType)) as NodeId;
+                new QualifiedName(BrowseNames.EventType)) is not NodeId eventTypeId)
+            {
+                return null;
+            }
 
             if (!eventTypeId.IsNull &&
                 Subscription != null &&
@@ -954,7 +960,7 @@ namespace Technosoftware.UaClient
             }
 
             if (ExtensionObject.ToEncodeable(
-                    eventFields.EventFields[index].Value as ExtensionObject)
+                    eventFields.EventFields[index].GetExtensionObject())
                 is not StatusResult status)
             {
                 return null;
@@ -1126,7 +1132,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The last value received from the server.
         /// </summary>
-        public DataValue? LastValue { get; private set; }
+        public DataValue LastValue { get; private set; }
 
         /// <summary>
         /// Returns all values in the queue.
@@ -1137,12 +1143,12 @@ namespace Technosoftware.UaClient
             if (m_values != null)
             {
                 values = new List<DataValue>(m_values.Count);
-                while (m_values.TryDequeue(out DataValue? dequeued))
+                while (m_values.TryDequeue(out DataValue dequeued))
                 {
                     values.Add(dequeued);
                 }
             }
-            else if (LastValue == null)
+            else if (LastValue.IsNull)
             {
                 values = [];
             }
@@ -1181,7 +1187,7 @@ namespace Technosoftware.UaClient
                 m_values.Enqueue(notification.Value);
                 while (m_values.Count > QueueSize)
                 {
-                    if (!m_values.TryDequeue(out DataValue? dropped))
+                    if (!m_values.TryDequeue(out DataValue dropped))
                     {
                         break;
                     }
@@ -1225,7 +1231,7 @@ namespace Technosoftware.UaClient
             }
             while (m_values.Count > QueueSize)
             {
-                if (!m_values.TryDequeue(out DataValue? dropped))
+                if (!m_values.TryDequeue(out DataValue dropped))
                 {
                     break;
                 }
