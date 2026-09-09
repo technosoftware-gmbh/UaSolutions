@@ -191,9 +191,9 @@ namespace SampleCompany.NodeManagers.TestData
 
                 e.Initialize(context, this, EventSeverity.MediumLow, new LocalizedText(message));
 
-                e.Iterations = new PropertyState<uint>(e) { Value = count };
+                e.CreateOrReplaceIterations(context, null, false).Value = count;
 
-                e.NewValueCount = new PropertyState<uint>(e) { Value = 10 };
+                e.CreateOrReplaceNewValueCount(context, null, false).Value = 10;
 
                 ReportEvent(context, e);
             }

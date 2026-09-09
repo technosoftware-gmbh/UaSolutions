@@ -151,7 +151,10 @@ namespace SampleCompany.NodeManagers.Alarms
                         NamespaceIndex,
                         startMethodNodeName,
                         startMethodName);
-                    AlarmHelpers.AddStartInputParameters(startMethod, NamespaceIndex);
+                    AlarmHelpers.AddStartInputParameters(
+                        SystemContext,
+                        startMethod,
+                        NamespaceIndex);
                     startMethod.OnCallMethod = new GenericMethodCalledEventHandler(OnStart);
 
                     const string startBranchMethodName = "StartBranch";
@@ -163,7 +166,10 @@ namespace SampleCompany.NodeManagers.Alarms
                         NamespaceIndex,
                         startBranchMethodNodeName,
                         startBranchMethodName);
-                    AlarmHelpers.AddStartInputParameters(startBranchMethod, NamespaceIndex);
+                    AlarmHelpers.AddStartInputParameters(
+                        SystemContext,
+                        startBranchMethod,
+                        NamespaceIndex);
                     startBranchMethod.OnCallMethod
                         = new GenericMethodCalledEventHandler(OnStartBranch);
 

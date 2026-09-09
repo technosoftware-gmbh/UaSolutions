@@ -82,7 +82,7 @@ namespace SampleCompany.NodeManagers.Alarms
                         false);
                 }
                 // Off normal does not create MaxTimeShelved.
-                alarm.MaxTimeShelved ??= new PropertyState<double>(alarm);
+                _ = alarm.CreateOrReplaceMaxTimeShelved(SystemContext, null, false);
             }
 
             // Call the base class to set parameters

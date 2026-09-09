@@ -2519,11 +2519,9 @@ namespace SampleCompany.NodeManagers.Reference
 
                     MethodState addMethod = CreateMethod(methodsFolder, methods + "Add", "Add");
                     // set input arguments
-                    addMethod.InputArguments = new PropertyState<Argument[]>(addMethod)
-                    {
-                        NodeId = new NodeId(addMethod.BrowseName.Name + "InArgs", NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
-                    };
+                    _ = addMethod.CreateOrReplaceInputArguments(SystemContext, null, false);
+                    addMethod.InputArguments.NodeId = new NodeId(addMethod.BrowseName.Name + "InArgs", NamespaceIndex);
+                    addMethod.InputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
                     addMethod.InputArguments.DisplayName = new LocalizedText(addMethod.InputArguments.BrowseName.Name);
                     addMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                     addMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
@@ -2549,11 +2547,9 @@ namespace SampleCompany.NodeManagers.Reference
                     ];
 
                     // set output arguments
-                    addMethod.OutputArguments = new PropertyState<Argument[]>(addMethod)
-                    {
-                        NodeId = new NodeId(addMethod.BrowseName.Name + "OutArgs", NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
-                    };
+                    _ = addMethod.CreateOrReplaceOutputArguments(SystemContext, null, false);
+                    addMethod.OutputArguments.NodeId = new NodeId(addMethod.BrowseName.Name + "OutArgs", NamespaceIndex);
+                    addMethod.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
                     addMethod.OutputArguments.DisplayName = new LocalizedText(addMethod.OutputArguments.BrowseName
                         .Name);
                     addMethod.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
@@ -2579,13 +2575,11 @@ namespace SampleCompany.NodeManagers.Reference
                         methods + "Multiply",
                         "Multiply");
                     // set input arguments
-                    multiplyMethod.InputArguments = new PropertyState<Argument[]>(multiplyMethod)
-                    {
-                        NodeId = new NodeId(
+                    _ = multiplyMethod.CreateOrReplaceInputArguments(SystemContext, null, false);
+                    multiplyMethod.InputArguments.NodeId = new NodeId(
                             multiplyMethod.BrowseName.Name + "InArgs",
-                            NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
-                    };
+                            NamespaceIndex);
+                    multiplyMethod.InputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
                     multiplyMethod.InputArguments.DisplayName = new LocalizedText(multiplyMethod.InputArguments
                         .BrowseName
                         .Name);
@@ -2613,13 +2607,11 @@ namespace SampleCompany.NodeManagers.Reference
                     ];
 
                     // set output arguments
-                    multiplyMethod.OutputArguments = new PropertyState<Argument[]>(multiplyMethod)
-                    {
-                        NodeId = new NodeId(
+                    _ = multiplyMethod.CreateOrReplaceOutputArguments(SystemContext, null, false);
+                    multiplyMethod.OutputArguments.NodeId = new NodeId(
                             multiplyMethod.BrowseName.Name + "OutArgs",
-                            NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
-                    };
+                            NamespaceIndex);
+                    multiplyMethod.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
                     multiplyMethod.OutputArguments.DisplayName = new LocalizedText(multiplyMethod.OutputArguments
                         .BrowseName
                         .Name);
@@ -2647,13 +2639,11 @@ namespace SampleCompany.NodeManagers.Reference
                         methods + "Divide",
                         "Divide");
                     // set input arguments
-                    divideMethod.InputArguments = new PropertyState<Argument[]>(divideMethod)
-                    {
-                        NodeId = new NodeId(
+                    _ = divideMethod.CreateOrReplaceInputArguments(SystemContext, null, false);
+                    divideMethod.InputArguments.NodeId = new NodeId(
                             divideMethod.BrowseName.Name + "InArgs",
-                            NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
-                    };
+                            NamespaceIndex);
+                    divideMethod.InputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
                     divideMethod.InputArguments.DisplayName = new LocalizedText(divideMethod.InputArguments.BrowseName
                         .Name);
                     divideMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
@@ -2680,13 +2670,11 @@ namespace SampleCompany.NodeManagers.Reference
                     ];
 
                     // set output arguments
-                    divideMethod.OutputArguments = new PropertyState<Argument[]>(divideMethod)
-                    {
-                        NodeId = new NodeId(
+                    _ = divideMethod.CreateOrReplaceOutputArguments(SystemContext, null, false);
+                    divideMethod.OutputArguments.NodeId = new NodeId(
                             divideMethod.BrowseName.Name + "OutArgs",
-                            NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
-                    };
+                            NamespaceIndex);
+                    divideMethod.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
                     divideMethod.OutputArguments.DisplayName = new LocalizedText(divideMethod.OutputArguments
                         .BrowseName
                         .Name);
@@ -2713,13 +2701,11 @@ namespace SampleCompany.NodeManagers.Reference
                         methods + "Substract",
                         "Substract");
                     // set input arguments
-                    substractMethod.InputArguments = new PropertyState<Argument[]>(substractMethod)
-                    {
-                        NodeId = new NodeId(
+                    _ = substractMethod.CreateOrReplaceInputArguments(SystemContext, null, false);
+                    substractMethod.InputArguments.NodeId = new NodeId(
                             substractMethod.BrowseName.Name + "InArgs",
-                            NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
-                    };
+                            NamespaceIndex);
+                    substractMethod.InputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
                     substractMethod.InputArguments.DisplayName = new LocalizedText(substractMethod.InputArguments
                         .BrowseName
                         .Name);
@@ -2747,13 +2733,11 @@ namespace SampleCompany.NodeManagers.Reference
                     ];
 
                     // set output arguments
-                    substractMethod.OutputArguments = new PropertyState<Argument[]>(substractMethod)
-                    {
-                        NodeId = new NodeId(
+                    _ = substractMethod.CreateOrReplaceOutputArguments(SystemContext, null, false);
+                    substractMethod.OutputArguments.NodeId = new NodeId(
                             substractMethod.BrowseName.Name + "OutArgs",
-                            NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
-                    };
+                            NamespaceIndex);
+                    substractMethod.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
                     substractMethod.OutputArguments.DisplayName = new LocalizedText(substractMethod.OutputArguments
                         .BrowseName
                         .Name);
@@ -2781,11 +2765,9 @@ namespace SampleCompany.NodeManagers.Reference
                         methods + "Hello",
                         "Hello");
                     // set input arguments
-                    helloMethod.InputArguments = new PropertyState<Argument[]>(helloMethod)
-                    {
-                        NodeId = new NodeId(helloMethod.BrowseName.Name + "InArgs", NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
-                    };
+                    _ = helloMethod.CreateOrReplaceInputArguments(SystemContext, null, false);
+                    helloMethod.InputArguments.NodeId = new NodeId(helloMethod.BrowseName.Name + "InArgs", NamespaceIndex);
+                    helloMethod.InputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
                     helloMethod.InputArguments.DisplayName = new LocalizedText(helloMethod.InputArguments.BrowseName
                         .Name);
                     helloMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
@@ -2805,13 +2787,11 @@ namespace SampleCompany.NodeManagers.Reference
                     ];
 
                     // set output arguments
-                    helloMethod.OutputArguments = new PropertyState<Argument[]>(helloMethod)
-                    {
-                        NodeId = new NodeId(
+                    _ = helloMethod.CreateOrReplaceOutputArguments(SystemContext, null, false);
+                    helloMethod.OutputArguments.NodeId = new NodeId(
                             helloMethod.BrowseName.Name + "OutArgs",
-                            NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
-                    };
+                            NamespaceIndex);
+                    helloMethod.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
                     helloMethod.OutputArguments.DisplayName = new LocalizedText(helloMethod.OutputArguments.BrowseName
                         .Name);
                     helloMethod.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
@@ -2837,11 +2817,9 @@ namespace SampleCompany.NodeManagers.Reference
                         methods + "Input",
                         "Input");
                     // set input arguments
-                    inputMethod.InputArguments = new PropertyState<Argument[]>(inputMethod)
-                    {
-                        NodeId = new NodeId(inputMethod.BrowseName.Name + "InArgs", NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.InputArguments)
-                    };
+                    _ = inputMethod.CreateOrReplaceInputArguments(SystemContext, null, false);
+                    inputMethod.InputArguments.NodeId = new NodeId(inputMethod.BrowseName.Name + "InArgs", NamespaceIndex);
+                    inputMethod.InputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
                     inputMethod.InputArguments.DisplayName = new LocalizedText(inputMethod.InputArguments.BrowseName
                         .Name);
                     inputMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
@@ -2868,13 +2846,14 @@ namespace SampleCompany.NodeManagers.Reference
                         "Output");
 
                     // set output arguments
-                    outputMethod.OutputArguments = new PropertyState<Argument[]>(helloMethod)
-                    {
-                        NodeId = new NodeId(
+                    // NOTE: the removed initialiser built this property under
+                    // helloMethod rather than outputMethod. The factory is called on
+                    // outputMethod, so the property now hangs off the right method.
+                    _ = outputMethod.CreateOrReplaceOutputArguments(SystemContext, null, false);
+                    outputMethod.OutputArguments.NodeId = new NodeId(
                             helloMethod.BrowseName.Name + "OutArgs",
-                            NamespaceIndex),
-                        BrowseName = new QualifiedName(BrowseNames.OutputArguments)
-                    };
+                            NamespaceIndex);
+                    outputMethod.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
                     outputMethod.OutputArguments.DisplayName = new LocalizedText(helloMethod.OutputArguments
                         .BrowseName
                         .Name);
@@ -3780,8 +3759,11 @@ namespace SampleCompany.NodeManagers.Reference
             int valueRank)
         {
             var variable = new DataItemState(parent);
-            variable.ValuePrecision = new PropertyState<double>(variable);
-            variable.Definition = new PropertyState<string>(variable);
+
+            // PropertyState<T> is abstract in 2.0; the optional properties come
+            // from the state class's own factory.
+            _ = variable.CreateOrReplaceValuePrecision(SystemContext, null, false);
+            _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
 
             variable.Create(SystemContext, default, variable.BrowseName, null, true);
 
@@ -3884,8 +3866,8 @@ namespace SampleCompany.NodeManagers.Reference
             {
                 BrowseName = new QualifiedName(path, NamespaceIndex)
             };
-            variable.EngineeringUnits = new PropertyState<EUInformation>(variable);
-            variable.InstrumentRange = new PropertyState<Range>(variable);
+            _ = variable.CreateOrReplaceEngineeringUnits(SystemContext, null, false);
+            _ = variable.CreateOrReplaceInstrumentRange(SystemContext, null, false);
 
             variable.Create(
                 SystemContext,

@@ -154,21 +154,28 @@ namespace SampleCompany.NodeManagers.Alarms
         /// <summary>
         /// Add the input parameter description for a Start method.
         /// </summary>
-        public static void AddStartInputParameters(MethodState startMethod, ushort namespaceIndex)
+        public static void AddStartInputParameters(
+            ISystemContext context,
+            MethodState startMethod,
+            ushort namespaceIndex)
         {
-            // set input arguments
-            startMethod.InputArguments = new PropertyState<Argument[]>(startMethod)
-            {
-                NodeId = new NodeId(startMethod.BrowseName.Name + "InArgs", namespaceIndex),
-                BrowseName = new QualifiedName(BrowseNames.InputArguments)
-            };
-            startMethod.InputArguments.DisplayName = new LocalizedText(startMethod.InputArguments.BrowseName.Name);
-            startMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
-            startMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
-            startMethod.InputArguments.DataType = DataTypeIds.Argument;
-            startMethod.InputArguments.ValueRank = ValueRanks.OneDimension;
+            // set input arguments. PropertyState<T> is abstract in 2.0, so the
+            // concrete instance comes from the method state's own factory; the
+            // NodeId is assigned here, hence assignInstanceNodeIds false.
+            PropertyState<ArrayOf<Argument>> inputArguments = startMethod
+                .CreateOrReplaceInputArguments(context, null, false);
 
-            startMethod.InputArguments.Value =
+            inputArguments.NodeId = new NodeId(
+                startMethod.BrowseName.Name + "InArgs",
+                namespaceIndex);
+            inputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
+            inputArguments.DisplayName = new LocalizedText(inputArguments.BrowseName.Name);
+            inputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
+            inputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+            inputArguments.DataType = DataTypeIds.Argument;
+            inputArguments.ValueRank = ValueRanks.OneDimension;
+
+            inputArguments.Value =
             [
                 new Argument
                 {
