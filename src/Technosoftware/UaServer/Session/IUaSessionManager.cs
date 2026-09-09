@@ -98,7 +98,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             Certificate serverCertificate,
             string sessionName,
-            byte[] clientNonce,
+            ByteString clientNonce,
             ApplicationDescription clientDescription,
             string endpointUrl,
             Certificate clientCertificate,
@@ -110,7 +110,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Activates an existing session
         /// </summary>
-        ValueTask<(bool IdentityContextChanged, byte[] ServerNonce)> ActivateSessionAsync(
+        ValueTask<(bool IdentityContextChanged, ByteString ServerNonce)> ActivateSessionAsync(
             UaServerOperationContext context,
             NodeId authenticationToken,
             SignatureData clientSignature,
@@ -166,7 +166,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The server nonce of the session.
         /// </summary>
-        public required byte[] ServerNonce { get; init; }
+        public required ByteString ServerNonce { get; init; }
 
         /// <summary>
         /// The revised session timeout.

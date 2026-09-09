@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Security.Certificates;
@@ -52,7 +53,7 @@ namespace Technosoftware.UaServer
             IUaServerData server,
             Certificate serverCertificate,
             NodeId authenticationToken,
-            byte[] clientNonce,
+            ByteString clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
@@ -76,6 +77,11 @@ namespace Technosoftware.UaServer
 
             m_server = server ?? throw new ArgumentNullException(nameof(server));
             m_logger = server.Telemetry.CreateLogger<Session>();
+            // 2.0 resolves signature algorithms through a registry rather than
+            // the static SecurityPolicies helpers. IUaServerData exposes no
+            // registry of its own, so the process-wide default is used; the
+            // field is the seam for a per-server registry later.
+            m_securityPolicies = SecurityPolicies.Default;
             ClientNonce = clientNonce;
             m_serverNonce = serverNonce;
             m_sessionName = sessionName;
@@ -127,7 +133,7 @@ namespace Technosoftware.UaServer
 
             if (clientCertificate != null)
             {
-                m_securityDiagnostics.ClientCertificate = clientCertificate.RawData;
+                m_securityDiagnostics.ClientCertificate = clientCertificate.RawData.ToByteString();
             }
 
             UaServerContext systemContext = m_server.DefaultSystemContext.Copy(context);
@@ -226,7 +232,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The client Nonce associated with the session.
         /// </summary>
-        public byte[] ClientNonce { get; }
+        public ByteString ClientNonce { get; }
 
         /// <summary>
         /// The application instance certificate associated with the client.
@@ -263,7 +269,7 @@ namespace Technosoftware.UaServer
             {
                 lock (DiagnosticsLock)
                 {
-                    return SessionDiagnostics.ClientLastContactTime;
+                    return (DateTime)SessionDiagnostics.ClientLastContactTime;
                 }
             }
         }
@@ -425,13 +431,14 @@ namespace Technosoftware.UaServer
         /// Activates the session and binds it to the current secure channel.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public void ValidateBeforeActivate(
-            UaServerOperationContext context,
-            SignatureData clientSignature,
-            ExtensionObject userIdentityToken,
-            SignatureData userTokenSignature,
-            out UserIdentityToken identityToken,
-            out UserTokenPolicy userTokenPolicy)
+        public async ValueTask<(
+            UserIdentityToken IdentityToken,
+            UserTokenPolicy UserTokenPolicy)> ValidateBeforeActivateAsync(
+                UaServerOperationContext context,
+                SignatureData clientSignature,
+                ExtensionObject userIdentityToken,
+                SignatureData userTokenSignature,
+                CancellationToken ct = default)
         {
             lock (m_lock)
             {
@@ -451,29 +458,43 @@ namespace Technosoftware.UaServer
                 }
 
                 // verify the client signature.
+                if (EndpointDescription.SecurityPolicyUri != SecurityPolicies.None &&
+                    (ClientCertificate == null ||
+                        clientSignature == null ||
+                        clientSignature.Signature.IsEmpty))
+                {
+                    throw new ServiceResultException(
+                        StatusCodes.BadApplicationSignatureInvalid);
+                }
+
                 if (ClientCertificate != null)
                 {
-                    if (EndpointDescription.SecurityPolicyUri != SecurityPolicies.None &&
-                        clientSignature != null &&
-                        clientSignature.Signature.IsNull)
-                    {
-                        throw new ServiceResultException(
-                            StatusCodes.BadApplicationSignatureInvalid);
-                    }
+                    // 2.0 builds the data to sign through the security policy
+                    // rather than by appending the certificate and the nonce
+                    // here, so a policy that mixes in the channel certificates
+                    // or thumbprint is handled without a change in this file.
+                    SecurityPolicyInfo securityPolicy = m_securityPolicies.GetInfo(
+                        EndpointDescription.SecurityPolicyUri)!;
 
-                    byte[] dataToSign = Utils.Append(
+                    byte[] clientNonceData = ClientNonce.ToArray();
+
+                    byte[] dataToSign = securityPolicy.GetClientSignatureData(
+                        context.ChannelContext.ChannelThumbprint,
+                        m_serverNonce.Data,
                         m_serverCertificate.RawData,
-                        m_serverNonce.Data);
+                        context.ChannelContext.ServerChannelCertificate,
+                        context.ChannelContext.ClientChannelCertificate,
+                        clientNonceData);
 
-                    if (!SecurityPolicies.Verify(
-                            ClientCertificate,
+                    if (!m_securityPolicies.VerifySignatureData(
+                            clientSignature!,
                             EndpointDescription.SecurityPolicyUri,
-                            dataToSign,
-                            clientSignature))
+                            ClientCertificate,
+                            dataToSign))
                     {
                         // verify for certificate chain in endpoint.
                         // validate the signature with complete chain if the check with leaf certificate failed.
-                        CertificateCollection serverCertificateChain =
+                        using CertificateCollection serverCertificateChain =
                             Utils.ParseCertificateChainBlob(
                                 EndpointDescription.ServerCertificate,
                                 m_server.Telemetry);
@@ -490,15 +511,19 @@ namespace Technosoftware.UaServer
 
                             byte[] serverCertificateChainData = [.. serverCertificateChainList];
 
-                            dataToSign = Utils.Append(
+                            dataToSign = securityPolicy.GetClientSignatureData(
+                                context.ChannelContext.ChannelThumbprint,
+                                m_serverNonce.Data,
                                 serverCertificateChainData,
-                                m_serverNonce.Data);
+                                context.ChannelContext.ServerChannelCertificate,
+                                context.ChannelContext.ClientChannelCertificate,
+                                clientNonceData);
 
-                            if (!SecurityPolicies.Verify(
-                                    ClientCertificate,
+                            if (!m_securityPolicies.VerifySignatureData(
+                                    clientSignature!,
                                     EndpointDescription.SecurityPolicyUri,
-                                    dataToSign,
-                                    clientSignature))
+                                    ClientCertificate,
+                                    dataToSign))
                             {
                                 throw new ServiceResultException(
                                     StatusCodes.BadApplicationSignatureInvalid);
@@ -521,14 +546,19 @@ namespace Technosoftware.UaServer
                     }
                 }
 
-                // validate the user identity token.
-                identityToken = ValidateUserIdentityToken(
+            }
+
+            // the identity token is decrypted and its signature verified with
+            // asynchronous crypto in 2.0, so this half cannot run under m_lock.
+            (UserIdentityToken identityToken, UserTokenPolicy userTokenPolicy) =
+                await ValidateUserIdentityTokenAsync(
+                    context,
                     userIdentityToken,
                     userTokenSignature,
-                    out userTokenPolicy);
+                    ct).ConfigureAwait(false);
 
-                TraceState("VALIDATED");
-            }
+            TraceState("VALIDATED");
+            return (identityToken, userTokenPolicy);
         }
 
         /// <summary>
@@ -781,11 +811,11 @@ namespace Technosoftware.UaServer
         private ServiceResult OnUpdateDiagnostics(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             lock (DiagnosticsLock)
             {
-                value = CoreUtils.Clone(SessionDiagnostics);
+                value = Variant.FromStructure(SessionDiagnostics, copy: true);
             }
 
             return ServiceResult.Good;
@@ -797,11 +827,11 @@ namespace Technosoftware.UaServer
         private ServiceResult OnUpdateSecurityDiagnostics(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             lock (DiagnosticsLock)
             {
-                value = CoreUtils.Clone(m_securityDiagnostics);
+                value = Variant.FromStructure(m_securityDiagnostics, copy: true);
             }
 
             return ServiceResult.Good;
@@ -811,12 +841,15 @@ namespace Technosoftware.UaServer
         /// Validates the identity token supplied by the client.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        private UserIdentityToken ValidateUserIdentityToken(
-            ExtensionObject identityToken,
-            SignatureData userTokenSignature,
-            out UserTokenPolicy policy)
+        private async ValueTask<(
+            UserIdentityToken IdentityToken,
+            UserTokenPolicy UserTokenPolicy)> ValidateUserIdentityTokenAsync(
+                UaServerOperationContext context,
+                ExtensionObject identityToken,
+                SignatureData userTokenSignature,
+                CancellationToken ct)
         {
-            policy = null;
+            UserTokenPolicy policy = null;
 
             // check for empty token.
             if (identityToken == null ||
@@ -849,7 +882,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // create an anonymous token to use for subsequent validation.
-                return new AnonymousIdentityToken { PolicyId = policy.PolicyId };
+                return (new AnonymousIdentityToken { PolicyId = policy.PolicyId }, policy);
             }
 
             UserIdentityToken token;
@@ -951,12 +984,6 @@ namespace Technosoftware.UaServer
                     "User token policy not supported.");
             }
 
-            if (token is IssuedIdentityToken issuedToken &&
-                policy.IssuedTokenType == Profiles.JwtUserToken)
-            {
-                issuedToken.IssuedTokenType = IssuedTokenType.JWT;
-            }
-
             // determine the security policy uri.
             string securityPolicyUri = policy.SecurityPolicyUri;
 
@@ -968,32 +995,31 @@ namespace Technosoftware.UaServer
             if (ServerBase.RequireEncryption(EndpointDescription))
             {
                 // decrypt the token.
-                if (m_serverCertificate == null)
-                {
-                    m_serverCertificate = X509CertificateLoader.LoadCertificate(
-                        EndpointDescription.ServerCertificate);
+                m_serverCertificate ??= Certificate.FromRawData(
+                    EndpointDescription.ServerCertificate) ??
+                    throw ServiceResultException.ConfigurationError(
+                        "ApplicationCertificate cannot be found.");
 
-                    // check for valid certificate.
-                    if (m_serverCertificate == null)
-                    {
-                        throw ServiceResultException.Create(
-                            StatusCodes.BadConfigurationError,
-                            "ApplicationCertificate cannot be found.");
-                    }
-                }
+                // 2.0 does the token's own crypto through a handler rather
+                // than on UserIdentityToken itself; the handler mutates the
+                // token it wraps, so `token` is the decrypted one afterwards.
+                IUserIdentityTokenHandler handler = token.AsTokenHandler(m_securityPolicies);
+                handler.UpdatePolicy(policy);
 
                 try
                 {
-                    token.Decrypt(
+                    await handler.DecryptAsync(
                         m_serverCertificate,
                         m_serverNonce,
                         securityPolicyUri,
                         m_server.MessageContext,
                         m_eccUserTokenNonce,
                         ClientCertificate,
-                        m_clientIssuerCertificates);
+                        m_clientIssuerCertificates,
+                        ct: ct).ConfigureAwait(false);
                 }
-                catch (Exception e) when (e is not ServiceResultException)
+                catch (Exception e)
+                    when (e is not ServiceResultException and not OperationCanceledException)
                 {
                     throw ServiceResultException.Create(
                         StatusCodes.BadIdentityTokenInvalid,
@@ -1001,18 +1027,35 @@ namespace Technosoftware.UaServer
                         "Could not decrypt identity token.");
                 }
 
+                token = handler.Token;
+
                 // verify the signature.
                 if (securityPolicyUri != SecurityPolicies.None)
                 {
-                    byte[] dataToSign = Utils.Append(
-                        m_serverCertificate.RawData,
-                        m_serverNonce.Data);
+                    SecurityPolicyInfo securityPolicy = m_securityPolicies.GetInfo(
+                        securityPolicyUri)!;
 
-                    if (!token.Verify(dataToSign, userTokenSignature, securityPolicyUri, m_server.Telemetry))
+                    SecureChannelContext channelContext = context.ChannelContext;
+                    byte[] clientNonceData = ClientNonce.ToArray();
+
+                    byte[] dataToSign = securityPolicy.GetUserTokenSignatureData(
+                        channelContext.ChannelThumbprint,
+                        m_serverNonce.Data,
+                        m_serverCertificate.RawData,
+                        channelContext.ServerChannelCertificate,
+                        ClientCertificate?.RawData,
+                        channelContext.ClientChannelCertificate,
+                        clientNonceData);
+
+                    if (!await handler.VerifyAsync(
+                            dataToSign,
+                            userTokenSignature,
+                            securityPolicyUri,
+                            ct).ConfigureAwait(false))
                     {
                         // verify for certificate chain in endpoint.
                         // validate the signature with complete chain if the check with leaf certificate failed.
-                        CertificateCollection serverCertificateChain =
+                        using CertificateCollection serverCertificateChain =
                             Utils.ParseCertificateChainBlob(
                                 EndpointDescription.ServerCertificate,
                                 m_server.Telemetry);
@@ -1027,13 +1070,20 @@ namespace Technosoftware.UaServer
                                     serverCertificateChain[i].RawData);
                             }
 
-                            byte[] serverCertificateChainData = [.. serverCertificateChainList];
+                            dataToSign = securityPolicy.GetUserTokenSignatureData(
+                                channelContext.ChannelThumbprint,
+                                m_serverNonce.Data,
+                                [.. serverCertificateChainList],
+                                channelContext.ServerChannelCertificate,
+                                ClientCertificate?.RawData,
+                                channelContext.ClientChannelCertificate,
+                                clientNonceData);
 
-                            dataToSign = Utils.Append(
-                                serverCertificateChainData,
-                                m_serverNonce.Data);
-
-                            if (!token.Verify(dataToSign, userTokenSignature, securityPolicyUri, m_server.Telemetry))
+                            if (!await handler.VerifyAsync(
+                                    dataToSign,
+                                    userTokenSignature,
+                                    securityPolicyUri,
+                                    ct).ConfigureAwait(false))
                             {
                                 throw new ServiceResultException(
                                     StatusCodes.BadIdentityTokenRejected,
@@ -1051,7 +1101,7 @@ namespace Technosoftware.UaServer
             }
 
             // validate user identity token.
-            return token;
+            return (token, policy);
         }
 
         /// <summary>
@@ -1245,6 +1295,7 @@ namespace Technosoftware.UaServer
         private readonly Lock m_lock = new();
         private readonly ILogger m_logger;
         private readonly IUaServerData m_server;
+        private readonly ISecurityPolicyRegistry m_securityPolicies;
         private readonly string m_sessionName;
         private Certificate m_serverCertificate;
         private Nonce m_serverNonce;

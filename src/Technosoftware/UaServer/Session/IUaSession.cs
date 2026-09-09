@@ -16,6 +16,7 @@
 #region Using Directives
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Security.Certificates;
@@ -46,7 +47,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The client Nonce associated with the session.
         /// </summary>
-        byte[] ClientNonce { get; }
+        ByteString ClientNonce { get; }
 
         /// <summary>
         /// A lock which must be acquired before accessing the diagnostics.
@@ -173,13 +174,14 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Activates the session and binds it to the current secure channel.
         /// </summary>
-        void ValidateBeforeActivate(
+        ValueTask<(
+            UserIdentityToken IdentityToken,
+            UserTokenPolicy UserTokenPolicy)> ValidateBeforeActivateAsync(
             UaServerOperationContext context,
             SignatureData clientSignature,
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
-            out UserIdentityToken identityToken,
-            out UserTokenPolicy userTokenPolicy);
+            CancellationToken ct = default);
 
         /// <summary>
         /// Validate the diagnostic info.

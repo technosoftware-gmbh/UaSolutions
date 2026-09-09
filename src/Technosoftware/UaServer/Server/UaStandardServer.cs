@@ -107,7 +107,7 @@ namespace Technosoftware.UaServer
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
-            ArrayOf<ApplicationDescription> servers = [];
+            List<ApplicationDescription> servers = [];
 
             ValidateRequest(requestHeader);
 
@@ -127,7 +127,6 @@ namespace Technosoftware.UaServer
                 // check if nothing to do.
                 if (baseAddresses.Count == 0)
                 {
-                    servers = [];
                     return new FindServersResponse
                     {
                         ResponseHeader = CreateResponse(requestHeader, StatusCodes.Good),
@@ -149,9 +148,8 @@ namespace Technosoftware.UaServer
                     }
 
                     // check client is filtering by server uri.
-                    if (serverUris != null &&
-                        serverUris.Count > 0 &&
-                        !serverUris.Contains(server.ApplicationUri))
+                    if (serverUris.Count > 0 &&
+                        !serverUris.Contains(uri => uri == server.ApplicationUri))
                     {
                         continue;
                     }
@@ -159,7 +157,7 @@ namespace Technosoftware.UaServer
                     // localize the application name if requested.
                     LocalizedText applicationName = server.ApplicationName;
 
-                    if (localeIds != null && localeIds.Count > 0)
+                    if (localeIds.Count > 0)
                     {
                         applicationName = m_serverInternal.ResourceManager
                             .Translate(localeIds, applicationName);
@@ -211,7 +209,7 @@ namespace Technosoftware.UaServer
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
-            ArrayOf<EndpointDescription> endpoints = null;
+            ArrayOf<EndpointDescription> endpoints = default;
 
             ValidateRequest(requestHeader);
 
@@ -244,7 +242,7 @@ namespace Technosoftware.UaServer
             IList<BaseAddress> baseAddresses,
             ArrayOf<string> localeIds)
         {
-            ArrayOf<EndpointDescription> endpoints = null;
+            ArrayOf<EndpointDescription> endpoints = default;
 
             // parse the url provided by the client.
             Uri parsedEndpointUrl = Utils.ParseUri(endpointUrl);
@@ -355,7 +353,7 @@ namespace Technosoftware.UaServer
             double revisedSessionTimeout = 0;
             byte[] serverNonce;
             byte[] serverCertificate = null;
-            ArrayOf<EndpointDescription> serverEndpoints = null;
+            ArrayOf<EndpointDescription> serverEndpoints = default;
             SignatureData serverSignature = null;
             uint maxRequestMessageSize = (uint)MessageContext.MaxMessageSize;
 

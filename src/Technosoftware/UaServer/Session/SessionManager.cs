@@ -145,7 +145,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             Certificate serverCertificate,
             string sessionName,
-            byte[] clientNonce,
+            ByteString clientNonce,
             ApplicationDescription clientDescription,
             string endpointUrl,
             Certificate clientCertificate,
@@ -154,9 +154,9 @@ namespace Technosoftware.UaServer
             uint maxResponseMessageSize,
             CancellationToken cancellationToken = default)
         {
-            NodeId sessionId = 0;
+            NodeId sessionId = default;
             NodeId authenticationToken;
-            byte[] serverNonce;
+            ByteString serverNonce;
             double revisedSessionTimeout = requestedSessionTimeout;
 
             IUaSession session;
@@ -171,13 +171,14 @@ namespace Technosoftware.UaServer
                 }
 
                 // check for same Nonce in another session
-                if (clientNonce != null)
+                if (!clientNonce.IsEmpty)
                 {
                     // iterate over key/value pairs in the dictionary with a thread safe iterator
                     foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValueIterator in m_sessions)
                     {
-                        byte[] sessionClientNonce = sessionKeyValueIterator.Value?.ClientNonce;
-                        if (Nonce.CompareNonce(sessionClientNonce, clientNonce))
+                        ByteString sessionClientNonce =
+                            sessionKeyValueIterator.Value?.ClientNonce ?? default;
+                        if (sessionClientNonce == clientNonce)
                         {
                             throw new ServiceResultException(StatusCodes.BadNonceInvalid);
                         }
@@ -198,7 +199,7 @@ namespace Technosoftware.UaServer
                 if (authenticationToken.IsNull)
                 {
                     byte[] token = Nonce.CreateRandomNonceData(32);
-                    authenticationToken = new NodeId(token);
+                    authenticationToken = new NodeId(token.ToByteString());
                 }
 
                 // determine session timeout.
@@ -242,7 +243,7 @@ namespace Technosoftware.UaServer
 
                 // get the session id.
                 sessionId = session.Id;
-                serverNonce = serverNonceObject.Data;
+                serverNonce = serverNonceObject.Data.ToByteString();
 
                 // save session.
                 if (!m_sessions.TryAdd(authenticationToken, session))
@@ -273,7 +274,7 @@ namespace Technosoftware.UaServer
         /// Activates an existing session
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public virtual async ValueTask<(bool IdentityContextChanged, byte[] ServerNonce)> ActivateSessionAsync(
+        public virtual async ValueTask<(bool IdentityContextChanged, ByteString ServerNonce)> ActivateSessionAsync(
             UaServerOperationContext context,
             NodeId authenticationToken,
             SignatureData clientSignature,
@@ -282,7 +283,7 @@ namespace Technosoftware.UaServer
             ArrayOf<string> localeIds,
             CancellationToken cancellationToken = default)
         {
-            byte[] serverNonce = null;
+            ByteString serverNonce = default;
 
             Nonce serverNonceObject = null;
 
@@ -320,21 +321,25 @@ namespace Technosoftware.UaServer
                 serverNonceObject = Nonce.CreateNonce(
                     context.ChannelContext.EndpointDescription.SecurityPolicyUri);
 
-                // validate before activation.
-                session.ValidateBeforeActivate(
-                    context,
-                    clientSignature,
-                    userIdentityToken,
-                    userTokenSignature,
-                    out newIdentity,
-                    out userTokenPolicy);
-
-                serverNonce = serverNonceObject.Data;
+                serverNonce = serverNonceObject.Data.ToByteString();
             }
             finally
             {
                 m_semaphoreSlim.Release();
             }
+
+            // validate before activation. The token's crypto is asynchronous in
+            // 2.0, so this runs outside the manager's semaphore; it only touches
+            // the session's own state.
+            (newIdentity, userTokenPolicy) = await session
+                .ValidateBeforeActivateAsync(
+                    context,
+                    clientSignature,
+                    userIdentityToken,
+                    userTokenSignature,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             IUserIdentity identity = null;
             IUserIdentity effectiveIdentity = null;
             ServiceResult error = null;
@@ -534,7 +539,7 @@ namespace Technosoftware.UaServer
             IUaServerData server,
             Certificate serverCertificate,
             NodeId sessionCookie,
-            byte[] clientNonce,
+            ByteString clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
