@@ -124,7 +124,7 @@ namespace Technosoftware.UaServer
 
             for (int ii = 0; ii < values.Count; ii++)
             {
-                DateTime currentTime = values[ii].SourceTimestamp;
+                DateTime currentTime = (DateTime)values[ii].SourceTimestamp;
                 StatusCode currentStatus = values[ii].StatusCode;
 
                 // ignore bad values.
@@ -310,7 +310,7 @@ namespace Technosoftware.UaServer
 
             for (int ii = 0; ii < values.Count; ii++)
             {
-                DateTime currentTime = values[ii].SourceTimestamp;
+                DateTime currentTime = (DateTime)values[ii].SourceTimestamp;
                 StatusCode currentStatus = values[ii].StatusCode;
 
                 // ignore bad values (as determined by the TreatUncertainAsBad parameter).

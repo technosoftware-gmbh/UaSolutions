@@ -227,10 +227,9 @@ namespace Technosoftware.UaServer
                     // enqueue event
                     if (context is ISessionSystemContext session &&
                         session.SessionId != null &&
-                        monitoredItem?.Session?.Id.Identifier != null)
+                        monitoredItem?.Session != null)
                     {
-                        if (monitoredItem.Session.Id.Identifier
-                            .Equals(session.SessionId.Identifier))
+                        if (monitoredItem.Session.Id.Equals(session.SessionId))
                         {
                             monitoredItem?.QueueEvent(e);
                         }

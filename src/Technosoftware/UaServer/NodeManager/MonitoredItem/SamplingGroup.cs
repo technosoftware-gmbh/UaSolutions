@@ -481,7 +481,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // read values.
-                    m_nodeManager.Read(context, 0, itemsToRead, values, errors);
+                    m_nodeManager.Read(context, 0, itemsToRead.ToArrayOf(), values, errors);
 
                     // update monitored items.
                     for (int ii = 0; ii < items.Count; ii++)

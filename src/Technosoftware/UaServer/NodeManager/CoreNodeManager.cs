@@ -481,7 +481,7 @@ namespace Technosoftware.UaServer
                     metadata.DisplayName = target.DisplayName;
 
                     // check if the display name can be localized.
-                    if (!string.IsNullOrEmpty(metadata.DisplayName.Key))
+                    if (!string.IsNullOrEmpty(metadata.DisplayName.TranslationInfo.Key))
                     {
                         metadata.DisplayName = Server.ResourceManager.Translate(
                             context.PreferredLocales,
@@ -737,7 +737,7 @@ namespace Technosoftware.UaServer
                     // apply index range to value attributes.
                     if (nodeToRead.AttributeId == Attributes.Value)
                     {
-                        object defaultValue = value.Value;
+                        Variant defaultValue = value.WrappedValue;
 
                         error = nodeToRead.ParsedIndexRange.ApplyRange(ref defaultValue);
 
@@ -764,7 +764,7 @@ namespace Technosoftware.UaServer
                             }
                         }
 
-                        value = value.WithWrappedValue(Variant.From(defaultValue));
+                        value = value.WithWrappedValue(defaultValue);
 
                         // Set SourceTimestamp if not already set by the node
                         if (value.SourceTimestamp == DateTime.MinValue)
@@ -957,7 +957,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // check whether value being written is an instance of the expected data type.
-                    object valueToWrite = nodeToWrite.Value.Value;
+                    Variant valueToWrite = nodeToWrite.Value.WrappedValue;
 
                     var typeInfo = TypeInfo.IsInstanceOfDataType(
                         valueToWrite,
@@ -981,9 +981,8 @@ namespace Technosoftware.UaServer
                             errors[ii] = StatusCodes.BadIndexRangeInvalid;
                             continue;
                         }
-                        var array = (Array)valueToWrite;
-
-                        if (nodeToWrite.ParsedIndexRange.Count != array.Length)
+                        if (valueToWrite.Value is not Array array ||
+                            nodeToWrite.ParsedIndexRange.Count != array.Length)
                         {
                             errors[ii] = StatusCodes.BadIndexRangeInvalid;
                             continue;
@@ -3570,7 +3569,7 @@ namespace Technosoftware.UaServer
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            range = target.Value as Opc.Ua.Range;
+            range = target.Value.GetStructure<Opc.Ua.Range>();
 
             if (range == null)
             {

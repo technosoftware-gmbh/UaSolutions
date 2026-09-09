@@ -35,7 +35,7 @@ namespace Technosoftware.UaServer
             IUaNodeManager nodeManager,
             uint maxQueueSize,
             uint maxDurableQueueSize,
-            IEnumerable<SamplingRateGroup> samplingRates)
+            ArrayOf<SamplingRateGroup> samplingRates)
         {
             m_server = server ?? throw new ArgumentNullException(nameof(server));
             m_nodeManager = nodeManager ?? throw new ArgumentNullException(nameof(nodeManager));
@@ -44,17 +44,9 @@ namespace Technosoftware.UaServer
             m_maxQueueSize = maxQueueSize;
             m_maxDurableQueueSize = maxDurableQueueSize;
 
-            if (samplingRates != null)
-            {
-                m_samplingRates = [.. samplingRates];
-
-                if (m_samplingRates.Count == 0)
-                {
-                    m_samplingRates = [.. s_defaultSamplingRates];
-                }
-            }
-
-            m_samplingRates ??= [.. s_defaultSamplingRates];
+            m_samplingRates = samplingRates.Count > 0
+                ? samplingRates.ToList()
+                : [.. s_defaultSamplingRates];
         }
 
         /// <summary>

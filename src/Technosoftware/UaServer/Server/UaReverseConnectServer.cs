@@ -148,7 +148,8 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Creates a reverse connect server based on a StandardServer.
         /// </summary>
-        public UaReverseConnectServer()
+        public UaReverseConnectServer(ITelemetryContext telemetry)
+            : base(telemetry)
         {
             m_connectInterval = DefaultReverseConnectInterval;
             m_connectTimeout = DefaultReverseConnectTimeout;

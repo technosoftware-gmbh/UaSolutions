@@ -947,16 +947,22 @@ namespace Technosoftware.UaServer
                 .ConfigureAwait(false);
             if (ServiceResult.IsGood(serviceResult))
             {
-                // translate path only if validation is passing
+                // translate path only if validation is passing. BrowsePathResult
+                // carries its targets as an immutable ArrayOf, so the recursion
+                // fills a List and the result is assigned once.
+                var targets = new List<BrowsePathTarget>();
+
                 await TranslateBrowsePathAsync(
                     context,
                     nodeManager,
                     sourceHandle,
                     relativePath,
-                    result.Targets,
+                    targets,
                     0,
                     cancellationToken)
                 .ConfigureAwait(false);
+
+                result.Targets = targets.ToArrayOf();
             }
 
             return serviceResult;

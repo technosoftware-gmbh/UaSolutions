@@ -311,7 +311,7 @@ namespace Technosoftware.UaServer
 
             if (initialValue != null)
             {
-                propertyState.Value = initialValue;
+                propertyState.Value = new Variant(initialValue);
             }
 
             parent?.AddChild(propertyState);
@@ -513,7 +513,8 @@ namespace Technosoftware.UaServer
                 Historizing = false
             };
 
-            baseDataVariableTypeState.Value = initialValue ?? GetNewValue(baseDataVariableTypeState);
+            baseDataVariableTypeState.Value = new Variant(
+                initialValue ?? GetNewValue(baseDataVariableTypeState));
             baseDataVariableTypeState.StatusCode = StatusCodes.Good;
             baseDataVariableTypeState.Timestamp = DateTime.UtcNow;
 
@@ -619,7 +620,8 @@ namespace Technosoftware.UaServer
                 Historizing = false
             };
 
-            baseDataVariableTypeState.Value = initialValue ?? GetNewValue(baseDataVariableTypeState);
+            baseDataVariableTypeState.Value = new Variant(
+                initialValue ?? GetNewValue(baseDataVariableTypeState));
             baseDataVariableTypeState.StatusCode = StatusCodes.Good;
             baseDataVariableTypeState.Timestamp = DateTime.UtcNow;
 
@@ -725,7 +727,8 @@ namespace Technosoftware.UaServer
                 Historizing = false
             };
 
-            baseDataVariableTypeState.Value = initialValue ?? GetNewValue(baseDataVariableTypeState);
+            baseDataVariableTypeState.Value = new Variant(
+                initialValue ?? GetNewValue(baseDataVariableTypeState));
             baseDataVariableTypeState.StatusCode = StatusCodes.Good;
             baseDataVariableTypeState.Timestamp = DateTime.UtcNow;
 
@@ -867,8 +870,12 @@ namespace Technosoftware.UaServer
             variable.UserAccessLevel = accessLevel;
             variable.Historizing = false;
 
-            variable.Value = initialValue ??
-                             Opc.Ua.TypeInfo.GetDefaultValue(new NodeId((uint)dataType), valueRank, ServerData.TypeTree);
+            variable.Value = initialValue != null
+                ? new Variant(initialValue)
+                : Opc.Ua.TypeInfo.GetDefaultVariantValue(
+                    new NodeId((uint)dataType),
+                    valueRank,
+                    ServerData.TypeTree);
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
 
@@ -986,7 +993,8 @@ namespace Technosoftware.UaServer
             RolePermissionTypeCollection rolePermissions = null,
             RolePermissionTypeCollection userRolePermissions = null)
         {
-            return CreateAnalogItemState(parent, browseName, displayName, description, (uint)dataType, valueRank,
+            return CreateAnalogItemState(parent, browseName, displayName, description,
+                new NodeId((uint)dataType), valueRank,
                 accessLevel, initialValue, euRange, engineeringUnit, instrumentRange, writeMask, userWriteMask,
                 definition, valuePrecision, rolePermissions, userRolePermissions);
         }
@@ -1181,7 +1189,9 @@ namespace Technosoftware.UaServer
             variable.EURange.AccessLevel = accessLevel;
             variable.EURange.UserAccessLevel = accessLevel;
 
-            variable.Value = initialValue ?? Opc.Ua.TypeInfo.GetDefaultValue(dataType, valueRank, ServerData.TypeTree);
+            variable.Value = initialValue != null
+                ? new Variant(initialValue)
+                : Opc.Ua.TypeInfo.GetDefaultVariantValue(dataType, valueRank, ServerData.TypeTree);
 
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
@@ -1414,7 +1424,7 @@ namespace Technosoftware.UaServer
             variable.UserAccessLevel = accessLevel;
             variable.Historizing = false;
 
-            variable.Value = initialValue ?? (uint)0;
+            variable.Value = new Variant(initialValue ?? (uint)0);
 
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
@@ -1525,7 +1535,7 @@ namespace Technosoftware.UaServer
 
             variable.SymbolicName = displayName.ToString();
             variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
-            variable.DataType = dataType ?? DataTypeIds.UInt32;
+            variable.DataType = dataType.IsNull ? DataTypeIds.UInt32 : dataType;
             variable.ValueRank = ValueRanks.Scalar;
             variable.Description = description;
             variable.WriteMask = writeMask;
@@ -1536,7 +1546,7 @@ namespace Technosoftware.UaServer
             variable.UserAccessLevel = accessLevel;
             variable.Historizing = false;
 
-            variable.Value = initialValue ?? (uint)0;
+            variable.Value = new Variant(initialValue ?? (uint)0);
 
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;

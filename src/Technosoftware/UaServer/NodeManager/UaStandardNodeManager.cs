@@ -4808,7 +4808,7 @@ namespace Technosoftware.UaServer
                     NodeId key = handle.NodeId;
                     if (uniqueNodesServiceAttributesCache.ContainsKey(key))
                     {
-                        if (uniqueNodesServiceAttributesCache[key].Count == 0)
+                        if (uniqueNodesServiceAttributesCache[key].Length == 0)
                         {
                             values = ReadAndCacheValidationAttributes(
                                 uniqueNodesServiceAttributesCache,

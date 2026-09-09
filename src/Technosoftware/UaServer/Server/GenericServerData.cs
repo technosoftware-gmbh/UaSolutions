@@ -689,7 +689,7 @@ namespace Technosoftware.UaServer
                 BaseVariableState default_PubSubState =
                     DiagnosticsNodeManager.FindPredefinedNode<BaseVariableState>(
                         VariableIds.PublishSubscribe_Status_State);
-                default_PubSubState.Value = pubSubState;
+                default_PubSubState.Value = Variant.From(pubSubState);
 
                 // setup value for SupportedTransportProfiles
                 BaseVariableState default_SupportedTransportProfiles =

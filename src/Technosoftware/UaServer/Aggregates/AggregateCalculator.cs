@@ -97,11 +97,11 @@ namespace Technosoftware.UaServer
             // check for start of data.
             if (m_startOfData == DateTime.MinValue)
             {
-                m_startOfData = value.SourceTimestamp;
+                m_startOfData = (DateTime)value.SourceTimestamp;
             }
 
             // update end of data.
-            m_endOfData = value.SourceTimestamp;
+            m_endOfData = (DateTime)value.SourceTimestamp;
 
             // ensure values are being queued in the right order.
             if (TimeFlowsBackward)
@@ -1234,7 +1234,7 @@ namespace Technosoftware.UaServer
             for (int ii = 0; ii < values.Count; ii++)
             {
                 double currentValue = 0;
-                DateTime currentTime = values[ii].SourceTimestamp;
+                DateTime currentTime = (DateTime)values[ii].SourceTimestamp;
                 StatusCode currentStatus = values[ii].StatusCode;
 
                 // convert to doubles to facilitate numeric calculations.
