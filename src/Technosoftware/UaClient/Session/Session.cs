@@ -73,7 +73,7 @@ namespace Technosoftware.UaClient
             ConfiguredEndpoint endpoint,
             Certificate? clientCertificate = null,
             CertificateCollection? clientCertificateChain = null,
-            ArrayOf<EndpointDescription>? availableEndpoints = null,
+            ArrayOf<EndpointDescription> availableEndpoints = default,
             List<string>? discoveryProfileUris = null)
             : this(
                   channel,
@@ -1084,7 +1084,7 @@ namespace Technosoftware.UaClient
                 if (requireEncryption)
                 {
                     ICertificateValidatorEx validator = m_configuration.CertificateManager;
-                    Opc.Ua.Security.Certificates.CertificateValidationResult result = await validator
+                    Opc.Ua.CertificateValidationResult result = await validator
                         .ValidateAsync(serverCertificateChain, ct: ct)
                         .ConfigureAwait(false);
 
@@ -1176,7 +1176,7 @@ namespace Technosoftware.UaClient
                     maxMessageSize,
                     ct).ConfigureAwait(false);
             }
-            if (NodeId.IsNull(response?.SessionId))
+            if (response is null || response.SessionId.IsNull)
             {
                 throw ServiceResultException.Unexpected(
                     "Create response returned null session id");
@@ -1472,7 +1472,7 @@ namespace Technosoftware.UaClient
                 identity.TokenType != UserTokenType.Anonymous)
             {
                 ICertificateValidatorEx validator = m_configuration.CertificateManager;
-                Opc.Ua.Security.Certificates.CertificateValidationResult result = await validator
+                Opc.Ua.CertificateValidationResult result = await validator
                     .ValidateAsync(m_serverCertificate, ct: ct)
                     .ConfigureAwait(false);
 
@@ -1749,7 +1749,7 @@ namespace Technosoftware.UaClient
                             if (await subscriptions[ii].TransferAsync(
                                     this,
                                     subscriptionIds[ii],
-                                    results[ii].AvailableSequenceNumbers,
+                                    results[ii].AvailableSequenceNumbers.ToList(),
                                     ct)
                                 .ConfigureAwait(false))
                             {
@@ -2760,7 +2760,7 @@ namespace Technosoftware.UaClient
 
             m_serverState = ServerState.Unknown;
 
-            var nodesToRead = new ReadValueIdCollection
+            ArrayOf<ReadValueId> nodesToRead = new ReadValueIdCollection
             {
                 // read the server state.
                 new ReadValueId
@@ -2770,7 +2770,7 @@ namespace Technosoftware.UaClient
                     DataEncoding = QualifiedName.Null,
                     IndexRange = null
                 }
-            };
+            }.ToArrayOf();
 
             await StopKeepAliveTimerAsync().ConfigureAwait(false);
 
@@ -3093,7 +3093,7 @@ namespace Technosoftware.UaClient
         /// Sends a keep alive by reading from the server.
         /// </summary>
         private async Task OnSendKeepAliveAsync(
-            ReadValueIdCollection nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             CancellationToken ct)
         {
             while (!ct.IsCancellationRequested && !Disposed)
@@ -3168,7 +3168,9 @@ namespace Technosoftware.UaClient
                     }
 
                     // send notification that keep alive completed.
-                    OnKeepAlive((ServerState)(int)values[0].Value, responseHeader.Timestamp);
+                    OnKeepAlive(
+                        (ServerState)(int)values[0].Value,
+                        (DateTime)responseHeader.Timestamp);
                 }
                 catch (ServiceResultException sre)
                 {
@@ -3342,7 +3344,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
         private void UpdateNamespaceTable(
-            List<DataValue> values,
+            ArrayOf<DataValue> values,
             ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
@@ -3612,7 +3614,9 @@ namespace Technosoftware.UaClient
                 ProcessPublishResponse(
                     responseHeader,
                     subscriptionId,
-                    availableSequenceNumbers,
+                    availableSequenceNumbers.IsNull
+                        ? null
+                        : availableSequenceNumbers.ToList(),
                     moreNotifications,
                     notificationMessage);
 
@@ -4047,7 +4051,7 @@ namespace Technosoftware.UaClient
         /// <exception cref="ServiceResultException"></exception>
         private void ValidateServerEndpoints(ArrayOf<EndpointDescription> serverEndpoints)
         {
-            if (m_discoveryServerEndpoints != null && m_discoveryServerEndpoints.Count > 0)
+            if (!m_discoveryServerEndpoints.IsNull && m_discoveryServerEndpoints.Count > 0)
             {
                 // Compare EndpointDescriptions returned at GetEndpoints with values returned at CreateSession
                 ArrayOf<EndpointDescription> expectedServerEndpoints;
@@ -4166,21 +4170,18 @@ namespace Technosoftware.UaClient
         /// <param name="matchPort">Match criteria includes port</param>
         /// <returns>Matching description or null if no description is matching</returns>
         private EndpointDescription? FindMatchingDescription(
-            ArrayOf<EndpointDescription>? endpointDescriptions,
+            ArrayOf<EndpointDescription> endpointDescriptions,
             EndpointDescription match,
             bool matchPort)
         {
-            if (endpointDescriptions == null)
-            {
-                return null;
-            }
-            Uri expectedUrl = Utils.ParseUri(match.EndpointUrl);
+            Uri? expectedUrl = Utils.ParseUri(match.EndpointUrl);
             for (int ii = 0; ii < endpointDescriptions.Count; ii++)
             {
                 EndpointDescription serverEndpoint = endpointDescriptions[ii];
                 Uri actualUrl = Utils.ParseUri(serverEndpoint.EndpointUrl);
 
                 if (actualUrl != null &&
+                    expectedUrl != null &&
                     actualUrl.Scheme == expectedUrl.Scheme &&
                     (!matchPort || actualUrl.Port == expectedUrl.Port) &&
                     serverEndpoint.SecurityPolicyUri == m_endpoint.Description.SecurityPolicyUri &&
@@ -4279,7 +4280,7 @@ namespace Technosoftware.UaClient
         private ByteString GetCurrentTokenServerNonce()
         {
             ChannelToken? currentToken = (NullableTransportChannel as ISecureChannel)?.CurrentToken;
-            return currentToken?.ServerNonce;
+            return ByteString.From(currentToken?.ServerNonce);
         }
 
         /// <summary>
@@ -4295,7 +4296,7 @@ namespace Technosoftware.UaClient
             Subscription? subscription = null;
 
             // send notification that the server is alive.
-            OnKeepAlive(m_serverState, responseHeader.Timestamp);
+            OnKeepAlive(m_serverState, (DateTime)responseHeader.Timestamp);
 
             // collect the current set of acknowledgements.
             lock (m_acknowledgementsToSendLock)
@@ -4683,14 +4684,26 @@ namespace Technosoftware.UaClient
             if (configuration.SecurityConfiguration.SendCertificateChain)
             {
                 clientCertificateChain = new CertificateCollection([clientCertificate]);
-                List<CertificateIdentifier> issuers = [];
-                await configuration
-                    .CertificateManager.GetIssuersAsync(clientCertificate, issuers, ct)
-                    .ConfigureAwait(false);
-
-                for (int i = 0; i < issuers.Count; i++)
+                List<CertificateIssuerReference> issuers = [];
+                try
                 {
-                    clientCertificateChain.Add(issuers[i].Certificate);
+                    await configuration
+                        .CertificateManager.GetIssuersAsync(clientCertificate, issuers, ct)
+                        .ConfigureAwait(false);
+
+                    for (int i = 0; i < issuers.Count; i++)
+                    {
+                        clientCertificateChain.Add(issuers[i].Certificate);
+                    }
+                }
+                finally
+                {
+                    // GetIssuersAsync returns caller-owned references; the
+                    // collection AddRefs each one above, so ours are released.
+                    for (int i = 0; i < issuers.Count; i++)
+                    {
+                        issuers[i].Certificate?.Dispose();
+                    }
                 }
             }
             return clientCertificateChain;
@@ -4880,10 +4893,24 @@ namespace Technosoftware.UaClient
             }
             m_userTokenSecurityPolicyUri = userTokenSecurityPolicyUri;
 
-            if (EccUtils.IsEccPolicy(userTokenSecurityPolicyUri))
+            // 2.0 asks the security policy registry whether the policy uses an
+            // ephemeral key rather than testing the URI against a list of ECC
+            // policy names, so a policy added by the stack is handled too.
+            SecurityPolicyInfo? securityPolicy = m_securityPolicies.GetInfo(userTokenSecurityPolicyUri);
+
+            if (securityPolicy?.EphemeralKeyAlgorithm != CertificateKeyAlgorithm.None)
             {
-                var parameters = new AdditionalParametersType();
-                parameters.Parameters += new Opc.Ua.KeyValuePair { Key = new QualifiedName("ECDHPolicyUri"), Value = userTokenSecurityPolicyUri };
+                var parameters = new AdditionalParametersType
+                {
+                    Parameters =
+                    [
+                        new Opc.Ua.KeyValuePair
+                        {
+                            Key = QualifiedName.From(AdditionalParameterNames.ECDHPolicyUri),
+                            Value = userTokenSecurityPolicyUri
+                        }
+                    ]
+                };
                 requestHeader.AdditionalHeader = new ExtensionObject(parameters);
             }
 
@@ -4906,43 +4933,60 @@ namespace Technosoftware.UaClient
             ResponseHeader responseHeader,
             Certificate? serverCertificate)
         {
-            if (ExtensionObject.ToEncodeable(
-                responseHeader?.AdditionalHeader) is AdditionalParametersType parameters)
+            if (responseHeader != null &&
+                responseHeader.AdditionalHeader.TryGetValue(out IEncodeable? encodeable) &&
+                encodeable is AdditionalParametersType parameters)
             {
                 foreach (Opc.Ua.KeyValuePair ii in parameters.Parameters)
                 {
-                    if (ii.Key == "ECDHKey")
+                    if (ii.Key != AdditionalParameterNames.ECDHKey)
                     {
-                        if (ii.Value.TypeInfo == TypeInfo.Scalars.StatusCode)
-                        {
-                            throw new ServiceResultException(
-                                (uint)(StatusCode)ii.Value.Value,
-                                "Server could not provide an ECDHKey. User authentication not possible.");
-                        }
-
-                        if (ExtensionObject.ToEncodeable(
-                            ii.Value.Value as ExtensionObject) is not EphemeralKeyType key)
-                        {
-                            throw new ServiceResultException(
-                                StatusCodes.BadDecodingError,
-                                "Server did not provide a valid ECDHKey. User authentication not possible.");
-                        }
-
-                        if (!EccUtils.Verify(
-                                new ArraySegment<byte>(key.PublicKey ?? []),
-                                key.Signature,
-                                serverCertificate,
-                                m_userTokenSecurityPolicyUri))
-                        {
-                            throw new ServiceResultException(
-                                StatusCodes.BadDecodingError,
-                                "Could not verify signature on ECDHKey. User authentication not possible.");
-                        }
-
-                        m_eccServerEphemeralKey = Nonce.CreateNonce(
-                            m_userTokenSecurityPolicyUri,
-                            key.PublicKey);
+                        continue;
                     }
+
+                    if (ii.Value.TypeInfo == TypeInfo.Scalars.StatusCode)
+                    {
+                        throw new ServiceResultException(
+                            ii.Value.GetStatusCode(StatusCodes.Bad),
+                            "Server could not provide an ECDHKey. User authentication not possible.");
+                    }
+
+                    if (ExtensionObject.ToEncodeable(
+                        ii.Value.GetExtensionObject()) is not EphemeralKeyType key)
+                    {
+                        throw new ServiceResultException(
+                            StatusCodes.BadDecodingError,
+                            "Server did not provide a valid ECDHKey. User authentication not possible.");
+                    }
+
+                    if (key.PublicKey.IsEmpty || key.Signature.IsEmpty)
+                    {
+                        throw new ServiceResultException(
+                            StatusCodes.BadDecodingError,
+                            "Server did not provide a valid ECDHKey. User authentication not possible.");
+                    }
+
+                    if (serverCertificate == null || m_userTokenSecurityPolicyUri == null)
+                    {
+                        throw new ServiceResultException(
+                            StatusCodes.BadDecodingError,
+                            "Server certificate or security policy URI is not available. User authentication not possible.");
+                    }
+
+                    if (!CryptoUtils.Verify(
+                            new ArraySegment<byte>(key.PublicKey.ToArray()),
+                            key.Signature.ToArray(),
+                            serverCertificate,
+                            m_userTokenSecurityPolicyUri))
+                    {
+                        throw new ServiceResultException(
+                            StatusCodes.BadDecodingError,
+                            "Could not verify signature on ECDHKey. User authentication not possible.");
+                    }
+
+                    m_eccServerEphemeralKey = Nonce.CreateNonce(
+                        m_securityPolicies.GetInfo(m_userTokenSecurityPolicyUri)!,
+                        key.PublicKey.ToArray());
                 }
             }
         }
@@ -5044,7 +5088,7 @@ namespace Technosoftware.UaClient
         private string? m_userTokenSecurityPolicyUri;
         private Nonce? m_eccServerEphemeralKey;
         private Subscription? m_defaultSubscription;
-        private readonly ArrayOf<EndpointDescription>? m_discoveryServerEndpoints;
+        private readonly ArrayOf<EndpointDescription> m_discoveryServerEndpoints;
         private readonly List<string>? m_discoveryProfileUris;
         private new readonly ILogger m_logger;
 

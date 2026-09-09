@@ -56,7 +56,7 @@ namespace Technosoftware.UaClient
             ConfiguredEndpoint endpoint,
             Certificate? clientCertificate = null,
             CertificateCollection? clientCertificateChain = null,
-            ArrayOf<EndpointDescription>? availableEndpoints = null,
+            ArrayOf<EndpointDescription> availableEndpoints = default,
             List<string>? discoveryProfileUris = null);
 
         /// <summary>
