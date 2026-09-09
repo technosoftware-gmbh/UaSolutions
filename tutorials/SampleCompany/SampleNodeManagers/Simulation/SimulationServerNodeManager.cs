@@ -112,7 +112,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     externalReferences[ObjectIds.ObjectsFolder] = References = references = [];
                 }
 
-                FolderState root = CreateFolderState(null, "Simulation", new LocalizedText("Simulation"), null);
+                FolderState root = CreateFolderState(null, "Simulation", new LocalizedText("Simulation"), default);
 
                 var variables = new List<BaseDataVariableState>();
 
@@ -120,7 +120,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 {
                     #region Scalar_Static
                     ResetRandomGenerator(1);
-                    FolderState scalarFolder = CreateFolderState(root, "Scalar", new LocalizedText("Scalar"), null);
+                    FolderState scalarFolder = CreateFolderState(root, "Scalar", new LocalizedText("Scalar"), default);
                     BaseDataVariableState scalarInstructions = CreateBaseDataVariableState(
                         scalarFolder,
                         "Scalar_Instructions",
@@ -133,7 +133,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     scalarInstructions.Value = "A library of Read/Write Variables of all supported data-types.";
                     variables.Add(scalarInstructions);
 
-                    FolderState staticFolder = CreateFolderState(scalarFolder, "Scalar_Static", new LocalizedText("Scalar_Static"), null);
+                    FolderState staticFolder = CreateFolderState(scalarFolder, "Scalar_Static", new LocalizedText("Scalar_Static"), default);
                     const string scalarStatic = "Scalar_Static_";
                     variables.Add(CreateBaseDataVariableState(
                         staticFolder,
@@ -385,15 +385,15 @@ namespace SampleCompany.NodeManagers.Simulation
                         CultureInfo.InvariantCulture);
                     var decimalValue = new DecimalDataType {
                         Scale = 100,
-                        Value = largeInteger.ToByteArray()
+                        Value = largeInteger.ToByteArray().ToByteString()
                     };
-                    decimalVariable.Value = decimalValue;
+                    decimalVariable.Value = Variant.FromStructure(decimalValue);
                     variables.Add(decimalVariable);
                     #endregion Scalar_Static
 
                     #region Scalar_Static_Arrays
                     ResetRandomGenerator(2);
-                    FolderState arraysFolder = CreateFolderState(staticFolder, "Scalar_Static_Arrays", new LocalizedText("Arrays"), null);
+                    FolderState arraysFolder = CreateFolderState(staticFolder, "Scalar_Static_Arrays", new LocalizedText("Arrays"), default);
                     const string staticArrays = "Scalar_Static_Arrays_";
 
                     variables.Add(CreateBaseDataVariableState(
@@ -443,12 +443,16 @@ namespace SampleCompany.NodeManagers.Simulation
                         AccessLevels.CurrentReadOrWrite,
                         null);
                     // Set the first elements of the array to a smaller value.
-                    if (doubleArrayVar.Value is double[] doubleArrayVal)
+                    // ArrayOf is immutable, so the elements are adjusted on a
+                    // mutable copy and the whole array assigned back.
+                    double[] doubleArrayVal = doubleArrayVar.Value.GetDoubleArray().ToArray();
+                    if (doubleArrayVal.Length >= 4)
                     {
                         doubleArrayVal[0] %= 10E+10;
                         doubleArrayVal[1] %= 10E+10;
                         doubleArrayVal[2] %= 10E+10;
                         doubleArrayVal[3] %= 10E+10;
+                        doubleArrayVar.Value = doubleArrayVal.ToArrayOf();
                     }
 
                     variables.Add(doubleArrayVar);
@@ -473,12 +477,14 @@ namespace SampleCompany.NodeManagers.Simulation
                         AccessLevels.CurrentReadOrWrite,
                         null);
                     // Set the first elements of the array to a smaller value.
-                    if (floatArrayVar.Value is float[] floatArrayVal)
+                    float[] floatArrayVal = floatArrayVar.Value.GetFloatArray().ToArray();
+                    if (floatArrayVal.Length >= 4)
                     {
                         floatArrayVal[0] %= 0xf10E + 4;
                         floatArrayVal[1] %= 0xf10E + 4;
                         floatArrayVal[2] %= 0xf10E + 4;
                         floatArrayVal[3] %= 0xf10E + 4;
+                        floatArrayVar.Value = floatArrayVal.ToArrayOf();
                     }
 
                     variables.Add(floatArrayVar);
@@ -602,7 +608,7 @@ namespace SampleCompany.NodeManagers.Simulation
                         "레몬} 빨간% 자주색 쥐 백색; 들" ,
                         "Yellow Sheep Peach Elephant Cow",
                         "Крыса Корова Свинья Собака Кот",
-                        "龙_ 绵羊 大象 芒果; 猫'" };
+                        "龙_ 绵羊 大象 芒果; 猫'" }.ToArrayOf();
                     variables.Add(stringArrayVar);
 
                     variables.Add(CreateBaseDataVariableState(
@@ -672,7 +678,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Static_Arrays2D
                     ResetRandomGenerator(3);
-                    FolderState arrays2DFolder = CreateFolderState(staticFolder, "Scalar_Static_Arrays2D", new LocalizedText("Arrays2D"), null);
+                    FolderState arrays2DFolder = CreateFolderState(staticFolder, "Scalar_Static_Arrays2D", new LocalizedText("Arrays2D"), default);
                     const string staticArrays2D = "Scalar_Static_Arrays2D_";
                     variables.Add(CreateBaseDataVariableState(
                         arrays2DFolder,
@@ -912,7 +918,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Static_ArrayDynamic
                     ResetRandomGenerator(4);
-                    FolderState arrayDynamicFolder = CreateFolderState(staticFolder, "Scalar_Static_ArrayDymamic", new LocalizedText("ArrayDymamic"), null);
+                    FolderState arrayDynamicFolder = CreateFolderState(staticFolder, "Scalar_Static_ArrayDymamic", new LocalizedText("ArrayDymamic"), default);
                     const string staticArraysDynamic = "Scalar_Static_ArrayDynamic_";
                     variables.Add(CreateBaseDataVariableState(
                         arrayDynamicFolder,
@@ -1153,7 +1159,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     #region Scalar_Static_Mass
                     ResetRandomGenerator(5);
                     // create 100 instances of each static scalar type
-                    FolderState massFolder = CreateFolderState(staticFolder, "Scalar_Static_Mass", new LocalizedText("Mass"), null);
+                    FolderState massFolder = CreateFolderState(staticFolder, "Scalar_Static_Mass", new LocalizedText("Mass"), default);
                     const string staticMass = "Scalar_Static_Mass_";
                     variables.AddRange(CreateVariables(massFolder, staticMass + "Boolean", "Boolean", null, DataTypeIds.Boolean, ValueRanks.Scalar, 100));
                     variables.AddRange(CreateVariables(massFolder, staticMass + "Byte", "Byte", null, DataTypeIds.Byte, ValueRanks.Scalar, 100));
@@ -1186,7 +1192,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Simulation
                     ResetRandomGenerator(6);
-                    FolderState simulationFolder = CreateFolderState(scalarFolder, "Scalar_Simulation", new LocalizedText("Simulation"), null);
+                    FolderState simulationFolder = CreateFolderState(scalarFolder, "Scalar_Simulation", new LocalizedText("Simulation"), default);
                     const string scalarSimulation = "Scalar_Simulation_";
                     _ = CreateDynamicVariable(simulationFolder, scalarSimulation + "Boolean", "Boolean", null, DataTypeIds.Boolean, ValueRanks.Scalar);
                     _ = CreateDynamicVariable(simulationFolder, scalarSimulation + "Byte", "Byte", null, DataTypeIds.Byte, ValueRanks.Scalar);
@@ -1254,7 +1260,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Simulation_Arrays
                     ResetRandomGenerator(7);
-                    FolderState arraysSimulationFolder = CreateFolderState(simulationFolder, "Scalar_Simulation_Arrays", new LocalizedText("Arrays"), null);
+                    FolderState arraysSimulationFolder = CreateFolderState(simulationFolder, "Scalar_Simulation_Arrays", new LocalizedText("Arrays"), default);
                     const string simulationArrays = "Scalar_Simulation_Arrays_";
                     _ = CreateDynamicVariable(
                         arraysSimulationFolder,
@@ -1358,7 +1364,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Scalar_Simulation_Mass
                     ResetRandomGenerator(8);
-                    FolderState massSimulationFolder = CreateFolderState(simulationFolder, "Scalar_Simulation_Mass", new LocalizedText("Mass"), null);
+                    FolderState massSimulationFolder = CreateFolderState(simulationFolder, "Scalar_Simulation_Mass", new LocalizedText("Mass"), default);
                     const string massSimulation = "Scalar_Simulation_Mass_";
                     _ = CreateDynamicVariables(massSimulationFolder, massSimulation + "Boolean", "Boolean", null, DataTypeIds.Boolean, ValueRanks.Scalar, 100);
                     _ = CreateDynamicVariables(massSimulationFolder, massSimulation + "Byte", "Byte", null, DataTypeIds.Byte, ValueRanks.Scalar, 100);
@@ -1446,7 +1452,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region DataAccess_DataItem
                     ResetRandomGenerator(9);
-                    FolderState daFolder = CreateFolderState(root, "DataAccess", new LocalizedText("DataAccess"), null);
+                    FolderState daFolder = CreateFolderState(root, "DataAccess", new LocalizedText("DataAccess"), default);
                     BaseDataVariableState daInstructions = CreateBaseDataVariableState(
                         daFolder,
                         "DataAccess_Instructions",
@@ -1459,7 +1465,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     daInstructions.Value = "A library of Read/Write Variables of all supported data-types.";
                     variables.Add(daInstructions);
 
-                    FolderState dataItemFolder = CreateFolderState(daFolder, "DataAccess_DataItem", new LocalizedText("DataItem"), null);
+                    FolderState dataItemFolder = CreateFolderState(daFolder, "DataAccess_DataItem", new LocalizedText("DataItem"), default);
                     const string daDataItem = "DataAccess_DataItem_";
 
 #if NET8_0_OR_GREATER
@@ -1495,7 +1501,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region DataAccess_AnalogType
                     ResetRandomGenerator(10);
-                    FolderState analogItemFolder = CreateFolderState(daFolder, "DataAccess_AnalogType", new LocalizedText("AnalogType"), null);
+                    FolderState analogItemFolder = CreateFolderState(daFolder, "DataAccess_AnalogType", new LocalizedText("AnalogType"), default);
                     const string daAnalogItem = "DataAccess_AnalogType_";
 
                     foreach (BuiltInType builtInType in builtInTypes)
@@ -1534,7 +1540,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region DataAccess_AnalogType_Array
                     ResetRandomGenerator(11);
-                    FolderState analogArrayFolder = CreateFolderState(analogItemFolder, "DataAccess_AnalogType_Array", new LocalizedText("Array"), null);
+                    FolderState analogArrayFolder = CreateFolderState(analogItemFolder, "DataAccess_AnalogType_Array", new LocalizedText("Array"), default);
                     const string daAnalogArray = "DataAccess_AnalogType_Array_";
 
                     _ = CreateAnalogItemVariable(
@@ -1808,7 +1814,7 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         BuiltInType.XmlElement,
                         ValueRanks.OneDimension,
-                        new XmlElement[] {
+                        new System.Xml.XmlElement[] {
                             doc1.CreateElement("tag1"),
                             doc1.CreateElement("tag2"),
                             doc1.CreateElement("tag3"),
@@ -1823,8 +1829,8 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region DataAccess_DiscreteType
                     ResetRandomGenerator(12);
-                    FolderState discreteTypeFolder = CreateFolderState(daFolder, "DataAccess_DiscreteType", new LocalizedText("DiscreteType"), null);
-                    FolderState twoStateDiscreteFolder = CreateFolderState(discreteTypeFolder, "DataAccess_TwoStateDiscreteType", new LocalizedText("TwoStateDiscreteType"), null);
+                    FolderState discreteTypeFolder = CreateFolderState(daFolder, "DataAccess_DiscreteType", new LocalizedText("DiscreteType"), default);
+                    FolderState twoStateDiscreteFolder = CreateFolderState(discreteTypeFolder, "DataAccess_TwoStateDiscreteType", new LocalizedText("TwoStateDiscreteType"), default);
                     const string daTwoStateDiscrete = "DataAccess_TwoStateDiscreteType_";
 
                     // Add our Nodes to the folder, and specify their customized discrete enumerations
@@ -2179,7 +2185,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region References
                     ResetRandomGenerator(14);
-                    FolderState referencesFolder = CreateFolderState(root, "References", new LocalizedText("References"), null);
+                    FolderState referencesFolder = CreateFolderState(root, "References", new LocalizedText("References"), default);
                     const string referencesPrefix = "References_";
 
                     BaseDataVariableState referencesInstructions = CreateBaseDataVariableState(
@@ -2251,7 +2257,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region AccessRights
                     ResetRandomGenerator(15);
-                    FolderState folderAccessRights = CreateFolderState(root, "AccessRights", new LocalizedText("AccessRights"), null);
+                    FolderState folderAccessRights = CreateFolderState(root, "AccessRights", new LocalizedText("AccessRights"), default);
                     const string accessRights = "AccessRights_";
 
                     BaseDataVariableState accessRightsInstructions = CreateBaseDataVariableState(
@@ -2267,7 +2273,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(accessRightsInstructions);
 
                     // sub-folder for "AccessAll"
-                    FolderState folderAccessRightsAccessAll = CreateFolderState(folderAccessRights, "AccessRights_AccessAll", new LocalizedText("AccessAll"), null);
+                    FolderState folderAccessRightsAccessAll = CreateFolderState(folderAccessRights, "AccessRights_AccessAll", new LocalizedText("AccessAll"), default);
                     const string accessRightsAccessAll = "AccessRights_AccessAll_";
 
                     BaseDataVariableState arAllRo = CreateBaseDataVariableState(
@@ -2368,7 +2374,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(arAllRoGroupRw);
 
                     // sub-folder for "AccessUser1"
-                    FolderState folderAccessRightsAccessUser1 = CreateFolderState(folderAccessRights, "AccessRights_AccessUser1", new LocalizedText("AccessUser1"), null);
+                    FolderState folderAccessRightsAccessUser1 = CreateFolderState(folderAccessRights, "AccessRights_AccessUser1", new LocalizedText("AccessUser1"), default);
                     const string accessRightsAccessUser1 = "AccessRights_AccessUser1_";
 
                     BaseDataVariableState arUserRo = CreateBaseDataVariableState(
@@ -2409,7 +2415,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(arUserRw);
 
                     // sub-folder for "AccessGroup1"
-                    FolderState folderAccessRightsAccessGroup1 = CreateFolderState(folderAccessRights, "AccessRights_AccessGroup1", new LocalizedText("AccessGroup1"), null);
+                    FolderState folderAccessRightsAccessGroup1 = CreateFolderState(folderAccessRights, "AccessRights_AccessGroup1", new LocalizedText("AccessGroup1"), default);
                     const string accessRightsAccessGroup1 = "AccessRights_AccessGroup1_";
 
                     BaseDataVariableState arGroupRo = CreateBaseDataVariableState(
@@ -2450,7 +2456,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(arGroupRw);
 
                     // sub folder for "RolePermissions"
-                    FolderState folderRolePermissions = CreateFolderState(folderAccessRights, "AccessRights_RolePermissions", new LocalizedText("RolePermissions"), null);
+                    FolderState folderRolePermissions = CreateFolderState(folderAccessRights, "AccessRights_RolePermissions", new LocalizedText("RolePermissions"), default);
                     const string rolePermissions = "AccessRights_RolePermissions_";
 
                     BaseDataVariableState rpAnonymous = CreateBaseDataVariableState(
@@ -2540,7 +2546,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(rpConfigAdminUser);
 
                     // sub-folder for "AccessRestrictions"
-                    FolderState folderAccessRestrictions = CreateFolderState(folderAccessRights, "AccessRights_AccessRestrictions", new LocalizedText("AccessRestrictions"), null);
+                    FolderState folderAccessRestrictions = CreateFolderState(folderAccessRights, "AccessRights_AccessRestrictions", new LocalizedText("AccessRestrictions"), default);
                     const string accessRestrictions = "AccessRights_AccessRestrictions_";
 
                     BaseDataVariableState arNone = CreateBaseDataVariableState(
@@ -2602,7 +2608,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region NodeIds
                     ResetRandomGenerator(16);
-                    FolderState nodeIdsFolder = CreateFolderState(root, "NodeIds", new LocalizedText("NodeIds"), null);
+                    FolderState nodeIdsFolder = CreateFolderState(root, "NodeIds", new LocalizedText("NodeIds"), default);
                     const string nodeIds = "NodeIds_";
 
                     BaseDataVariableState nodeIdsInstructions = CreateBaseDataVariableState(
@@ -2665,7 +2671,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     #endregion NodeIds
 
                     #region Methods
-                    FolderState methodsFolder = CreateFolderState(root, "Methods", new LocalizedText("Methods"), null);
+                    FolderState methodsFolder = CreateFolderState(root, "Methods", new LocalizedText("Methods"), default);
                     const string methods = "Methods_";
 
                     BaseDataVariableState methodsInstructions = CreateBaseDataVariableState(
@@ -2704,7 +2710,11 @@ namespace SampleCompany.NodeManagers.Simulation
                     _ = AddInputArguments(multiplyMethod, new[] { inputArgument1, inputArgument2 });
 
                     // set output arguments
-                    multiplyMethod.OutputArguments = new PropertyState<Argument[]>(multiplyMethod);
+                    // PropertyState<T> is abstract in 2.0; the structure
+                    // builder implementation is the concrete one.
+                    multiplyMethod.OutputArguments =
+                        new PropertyState<ArrayOf<Argument>>
+                            .Implementation<StructureBuilder<Argument>>(multiplyMethod);
                     multiplyMethod.OutputArguments.NodeId = new NodeId(multiplyMethod.BrowseName.Name + "OutArgs", NamespaceIndex);
                     multiplyMethod.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
                     multiplyMethod.OutputArguments.DisplayName = new LocalizedText(multiplyMethod.OutputArguments.BrowseName.Name);
@@ -2782,16 +2792,16 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Views
                     ResetRandomGenerator(18);
-                    FolderState viewsFolder = CreateFolderState(root, "Views", new LocalizedText("Views"), null);
+                    FolderState viewsFolder = CreateFolderState(root, "Views", new LocalizedText("Views"), default);
                     const string views = "Views_";
 
-                    ViewState viewStateOperations = CreateViewState(viewsFolder, externalReferences, views + "Operations", new LocalizedText("Operations"), null);
-                    ViewState viewStateEngineering = CreateViewState(viewsFolder, externalReferences, views + "Engineering", new LocalizedText("Engineering"), null);
+                    ViewState viewStateOperations = CreateViewState(viewsFolder, externalReferences, views + "Operations", new LocalizedText("Operations"), default);
+                    ViewState viewStateEngineering = CreateViewState(viewsFolder, externalReferences, views + "Engineering", new LocalizedText("Engineering"), default);
                     #endregion Views
 
                     #region Locales
                     ResetRandomGenerator(19);
-                    FolderState localesFolder = CreateFolderState(root, "Locales", new LocalizedText("Locales"), null);
+                    FolderState localesFolder = CreateFolderState(root, "Locales", new LocalizedText("Locales"), default);
                     const string locales = "Locales_";
 
                     BaseDataVariableState qnEnglishVariable = CreateBaseDataVariableState(
@@ -3022,10 +3032,10 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region Attributes
                     ResetRandomGenerator(20);
-                    FolderState folderAttributes = CreateFolderState(root, "Attributes", new LocalizedText("Attributes"), null);
+                    FolderState folderAttributes = CreateFolderState(root, "Attributes", new LocalizedText("Attributes"), default);
 
                     #region AccessAll
-                    FolderState folderAttributesAccessAll = CreateFolderState(folderAttributes, "Attributes_AccessAll", new LocalizedText("AccessAll"), null);
+                    FolderState folderAttributesAccessAll = CreateFolderState(folderAttributes, "Attributes_AccessAll", new LocalizedText("AccessAll"), default);
                     const string attributesAccessAll = "Attributes_AccessAll_";
 
                     BaseDataVariableState accessLevelAccessAll = CreateBaseDataVariableState(
@@ -3341,7 +3351,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     #endregion AccessAll
 
                     #region AccessUser1
-                    FolderState folderAttributesAccessUser1 = CreateFolderState(folderAttributes, "Attributes_AccessUser1", new LocalizedText("AccessUser1"), null);
+                    FolderState folderAttributesAccessUser1 = CreateFolderState(folderAttributes, "Attributes_AccessUser1", new LocalizedText("AccessUser1"), default);
                     const string attributesAccessUser1 = "Attributes_AccessUser1_";
 
                     BaseDataVariableState accessLevelAccessUser1 = CreateBaseDataVariableState(
@@ -3659,7 +3669,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region MyCompany
                     ResetRandomGenerator(21);
-                    FolderState myCompanyFolder = CreateFolderState(root, "MyCompany", new LocalizedText("MyCompany"), null);
+                    FolderState myCompanyFolder = CreateFolderState(root, "MyCompany", new LocalizedText("MyCompany"), default);
                     const string myCompany = "MyCompany_";
 
                     BaseDataVariableState myCompanyInstructions = CreateBaseDataVariableState(
@@ -3677,7 +3687,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
                     #region StandardServerTest
                     ResetRandomGenerator(1);
-                    FolderState standardServerTestFolder = CreateFolderState(root, "StandardServerTest", new LocalizedText("StandardServerTest"), null);
+                    FolderState standardServerTestFolder = CreateFolderState(root, "StandardServerTest", new LocalizedText("StandardServerTest"), default);
                     const string standardServerTest = "StandardServerTest_";
 
                     BaseDataVariableState standardServerTestInstructions = CreateBaseDataVariableState(
@@ -3706,7 +3716,7 @@ namespace SampleCompany.NodeManagers.Simulation
                         AccessLevels.CurrentReadOrWrite,
                         null);
 
-                    baseObjectState = CreateBaseObjectState(standardServerTestFolder, standardServerTest + "BaseObjectState2", new LocalizedText("BaseObjectState2"), null);
+                    baseObjectState = CreateBaseObjectState(standardServerTestFolder, standardServerTest + "BaseObjectState2", new LocalizedText("BaseObjectState2"), default);
                     propertyState = CreatePropertyState(
                         baseObjectState,
                         standardServerTest + "PropertyState2",
@@ -3717,7 +3727,7 @@ namespace SampleCompany.NodeManagers.Simulation
                         AccessLevels.CurrentReadOrWrite,
                         true);
 
-                    viewStateOperations = CreateViewState(standardServerTestFolder, externalReferences, views + "Operations 2", new LocalizedText("Operations 2"), null);
+                    viewStateOperations = CreateViewState(standardServerTestFolder, externalReferences, views + "Operations 2", new LocalizedText("Operations 2"), default);
 
                     _ = CreateBaseDataVariableState(
                         standardServerTestFolder,
@@ -3922,7 +3932,7 @@ namespace SampleCompany.NodeManagers.Simulation
             object initialValues = null,
             Opc.Ua.Range customRange = null)
         {
-            return CreateAnalogItemVariable(parent, browseName, name, description, (uint)dataType, valueRank, initialValues, customRange);
+            return CreateAnalogItemVariable(parent, browseName, name, description, new NodeId((uint)dataType), valueRank, initialValues, customRange);
         }
 
         private AnalogItemState CreateAnalogItemVariable(
@@ -4003,7 +4013,7 @@ namespace SampleCompany.NodeManagers.Simulation
 
             var number = Convert.ToDouble(value);
 
-            if (number >= variable.EnumStrings.Value.Length || number < 0)
+            if (number >= variable.EnumStrings.Value.Count || number < 0)
             {
                 return StatusCodes.BadOutOfRange;
             }
@@ -4036,7 +4046,7 @@ namespace SampleCompany.NodeManagers.Simulation
             }
 
             var number = Convert.ToInt32(value);
-            if (number >= variable.EnumValues.Value.Length || number < 0)
+            if (number >= variable.EnumValues.Value.Count || number < 0)
             {
                 return StatusCodes.BadOutOfRange;
             }
@@ -4122,15 +4132,15 @@ namespace SampleCompany.NodeManagers.Simulation
         {
             var typeInfo = TypeInfo.Construct(value);
 
-            if (!(node is PropertyState<Opc.Ua.Range> variable) ||
-                !(value is ExtensionObject extensionObject) ||
+            if (node is not PropertyState<Opc.Ua.Range> variable ||
                 typeInfo == null ||
                 typeInfo == TypeInfo.Unknown)
             {
                 return StatusCodes.BadTypeMismatch;
             }
-            if (!(extensionObject.Body is Opc.Ua.Range newRange) ||
-                !(variable.Parent is AnalogItemState parent))
+            // Variant carries the extension object's body itself in 2.0.
+            if (!value.TryGetStructure(out Opc.Ua.Range newRange) ||
+                variable.Parent is not AnalogItemState parent)
             {
                 return StatusCodes.BadTypeMismatch;
             }
@@ -4149,7 +4159,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 return StatusCodes.BadOutOfRange;
             }
 
-            value = newRange;
+            value = Variant.FromStructure(newRange);
 
             return ServiceResult.Good;
         }
@@ -4163,7 +4173,7 @@ namespace SampleCompany.NodeManagers.Simulation
             int valueRank,
             UInt16 numVariables)
         {
-            return CreateVariables(parent, path, name, description, (uint)dataType, valueRank, numVariables);
+            return CreateVariables(parent, path, name, description, new NodeId((uint)dataType), valueRank, numVariables);
         }
 
         private BaseDataVariableState[] CreateVariables(
@@ -4176,7 +4186,7 @@ namespace SampleCompany.NodeManagers.Simulation
             UInt16 numVariables)
         {
             // first, create a new Parent folder for this data-type
-            FolderState newParentFolder = CreateFolderState(parent, path, new LocalizedText(name), null);
+            FolderState newParentFolder = CreateFolderState(parent, path, new LocalizedText(name), default);
 
             var itemsCreated = new List<BaseDataVariableState>();
             // now to create the remaining NUMBERED items
@@ -4185,7 +4195,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 var newName = string.Format("{0}_{1}", name, i.ToString("00"));
                 var newPath = string.Format("{0}_{1}", path, newName);
                 itemsCreated.Add(
-                    CreateBaseDataVariableState(newParentFolder, newPath, new LocalizedText(newName), null, dataType, valueRank, AccessLevels.CurrentReadOrWrite, null));
+                    CreateBaseDataVariableState(newParentFolder, newPath, new LocalizedText(newName), default, dataType, valueRank, AccessLevels.CurrentReadOrWrite, null));
             }
             return itemsCreated.ToArray();
         }
@@ -4202,7 +4212,7 @@ namespace SampleCompany.NodeManagers.Simulation
             int valueRank,
             byte accessLevel = AccessLevels.CurrentReadOrWrite)
         {
-            return CreateDynamicVariable(parent, path, name, description, (uint)dataType, valueRank, accessLevel);
+            return CreateDynamicVariable(parent, path, name, description, new NodeId((uint)dataType), valueRank, accessLevel);
         }
 
         /// <summary>
@@ -4231,7 +4241,7 @@ namespace SampleCompany.NodeManagers.Simulation
             int valueRank,
             uint numVariables)
         {
-            return CreateDynamicVariables(parent, path, name, description, (uint)dataType, valueRank, numVariables);
+            return CreateDynamicVariables(parent, path, name, description, new NodeId((uint)dataType), valueRank, numVariables);
 
         }
 
@@ -4245,7 +4255,7 @@ namespace SampleCompany.NodeManagers.Simulation
             uint numVariables)
         {
             // first, create a new Parent folder for this data-type
-            FolderState newParentFolder = CreateFolderState(parent, path, new LocalizedText(name), null);
+            FolderState newParentFolder = CreateFolderState(parent, path, new LocalizedText(name), default);
 
             var itemsCreated = new List<BaseDataVariableState>();
             // now to create the remaining NUMBERED items
@@ -4467,7 +4477,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     DateTime timeStamp = DateTime.UtcNow;
                     foreach (BaseDataVariableState variable in m_dynamicNodes)
                     {
-                        variable.Value = GetNewValue(variable);
+                        variable.Value = new Variant(GetNewValue(variable));
                         variable.Timestamp = timeStamp;
                         variable.ClearChangeMasks(SystemContext, false);
                     }

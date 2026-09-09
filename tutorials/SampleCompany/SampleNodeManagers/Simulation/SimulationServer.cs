@@ -20,6 +20,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using Technosoftware.UaServer;
 #endregion Using Directives
 
@@ -41,6 +42,17 @@ namespace SampleCompany.NodeManagers.Simulation
     /// </remarks>
     public class SimulationServer : UaStandardServer
     {
+        #region Constructors
+        /// <summary>
+        /// Initializes the server with the telemetry context UaStandardServer
+        /// requires in 2.0.
+        /// </summary>
+        public SimulationServer(ITelemetryContext telemetry)
+            : base(telemetry)
+        {
+        }
+        #endregion Constructors
+
         #region Properties
         public ITokenValidator TokenValidator { get; set; }
         #endregion Properties
@@ -241,16 +253,12 @@ namespace SampleCompany.NodeManagers.Simulation
                     if (configuration.SecurityConfiguration.TrustedUserCertificates != null &&
                         configuration.SecurityConfiguration.UserIssuerCertificates != null)
                     {
-                        var certificateValidator = new CertificateValidator(MessageContext.Telemetry);
-                        certificateValidator.UpdateAsync(configuration.SecurityConfiguration)
-                            .Wait();
-                        certificateValidator.Update(
-                            configuration.SecurityConfiguration.UserIssuerCertificates,
-                            configuration.SecurityConfiguration.TrustedUserCertificates,
-                            configuration.SecurityConfiguration.RejectedCertificateStore);
-
-                        // set custom validator for user certificates.
-                        m_userCertificateValidator = certificateValidator.GetChannelValidator();
+                        // 2.0 has no separate CertificateValidator to build and no
+                        // GetChannelValidator: the server's own CertificateManager
+                        // already holds the user trust lists from the
+                        // SecurityConfiguration, and a user certificate is validated
+                        // by naming TrustListIdentifier.Users at the call.
+                        m_validateUserCertificates = true;
                     }
                 }
             }
@@ -268,7 +276,9 @@ namespace SampleCompany.NodeManagers.Simulation
 
             if (args.NewIdentity is UserNameIdentityToken userNameToken)
             {
-                args.Identity = VerifyPassword(userNameToken);
+                args.Identity = VerifyPassword(
+                    userNameToken,
+                    args.NewIdentityTokenHandler);
 
                 m_logger.LogInformation(
                     Utils.TraceMasks.Security,
@@ -298,10 +308,17 @@ namespace SampleCompany.NodeManagers.Simulation
             // check for issued identity token.
             if (args.NewIdentity is IssuedIdentityToken issuedToken)
             {
-                args.Identity = VerifyIssuedToken(issuedToken);
+                args.Identity = VerifyIssuedToken(issuedToken, args.UserTokenPolicy);
 
-                // set AuthenticatedUser role for accepted identity token
-                args.Identity.GrantedRoleIds.Add(ObjectIds.WellKnownRole_AuthenticatedUser);
+                // set AuthenticatedUser role for accepted identity token.
+                // GrantedRoleIds is an immutable ArrayOf in 2.0, so the role is
+                // granted by wrapping the identity rather than appending to it.
+                if (args.Identity != null)
+                {
+                    args.Identity = new RoleBasedIdentity(
+                        args.Identity,
+                        [Role.AuthenticatedUser]);
+                }
 
                 return;
             }
@@ -325,10 +342,17 @@ namespace SampleCompany.NodeManagers.Simulation
         /// Validates the password for a username token.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        private IUserIdentity VerifyPassword(UserNameIdentityToken userNameToken)
+        private IUserIdentity VerifyPassword(
+            UserNameIdentityToken userNameToken,
+            IUserIdentityTokenHandler tokenHandler)
         {
             string userName = userNameToken.UserName;
-            byte[] password = userNameToken.DecryptedPassword;
+
+            // 2.0 leaves UserNameIdentityToken.Password as it arrived on the
+            // wire and keeps the decrypted secret on the handler, so the
+            // plaintext is read from there.
+            byte[] password = (tokenHandler as UserNameIdentityTokenHandler)
+                ?.DecryptedPassword;
             if (string.IsNullOrEmpty(userName))
             {
                 // an empty username is not accepted.
@@ -367,7 +391,7 @@ namespace SampleCompany.NodeManagers.Simulation
                 throw new ServiceResultException(
                     new ServiceResult(
                     LoadServerProperties().ProductUri,
-                        new StatusCode(StatusCodes.BadUserAccessDenied, "InvalidPassword"),
+                        new StatusCode(StatusCodes.BadUserAccessDenied.Code, "InvalidPassword"),
                     new LocalizedText(info)));
             }
             return new RoleBasedIdentity(
@@ -381,17 +405,19 @@ namespace SampleCompany.NodeManagers.Simulation
         /// <exception cref="ServiceResultException"></exception>
         private void VerifyX509IdentityToken(X509IdentityToken token)
         {
-            X509Certificate2 certificate = token.GetOrCreateCertificate(MessageContext.Telemetry);
+            using Certificate certificate = Certificate.FromRawData(token.CertificateData);
             try
             {
-                if (m_userCertificateValidator != null)
-                {
-                    m_userCertificateValidator.ValidateAsync(certificate, default).GetAwaiter().GetResult();
-                }
-                else
-                {
-                    CertificateValidator.ValidateAsync(certificate, default).GetAwaiter().GetResult();
-                }
+                Opc.Ua.CertificateValidationResult result = CertificateManager
+                    .ValidateAsync(
+                        certificate,
+                        m_validateUserCertificates
+                            ? TrustListIdentifier.Users
+                            : TrustListIdentifier.Peers)
+                    .GetAwaiter()
+                    .GetResult();
+
+                result.ThrowIfInvalid();
             }
             catch (Exception e)
             {
@@ -427,7 +453,9 @@ namespace SampleCompany.NodeManagers.Simulation
             }
         }
 
-        private IUserIdentity VerifyIssuedToken(IssuedIdentityToken issuedToken)
+        private IUserIdentity VerifyIssuedToken(
+            IssuedIdentityToken issuedToken,
+            UserTokenPolicy userTokenPolicy)
         {
             if (TokenValidator == null)
             {
@@ -436,7 +464,9 @@ namespace SampleCompany.NodeManagers.Simulation
             }
             try
             {
-                if (issuedToken.IssuedTokenType == IssuedTokenType.JWT)
+                // IssuedIdentityToken.IssuedTokenType is gone in 2.0; the
+                // profile is carried by the user token policy the client chose.
+                if (userTokenPolicy?.IssuedTokenType == Profiles.JwtUserToken)
                 {
                     m_logger.LogDebug(Utils.TraceMasks.Security, "VerifyIssuedToken: ValidateToken");
                     return TokenValidator.ValidateToken(issuedToken);
@@ -480,7 +510,7 @@ namespace SampleCompany.NodeManagers.Simulation
         #endregion User Validation Functions
 
         #region Private Fields
-        private CertificateManager m_userCertificateValidator;
+        private bool m_validateUserCertificates;
         #endregion Private Fields
     }
 }
