@@ -215,6 +215,10 @@ namespace Technosoftware.UaClient
             ServerUris = messageContext.ServerUris;
             Factory = messageContext.Factory;
 
+            // 2.0 resolves the signature and encryption algorithms through a
+            // registry rather than the static SecurityPolicies helpers.
+            m_securityPolicies = SecurityPolicies.Default;
+
             // initialize the NodeCache late, it needs references to the namespaceUris
             m_nodeCache = new NodeCache(new NodeCacheContext(this), m_telemetry);
 
@@ -278,9 +282,9 @@ namespace Technosoftware.UaClient
         /// <exception cref="ServiceResultException"></exception>
         private void ValidateServerNonce(
             IUserIdentity identity,
-            byte[]? serverNonce,
+            ByteString serverNonce,
             string securityPolicyUri,
-            byte[]? previousServerNonce,
+            ByteString previousServerNonce,
             MessageSecurityMode channelSecurityMode = MessageSecurityMode.None)
         {
             // skip validation if server nonce is not used for encryption.
@@ -883,12 +887,12 @@ namespace Technosoftware.UaClient
         public void Restore(SessionConfiguration sessionConfiguration)
         {
             ThrowIfDisposed();
-            byte[]? serverCertificate = m_endpoint.Description?.ServerCertificate;
+            ByteString serverCertificate =
+                m_endpoint.Description?.ServerCertificate ?? default;
             m_sessionName = sessionConfiguration.SessionName ?? "SessionName";
-            m_serverCertificate =
-                serverCertificate != null
-                    ? DefaultCertificateFactory.Instance.CreateFromRawData(serverCertificate)
-                    : null;
+            m_serverCertificate = serverCertificate.IsEmpty
+                ? null
+                : DefaultCertificateFactory.Instance.CreateFromRawData(serverCertificate);
             m_identity = sessionConfiguration.Identity ?? new UserIdentity();
             m_checkDomain = sessionConfiguration.CheckDomain;
             m_serverNonce = sessionConfiguration.ServerNonce?.Data;
@@ -1060,14 +1064,13 @@ namespace Technosoftware.UaClient
 
             OpenValidateIdentity(
                 ref identity,
-                out UserIdentityToken identityToken,
                 out UserTokenPolicy identityPolicy,
                 out string securityPolicyUri,
                 out bool requireEncryption);
 
             // validate the server certificate /certificate chain.
             Certificate? serverCertificate = null;
-            byte[]? certificateData = m_endpoint.Description.ServerCertificate;
+            ByteString certificateData = m_endpoint.Description.ServerCertificate;
 
             if (certificateData != null && certificateData.Length > 0)
             {
@@ -1180,8 +1183,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             }
             NodeId sessionId = response.SessionId;
             NodeId sessionCookie = response.AuthenticationToken;
-            byte[]? serverNonce = response.ServerNonce;
-            byte[]? serverCertificateData = response.ServerCertificate;
+            ByteString serverNonce = response.ServerNonce;
+            ByteString serverCertificateData = response.ServerCertificate;
             SignatureData serverSignature = response.ServerSignature;
             ArrayOf<EndpointDescription> serverEndpoints = response.ServerEndpoints;
 
@@ -1222,22 +1225,29 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 ProcessResponseAdditionalHeader(response.ResponseHeader, serverCertificate);
 
                 // create the client signature.
-                byte[] dataToSign = Utils.Append(serverCertificate?.RawData, serverNonce);
-                SignatureData clientSignature = SecurityPolicies.Sign(
-                    m_instanceCertificate,
+                SecurityPolicyInfo? securityPolicy = m_securityPolicies.GetInfo(securityPolicyUri);
+
+                byte[] dataToSign = securityPolicy!.GetClientSignatureData(
+                    TransportChannel.ChannelThumbprint,
+                    serverNonce.ToArray(),
+                    serverCertificate?.RawData,
+                    TransportChannel.ServerChannelCertificate,
+                    TransportChannel.ClientChannelCertificate,
+                    clientNonce);
+
+                SignatureData clientSignature = m_securityPolicies.CreateSignatureData(
                     securityPolicyUri,
+                    m_instanceCertificate!,
                     dataToSign);
 
                 // select the security policy for the user token.
-                string? tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
-
-                if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
-                {
-                    tokenSecurityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
-                }
+                string tokenSecurityPolicyUri =
+                    string.IsNullOrEmpty(identityPolicy.SecurityPolicyUri)
+                        ? m_endpoint.Description.SecurityPolicyUri ?? SecurityPolicies.None
+                        : identityPolicy.SecurityPolicyUri;
 
                 // save previous nonce
-                byte[]? previousServerNonce = GetCurrentTokenServerNonce();
+                ByteString previousServerNonce = GetCurrentTokenServerNonce();
 
                 // validate server nonce and security parameters for user identity.
                 ValidateServerNonce(
@@ -1249,22 +1259,41 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
 
                 m_userTokenSecurityPolicyUri = tokenSecurityPolicyUri;
 
-                // sign data with user token.
-                SignatureData userTokenSignature = identityToken.Sign(
-                    dataToSign,
-                    tokenSecurityPolicyUri,
-                    m_telemetry);
+                IUserIdentityTokenHandler identityToken = identity.TokenHandler.Copy();
 
-                // encrypt token.
-                identityToken.Encrypt(
-                    serverCertificate,
-                    serverNonce,
-                    m_userTokenSecurityPolicyUri,
-                    MessageContext,
-                    m_eccServerEphemeralKey,
-                    m_instanceCertificate,
-                    m_instanceCertificateChain,
-                    m_endpoint.Description.SecurityMode != MessageSecurityMode.None);
+                SignatureData? userTokenSignature = null;
+
+                if (identityToken.Token is X509IdentityToken)
+                {
+                    // sign data with user token.
+                    byte[] userTokenDataToSign = securityPolicy.GetUserTokenSignatureData(
+                        TransportChannel.ChannelThumbprint,
+                        serverNonce.ToArray(),
+                        serverCertificate?.RawData,
+                        TransportChannel.ServerChannelCertificate,
+                        m_instanceCertificate?.RawData,
+                        TransportChannel.ClientChannelCertificate,
+                        clientNonce);
+
+                    userTokenSignature = await identityToken.SignAsync(
+                        userTokenDataToSign,
+                        tokenSecurityPolicyUri,
+                        ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    // encrypt token.
+                    await identityToken.EncryptAsync(
+                        serverCertificate!,
+                        serverNonce.ToArray(),
+                        tokenSecurityPolicyUri,
+                        MessageContext,
+                        m_eccServerEphemeralKey,
+                        m_instanceCertificate,
+                        m_instanceCertificateChain,
+                        m_endpoint.Description.SecurityMode != MessageSecurityMode.None,
+                        ct).ConfigureAwait(false);
+                }
 
                 // copy the preferred locales if provided.
                 if (preferredLocales != null && preferredLocales.Count > 0)
@@ -1278,8 +1307,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                         clientSignature,
                     [],
                         m_preferredLocales,
-                        new ExtensionObject(identityToken),
-                        userTokenSignature,
+                        new ExtensionObject(identityToken.Token),
+                        userTokenSignature ?? new SignatureData(),
                     ct).ConfigureAwait(false);
 
                 //  process additional header
@@ -1374,7 +1403,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         {
             ThrowIfDisposed();
             using Activity? activity = m_telemetry.StartActivity();
-            byte[]? serverNonce = null;
+            ByteString serverNonce;
 
             lock (m_lock)
             {
@@ -1397,10 +1426,19 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 m_endpoint.Description.SecurityPolicyUri ?? SecurityPolicies.None;
 
             // create the client signature.
-            byte[] dataToSign = Utils.Append(m_serverCertificate?.RawData, serverNonce);
-            SignatureData clientSignature = SecurityPolicies.Sign(
-                m_instanceCertificate,
+            SecurityPolicyInfo? securityPolicy = m_securityPolicies.GetInfo(securityPolicyUri);
+
+            byte[] dataToSign = securityPolicy!.GetClientSignatureData(
+                TransportChannel.ChannelThumbprint,
+                serverNonce.ToArray(),
+                m_serverCertificate?.RawData,
+                TransportChannel.ServerChannelCertificate,
+                TransportChannel.ClientChannelCertificate,
+                []);
+
+            SignatureData clientSignature = m_securityPolicies.CreateSignatureData(
                 securityPolicyUri,
+                m_instanceCertificate!,
                 dataToSign);
 
             // choose a default token.
@@ -1430,9 +1468,15 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 requireEncryption &&
                 identity.TokenType != UserTokenType.Anonymous)
             {
-                await m_configuration.CertificateManager.ValidateAsync(
-                    m_serverCertificate,
-                    ct).ConfigureAwait(false);
+                ICertificateValidatorEx validator = m_configuration.CertificateManager;
+                CertificateValidationResult result = await validator
+                    .ValidateAsync(m_serverCertificate, ct: ct)
+                    .ConfigureAwait(false);
+
+                if (!result.IsValid)
+                {
+                    throw new ServiceResultException(result.StatusCode);
+                }
             }
 
             // validate server nonce and security parameters for user identity.
@@ -1443,34 +1487,52 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 m_previousServerNonce,
                 m_endpoint.Description.SecurityMode);
 
-            // sign data with user token.
-            UserIdentityToken identityToken = identity.GetIdentityToken();
-            identityToken.PolicyId = identityPolicy.PolicyId;
-            SignatureData userTokenSignature = identityToken.Sign(
-                dataToSign,
-                tokenSecurityPolicyUri,
-                m_telemetry);
-
             m_userTokenSecurityPolicyUri = tokenSecurityPolicyUri;
 
-            // encrypt token.
-            identityToken.Encrypt(
-                m_serverCertificate,
-                serverNonce,
-                m_userTokenSecurityPolicyUri,
-                MessageContext,
-                m_eccServerEphemeralKey,
-                m_instanceCertificate,
-                m_instanceCertificateChain,
-                m_endpoint.Description.SecurityMode != MessageSecurityMode.None);
+            // sign or encrypt with a disposable token handler copy, so the
+            // stored credentials are not mutated.
+            IUserIdentityTokenHandler identityToken = identity.TokenHandler.Copy();
+            identityToken.UpdatePolicy(identityPolicy);
+
+            SignatureData? userTokenSignature = null;
+
+            if (identityToken.Token is X509IdentityToken)
+            {
+                byte[] userTokenDataToSign = securityPolicy.GetUserTokenSignatureData(
+                    TransportChannel.ChannelThumbprint,
+                    serverNonce.ToArray(),
+                    m_serverCertificate?.RawData,
+                    TransportChannel.ServerChannelCertificate,
+                    m_instanceCertificate?.RawData,
+                    TransportChannel.ClientChannelCertificate,
+                    []);
+
+                userTokenSignature = await identityToken.SignAsync(
+                    userTokenDataToSign,
+                    tokenSecurityPolicyUri,
+                    ct).ConfigureAwait(false);
+            }
+            else
+            {
+                await identityToken.EncryptAsync(
+                    m_serverCertificate!,
+                    serverNonce.ToArray(),
+                    m_userTokenSecurityPolicyUri,
+                    MessageContext,
+                    m_eccServerEphemeralKey,
+                    m_instanceCertificate,
+                    m_instanceCertificateChain,
+                    m_endpoint.Description.SecurityMode != MessageSecurityMode.None,
+                    ct).ConfigureAwait(false);
+            }
 
             ActivateSessionResponse response = await ActivateSessionAsync(
                 null,
                 clientSignature,
                 [],
                 preferredLocales,
-                new ExtensionObject(identityToken),
-                userTokenSignature,
+                new ExtensionObject(identityToken.Token),
+                userTokenSignature ?? new SignatureData(),
                 ct).ConfigureAwait(false);
 
             serverNonce = response.ServerNonce;
@@ -2279,11 +2341,23 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                 await LoadInstanceCertificateAsync(true, ct).ConfigureAwait(false);
 
                 // create the client signature.
-                byte[] dataToSign = Utils.Append(m_serverCertificate?.RawData, m_serverNonce);
                 EndpointDescription endpoint = m_endpoint.Description;
-                SignatureData clientSignature = SecurityPolicies.Sign(
-                    m_instanceCertificate,
-                    endpoint.SecurityPolicyUri,
+                string channelSecurityPolicyUri =
+                    endpoint.SecurityPolicyUri ?? SecurityPolicies.None;
+                SecurityPolicyInfo? securityPolicy = m_securityPolicies
+                    .GetInfo(channelSecurityPolicyUri);
+
+                byte[] dataToSign = securityPolicy!.GetClientSignatureData(
+                    TransportChannel.ChannelThumbprint,
+                    m_serverNonce.ToArray(),
+                    m_serverCertificate?.RawData,
+                    TransportChannel.ServerChannelCertificate,
+                    TransportChannel.ClientChannelCertificate,
+                    []);
+
+                SignatureData clientSignature = m_securityPolicies.CreateSignatureData(
+                    channelSecurityPolicyUri,
+                    m_instanceCertificate!,
                     dataToSign);
 
                 // check that the user identity is supported by the endpoint.
@@ -2325,24 +2399,42 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                     m_previousServerNonce,
                     m_endpoint.Description.SecurityMode);
 
-                // sign data with user token.
-                UserIdentityToken identityToken = m_identity.GetIdentityToken();
-                identityToken.PolicyId = identityPolicy.PolicyId;
-                SignatureData userTokenSignature = identityToken.Sign(
-                    dataToSign,
-                    userTokenSecurityPolicyUri,
-                    m_telemetry);
+                // sign or encrypt with a disposable token handler copy, so the
+                // stored credentials are not mutated.
+                IUserIdentityTokenHandler identityToken = m_identity.TokenHandler.Copy();
+                identityToken.UpdatePolicy(identityPolicy);
 
-                // encrypt token.
-                identityToken.Encrypt(
-                    m_serverCertificate,
-                    m_serverNonce,
-                    m_userTokenSecurityPolicyUri,
-                    MessageContext,
-                    m_eccServerEphemeralKey,
-                    m_instanceCertificate,
-                    m_instanceCertificateChain,
-                    m_endpoint.Description.SecurityMode != MessageSecurityMode.None);
+                SignatureData? userTokenSignature = null;
+
+                if (identityToken.Token is X509IdentityToken)
+                {
+                    byte[] userTokenDataToSign = securityPolicy.GetUserTokenSignatureData(
+                        TransportChannel.ChannelThumbprint,
+                        m_serverNonce.ToArray(),
+                        m_serverCertificate?.RawData,
+                        TransportChannel.ServerChannelCertificate,
+                        m_instanceCertificate?.RawData,
+                        TransportChannel.ClientChannelCertificate,
+                        []);
+
+                    userTokenSignature = await identityToken.SignAsync(
+                        userTokenDataToSign,
+                        userTokenSecurityPolicyUri,
+                        ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    await identityToken.EncryptAsync(
+                        m_serverCertificate!,
+                        m_serverNonce.ToArray(),
+                        m_userTokenSecurityPolicyUri!,
+                        MessageContext,
+                        m_eccServerEphemeralKey,
+                        m_instanceCertificate,
+                        m_instanceCertificateChain,
+                        m_endpoint.Description.SecurityMode != MessageSecurityMode.None,
+                        ct).ConfigureAwait(false);
+                }
 
                 m_logger.LogInformation("Session REPLACING channel for {SessionId}.", SessionId);
 
@@ -2422,11 +2514,11 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                         clientSignature,
                         [],
                         m_preferredLocales,
-                        new ExtensionObject(identityToken),
-                        userTokenSignature,
+                        new ExtensionObject(identityToken.Token),
+                        userTokenSignature ?? new SignatureData(),
                         timeout.Token).ConfigureAwait(false);
 
-                    byte[]? serverNonce = activateResult.ServerNonce;
+                    ByteString serverNonce = activateResult.ServerNonce;
                     ArrayOf<StatusCode> certificateResults = activateResult.Results;
                     ArrayOf<DiagnosticInfo> certificateDiagnosticInfos = activateResult.DiagnosticInfos;
 
@@ -3734,7 +3826,6 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <exception cref="ServiceResultException"></exception>
         private void OpenValidateIdentity(
             ref IUserIdentity identity,
-            out UserIdentityToken identityToken,
             out UserTokenPolicy identityPolicy,
             out string securityPolicyUri,
             out bool requireEncryption)
@@ -3753,7 +3844,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             securityPolicyUri = m_endpoint.Description.SecurityPolicyUri ?? SecurityPolicies.None;
 
             // catch security policies which are not supported by core
-            if (SecurityPolicies.GetDisplayName(securityPolicyUri) == null)
+            if (m_securityPolicies.GetDisplayName(securityPolicyUri) == null)
             {
                 throw ServiceResultException.Create(
                     StatusCodes.BadSecurityChecksFailed,
@@ -3763,12 +3854,11 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
             // get the identity token.
             identity ??= new UserIdentity();
 
-            // get identity token.
-            identityToken = identity.GetIdentityToken();
-
             // check that the user identity is supported by the endpoint.
             identityPolicy = m_endpoint.Description
-                .FindUserTokenPolicy(identityToken.PolicyId, securityPolicyUri);
+                .FindUserTokenPolicy(
+                    identity.TokenHandler.Token.PolicyId,
+                    securityPolicyUri);
 
             if (identityPolicy == null)
             {
@@ -3785,7 +3875,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                         "Endpoint does not support the user identity type provided.");
                 }
 
-                identityToken.PolicyId = identityPolicy.PolicyId;
+                identity.TokenHandler.UpdatePolicy(identityPolicy);
             }
 
             requireEncryption = securityPolicyUri != SecurityPolicies.None;
@@ -3799,17 +3889,18 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         }
 
         private void BuildCertificateData(
-            out byte[]? clientCertificateData,
-            out byte[]? clientCertificateChainData)
+            out ByteString clientCertificateData,
+            out ByteString clientCertificateChainData)
         {
             // send the application instance certificate for the client.
-            clientCertificateData = (m_instanceCertificate?.RawData);
-            clientCertificateChainData = null;
+            clientCertificateData = ByteString.From(m_instanceCertificate?.RawData);
+            clientCertificateChainData = default;
 
             if (m_instanceCertificateChain != null &&
                 m_instanceCertificateChain.Count > 0 &&
                 m_configuration.SecurityConfiguration.SendCertificateChain)
             {
+                // The encoded chain blob is the leaf followed by its issuers.
                 var clientCertificateChain = new List<byte>();
 
                 for (int i = 0; i < m_instanceCertificateChain.Count; i++)
@@ -3817,7 +3908,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                     clientCertificateChain.AddRange(m_instanceCertificateChain[i].RawData);
                 }
 
-                clientCertificateChainData = [.. clientCertificateChain];
+                clientCertificateChainData = ByteString.From([.. clientCertificateChain]);
             }
         }
 
@@ -3825,11 +3916,11 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// Validates the server certificate returned.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        private void ValidateServerCertificateData(byte[]? serverCertificateData)
+        private void ValidateServerCertificateData(ByteString serverCertificateData)
         {
-            if (serverCertificateData != null &&
-                !m_endpoint.Description.ServerCertificate.IsNull &&
-                !Utils.IsEqual(serverCertificateData, m_endpoint.Description.ServerCertificate))
+            if (!serverCertificateData.IsEmpty &&
+                !m_endpoint.Description.ServerCertificate.IsEmpty &&
+                serverCertificateData != m_endpoint.Description.ServerCertificate)
             {
                 try
                 {
@@ -3840,7 +3931,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
                             m_telemetry);
 
                     if (serverCertificateChain.Count > 0 &&
-                        !Utils.IsEqual(serverCertificateData, serverCertificateChain[0].RawData))
+                        !Utils.IsEqual(serverCertificateData.ToArray(), serverCertificateChain[0].RawData))
                     {
                         throw ServiceResultException.Create(
                             StatusCodes.BadCertificateInvalid,
@@ -4161,7 +4252,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// <summary>
         /// If available, returns the current nonce or null.
         /// </summary>
-        private byte[]? GetCurrentTokenServerNonce()
+        private ByteString GetCurrentTokenServerNonce()
         {
             ChannelToken? currentToken = (NullableTransportChannel as ISecureChannel)?.CurrentToken;
             return currentToken?.ServerNonce;
@@ -4841,6 +4932,7 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         /// The locales that the server should use when returning localized text.
         /// </summary>
         protected ArrayOf<string> m_preferredLocales;
+        private readonly ISecurityPolicyRegistry m_securityPolicies;
 
         /// <summary>
         /// The Application Configuration.
@@ -4907,8 +4999,8 @@ clientCertificateChainData ?? clientCertificateData.ToByteString(),
         private readonly SessionSystemContext m_systemContext;
         private readonly NodeCache m_nodeCache;
         private readonly List<IUserIdentity> m_identityHistory = [];
-        private byte[]? m_serverNonce;
-        private byte[]? m_previousServerNonce;
+        private ByteString m_serverNonce;
+        private ByteString m_previousServerNonce;
         private Certificate? m_serverCertificate;
         private uint m_publishCounter;
         private int m_tooManyPublishRequests;
