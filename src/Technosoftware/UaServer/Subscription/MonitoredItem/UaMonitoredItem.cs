@@ -1004,7 +1004,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // add value.
-                    fields.EventFields.Add(new Variant(value));
+                    fields.EventFields.Add(Variant.From(value));
                 }
                 // add a dummy entry for missing values.
                 else
@@ -1128,7 +1128,7 @@ namespace Technosoftware.UaServer
             bool canSend = passedFilter;
 
             // ConditionId is valid only if FilteredRetain is set for the alarm condition
-            if (conditionId != null && alarmCondition != null)
+            if (!conditionId.IsNull && alarmCondition != null)
             {
                 HashSet<string> conditionIds = GetFilteredRetainConditionIds();
 
@@ -1441,7 +1441,7 @@ namespace Technosoftware.UaServer
             // set semantics changed bit.
             if (m_semanticsChanged)
             {
-                value?.StatusCode = value.StatusCode.SetSemanticsChanged(true);
+                value.StatusCode = value.StatusCode.SetSemanticsChanged(true);
 
                 if (error != null)
                 {
@@ -1459,7 +1459,7 @@ namespace Technosoftware.UaServer
             // set structure changed bit.
             if (m_structureChanged)
             {
-                value?.StatusCode = value.StatusCode.SetStructureChanged(true);
+                value.StatusCode = value.StatusCode.SetStructureChanged(true);
 
                 if (error != null)
                 {

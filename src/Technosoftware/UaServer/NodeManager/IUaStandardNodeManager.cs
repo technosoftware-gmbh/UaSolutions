@@ -348,7 +348,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The namespace table of the NodeManager.
         /// </summary>
-        StringCollection NamespacesUris { get; }
+        List<string> NamespacesUris { get; }
     }
 
     /// <summary>

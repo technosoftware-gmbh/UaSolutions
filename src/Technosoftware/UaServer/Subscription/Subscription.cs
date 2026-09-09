@@ -382,7 +382,7 @@ namespace Technosoftware.UaServer
         public async ValueTask DeleteAsync(UaServerOperationContext context, CancellationToken cancellationToken = default)
         {
             // delete the diagnostics.
-            if (m_diagnosticsId != null && !m_diagnosticsId.IsNullNodeId)
+            if (!m_diagnosticsId.IsNull && !m_diagnosticsId.IsNullNodeId)
             {
                 UaServerContext systemContext = m_server.DefaultSystemContext.Copy(Session);
                 m_server.DiagnosticsNodeManager
@@ -721,7 +721,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public NotificationMessage Publish(
             UaServerOperationContext context,
-            out UInt32Collection availableSequenceNumbers,
+            out List<uint> availableSequenceNumbers,
             out bool moreNotifications)
         {
             if (context == null)
@@ -845,7 +845,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         private NotificationMessage InnerPublish(
             UaServerOperationContext context,
-            out UInt32Collection availableSequenceNumbers,
+            out List<uint> availableSequenceNumbers,
             out bool moreNotifications)
         {
             // check session.
@@ -1085,9 +1085,9 @@ namespace Technosoftware.UaServer
         /// Returns the available sequence numbers for retransmission
         /// For example used in Transfer Subscription
         /// </summary>
-        public UInt32Collection AvailableSequenceNumbersForRetransmission()
+        public List<uint> AvailableSequenceNumbersForRetransmission()
         {
-            var availableSequenceNumbers = new UInt32Collection();
+            var availableSequenceNumbers = new List<uint>();
             // Assumption we do not check lastSentMessage < sentMessages.Count because
             // in case of subscription transfer original client might have crashed by handling message,
             // therefor new client should have to chance to process all available messages
@@ -1143,7 +1143,7 @@ namespace Technosoftware.UaServer
                 var notification = new DataChangeNotification
                 {
                     MonitoredItems = new MonitoredItemNotificationCollection(datachanges.Count),
-                    DiagnosticInfos = new DiagnosticInfoCollection(datachanges.Count)
+                    DiagnosticInfos = new List<DiagnosticInfo>(datachanges.Count)
                 };
 
                 while (datachanges.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
@@ -1331,12 +1331,12 @@ namespace Technosoftware.UaServer
         public void SetTriggering(
             UaServerOperationContext context,
             uint triggeringItemId,
-            UInt32Collection linksToAdd,
-            UInt32Collection linksToRemove,
-            out StatusCodeCollection addResults,
-            out DiagnosticInfoCollection addDiagnosticInfos,
-            out StatusCodeCollection removeResults,
-            out DiagnosticInfoCollection removeDiagnosticInfos)
+            List<uint> linksToAdd,
+            List<uint> linksToRemove,
+            out List<StatusCode> addResults,
+            out List<DiagnosticInfo> addDiagnosticInfos,
+            out List<StatusCode> removeResults,
+            out List<DiagnosticInfo> removeDiagnosticInfos)
         {
             if (context == null)
             {
@@ -1546,7 +1546,7 @@ namespace Technosoftware.UaServer
             int count = itemsToCreate.Count;
 
             MonitoredItemCreateResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos;
 
             lock (m_lock)
             {
@@ -1588,7 +1588,7 @@ namespace Technosoftware.UaServer
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos = new DiagnosticInfoCollection(count);
+                diagnosticInfos = new List<DiagnosticInfo>(count);
             }
 
             lock (m_lock)
@@ -1765,11 +1765,11 @@ namespace Technosoftware.UaServer
             // allocate results.
             bool diagnosticsExist = false;
             var results = new MonitoredItemModifyResultCollection(count);
-            DiagnosticInfoCollection diagnosticInfos = null;
+            List<DiagnosticInfo> diagnosticInfos = null;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos = new DiagnosticInfoCollection(count);
+                diagnosticInfos = new List<DiagnosticInfo>(count);
             }
 
             // build list of items to modify.
@@ -1918,7 +1918,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
-            UInt32Collection monitoredItemIds,
+            List<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             return DeleteMonitoredItemsAsync(
@@ -1934,7 +1934,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         private async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
-            UInt32Collection monitoredItemIds,
+            List<uint> monitoredItemIds,
             bool doNotCheckSession,
             CancellationToken cancellationToken = default)
         {
@@ -1951,12 +1951,12 @@ namespace Technosoftware.UaServer
             int count = monitoredItemIds.Count;
 
             bool diagnosticsExist = false;
-            var results = new StatusCodeCollection(count);
-            DiagnosticInfoCollection diagnosticInfos = null;
+            var results = new List<StatusCode>(count);
+            List<DiagnosticInfo> diagnosticInfos = null;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos = new DiagnosticInfoCollection(count);
+                diagnosticInfos = new List<DiagnosticInfo>(count);
             }
 
             // build list of items to modify.
@@ -2110,10 +2110,10 @@ namespace Technosoftware.UaServer
         /// Changes the monitoring mode for a set of items.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
-        public async ValueTask<(StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos)> SetMonitoringModeAsync(
+        public async ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> SetMonitoringModeAsync(
             UaServerOperationContext context,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            List<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -2129,12 +2129,12 @@ namespace Technosoftware.UaServer
             int count = monitoredItemIds.Count;
 
             bool diagnosticsExist = false;
-            var results = new StatusCodeCollection(count);
-            DiagnosticInfoCollection diagnosticInfos = null;
+            var results = new List<StatusCode>(count);
+            List<DiagnosticInfo> diagnosticInfos = null;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos = new DiagnosticInfoCollection(count);
+                diagnosticInfos = new List<DiagnosticInfo>(count);
             }
 
             // build list of items to modify.

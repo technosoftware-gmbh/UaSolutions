@@ -278,8 +278,8 @@ namespace Technosoftware.UaServer
         public void Acknowledge(
             UaServerOperationContext context,
             SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
-            out StatusCodeCollection acknowledgeResults,
-            out DiagnosticInfoCollection acknowledgeDiagnosticInfos)
+            out List<StatusCode> acknowledgeResults,
+            out List<DiagnosticInfo> acknowledgeDiagnosticInfos)
         {
             if (context == null)
             {
@@ -292,8 +292,8 @@ namespace Technosoftware.UaServer
             }
 
             bool diagnosticsExist = false;
-            acknowledgeResults = new StatusCodeCollection(subscriptionAcknowledgements.Count);
-            acknowledgeDiagnosticInfos = new DiagnosticInfoCollection(
+            acknowledgeResults = new List<StatusCode>(subscriptionAcknowledgements.Count);
+            acknowledgeDiagnosticInfos = new List<DiagnosticInfo>(
                 subscriptionAcknowledgements.Count);
 
             for (int ii = 0; ii < subscriptionAcknowledgements.Count; ii++)

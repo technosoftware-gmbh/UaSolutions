@@ -1934,17 +1934,17 @@ namespace Technosoftware.UaServer
         /// Returns all targets of the specified reference.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="sourceId"/> is <c>null</c>.</exception>
-        public NodeIdCollection FindLocalNodes(
+        public List<NodeId> FindLocalNodes(
             NodeId sourceId,
             NodeId referenceTypeId,
             bool isInverse)
         {
-            if (sourceId == null)
+            if (sourceId.IsNull)
             {
                 throw new ArgumentNullException(nameof(sourceId));
             }
 
-            if (referenceTypeId == null)
+            if (referenceTypeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(referenceTypeId));
             }
@@ -1956,7 +1956,7 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                var targets = new NodeIdCollection();
+                var targets = new List<NodeId>();
 
                 foreach (IReference reference in source.References)
                 {
@@ -1990,12 +1990,12 @@ namespace Technosoftware.UaServer
             bool isInverse,
             QualifiedName browseName)
         {
-            if (sourceId == null)
+            if (sourceId.IsNull)
             {
                 throw new ArgumentNullException(nameof(sourceId));
             }
 
-            if (referenceTypeId == null)
+            if (referenceTypeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(referenceTypeId));
             }
@@ -2124,7 +2124,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="nodeId"/> is <c>null</c>.</exception>
         public void RegisterSource(NodeId nodeId, object source, object handle, bool isEventSource)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(nodeId));
             }
@@ -2834,7 +2834,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ServiceResultException"></exception>
         public void DeleteNode(NodeId nodeId, bool deleteChildren, bool silent)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(nodeId));
             }
@@ -3254,12 +3254,12 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(sourceHandle));
             }
 
-            if (referenceTypeId == null)
+            if (referenceTypeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(referenceTypeId));
             }
 
-            if (targetId == null)
+            if (targetId.IsNull)
             {
                 throw new ArgumentNullException(nameof(targetId));
             }
@@ -3321,7 +3321,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public ILocalNode GetLocalNode(ExpandedNodeId nodeId)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -3549,7 +3549,7 @@ namespace Technosoftware.UaServer
         {
             lock (DataLock)
             {
-                if (nodeId == null || nodeId.IsAbsolute)
+                if (nodeId.IsNull || nodeId.IsAbsolute)
                 {
                     return null;
                 }
@@ -3627,7 +3627,7 @@ namespace Technosoftware.UaServer
                 {
                     ExpandedNodeId typeDefinitionId = metadata.TypeDefinition;
 
-                    if (typeDefinitionId == null)
+                    if (typeDefinitionId.IsNull)
                     {
                         return StatusCodes.BadDeadbandFilterInvalid;
                     }

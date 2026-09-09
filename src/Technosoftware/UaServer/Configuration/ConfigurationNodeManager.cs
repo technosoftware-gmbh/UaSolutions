@@ -465,7 +465,7 @@ namespace Technosoftware.UaServer
 
                 try
                 {
-                    newCert = CertificateFactory.Create(certificate);
+                    newCert = DefaultCertificateFactory.Instance.Create(certificate);
                 }
                 catch
                 {
@@ -507,7 +507,7 @@ namespace Technosoftware.UaServer
                     {
                         foreach (byte[] issuerRawCert in issuerCertificates)
                         {
-                            newIssuerCollection.Add(CertificateFactory.Create(issuerRawCert));
+                            newIssuerCollection.Add(DefaultCertificateFactory.Instance.Create(issuerRawCert));
                         }
                     }
                 }
@@ -772,7 +772,7 @@ namespace Technosoftware.UaServer
                             ct)
                             .ConfigureAwait(false);
                         // keep only track of cert without private key
-                        X509Certificate2 certOnly = CertificateFactory.Create(
+                        X509Certificate2 certOnly = DefaultCertificateFactory.Instance.Create(
                             updateCertificate.CertificateWithPrivateKey.RawData);
                         updateCertificate.CertificateWithPrivateKey.Dispose();
                         updateCertificate.CertificateWithPrivateKey = certOnly;
@@ -926,7 +926,7 @@ namespace Technosoftware.UaServer
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddDays(14));
 
-            if (certificateTypeId == null ||
+            if (certificateTypeId.IsNull ||
                 certificateTypeId == ObjectTypeIds.ApplicationCertificateType ||
                 certificateTypeId == ObjectTypeIds.RsaMinApplicationCertificateType ||
                 certificateTypeId == ObjectTypeIds.RsaSha256ApplicationCertificateType)
@@ -1011,7 +1011,7 @@ namespace Technosoftware.UaServer
                             "----- Apply Changes for application certificate update running...");
 
                         await m_configuration
-                            .CertificateValidator.UpdateCertificateAsync(
+                            .CertificateManager.UpdateCertificateAsync(
                                 m_configuration.SecurityConfiguration,
                                 m_configuration.ApplicationUri)
                             .ConfigureAwait(false);

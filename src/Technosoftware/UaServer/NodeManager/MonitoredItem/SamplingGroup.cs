@@ -452,7 +452,7 @@ namespace Technosoftware.UaServer
                 if (state is List<IUaSampledDataChangeMonitoredItem> items && items.Count > 0)
                 {
                     var itemsToRead = new ReadValueIdCollection(items.Count);
-                    var values = new DataValueCollection(items.Count);
+                    var values = new List<DataValue>(items.Count);
                     var errors = new List<ServiceResult>(items.Count);
 
                     // allocate space for results.
@@ -488,7 +488,7 @@ namespace Technosoftware.UaServer
                     {
                         if (values[ii] == null)
                         {
-                            values[ii] = new DataValue(
+                            values[ii] = DataValue.FromStatusCode(
                                 StatusCodes.BadInternalError,
                                 DateTime.UtcNow);
                         }

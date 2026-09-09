@@ -94,7 +94,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             UaServerOperationContext context,
-            UInt32Collection subscriptionIds,
+            List<uint> subscriptionIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -126,16 +126,16 @@ namespace Technosoftware.UaServer
         void SetPublishingMode(
             UaServerOperationContext context,
             bool publishingEnabled,
-            UInt32Collection subscriptionIds,
-            out StatusCodeCollection results,
-            out DiagnosticInfoCollection diagnosticInfos);
+            List<uint> subscriptionIds,
+            out List<StatusCode> results,
+            out List<DiagnosticInfo> diagnosticInfos);
 
         /// <summary>
         /// Attaches a groups of subscriptions to a different session.
         /// </summary>
         ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             UaServerOperationContext context,
-            UInt32Collection subscriptionIds,
+            List<uint> subscriptionIds,
             bool sendInitialValues,
             CancellationToken cancellationToken = default);
 
@@ -154,12 +154,12 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             uint triggeringItemId,
-            UInt32Collection linksToAdd,
-            UInt32Collection linksToRemove,
-            out StatusCodeCollection addResults,
-            out DiagnosticInfoCollection addDiagnosticInfos,
-            out StatusCodeCollection removeResults,
-            out DiagnosticInfoCollection removeDiagnosticInfos);
+            List<uint> linksToAdd,
+            List<uint> linksToRemove,
+            out List<StatusCode> addResults,
+            out List<DiagnosticInfo> addDiagnosticInfos,
+            out List<StatusCode> removeResults,
+            out List<DiagnosticInfo> removeDiagnosticInfos);
 
         /// <summary>
         /// Adds monitored items to a subscription.
@@ -187,17 +187,17 @@ namespace Technosoftware.UaServer
         ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
-            UInt32Collection monitoredItemIds,
+            List<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Changes the monitoring mode for a set of items.
         /// </summary>
-        ValueTask<(StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos)> SetMonitoringModeAsync(
+        ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> SetMonitoringModeAsync(
             UaServerOperationContext context,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            List<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>

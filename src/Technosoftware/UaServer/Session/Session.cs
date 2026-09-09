@@ -366,7 +366,7 @@ namespace Technosoftware.UaServer
                 DiagnosticsMasks.ServiceAdditionalInfo | DiagnosticsMasks.OperationAdditionalInfo);
             if ((requestHeader.ReturnDiagnostics & additionalInfoDiagnosticsMask) != 0)
             {
-                NodeIdCollection currentRoleIds = EffectiveIdentity?.GrantedRoleIds;
+                List<NodeId> currentRoleIds = EffectiveIdentity?.GrantedRoleIds;
                 if ((currentRoleIds?.Contains(ObjectIds.WellKnownRole_SecurityAdmin)) == true ||
                     (currentRoleIds?.Contains(ObjectIds.WellKnownRole_ConfigureAdmin)) == true)
                 {
@@ -392,7 +392,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <returns>true if the new locale ids are different from the old locale ids.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="localeIds"/> is <c>null</c>.</exception>
-        public bool UpdateLocaleIds(StringCollection localeIds)
+        public bool UpdateLocaleIds(List<string> localeIds)
         {
             if (localeIds == null)
             {
@@ -454,7 +454,7 @@ namespace Technosoftware.UaServer
                 {
                     if (EndpointDescription.SecurityPolicyUri != SecurityPolicies.None &&
                         clientSignature != null &&
-                        clientSignature.Signature == null)
+                        clientSignature.Signature.IsNull)
                     {
                         throw new ServiceResultException(
                             StatusCodes.BadApplicationSignatureInvalid);
@@ -538,7 +538,7 @@ namespace Technosoftware.UaServer
             UserIdentityToken identityToken,
             IUserIdentity identity,
             IUserIdentity effectiveIdentity,
-            StringCollection localeIds,
+            List<string> localeIds,
             Nonce serverNonce)
         {
             lock (m_lock)

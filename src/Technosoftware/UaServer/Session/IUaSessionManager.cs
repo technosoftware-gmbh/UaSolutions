@@ -116,7 +116,7 @@ namespace Technosoftware.UaServer
             SignatureData clientSignature,
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
-            StringCollection localeIds,
+            List<string> localeIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>

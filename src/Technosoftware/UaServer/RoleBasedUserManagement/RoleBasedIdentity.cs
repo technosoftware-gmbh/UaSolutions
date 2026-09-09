@@ -27,8 +27,8 @@ namespace Technosoftware.UaServer
     /// The well known roles in a server.
     /// https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.2
     /// </summary>
-    [DataContract(Namespace = Namespaces.Roles)]
-    public class Role : IEquatable<Role>
+    [DataType]
+    public partial class Role : IEquatable<Role>
     {
         /// <summary>
         /// The Role is allowed to browse and read non-security related Nodes only in the Server Object and all type Nodes.
@@ -99,13 +99,13 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The name of the role.
         /// </summary>
-        [DataMember(Name = "Name", IsRequired = true, Order = 10)]
+        [DataTypeField(Order = 10)]
         public string Name { get; private set; }
 
         /// <summary>
         /// The NodeId of the role.
         /// </summary>
-        [DataMember(Name = "RoleId", IsRequired = true, Order = 20)]
+        [DataTypeField(Order = 20)]
         public NodeId RoleId { get; set; }
 
         /// <inheritdoc/>

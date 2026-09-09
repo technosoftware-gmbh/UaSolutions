@@ -202,10 +202,10 @@ namespace Technosoftware.UaServer
                     writeValue.IndexRange,
                     false);
 
-                object newValue = writeValue.Value?.Value;
+                object newValue = writeValue.Value.Value;
                 if (writeValue.ParsedIndexRange != NumericRange.Empty)
                 {
-                    writeValue.ParsedIndexRange.UpdateRange(ref newValue, writeValue.Value?.Value);
+                    writeValue.ParsedIndexRange.UpdateRange(ref newValue, writeValue.Value.Value);
                 }
 
                 e.SetChildValue(systemContext, BrowseNames.NewValue, newValue, false);

@@ -326,7 +326,7 @@ namespace Technosoftware.UaServer
                 // MultiLanguageText requested, specified numer of locales was found in the default text.
                 if (isMultilanguageRequested &&
                     preferredLocales.Count > 1 &&
-                    defaultText?.Translations?.Count == preferredLocales.Count - 1)
+                    defaultText.Translations?.Count == preferredLocales.Count - 1)
                 {
                     return defaultText;
                 }
@@ -341,7 +341,7 @@ namespace Technosoftware.UaServer
             if (isMultilanguageRequested)
             {
                 Dictionary<string, string> translations =
-                    defaultText?.Translations != null
+                    defaultText.Translations != null
                         ? new Dictionary<string, string>(defaultText.Translations)
                         : [];
                 // If only mul/qst is requested, return all available translations for the key.
@@ -476,7 +476,7 @@ namespace Technosoftware.UaServer
             LocalizedText localizedText,
             ArrayOf<string> preferredLocales)
         {
-            return localizedText?.FilterByPreferredLocales(preferredLocales);
+            return localizedText.FilterByPreferredLocales(preferredLocales);
         }
 
         /// <summary>

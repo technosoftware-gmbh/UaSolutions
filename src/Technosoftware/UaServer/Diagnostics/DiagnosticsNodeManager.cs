@@ -322,7 +322,7 @@ namespace Technosoftware.UaServer
         {
             var systemContext = context as UaServerContext;
 
-            if (m_serverLockHolder != null && m_serverLockHolder != systemContext.SessionId)
+            if (!m_serverLockHolder.IsNull && m_serverLockHolder != systemContext.SessionId)
             {
                 return StatusCodes.BadSessionIdInvalid;
             }
@@ -343,7 +343,7 @@ namespace Technosoftware.UaServer
         {
             var systemContext = context as UaServerContext;
 
-            if (m_serverLockHolder != null && m_serverLockHolder != systemContext.SessionId)
+            if (!m_serverLockHolder.IsNull && m_serverLockHolder != systemContext.SessionId)
             {
                 return StatusCodes.BadSessionIdInvalid;
             }
@@ -548,7 +548,7 @@ namespace Technosoftware.UaServer
 
             NodeId typeId = instance.TypeDefinitionId;
 
-            if (typeId == null || typeId.IdType != IdType.Numeric || typeId.NamespaceIndex != 0)
+            if (typeId.IsNull || typeId.IdType != IdType.Numeric || typeId.NamespaceIndex != 0)
             {
                 return false;
             }
@@ -943,7 +943,7 @@ namespace Technosoftware.UaServer
 
                 array?.AddReference(ReferenceTypeIds.HasComponent, false, diagnosticsNode.NodeId);
 
-                if (diagnostics.SessionId != null)
+                if (!diagnostics.SessionId.IsNull)
                 {
                     // add reference to session subscription array.
                     diagnosticsNode.AddReference(
@@ -2149,7 +2149,7 @@ namespace Technosoftware.UaServer
 
                         if (ServiceResult.IsBad(error))
                         {
-                            value = new DataValue(error.StatusCode);
+                            value = DataValue.FromStatusCode(error.StatusCode);
                         }
 
                         value.ServerTimestamp = DateTime.UtcNow;

@@ -106,7 +106,7 @@ namespace Technosoftware.UaServer
         /// Returns the available sequence numbers for retransmission
         /// For example used in Transfer Subscription
         /// </summary>
-        UInt32Collection AvailableSequenceNumbersForRetransmission();
+        List<uint> AvailableSequenceNumbersForRetransmission();
 
         /// <summary>
         /// Refreshes the conditions.
@@ -132,10 +132,10 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Changes the monitoring mode for a set of items.
         /// </summary>
-        ValueTask<(StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos)> SetMonitoringModeAsync(
+        ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> SetMonitoringModeAsync(
             UaServerOperationContext context,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            List<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
-            UInt32Collection monitoredItemIds,
+            List<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -229,7 +229,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         NotificationMessage Publish(
             UaServerOperationContext context,
-            out UInt32Collection availableSequenceNumbers,
+            out List<uint> availableSequenceNumbers,
             out bool moreNotifications);
 
         /// <summary>
@@ -246,12 +246,12 @@ namespace Technosoftware.UaServer
         void SetTriggering(
             UaServerOperationContext context,
             uint triggeringItemId,
-            UInt32Collection linksToAdd,
-            UInt32Collection linksToRemove,
-            out StatusCodeCollection addResults,
-            out DiagnosticInfoCollection addDiagnosticInfos,
-            out StatusCodeCollection removeResults,
-            out DiagnosticInfoCollection removeDiagnosticInfos);
+            List<uint> linksToAdd,
+            List<uint> linksToRemove,
+            out List<StatusCode> addResults,
+            out List<DiagnosticInfo> addDiagnosticInfos,
+            out List<StatusCode> removeResults,
+            out List<DiagnosticInfo> removeDiagnosticInfos);
 
         /// <summary>
         /// Return a StorableSubscription for restore after a server restart

@@ -231,7 +231,7 @@ namespace Technosoftware.UaServer
         protected EndpointDescriptionCollection GetEndpointDescriptions(
             string endpointUrl,
             IList<BaseAddress> baseAddresses,
-            StringCollection localeIds)
+            List<string> localeIds)
         {
             EndpointDescriptionCollection endpoints = null;
 
@@ -361,7 +361,7 @@ namespace Technosoftware.UaServer
                 bool requireEncryption = RequireEncryption(
                     context?.ChannelContext?.EndpointDescription);
 
-                if (!requireEncryption && clientCertificate != null)
+                if (!requireEncryption && !clientCertificate.IsNull)
                 {
                     requireEncryption = true;
                 }
@@ -371,7 +371,7 @@ namespace Technosoftware.UaServer
                 // validate client application instance certificate.
                 X509Certificate2 parsedClientCertificate = null;
 
-                if (requireEncryption && clientCertificate != null && clientCertificate.Length > 0)
+                if (requireEncryption && !clientCertificate.IsNull && clientCertificate.Length > 0)
                 {
                     try
                     {
@@ -425,7 +425,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // verify the nonce provided by the client.
-                if (clientNonce != null)
+                if (!clientNonce.IsNull)
                 {
                     if (clientNonce.Length < m_minNonceLength)
                     {
@@ -530,7 +530,7 @@ namespace Technosoftware.UaServer
                     serverSignature = null;
 
                     //  sign the client nonce (if provided).
-                    if (parsedClientCertificate != null && clientNonce != null)
+                    if (parsedClientCertificate != null && !clientNonce.IsNull)
                     {
                         byte[] dataToSign = Utils.Append(parsedClientCertificate.RawData, clientNonce);
                         serverSignature = SecurityPolicies.Sign(
@@ -715,8 +715,8 @@ namespace Technosoftware.UaServer
         {
             CancellationToken ct = requestLifetime.CancellationToken;
             byte[] serverNonce;
-            StatusCodeCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
+            List<StatusCode> results = null;
+            List<DiagnosticInfo> diagnosticInfos = null;
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.ActivateSession);
 
@@ -990,7 +990,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(nodesToBrowse, OperationLimits.MaxNodesPerBrowse);
 
-                (BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.BrowseAsync(
                         context,
                         view,
@@ -1043,7 +1043,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(continuationPoints, OperationLimits.MaxNodesPerBrowse);
 
-                (BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.BrowseNextAsync(
                         context,
                         releaseContinuationPoints,
@@ -1102,7 +1102,7 @@ namespace Technosoftware.UaServer
                 ValidateOperationLimits(nodesToRegister, OperationLimits.MaxNodesPerRegisterNodes);
 
                 m_serverInternal.NodeManager
-                    .RegisterNodes(context, nodesToRegister, out NodeIdCollection registeredNodeIds);
+                    .RegisterNodes(context, nodesToRegister, out List<NodeId> registeredNodeIds);
 
                 return Task.FromResult(new RegisterNodesResponse
                 {
@@ -1210,7 +1210,7 @@ namespace Technosoftware.UaServer
                         OperationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds);
                 }
 
-                (BrowsePathResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (BrowsePathResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.TranslateBrowsePathsToNodeIdsAsync(
                         context,
                         browsePaths,
@@ -1262,7 +1262,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(nodesToRead, OperationLimits.MaxNodesPerRead);
 
-                (DataValueCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<DataValue> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.ReadAsync(
                         context,
                         maxAge,
@@ -1316,7 +1316,7 @@ namespace Technosoftware.UaServer
 
             try
             {
-                if (historyReadDetails?.Body is ReadEventDetails)
+                if (historyReadDetails.Body is ReadEventDetails)
                 {
                     ValidateOperationLimits(
                         nodesToRead,
@@ -1329,7 +1329,7 @@ namespace Technosoftware.UaServer
                         OperationLimits.MaxNodesPerHistoryReadData);
                 }
 
-                (HistoryReadResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (HistoryReadResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.HistoryReadAsync(
                         context,
                         historyReadDetails,
@@ -1384,7 +1384,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(nodesToWrite, OperationLimits.MaxNodesPerWrite);
 
-                (StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager
                         .WriteAsync(context, nodesToWrite, ct)
                         .ConfigureAwait(false);
@@ -1435,7 +1435,7 @@ namespace Technosoftware.UaServer
                 // must be checked in NodeManager (TODO)
                 ValidateOperationLimits(historyUpdateDetails);
 
-                (HistoryUpdateResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (HistoryUpdateResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.HistoryUpdateAsync(context, historyUpdateDetails, ct).ConfigureAwait(false);
 
                 return new HistoryUpdateResponse
@@ -1881,8 +1881,8 @@ namespace Technosoftware.UaServer
                     context,
                     publishingEnabled,
                     subscriptionIds,
-                    out StatusCodeCollection results,
-                    out DiagnosticInfoCollection diagnosticInfos);
+                    out List<StatusCode> results,
+                    out List<DiagnosticInfo> diagnosticInfos);
 
                 return Task.FromResult(new SetPublishingModeResponse
                 {
@@ -1957,10 +1957,10 @@ namespace Technosoftware.UaServer
                     triggeringItemId,
                     linksToAdd,
                     linksToRemove,
-                    out StatusCodeCollection addResults,
-                    out DiagnosticInfoCollection addDiagnosticInfos,
-                    out StatusCodeCollection removeResults,
-                    out DiagnosticInfoCollection removeDiagnosticInfos);
+                    out List<StatusCode> addResults,
+                    out List<DiagnosticInfo> addDiagnosticInfos,
+                    out List<StatusCode> removeResults,
+                    out List<DiagnosticInfo> removeDiagnosticInfos);
 
                 return Task.FromResult(new SetTriggeringResponse
                 {
@@ -2201,7 +2201,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(monitoredItemIds, OperationLimits.MaxMonitoredItemsPerCall);
 
-                (StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos) =
                     await ServerInternal.SubscriptionManager.SetMonitoringModeAsync(
                     context,
                     subscriptionId,
@@ -2260,7 +2260,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(methodsToCall, OperationLimits.MaxNodesPerMethodCall);
 
-                (CallMethodResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (CallMethodResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.CallAsync(context, methodsToCall, ct)
                         .ConfigureAwait(false);
 
@@ -2385,7 +2385,7 @@ namespace Technosoftware.UaServer
                             // register the server.
                             if (m_useRegisterServer2)
                             {
-                                var discoveryConfiguration = new ExtensionObjectCollection();
+                                var discoveryConfiguration = new List<ExtensionObject>();
                                 var mdnsDiscoveryConfig = new MdnsDiscoveryConfiguration
                                 {
                                     ServerCapabilities = configuration.ServerConfiguration
@@ -2862,7 +2862,7 @@ namespace Technosoftware.UaServer
                     .SecurityConfiguration
                     .RejectedCertificateStore;
 
-                await Configuration.CertificateValidator.UpdateAsync(
+                await Configuration.CertificateManager.UpdateAsync(
                     Configuration.SecurityConfiguration,
                     ct: cancellationToken).ConfigureAwait(false);
 
@@ -2955,7 +2955,7 @@ namespace Technosoftware.UaServer
             endpoints = [];
             IList<EndpointDescription> endpointsForHost = null;
 
-            StringCollection baseAddresses = configuration.ServerConfiguration.BaseAddresses;
+            List<string> baseAddresses = configuration.ServerConfiguration.BaseAddresses;
             foreach (
                 string scheme in Utils.DefaultUriSchemes.Where(scheme =>
                     baseAddresses.Any(a => a.StartsWith(scheme, StringComparison.Ordinal))))

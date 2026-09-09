@@ -301,7 +301,7 @@ namespace Technosoftware.UaServer
             }
 
             // check if the latest value has initial dummy data
-            if (m_dataValueQueue.PeekLastValue()?.StatusCode == StatusCodes
+            if (m_dataValueQueue.PeekLastValue().StatusCode == StatusCodes
                 .BadWaitingForInitialData)
             {
                 // overwrite the last value

@@ -393,7 +393,7 @@ namespace Technosoftware.UaServer
 
                 NodeState parent = null;
 
-                if (parentId != null)
+                if (!parentId.IsNull)
                 {
                     if (!PredefinedNodes.TryGetValue(parentId, out parent))
                     {
@@ -443,7 +443,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public NodeState FindNodeInAddressSpace(NodeId nodeId)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -565,7 +565,7 @@ namespace Technosoftware.UaServer
             // assign a default value to any variable in namespace 0
             if (node is BaseVariableState nodeStateVar &&
                 nodeStateVar.NodeId.NamespaceIndex == 0 &&
-                nodeStateVar.Value == null)
+                nodeStateVar.Value.IsNull)
             {
                 nodeStateVar.Value = Opc.Ua.TypeInfo.GetDefaultValue(
                     nodeStateVar.DataType,
@@ -714,7 +714,7 @@ namespace Technosoftware.UaServer
                     IReference reference = references[ii];
 
                     // nothing to do with external nodes.
-                    if (reference.TargetId == null || reference.TargetId.IsAbsolute)
+                    if (reference.TargetId.IsNull || reference.TargetId.IsAbsolute)
                     {
                         continue;
                     }
@@ -847,7 +847,7 @@ namespace Technosoftware.UaServer
         /// <returns>Returns null if not found or not of the correct type.</returns>
         public T FindPredefinedNode<T>(NodeId nodeId) where T : NodeState
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -1986,7 +1986,7 @@ namespace Technosoftware.UaServer
                     ServerData.ReportAuditWriteUpdateEvent(
                         systemContext,
                         nodeToWrite,
-                        oldValue?.Value,
+                        oldValue.Value,
                         errors[ii]?.StatusCode ?? StatusCodes.Good,
                         m_logger);
 
@@ -3112,7 +3112,7 @@ namespace Technosoftware.UaServer
         {
             var systemContext = context as UaServerContext;
             var argumentErrors = new List<ServiceResult>();
-            var outputArguments = new VariantCollection();
+            var outputArguments = new List<Variant>();
 
             ServiceResult callResult;
 

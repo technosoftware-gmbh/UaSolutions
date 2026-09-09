@@ -280,7 +280,7 @@ namespace Technosoftware.UaServer
 
                 lock (m_lock)
                 {
-                    if (m_sessionId != null)
+                    if (!m_sessionId.IsNull)
                     {
                         // to avoid deadlocks, last open always wins
                         m_sessionId = default;
@@ -615,7 +615,7 @@ namespace Technosoftware.UaServer
                     trustedCertificates = [];
                     foreach (byte[] cert in trustList.TrustedCertificates)
                     {
-                        trustedCertificates.Add(CertificateFactory.Create(cert));
+                        trustedCertificates.Add(DefaultCertificateFactory.Instance.Create(cert));
                     }
                 }
                 if ((masks & (int)TrustListMasks.TrustedCrls) != 0)
@@ -729,7 +729,7 @@ namespace Technosoftware.UaServer
             bool isSessionOpen;
             lock (m_lock)
             {
-                isSessionOpen = m_sessionId != null;
+                isSessionOpen = !m_sessionId.IsNull;
             }
 
             if (isSessionOpen)
@@ -745,7 +745,7 @@ namespace Technosoftware.UaServer
                 X509Certificate2 cert = null;
                 try
                 {
-                    cert = CertificateFactory.Create(certificate);
+                    cert = DefaultCertificateFactory.Instance.Create(certificate);
                 }
                 catch
                 {
@@ -836,7 +836,7 @@ namespace Technosoftware.UaServer
             bool isSessionOpen;
             lock (m_lock)
             {
-                isSessionOpen = m_sessionId != null;
+                isSessionOpen = !m_sessionId.IsNull;
             }
 
             if (isSessionOpen)

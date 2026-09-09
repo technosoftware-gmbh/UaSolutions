@@ -923,12 +923,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         public async ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             UaServerOperationContext context,
-            UInt32Collection subscriptionIds,
+            List<uint> subscriptionIds,
             CancellationToken cancellationToken = default)
         {
             bool diagnosticsExist = false;
-            var results = new StatusCodeCollection(subscriptionIds.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(subscriptionIds.Count);
+            var results = new List<StatusCode>(subscriptionIds.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(subscriptionIds.Count);
 
             foreach (uint subscriptionId in subscriptionIds)
             {
@@ -991,7 +991,7 @@ namespace Technosoftware.UaServer
                     Message = subscription.PublishTimeout()
                 };
 
-                if (subscription.SessionId != null &&
+                if (!subscription.SessionId.IsNull &&
                     m_statusMessages.TryGetValue(
                         subscription.SessionId,
                         out Queue<StatusMessage> queue))
@@ -1025,8 +1025,8 @@ namespace Technosoftware.UaServer
             queue.Acknowledge(
                 context,
                 subscriptionAcknowledgements,
-                out StatusCodeCollection acknowledgeResults,
-                out DiagnosticInfoCollection acknowledgeDiagnosticInfos);
+                out List<StatusCode> acknowledgeResults,
+                out List<DiagnosticInfo> acknowledgeDiagnosticInfos);
 
             // update diagnostics.
             if (context.Session != null)
@@ -1102,7 +1102,7 @@ namespace Technosoftware.UaServer
                     {
                         NotificationMessage message = subscription.Publish(
                             context,
-                            out UInt32Collection availableSequenceNumbers,
+                            out List<uint> availableSequenceNumbers,
                             out moreNotifications);
 
                         // a null message indicates a false alarm; requeue and wait for the next one.
@@ -1273,14 +1273,14 @@ namespace Technosoftware.UaServer
         public void SetPublishingMode(
             UaServerOperationContext context,
             bool publishingEnabled,
-            UInt32Collection subscriptionIds,
-            out StatusCodeCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            List<uint> subscriptionIds,
+            out List<StatusCode> results,
+            out List<DiagnosticInfo> diagnosticInfos)
         {
             bool diagnosticsExist = false;
 
-            results = new StatusCodeCollection(subscriptionIds.Count);
-            diagnosticInfos = new DiagnosticInfoCollection(subscriptionIds.Count);
+            results = new List<StatusCode>(subscriptionIds.Count);
+            diagnosticInfos = new List<DiagnosticInfo>(subscriptionIds.Count);
 
             for (int ii = 0; ii < subscriptionIds.Count; ii++)
             {
@@ -1341,12 +1341,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         public async ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             UaServerOperationContext context,
-            UInt32Collection subscriptionIds,
+            List<uint> subscriptionIds,
             bool sendInitialValues,
             CancellationToken cancellationToken = default)
         {
             var results = new TransferResultCollection();
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             m_logger.LogInformation(
                 "TransferSubscriptions to SessionId={SessionId}, Count={Count}, sendInitialValues={SendInitialValues}",
@@ -1636,12 +1636,12 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             uint triggeringItemId,
-            UInt32Collection linksToAdd,
-            UInt32Collection linksToRemove,
-            out StatusCodeCollection addResults,
-            out DiagnosticInfoCollection addDiagnosticInfos,
-            out StatusCodeCollection removeResults,
-            out DiagnosticInfoCollection removeDiagnosticInfos)
+            List<uint> linksToAdd,
+            List<uint> linksToRemove,
+            out List<StatusCode> addResults,
+            out List<DiagnosticInfo> addDiagnosticInfos,
+            out List<StatusCode> removeResults,
+            out List<DiagnosticInfo> removeDiagnosticInfos)
         {
             // find subscription.
 
@@ -1736,7 +1736,7 @@ namespace Technosoftware.UaServer
         public async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
-            UInt32Collection monitoredItemIds,
+            List<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             // find subscription.
@@ -1773,11 +1773,11 @@ namespace Technosoftware.UaServer
         /// Changes the monitoring mode for a set of items.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public ValueTask<(StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos)> SetMonitoringModeAsync(
+        public ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> SetMonitoringModeAsync(
             UaServerOperationContext context,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            List<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             // find subscription.
