@@ -721,7 +721,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public NotificationMessage Publish(
             UaServerOperationContext context,
-            out List<uint> availableSequenceNumbers,
+            out ArrayOf<uint> availableSequenceNumbers,
             out bool moreNotifications)
         {
             if (context == null)
@@ -845,7 +845,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         private NotificationMessage InnerPublish(
             UaServerOperationContext context,
-            out List<uint> availableSequenceNumbers,
+            out ArrayOf<uint> availableSequenceNumbers,
             out bool moreNotifications)
         {
             // check session.
@@ -1085,7 +1085,7 @@ namespace Technosoftware.UaServer
         /// Returns the available sequence numbers for retransmission
         /// For example used in Transfer Subscription
         /// </summary>
-        public List<uint> AvailableSequenceNumbersForRetransmission()
+        public ArrayOf<uint> AvailableSequenceNumbersForRetransmission()
         {
             var availableSequenceNumbers = new List<uint>();
             // Assumption we do not check lastSentMessage < sentMessages.Count because
@@ -1331,8 +1331,8 @@ namespace Technosoftware.UaServer
         public void SetTriggering(
             UaServerOperationContext context,
             uint triggeringItemId,
-            List<uint> linksToAdd,
-            List<uint> linksToRemove,
+            ArrayOf<uint> linksToAdd,
+            ArrayOf<uint> linksToRemove,
             out List<StatusCode> addResults,
             out List<DiagnosticInfo> addDiagnosticInfos,
             out List<StatusCode> removeResults,
@@ -1918,7 +1918,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
-            List<uint> monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             return DeleteMonitoredItemsAsync(
@@ -1934,7 +1934,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         private async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
-            List<uint> monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             bool doNotCheckSession,
             CancellationToken cancellationToken = default)
         {
@@ -2113,7 +2113,7 @@ namespace Technosoftware.UaServer
         public async ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> SetMonitoringModeAsync(
             UaServerOperationContext context,
             MonitoringMode monitoringMode,
-            List<uint> monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             if (context == null)

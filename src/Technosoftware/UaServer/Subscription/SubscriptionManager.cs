@@ -923,7 +923,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public async ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             UaServerOperationContext context,
-            List<uint> subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken cancellationToken = default)
         {
             bool diagnosticsExist = false;
@@ -1102,7 +1102,7 @@ namespace Technosoftware.UaServer
                     {
                         NotificationMessage message = subscription.Publish(
                             context,
-                            out List<uint> availableSequenceNumbers,
+                            out ArrayOf<uint> availableSequenceNumbers,
                             out moreNotifications);
 
                         // a null message indicates a false alarm; requeue and wait for the next one.
@@ -1273,7 +1273,7 @@ namespace Technosoftware.UaServer
         public void SetPublishingMode(
             UaServerOperationContext context,
             bool publishingEnabled,
-            List<uint> subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             out List<StatusCode> results,
             out List<DiagnosticInfo> diagnosticInfos)
         {
@@ -1341,7 +1341,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public async ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             UaServerOperationContext context,
-            List<uint> subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool sendInitialValues,
             CancellationToken cancellationToken = default)
         {
@@ -1636,8 +1636,8 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             uint triggeringItemId,
-            List<uint> linksToAdd,
-            List<uint> linksToRemove,
+            ArrayOf<uint> linksToAdd,
+            ArrayOf<uint> linksToRemove,
             out List<StatusCode> addResults,
             out List<DiagnosticInfo> addDiagnosticInfos,
             out List<StatusCode> removeResults,
@@ -1736,7 +1736,7 @@ namespace Technosoftware.UaServer
         public async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
-            List<uint> monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             // find subscription.
@@ -1777,7 +1777,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            List<uint> monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             // find subscription.

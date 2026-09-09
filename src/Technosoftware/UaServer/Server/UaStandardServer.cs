@@ -36,6 +36,19 @@ namespace Technosoftware.UaServer
     public class UaStandardServer : SessionServerBase, IUaStandardServer
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="UaStandardServer"/> class.
+        /// </summary>
+        /// <param name="telemetry">
+        /// The telemetry context the server and everything it creates log
+        /// through. Required by <see cref="SessionServerBase"/> since 2.0;
+        /// there is no parameterless construction any more.
+        /// </param>
+        public UaStandardServer(ITelemetryContext telemetry)
+            : base(telemetry)
+        {
+        }
+
+        /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         /// <param name="disposing"><c>true</c> to release both managed
@@ -946,7 +959,7 @@ namespace Technosoftware.UaServer
             {
                 m_serverInternal.RequestManager.CancelRequests(requestHandle, out uint cancelCount);
 
-                return Task.FromResult(new CancelResponse
+                return ValueTask.FromResult(new CancelResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable),
                     CancelCount = cancelCount
@@ -1104,7 +1117,7 @@ namespace Technosoftware.UaServer
                 m_serverInternal.NodeManager
                     .RegisterNodes(context, nodesToRegister, out ArrayOf<NodeId> registeredNodeIds);
 
-                return Task.FromResult(new RegisterNodesResponse
+                return ValueTask.FromResult(new RegisterNodesResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable),
                     RegisteredNodeIds = registeredNodeIds
@@ -1157,7 +1170,7 @@ namespace Technosoftware.UaServer
 
                 m_serverInternal.NodeManager.UnregisterNodes(context, nodesToUnregister);
 
-                return Task.FromResult(new UnregisterNodesResponse
+                return ValueTask.FromResult(new UnregisterNodesResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable)
                 });
@@ -1749,7 +1762,7 @@ namespace Technosoftware.UaServer
                     subscriptionId,
                     retransmitSequenceNumber);
 
-                return Task.FromResult(new RepublishResponse
+                return ValueTask.FromResult(new RepublishResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable),
                     NotificationMessage = notificationMessage
@@ -1821,7 +1834,7 @@ namespace Technosoftware.UaServer
                     out uint revisedLifetimeCount,
                     out uint revisedMaxKeepAliveCount);
 
-                return Task.FromResult(new ModifySubscriptionResponse
+                return ValueTask.FromResult(new ModifySubscriptionResponse
                 {
                     RevisedPublishingInterval = revisedPublishingInterval,
                     RevisedLifetimeCount = revisedLifetimeCount,
@@ -1884,7 +1897,7 @@ namespace Technosoftware.UaServer
                     out List<StatusCode> results,
                     out List<DiagnosticInfo> diagnosticInfos);
 
-                return Task.FromResult(new SetPublishingModeResponse
+                return ValueTask.FromResult(new SetPublishingModeResponse
                 {
                     Results = results,
                     DiagnosticInfos = diagnosticInfos,
@@ -1962,7 +1975,7 @@ namespace Technosoftware.UaServer
                     out List<StatusCode> removeResults,
                     out List<DiagnosticInfo> removeDiagnosticInfos);
 
-                return Task.FromResult(new SetTriggeringResponse
+                return ValueTask.FromResult(new SetTriggeringResponse
                 {
                     AddResults = addResults,
                     AddDiagnosticInfos = addDiagnosticInfos,

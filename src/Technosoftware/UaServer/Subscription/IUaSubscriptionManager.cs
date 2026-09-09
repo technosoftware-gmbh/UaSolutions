@@ -94,7 +94,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             UaServerOperationContext context,
-            List<uint> subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace Technosoftware.UaServer
         void SetPublishingMode(
             UaServerOperationContext context,
             bool publishingEnabled,
-            List<uint> subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             out List<StatusCode> results,
             out List<DiagnosticInfo> diagnosticInfos);
 
@@ -135,7 +135,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             UaServerOperationContext context,
-            List<uint> subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool sendInitialValues,
             CancellationToken cancellationToken = default);
 
@@ -154,8 +154,8 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             uint triggeringItemId,
-            List<uint> linksToAdd,
-            List<uint> linksToRemove,
+            ArrayOf<uint> linksToAdd,
+            ArrayOf<uint> linksToRemove,
             out List<StatusCode> addResults,
             out List<DiagnosticInfo> addDiagnosticInfos,
             out List<StatusCode> removeResults,
@@ -187,7 +187,7 @@ namespace Technosoftware.UaServer
         ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
-            List<uint> monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            List<uint> monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>

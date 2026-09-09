@@ -107,7 +107,7 @@ namespace Technosoftware.UaServer
         /// Returns the available sequence numbers for retransmission
         /// For example used in Transfer Subscription
         /// </summary>
-        List<uint> AvailableSequenceNumbersForRetransmission();
+        ArrayOf<uint> AvailableSequenceNumbersForRetransmission();
 
         /// <summary>
         /// Refreshes the conditions.
@@ -136,7 +136,7 @@ namespace Technosoftware.UaServer
         ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> SetMonitoringModeAsync(
             UaServerOperationContext context,
             MonitoringMode monitoringMode,
-            List<uint> monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -149,7 +149,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
-            List<uint> monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -230,7 +230,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         NotificationMessage Publish(
             UaServerOperationContext context,
-            out List<uint> availableSequenceNumbers,
+            out ArrayOf<uint> availableSequenceNumbers,
             out bool moreNotifications);
 
         /// <summary>
@@ -247,8 +247,8 @@ namespace Technosoftware.UaServer
         void SetTriggering(
             UaServerOperationContext context,
             uint triggeringItemId,
-            List<uint> linksToAdd,
-            List<uint> linksToRemove,
+            ArrayOf<uint> linksToAdd,
+            ArrayOf<uint> linksToRemove,
             out List<StatusCode> addResults,
             out List<DiagnosticInfo> addDiagnosticInfos,
             out List<StatusCode> removeResults,
