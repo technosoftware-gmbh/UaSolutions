@@ -262,10 +262,6 @@ namespace Technosoftware.UaClient
             {
                 configurationField = "SecurityConfiguration";
             }
-            else if (configuration.CertificateManager == null)
-            {
-                configurationField = "CertificateValidator";
-            }
             else
             {
                 return;
@@ -1448,7 +1444,13 @@ namespace Technosoftware.UaClient
             identity ??= new UserIdentity();
 
             // check that the user identity is supported by the endpoint.
+            // The policy id is tried first: an endpoint may offer a policy
+            // whose own SecurityPolicyUri does not match the channel's, and
+            // the type lookup would not find it.
             UserTokenPolicy identityPolicy =
+                m_endpoint.Description.FindUserTokenPolicy(
+                    identity.TokenHandler.Token.PolicyId,
+                    securityPolicyUri) ??
                 m_endpoint.Description.FindUserTokenPolicy(
                     identity.TokenType,
                     identity.IssuedTokenType,

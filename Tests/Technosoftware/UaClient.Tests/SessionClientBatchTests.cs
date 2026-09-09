@@ -79,8 +79,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -259,8 +259,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -450,8 +450,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -1053,7 +1053,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response.Results.Count, Is.EqualTo(15));
             Assert.That(response.DiagnosticInfos.Count, Is.EqualTo(15));
             Assert.That(response.ResponseHeader.StringTable.Count, Is.EqualTo(8));
-            Assert.That(response.ResponseHeader.StringTable,
+            Assert.That(response.ResponseHeader.StringTable.ToArray(),
                 Is.EquivalentTo(["String1", "String2", "String3", "String4", "String5", "String6", "String7", "String8"]));
 
             // Verify that the indexes in the diagnostic infos are correctly updated
@@ -1136,7 +1136,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response.Results.Count, Is.EqualTo(15));
             Assert.That(response.DiagnosticInfos.Count, Is.EqualTo(15));
             Assert.That(response.ResponseHeader.StringTable.Count, Is.EqualTo(8));
-            Assert.That(response.ResponseHeader.StringTable,
+            Assert.That(response.ResponseHeader.StringTable.ToArray(),
                 Is.EquivalentTo(["String1", "String2", "String3", "String4", "String5", "String6", "String7", "String8"]));
 
             // Verify that the indexes in the diagnostic infos are correctly updated
@@ -1220,7 +1220,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response.Results.Count, Is.EqualTo(15));
             Assert.That(response.DiagnosticInfos.Count, Is.EqualTo(15));
             Assert.That(response.ResponseHeader.StringTable.Count, Is.EqualTo(6));
-            Assert.That(response.ResponseHeader.StringTable,
+            Assert.That(response.ResponseHeader.StringTable.ToArray(),
                 Is.EquivalentTo(["String1", "String2", "String1", "String2", "String3", "String4"]));
 
             // Verify that the indexes in the diagnostic infos are correctly updated
@@ -1273,8 +1273,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -1486,8 +1486,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -1688,8 +1688,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -1798,8 +1798,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -1879,8 +1879,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -2058,8 +2058,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -2192,8 +2192,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -2382,8 +2382,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -2552,8 +2552,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -2748,8 +2748,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -2860,8 +2860,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -3041,8 +3041,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -3248,8 +3248,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -3456,8 +3456,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -3590,8 +3590,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -3692,8 +3692,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -3783,8 +3783,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -3884,8 +3884,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -4065,8 +4065,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -4265,8 +4265,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -4350,8 +4350,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -4531,8 +4531,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -4657,8 +4657,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -4850,8 +4850,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -4986,8 +4986,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -5304,8 +5304,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 
@@ -5468,8 +5468,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
             Assert.That(requestHeader?.RequestHandle ?? 1, Is.Not.EqualTo(0));
             Assert.That(
-                requestHeader?.Timestamp ?? DateTime.UtcNow,
-                Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromSeconds(1)));
+                requestHeader?.Timestamp ?? DateTimeUtc.Now,
+                Is.LessThanOrEqualTo(DateTimeUtc.Now + TimeSpan.FromSeconds(1)));
             sessionMock.Channel.Verify();
         }
 

@@ -65,8 +65,8 @@ namespace Technosoftware.UaClient.Tests
             ResultSet<DataValue> result = await sut.FetchValuesAsync(null, nodeIds).ConfigureAwait(false);
 
             // Assert
-            Assert.That(result.Results, Is.EquivalentTo(dataValues));
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Results, Is.EqualTo(dataValues));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
         }
 
         [Test]
@@ -176,7 +176,7 @@ namespace Technosoftware.UaClient.Tests
             ResultSet<DataValue> result = await sut.FetchValuesAsync(null, nodeIds).ConfigureAwait(false);
 
             // Assert
-            Assert.That(result.Results, Is.EquivalentTo(dataValues));
+            Assert.That(result.Results, Is.EqualTo(dataValues));
             Assert.That(result.Errors[0].StatusCode, Is.EqualTo(StatusCodes.Bad));
             Assert.That(result.Errors[1].StatusCode, Is.EqualTo(StatusCodes.Good));
         }
@@ -292,8 +292,8 @@ namespace Technosoftware.UaClient.Tests
             ResultSet<DataValue> result = await sut.FetchValuesAsync(null, nodeIds).ConfigureAwait(false);
 
             // Assert
-            Assert.That(result.Results, Is.EquivalentTo(dataValues));
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Results, Is.EqualTo(dataValues));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
             Assert.That(diagnosticInfos, Contains.Item(diagnosticInfo));
 
             session.Channel.Verify();
@@ -371,7 +371,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(result.Results.Count, Is.EqualTo(2));
             Assert.That(Utils.IsEqual(nodes[0], result.Results[0]), Is.True);
             Assert.That(Utils.IsEqual(nodes[1], result.Results[1]), Is.True);
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
         }
 
         [Test]
@@ -454,7 +454,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(result.Results.Count, Is.EqualTo(2));
             Assert.That(Utils.IsEqual(nodes[0], result.Results[0]), Is.False);
             Assert.That(Utils.IsEqual(nodes[1], result.Results[1]), Is.False);
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
         }
 
         [Test]
@@ -888,7 +888,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(Utils.IsEqual(nodes[0], result.Results[0]), Is.True);
             Assert.That(Utils.IsEqual(nodes[1], result.Results[1]), Is.True);
             Assert.That(result.Errors.Count, Is.EqualTo(2));
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
 
             session.Channel.Verify();
         }
@@ -900,8 +900,8 @@ namespace Technosoftware.UaClient.Tests
             var session = SessionMock.Create();
             var sut = new NodeCacheContext(session);
             var nodeId = NodeId.Parse("ns=2;s=TestNode");
-            var references = new List<ReferenceDescription>
-            {
+            ArrayOf<ReferenceDescription> references =
+            [
                 new ReferenceDescription
                 {
                     NodeId = ExpandedNodeId.Parse("ns=2;s=TestNode1"),
@@ -916,7 +916,7 @@ namespace Technosoftware.UaClient.Tests
                     DisplayName = new LocalizedText("TestDisplayName2"),
                     NodeClass = NodeClass.Variable
                 }
-            };
+            ];
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -939,7 +939,7 @@ namespace Technosoftware.UaClient.Tests
             ArrayOf<ReferenceDescription> result = await sut.FetchReferencesAsync(null, nodeId).ConfigureAwait(false);
 
             // Assert
-            Assert.That(result, Is.EquivalentTo(references));
+            Assert.That(result, Is.EqualTo(references));
 
             session.Channel.Verify();
         }
@@ -972,8 +972,8 @@ namespace Technosoftware.UaClient.Tests
                 NodeId.Parse("ns=2;s=TestNode1"),
                 NodeId.Parse("ns=2;s=TestNode2")
             };
-            var references = new List<ReferenceDescription>
-            {
+            ArrayOf<ReferenceDescription> references =
+            [
                 new ReferenceDescription
                 {
                     NodeId = ExpandedNodeId.Parse("ns=2;s=TestNode1"),
@@ -988,7 +988,7 @@ namespace Technosoftware.UaClient.Tests
                     DisplayName = new LocalizedText("TestDisplayName2"),
                     NodeClass = NodeClass.Variable
                 }
-            };
+            ];
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(

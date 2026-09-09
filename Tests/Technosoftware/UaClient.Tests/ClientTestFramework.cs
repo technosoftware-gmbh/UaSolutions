@@ -218,10 +218,12 @@ namespace Technosoftware.UaClient.Tests
                 .TransportQuotas
                 .MaxStringLength = TransportQuotaMaxStringLength;
             ServerFixture.Config.TransportQuotas.SecurityTokenLifetime = SecurityTokenLifetime;
-            // UserTokenPolicies is an immutable ArrayOf in 2.0, so the
-            // policies are collected and assigned in one go.
+            // UserTokenPolicies is an immutable ArrayOf in 2.0. The list the
+            // configuration already carries - the Anonymous policy among them -
+            // has to be spread back in, or assigning replaces rather than adds.
             ServerFixture.Config.ServerConfiguration.UserTokenPolicies =
             [
+                .. ServerFixture.Config.ServerConfiguration.UserTokenPolicies,
                 new UserTokenPolicy(UserTokenType.UserName),
                 new UserTokenPolicy(UserTokenType.Certificate),
                 new UserTokenPolicy(UserTokenType.IssuedToken)

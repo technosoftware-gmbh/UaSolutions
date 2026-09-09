@@ -60,6 +60,12 @@ namespace Technosoftware.UaServer.Tests
         public bool ProvisioningMode { get; set; }
         public ActivityListener ActivityListener { get; private set; }
 
+        /// <summary>
+        /// The transport bindings the server listens with. Defaults to
+        /// <see cref="TestTransportBindings.WithAllSchemes"/>.
+        /// </summary>
+        public Opc.Ua.Bindings.ITransportBindingRegistry TransportBindingRegistry { get; set; }
+
         public ServerFixture(
             Func<ITelemetryContext, T> factory,
             bool useTracing,
@@ -258,6 +264,12 @@ namespace Technosoftware.UaServer.Tests
 
             // start the server.
             T server = m_factory(m_telemetry);
+
+            // 2.0 no longer loads a transport binding by reflection when an
+            // endpoint of that scheme is first touched; the server listens on
+            // the schemes its registry was given.
+            server.TransportBindings = TransportBindingRegistry
+                ?? TestTransportBindings.WithAllSchemes();
             if (AllNodeManagers && server is UaStandardServer standardServer)
             {
                 NodeManagerUtils.AddDefaultNodeManagers(standardServer);

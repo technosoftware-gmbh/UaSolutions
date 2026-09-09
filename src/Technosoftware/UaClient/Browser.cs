@@ -257,8 +257,11 @@ namespace Technosoftware.UaClient
 
             try
             {
-                // process any continuation point.
-                while (!continuationPoint.IsNull)
+                // Process any continuation point. One that is present but
+                // empty means there is nothing more to fetch; IsNull only
+                // rules out the default ByteString, so IsEmpty is what the
+                // 1.5 null test meant.
+                while (!continuationPoint.IsEmpty)
                 {
                     ArrayOf<ReferenceDescription> additionalReferences;
 
@@ -307,7 +310,7 @@ namespace Technosoftware.UaClient
                     }
                 }
             }
-            catch (OperationCanceledException) when (continuationPoint.Length > 0)
+            catch (OperationCanceledException) when (!continuationPoint.IsEmpty)
             {
                 session = Session;
                 if (session != null)
@@ -363,7 +366,13 @@ namespace Technosoftware.UaClient
                     "Cannot browse if not connected to a server.");
 
             int count = nodesToBrowse.Count;
-            var result = new List<ArrayOf<ReferenceDescription>>(count);
+
+            // The per-node lists are handed to resultForPass and to the
+            // next-pass list and are then filled in place, so they have to
+            // stay reference types: an ArrayOf element would be copied on
+            // every assignment and the references would never reach the
+            // caller.
+            var result = new List<List<ReferenceDescription>>(count);
             var errors = new List<ServiceResult>(count);
 
             // first attempt for implementation: create the references for the output in advance.
@@ -378,7 +387,7 @@ namespace Technosoftware.UaClient
             var nodesToBrowseForPass = new List<NodeId>(count);
             nodesToBrowseForPass.AddRange(nodesToBrowse);
 
-            var resultForPass = new List<ArrayOf<ReferenceDescription>>(count);
+            var resultForPass = new List<List<ReferenceDescription>>(count);
             resultForPass.AddRange(result);
 
             var errorsForPass = new List<ServiceResult>(count);
@@ -406,8 +415,7 @@ namespace Technosoftware.UaClient
                 int batchOffset = 0;
 
                 var nodesToBrowseForNextPass = new List<NodeId>();
-                var referenceDescriptionsForNextPass
-                    = new List<ArrayOf<ReferenceDescription>>();
+                var referenceDescriptionsForNextPass = new List<List<ReferenceDescription>>();
                 var errorsForNextPass = new List<ServiceResult>();
 
                 // loop over the batches
@@ -462,7 +470,8 @@ namespace Technosoftware.UaClient
                             }
                         }
 
-                        resultForPass[resultOffset] = results.Results[ii];
+                        resultForPass[resultOffset].Clear();
+                        resultForPass[resultOffset].AddRange(results.Results[ii]);
                         errorsForPass[resultOffset] = results.Errors[ii];
                         errors[resultOffset] = results.Errors[ii];
                         resultOffset++;
@@ -508,7 +517,9 @@ namespace Technosoftware.UaClient
 
                 passCount++;
             } while (nodesToBrowseForPass.Count > 0);
-            return new ResultSet<ArrayOf<ReferenceDescription>>(result, errors);
+            return new ResultSet<ArrayOf<ReferenceDescription>>(
+                result.ConvertAll(references => (ArrayOf<ReferenceDescription>)references),
+                errors);
         }
 
         /// <summary>
@@ -567,7 +578,7 @@ namespace Technosoftware.UaClient
 
             for (int ii = 0; ii < nodeIds.Count; ii++)
             {
-                if (!continuationPoints[ii].IsNull &&
+                if (!continuationPoints[ii].IsEmpty &&
                     !StatusCode.IsBad(previousErrors[ii].Reference.StatusCode))
                 {
                     nextContinuationPoints.Add(continuationPoints[ii]);
@@ -604,7 +615,7 @@ namespace Technosoftware.UaClient
 
                 for (int ii = 0; ii < revisedContinuationPoints.Count; ii++)
                 {
-                    if (!revisedContinuationPoints[ii].IsNull &&
+                    if (!revisedContinuationPoints[ii].IsEmpty &&
                         !StatusCode.IsBad(browseNextErrors[ii].StatusCode))
                     {
                         nextContinuationPoints.Add(revisedContinuationPoints[ii]);
