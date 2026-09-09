@@ -20,6 +20,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using SampleCompany.NodeManagers.DurableSubscription;
 using Technosoftware.UaServer;
 #endregion Using Directives

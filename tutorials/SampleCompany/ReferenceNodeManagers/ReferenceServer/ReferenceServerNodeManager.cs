@@ -3802,11 +3802,11 @@ namespace SampleCompany.NodeManagers.Reference
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>([0]);
+                variable.ArrayDimensions = [0];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>([0, 0]);
+                variable.ArrayDimensions = [0, 0];
             }
 
             variable.ValuePrecision.Value = 2;
@@ -3908,11 +3908,11 @@ namespace SampleCompany.NodeManagers.Reference
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>([0]);
+                variable.ArrayDimensions = [0];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>([0, 0]);
+                variable.ArrayDimensions = [0, 0];
             }
 
             BuiltInType builtInType = TypeInfo.GetBuiltInType(dataType, ServerData.TypeTree);
@@ -4359,11 +4359,11 @@ namespace SampleCompany.NodeManagers.Reference
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>([0]);
+                variable.ArrayDimensions = [0];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>([0, 0]);
+                variable.ArrayDimensions = [0, 0];
             }
 
             parent?.AddChild(variable);
