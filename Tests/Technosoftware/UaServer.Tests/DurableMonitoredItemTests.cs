@@ -1428,7 +1428,7 @@ namespace Technosoftware.UaServer.Tests
                     queue.Dequeue(out DataValue value, out ServiceResult _),
                     $"Dequeue operation failed for the {i}st item");
 
-                Assert.That(i, Is.EqualTo((uint)value.Value));
+                Assert.That(i, Is.EqualTo((uint)value.BoxedValue()));
 
                 //simulate publishing operation
                 if (i % 501 == 0)

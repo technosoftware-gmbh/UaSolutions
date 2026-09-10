@@ -2464,9 +2464,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             range = null;
 
             // check for valid filter type.
-            filter = requestedFilter.Body as DataChangeFilter;
-
-            if (filter == null)
+            if (!requestedFilter.TryGetValue(out filter))
             {
                 return StatusCodes.BadMonitoredItemFilterUnsupported;
             }

@@ -996,7 +996,7 @@ namespace Technosoftware.UaClient.Tests
             // Assert
             Assert.AreEqual(expected[0], result[0]);
             Assert.AreEqual(StatusCodes.Bad, (uint)result[1].StatusCode);
-            Assert.AreEqual(expected[1].Value, result[1].Value);
+            Assert.AreEqual(expected[1].BoxedValue(), result[1].BoxedValue());
 
             context
                 .Setup(c => c.FetchValuesAsync(

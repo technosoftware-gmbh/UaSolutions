@@ -645,10 +645,10 @@ namespace Technosoftware.UaServer.Tests
                 }
                 else
                 {
-                    var dataChangeNotification = publishResponse.NotificationMessage.NotificationData[0]
-                        .Body as DataChangeNotification;
-                    var eventNotification = publishResponse.NotificationMessage.NotificationData[0]
-                        .Body as EventNotificationList;
+                    publishResponse.NotificationMessage.NotificationData[0]
+                        .TryGetValue(out DataChangeNotification dataChangeNotification);
+                    publishResponse.NotificationMessage.NotificationData[0]
+                        .TryGetValue(out EventNotificationList eventNotification);
                     TestContext.Out.WriteLine(
                         "Notification: {0} {1} {2}",
                         publishResponse.NotificationMessage.SequenceNumber,
@@ -845,10 +845,9 @@ namespace Technosoftware.UaServer.Tests
             {
                 ExtensionObject items = publishResponse.NotificationMessage.NotificationData
                     .Find(_ => true, default);
-                Assert.IsTrue(items.Body is DataChangeNotification);
-                ArrayOf<MonitoredItemNotification> monitoredItemsCollection = (
-                    (DataChangeNotification)items.Body
-                ).MonitoredItems;
+                Assert.IsTrue(items.TryGetValue(out DataChangeNotification notification));
+                ArrayOf<MonitoredItemNotification> monitoredItemsCollection =
+                    notification.MonitoredItems;
                 Assert.IsNotEmpty(monitoredItemsCollection.ToArray());
             }
             //Assert.AreEqual(0, availableSequenceNumbers.Count);

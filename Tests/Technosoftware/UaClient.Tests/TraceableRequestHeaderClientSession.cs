@@ -101,7 +101,7 @@ namespace Technosoftware.UaClient
                     request.RequestHeader.AdditionalHeader = new ExtensionObject(traceData);
                 }
                 else if (request.RequestHeader.AdditionalHeader
-                    .Body is AdditionalParametersType existingParameters)
+                    .TryGetValue(out AdditionalParametersType existingParameters))
                 {
                     // Merge the trace data into the existing parameters.
                     existingParameters.Parameters = [

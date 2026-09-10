@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Opc.Ua;
+using Technosoftware.Tests;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
 #endregion Using Directives
 
@@ -114,7 +115,7 @@ namespace Technosoftware.UaClient.Tests
                         TestContext.Out.WriteLine(
                             "{0}: {1}, {2}, {3}",
                             item.DisplayName,
-                            value.Value,
+                            value.BoxedValue(),
                             value.SourceTimestamp,
                             value.StatusCode);
                     }
@@ -175,7 +176,7 @@ namespace Technosoftware.UaClient.Tests
                         TestContext.Out.WriteLine(
                             "{0}: {1}, {2}, {3}",
                             item.DisplayName,
-                            value.Value,
+                            value.BoxedValue(),
                             value.SourceTimestamp,
                             value.StatusCode);
                     }
@@ -257,7 +258,7 @@ namespace Technosoftware.UaClient.Tests
                             TestContext.Out.WriteLine(
                                 "{0}: {1}, {2}, {3}",
                                 item.DisplayName,
-                                value.Value,
+                                value.BoxedValue(),
                                 value.SourceTimestamp,
                                 value.StatusCode);
                         }
@@ -620,7 +621,7 @@ namespace Technosoftware.UaClient.Tests
                                     "Tra:{0}: {1:20}, {2}, {3}, {4}",
                                     subscription.Id,
                                     item.DisplayName,
-                                    value.Value,
+                                    value.BoxedValue(),
                                     value.SourceTimestamp,
                                     value.StatusCode);
                             }
@@ -1036,7 +1037,7 @@ namespace Technosoftware.UaClient.Tests
                                         "Tra:{0}: {1:20}, {2}, {3}, {4}",
                                         subscription.Id,
                                         item.DisplayName,
-                                        value.Value,
+                                        value.BoxedValue(),
                                         value.SourceTimestamp,
                                         value.StatusCode);
                                 }
@@ -1075,7 +1076,7 @@ namespace Technosoftware.UaClient.Tests
                                         "Tra:{0}: {1:20}, {2}, {3}, {4}",
                                         s.Id,
                                         item.DisplayName,
-                                        value.Value,
+                                        value.BoxedValue(),
                                         value.SourceTimestamp,
                                         value.StatusCode);
                                 }
@@ -1265,7 +1266,7 @@ namespace Technosoftware.UaClient.Tests
                         TestContext.Out.WriteLine(
                             "{0}: {1}, {2}, {3}",
                             item.DisplayName,
-                            value.Value,
+                            value.BoxedValue(),
                             value.SourceTimestamp,
                             value.StatusCode);
                     }
@@ -1414,7 +1415,7 @@ namespace Technosoftware.UaClient.Tests
                                 "Org:{0}: {1:20}, {2}, {3}, {4}",
                                 subscription.Id,
                                 item.DisplayName,
-                                value.Value,
+                                value.BoxedValue(),
                                 value.SourceTimestamp,
                                 value.StatusCode);
                         }

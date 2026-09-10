@@ -1216,7 +1216,7 @@ namespace Technosoftware.UaClient.Tests
             {
                 DataValue dataValue = await Session.ReadValueAsync(nodeId).ConfigureAwait(false);
                 Assert.NotNull(dataValue);
-                Assert.NotNull(dataValue.Value);
+                Assert.NotNull(dataValue.BoxedValue());
                 Assert.AreNotEqual(DateTime.MinValue, dataValue.SourceTimestamp);
                 Assert.AreNotEqual(DateTime.MinValue, dataValue.ServerTimestamp);
             }
@@ -1272,9 +1272,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.NotNull(dataTypeNode);
             ExtensionObject dataTypeDefinition = dataTypeNode.DataTypeDefinition;
             Assert.NotNull(dataTypeDefinition);
-            Assert.NotNull(dataTypeDefinition.Body);
-            Assert.True(dataTypeDefinition.Body is StructureDefinition);
-            var structureDefinition = dataTypeDefinition.Body as StructureDefinition;
+            Assert.True(
+                dataTypeDefinition.TryGetValue(out StructureDefinition structureDefinition));
             Assert.AreEqual(
                 ObjectIds.ProgramDiagnosticDataType_Encoding_DefaultBinary,
                 structureDefinition.DefaultEncodingId);
@@ -1746,7 +1745,7 @@ namespace Technosoftware.UaClient.Tests
                     continue;
                 }
                 if (item.Value.AsBoxedObject(Variant.BoxingBehavior.Legacy) is ExtensionObject eo &&
-                    eo.Body is SpanContextDataType spanContext)
+                    eo.TryGetValue(out SpanContextDataType spanContext))
                 {
                     Span<byte> spanIdBytes = stackalloc byte[8];
                     Span<byte> traceIdBytes = stackalloc byte[16];
@@ -1814,8 +1813,9 @@ namespace Technosoftware.UaClient.Tests
                     Assert.NotNull(additionalHeader);
 
                     // Simulate extraction
+                    additionalHeader.TryGetValue(out AdditionalParametersType headerParameters);
                     ActivityContext extractedContext = TestExtractActivityContextFromParameters(
-                        additionalHeader.Body as AdditionalParametersType);
+                        headerParameters);
 
                     // Verify that the trace context is propagated.
                     Assert.AreEqual(activity.TraceId, extractedContext.TraceId);
@@ -1874,12 +1874,12 @@ namespace Technosoftware.UaClient.Tests
             // Variant carries the extension object's body itself in 2.0.
             Assert.IsTrue(values[0].WrappedValue.TryGetStructure(out BuildInfo buildInfo));
             Assert.NotNull(buildInfo);
-            Assert.AreEqual(buildInfo.ProductName, values[1].Value);
-            Assert.AreEqual(buildInfo.ProductUri, values[2].Value);
-            Assert.AreEqual(buildInfo.ManufacturerName, values[3].Value);
-            Assert.AreEqual(buildInfo.SoftwareVersion, values[4].Value);
-            Assert.AreEqual(buildInfo.BuildNumber, values[5].Value);
-            Assert.AreEqual(buildInfo.BuildDate, values[6].Value);
+            Assert.AreEqual(buildInfo.ProductName, values[1].BoxedValue());
+            Assert.AreEqual(buildInfo.ProductUri, values[2].BoxedValue());
+            Assert.AreEqual(buildInfo.ManufacturerName, values[3].BoxedValue());
+            Assert.AreEqual(buildInfo.SoftwareVersion, values[4].BoxedValue());
+            Assert.AreEqual(buildInfo.BuildNumber, values[5].BoxedValue());
+            Assert.AreEqual(buildInfo.BuildDate, values[6].BoxedValue());
         }
 
         /// <summary>

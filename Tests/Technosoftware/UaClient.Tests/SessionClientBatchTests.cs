@@ -632,7 +632,8 @@ namespace Technosoftware.UaClient.Tests
             if (requestHeader != null)
             {
                 Assert.That(requestHeader.AdditionalHeader, Is.Not.Null);
-                var additionalParameters = requestHeader.AdditionalHeader.Body as AdditionalParametersType;
+                requestHeader.AdditionalHeader
+                    .TryGetValue(out AdditionalParametersType additionalParameters);
                 Assert.That(additionalParameters, Is.Not.Null);
                 Assert.That(additionalParameters.Parameters.ToArray().Any(k => k.Key == "SpanContext"), Is.True);
             }
@@ -693,7 +694,8 @@ namespace Technosoftware.UaClient.Tests
             if (requestHeader != null)
             {
                 Assert.That(requestHeader.AdditionalHeader, Is.Not.Null);
-                var additionalParameters = requestHeader.AdditionalHeader.Body as AdditionalParametersType;
+                requestHeader.AdditionalHeader
+                    .TryGetValue(out AdditionalParametersType additionalParameters);
                 Assert.That(additionalParameters, Is.Not.Null);
                 Assert.That(additionalParameters.Parameters.ToArray().Any(k => k.Key == "SpanContext"), Is.True);
             }

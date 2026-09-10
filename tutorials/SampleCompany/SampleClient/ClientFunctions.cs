@@ -126,7 +126,8 @@ namespace SampleCompany.SampleClient
                 // Display the results.
                 foreach (DataValue result in resultsValues)
                 {
-                    Console.WriteLine($"Read Value = {result.Value} , StatusCode = {result.StatusCode}");
+                    Console.WriteLine(
+                        $"Read Value = {result.WrappedValue} , StatusCode = {result.StatusCode}");
                 }
 
                 // Read Server NamespaceArray

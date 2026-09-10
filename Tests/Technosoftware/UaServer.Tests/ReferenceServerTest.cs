@@ -250,18 +250,18 @@ namespace Technosoftware.UaServer.Tests
 
             m_operationLimits = new OperationLimits
             {
-                MaxNodesPerRead = (uint)results[0].Value,
-                MaxNodesPerHistoryReadData = (uint)results[1].Value,
-                MaxNodesPerHistoryReadEvents = (uint)results[2].Value,
-                MaxNodesPerWrite = (uint)results[3].Value,
-                MaxNodesPerHistoryUpdateData = (uint)results[4].Value,
-                MaxNodesPerHistoryUpdateEvents = (uint)results[5].Value,
-                MaxNodesPerBrowse = (uint)results[6].Value,
-                MaxMonitoredItemsPerCall = (uint)results[7].Value,
-                MaxNodesPerNodeManagement = (uint)results[8].Value,
-                MaxNodesPerRegisterNodes = (uint)results[9].Value,
-                MaxNodesPerTranslateBrowsePathsToNodeIds = (uint)results[10].Value,
-                MaxNodesPerMethodCall = (uint)results[11].Value
+                MaxNodesPerRead = (uint)results[0].BoxedValue(),
+                MaxNodesPerHistoryReadData = (uint)results[1].BoxedValue(),
+                MaxNodesPerHistoryReadEvents = (uint)results[2].BoxedValue(),
+                MaxNodesPerWrite = (uint)results[3].BoxedValue(),
+                MaxNodesPerHistoryUpdateData = (uint)results[4].BoxedValue(),
+                MaxNodesPerHistoryUpdateEvents = (uint)results[5].BoxedValue(),
+                MaxNodesPerBrowse = (uint)results[6].BoxedValue(),
+                MaxMonitoredItemsPerCall = (uint)results[7].BoxedValue(),
+                MaxNodesPerNodeManagement = (uint)results[8].BoxedValue(),
+                MaxNodesPerRegisterNodes = (uint)results[9].BoxedValue(),
+                MaxNodesPerTranslateBrowsePathsToNodeIds = (uint)results[10].BoxedValue(),
+                MaxNodesPerMethodCall = (uint)results[11].BoxedValue()
             };
         }
 
@@ -954,10 +954,9 @@ namespace Technosoftware.UaServer.Tests
             Assert.AreEqual(subscriptionIds[0], publishResponse.SubscriptionId);
             Assert.AreEqual(1, publishResponse.NotificationMessage.NotificationData.Count);
             ExtensionObject items = publishResponse.NotificationMessage.NotificationData.Find(_ => true, default);
-            Assert.IsTrue(items.Body is DataChangeNotification);
-            ArrayOf<MonitoredItemNotification> monitoredItemsCollection = (
-                (DataChangeNotification)items.Body
-            ).MonitoredItems;
+            Assert.IsTrue(items.TryGetValue(out DataChangeNotification notification));
+            ArrayOf<MonitoredItemNotification> monitoredItemsCollection =
+                notification.MonitoredItems;
             Assert.AreEqual(testSet.Length, monitoredItemsCollection.Count,
                 "One MonitoredItemNotification should be returned for each Node present in the TestSet");
 
@@ -981,8 +980,8 @@ namespace Technosoftware.UaServer.Tests
                 Assert.AreEqual(subscriptionIds[0], publishResponse.SubscriptionId);
                 Assert.AreEqual(1, publishResponse.NotificationMessage.NotificationData.Count);
                 items = publishResponse.NotificationMessage.NotificationData.Find(_ => true, default);
-                Assert.IsTrue(items.Body is DataChangeNotification);
-                monitoredItemsCollection = ((DataChangeNotification)items.Body).MonitoredItems;
+                Assert.IsTrue(items.TryGetValue(out notification));
+                monitoredItemsCollection = notification.MonitoredItems;
                 Assert.AreEqual(
                     testSet.Length * (queueSize - 1),
                     monitoredItemsCollection.Count,
@@ -1085,7 +1084,7 @@ namespace Technosoftware.UaServer.Tests
             var modifiedValues = new List<DataValue>();
             foreach (DataValue dataValue in readResponse.Results)
             {
-                var typeInfo = TypeInfo.Construct(dataValue.Value);
+                TypeInfo typeInfo = dataValue.WrappedValue.TypeInfo;
                 Assert.IsNotNull(typeInfo);
                 Variant value = m_generator.GetRandomScalar(typeInfo.BuiltInType);
                 modifiedValues.Add(new DataValue(value));
@@ -1146,9 +1145,9 @@ namespace Technosoftware.UaServer.Tests
 
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, readIdCollection);
             Assert.AreEqual(1, readResponse.Results.Count);
-            Assert.NotNull(readResponse.Results[0].Value);
+            Assert.NotNull(readResponse.Results[0].BoxedValue());
 
-            byte eventNotifier = (byte)readResponse.Results[0].Value;
+            byte eventNotifier = (byte)readResponse.Results[0].BoxedValue();
 
             // Read history capabilities
             var historyCapabilitiesReadIds = new List<ReadValueId> {
@@ -1174,11 +1173,11 @@ namespace Technosoftware.UaServer.Tests
             Assert.AreEqual(2, readResponse.Results.Count);
 
             bool accessHistoryEventsCapability =
-                readResponse.Results[0].Value != null &&
-                (bool)readResponse.Results[0].Value;
+                readResponse.Results[0].BoxedValue() != null &&
+                (bool)readResponse.Results[0].BoxedValue();
             bool accessHistoryDataCapability =
-                readResponse.Results[1].Value != null &&
-                (bool)readResponse.Results[1].Value;
+                readResponse.Results[1].BoxedValue() != null &&
+                (bool)readResponse.Results[1].BoxedValue();
 
             logger.LogInformation("Server EventNotifier: {EventNotifier}", eventNotifier);
             logger.LogInformation("AccessHistoryEventsCapability: {AccessHistoryEventsCapability}", accessHistoryEventsCapability);
@@ -1281,8 +1280,8 @@ namespace Technosoftware.UaServer.Tests
             ServerFixtureUtils.ValidateResponse(readResponse.ResponseHeader, readResponse.Results, readIdCollection);
             Assert.AreEqual(2, readResponse.Results.Count);
 
-            bool historizing = (bool)readResponse.Results[0].Value;
-            byte accessLevel = (byte)readResponse.Results[1].Value;
+            bool historizing = (bool)readResponse.Results[0].BoxedValue();
+            byte accessLevel = (byte)readResponse.Results[1].BoxedValue();
 
             logger.LogInformation("Historizing: {Historizing}, AccessLevel: {AccessLevel}", historizing, accessLevel);
 
@@ -1329,7 +1328,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.IsNotNull(result.HistoryData, "HistoryData should not be null");
 
             // Verify we got HistoryData back
-            if (result.HistoryData.Body is HistoryData historyData)
+            if (result.HistoryData.TryGetValue(out HistoryData historyData))
             {
                 logger.LogInformation("Retrieved {Count} history values", historyData.DataValues.Count);
                 Assert.IsNotNull(historyData.DataValues, "DataValues should not be null");

@@ -23,6 +23,7 @@ using NUnit.Framework;
 using Opc.Ua;
 using Technosoftware.UaServer.Tests;
 using SampleCompany.NodeManagers.Reference;
+using Technosoftware.Tests;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
 #endregion Using Directives
 
@@ -198,10 +199,10 @@ namespace Technosoftware.UaClient.Tests
 
             // DataValue is a struct in 2.0, so the cast is direct.
             var maxLifetimeCountValue = (DataValue)modifiedValues["MaxLifetimeCount"];
-            Assert.IsNotNull(maxLifetimeCountValue.Value);
+            Assert.IsNotNull(maxLifetimeCountValue.BoxedValue());
             Assert.AreEqual(
                 expectedLifetime,
-                Convert.ToUInt32(maxLifetimeCountValue.Value, CultureInfo.InvariantCulture));
+                Convert.ToUInt32(maxLifetimeCountValue.BoxedValue(), CultureInfo.InvariantCulture));
 
             Assert.True(await Session.RemoveSubscriptionAsync(subscription).ConfigureAwait(false));
         }
@@ -597,10 +598,10 @@ namespace Technosoftware.UaClient.Tests
                 await GetValuesAsync(nodeIds).ConfigureAwait(false);
 
             var dataValue = (DataValue)modifiedValues[desiredValue];
-            Assert.IsNotNull(dataValue.Value);
+            Assert.IsNotNull(dataValue.BoxedValue());
             Assert.AreEqual(
                 expectedValue,
-                Convert.ToUInt32(dataValue.Value, CultureInfo.InvariantCulture));
+                Convert.ToUInt32(dataValue.BoxedValue(), CultureInfo.InvariantCulture));
 
             return modifiedValues;
         }

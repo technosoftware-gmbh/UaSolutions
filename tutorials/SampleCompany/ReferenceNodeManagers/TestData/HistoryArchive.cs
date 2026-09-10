@@ -127,7 +127,7 @@ namespace SampleCompany.NodeManagers.TestData
 
                         if (record.DataType == BuiltInType.Int32)
                         {
-                            var lastValue = (int)record.RawData[^1].Value.Value;
+                            record.RawData[^1].Value.WrappedValue.TryGetValue(out int lastValue);
                             value = Variant.From(lastValue + 1);
                         }
 
