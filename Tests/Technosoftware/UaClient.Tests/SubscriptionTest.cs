@@ -1536,10 +1536,12 @@ namespace Technosoftware.UaClient.Tests
             subscription.Snapshot(out SubscriptionState state);
 
             // Verify that the triggering relationships are persisted
+            // The snapshot's item list is an ArrayOf in 2.0, which LINQ does
+            // not bind to; it carries its own Find.
             MonitoredItemState triggeringItemState = state.MonitoredItems
-                .FirstOrDefault(m => m.ClientId == triggeringItem.ClientHandle);
+                .Find(m => m.ClientId == triggeringItem.ClientHandle);
             Assert.That(triggeringItemState, Is.Not.Null);
-            Assert.That(triggeringItemState.TriggeredItems, Is.Not.Null);
+            Assert.That(triggeringItemState.TriggeredItems.IsEmpty, Is.False);
             Assert.That(triggeringItemState.TriggeredItems.Count, Is.EqualTo(2));
 
             // Clean up

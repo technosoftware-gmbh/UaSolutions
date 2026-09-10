@@ -23,6 +23,10 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Types" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\UaConfiguration\Technosoftware.UaConfiguration.csproj" />

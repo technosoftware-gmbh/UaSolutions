@@ -863,6 +863,12 @@ namespace Technosoftware.UaClient
         public void Snapshot(out SessionConfiguration sessionConfiguration)
         {
             ByteString serverNonce = m_serverNonce;
+
+            // The state is encoded with the UA binary encoder now, so the
+            // ephemeral key travels as its raw bytes rather than as a Nonce.
+            ByteString serverEccEphemeralKey = m_eccServerEphemeralKey?.Data != null
+                ? ByteString.From([.. m_eccServerEphemeralKey.Data])
+                : default;
             sessionConfiguration = new SessionConfiguration
             {
                 SessionName = SessionName,
@@ -872,7 +878,7 @@ namespace Technosoftware.UaClient
                 ConfiguredEndpoint = ConfiguredEndpoint,
                 CheckDomain = CheckDomain,
                 ServerNonce = serverNonce,
-                ServerEccEphemeralKey = m_eccServerEphemeralKey,
+                ServerEccEphemeralKey = serverEccEphemeralKey,
                 UserIdentityTokenPolicy = m_userTokenSecurityPolicyUri
             };
         }
@@ -891,7 +897,21 @@ namespace Technosoftware.UaClient
             m_checkDomain = sessionConfiguration.CheckDomain;
             m_serverNonce = sessionConfiguration.ServerNonce;
             m_userTokenSecurityPolicyUri = sessionConfiguration.UserIdentityTokenPolicy;
-            m_eccServerEphemeralKey = sessionConfiguration.ServerEccEphemeralKey;
+            if (sessionConfiguration.ServerEccEphemeralKey.Length > 0)
+            {
+                string ephemeralKeyPolicyUri = !string.IsNullOrEmpty(m_userTokenSecurityPolicyUri)
+                    ? m_userTokenSecurityPolicyUri!
+                    : m_endpoint.Description?.SecurityPolicyUri ?? SecurityPolicies.None;
+                SecurityPolicyInfo? ephemeralKeyPolicy = m_securityPolicies.GetInfo(
+                    ephemeralKeyPolicyUri);
+                m_eccServerEphemeralKey = Nonce.CreateNonce(
+                    ephemeralKeyPolicy!,
+                    sessionConfiguration.ServerEccEphemeralKey.ToArray());
+            }
+            else
+            {
+                m_eccServerEphemeralKey = null;
+            }
 
             lock (m_lock)
             {
@@ -919,11 +939,12 @@ namespace Technosoftware.UaClient
             Snapshot(out SessionConfiguration sessionConfiguration);
             if (stream != null)
             {
-                XmlWriterSettings settings = Utils.DefaultXmlWriterSettings();
-                using var writer = XmlWriter.Create(stream, settings);
-                var serializer = new DataContractSerializer(typeof(SessionConfiguration));
-                using IDisposable scope = AmbientMessageContext.SetScopedContext(MessageContext);
-                serializer.WriteObject(writer, sessionConfiguration);
+                IServiceMessageContext context = MessageContext
+                    ?? throw new InvalidOperationException("Missing service message context");
+                using var encoder = new BinaryEncoder(stream, context, true);
+                encoder.WriteStringArray(null, context.NamespaceUris.ToArrayOf());
+                encoder.WriteStringArray(null, context.ServerUris.ToArrayOf());
+                sessionConfiguration.Encode(encoder);
             }
             return sessionConfiguration;
         }
@@ -936,18 +957,23 @@ namespace Technosoftware.UaClient
         {
             using Activity? activity = m_telemetry.StartActivity();
             // Snapshot subscription state
-            var subscriptionStateCollection = new SubscriptionStateCollection();
+            var subscriptionStates = new List<SubscriptionState>();
             foreach (Subscription subscription in subscriptions)
             {
                 subscription.Snapshot(out SubscriptionState state);
-                subscriptionStateCollection.Add(state);
+                subscriptionStates.Add(state);
             }
-            XmlWriterSettings settings = Utils.DefaultXmlWriterSettings();
 
-            using var writer = XmlWriter.Create(stream, settings);
-            var serializer = new DataContractSerializer(typeof(SubscriptionStateCollection), knownTypes);
-            using IDisposable scope = AmbientMessageContext.SetScopedContext(MessageContext);
-            serializer.WriteObject(writer, subscriptionStateCollection);
+            IServiceMessageContext context = MessageContext
+                ?? throw new InvalidOperationException("Missing service message context");
+            using var encoder = new BinaryEncoder(stream, context, true);
+            encoder.WriteStringArray(null, context.NamespaceUris.ToArrayOf());
+            encoder.WriteStringArray(null, context.ServerUris.ToArrayOf());
+            encoder.WriteInt32(null, subscriptionStates.Count);
+            foreach (SubscriptionState state in subscriptionStates)
+            {
+                state.Encode(encoder);
+            }
         }
 
         /// <inheritdoc/>
@@ -957,21 +983,29 @@ namespace Technosoftware.UaClient
             IEnumerable<Type>? knownTypes = null)
         {
             using Activity? activity = m_telemetry.StartActivity();
-            // secure settings
-            XmlReaderSettings settings = Utils.DefaultXmlReaderSettings();
-            settings.CloseInput = true;
+            IServiceMessageContext context = MessageContext
+                ?? throw new InvalidOperationException("Missing service message context");
+            using var decoder = new BinaryDecoder(stream, context, true);
+            ArrayOf<string?> nsUris = decoder.ReadStringArray(null);
+            ArrayOf<string?> serverUris = decoder.ReadStringArray(null);
 
-            using var reader = XmlReader.Create(stream, settings);
-            var serializer = new DataContractSerializer(typeof(SubscriptionStateCollection), knownTypes);
-            using IDisposable scope = AmbientMessageContext.SetScopedContext(MessageContext);
-            var stateCollection = (SubscriptionStateCollection?)serializer.ReadObject(reader);
-            if (stateCollection == null)
+            // The tables on the wire are nullable string arrays, but the
+            // decoder never yields a null entry for them.
+            decoder.SetMappingTables(
+                new NamespaceTable(nsUris.Memory.ToArray()!),
+                new StringTable(serverUris.Memory.ToArray()!));
+
+            int count = decoder.ReadInt32(null);
+            if (count <= 0)
             {
                 return [];
             }
-            var subscriptions = new SubscriptionCollection(stateCollection.Count);
-            foreach (SubscriptionState state in stateCollection)
+            var subscriptions = new SubscriptionCollection(count);
+            for (int ii = 0; ii < count; ii++)
             {
+                var state = new SubscriptionState();
+                state.Decode(decoder);
+
                 // Restore subscription from state
                 Subscription subscription = CreateSubscription(state);
                 subscription.Restore(state);
