@@ -468,7 +468,7 @@ namespace Technosoftware.UaConfiguration.Tests
             {
                 // store public key in trusted store
                 byte[] rawData = appCert.RawData;
-                await store.AddAsync(CertificateFactory.Create(rawData))
+                await store.AddAsync(Certificate.FromRawData(rawData))
                     .ConfigureAwait(false);
             }
 
@@ -603,7 +603,7 @@ namespace Technosoftware.UaConfiguration.Tests
                     applicationCertificate.StorePath,
                     password: null,
                     telemetry).ConfigureAwait(false);
-                publicKey = CertificateFactory.Create(testCert.RawData);
+                publicKey = Certificate.FromRawData(testCert.RawData);
             }
 
             using (publicKey)
@@ -722,7 +722,7 @@ namespace Technosoftware.UaConfiguration.Tests
                     applicationCertificate.StorePath,
                     password: null,
                     telemetry).ConfigureAwait(false);
-                publicKey = CertificateFactory.Create(testCert.RawData);
+                publicKey = Certificate.FromRawData(testCert.RawData);
             }
 
             using (publicKey)
@@ -770,7 +770,7 @@ namespace Technosoftware.UaConfiguration.Tests
             DateTime notBefore = DateTime.Today.AddDays(-30);
             DateTime notAfter = DateTime.Today.AddDays(30);
 
-            using Certificate cert = CertificateFactory
+            using Certificate cert = DefaultCertificateFactory.Instance
                 .CreateCertificate(SubjectName)
                 .SetNotBefore(notBefore)
                 .SetNotAfter(notAfter)
@@ -955,15 +955,15 @@ namespace Technosoftware.UaConfiguration.Tests
             const string uri1 = "urn:localhost:opcfoundation.org:App1";
             const string uri2 = "urn:localhost:opcfoundation.org:App2";
 
-            Certificate cert1 = CertificateFactory
-                .CreateCertificate(uri1, ApplicationName, SubjectName, [Utils.GetHostName()])
+            Certificate cert1 = DefaultCertificateFactory.Instance
+                .CreateApplicationCertificate(uri1, ApplicationName, SubjectName, [Utils.GetHostName()])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddYears(1))
                 .CreateForRSA();
 
             const string subjectName2 = "CN=UA Configuration Test 2, O=OPC Foundation, C=US, S=Arizona";
-            Certificate cert2 = CertificateFactory
-                .CreateCertificate(uri2, ApplicationName, subjectName2, [Utils.GetHostName()])
+            Certificate cert2 = DefaultCertificateFactory.Instance
+                .CreateApplicationCertificate(uri2, ApplicationName, subjectName2, [Utils.GetHostName()])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddYears(1))
                 .SetRSAKeySize(CertificateFactory.DefaultKeySize)
@@ -1030,15 +1030,15 @@ namespace Technosoftware.UaConfiguration.Tests
             Assert.NotNull(applicationInstance);
 
             // Create two certificates with the same ApplicationUri
-            Certificate cert1 = CertificateFactory
-                .CreateCertificate(ApplicationUri, ApplicationName, SubjectName, [Utils.GetHostName()])
+            Certificate cert1 = DefaultCertificateFactory.Instance
+                .CreateApplicationCertificate(ApplicationUri, ApplicationName, SubjectName, [Utils.GetHostName()])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddYears(1))
                 .CreateForRSA();
 
             const string subjectName2 = "CN=UA Configuration Test RSA, O=OPC Foundation, C=US, S=Arizona";
-            Certificate cert2 = CertificateFactory
-                .CreateCertificate(ApplicationUri, ApplicationName, subjectName2, [Utils.GetHostName()])
+            Certificate cert2 = DefaultCertificateFactory.Instance
+                .CreateApplicationCertificate(ApplicationUri, ApplicationName, subjectName2, [Utils.GetHostName()])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddYears(1))
                 .SetRSAKeySize(CertificateFactory.DefaultKeySize)
@@ -1427,8 +1427,8 @@ namespace Technosoftware.UaConfiguration.Tests
                         $"Unexpected InvalidCertType {certType}");
             }
 
-            return CertificateFactory
-                .CreateCertificate(ApplicationUri, ApplicationName, SubjectName, domainNames)
+            return DefaultCertificateFactory.Instance
+                .CreateApplicationCertificate(ApplicationUri, ApplicationName, SubjectName, [.. domainNames])
                 .SetNotBefore(notBefore)
                 .SetNotAfter(notAfter)
                 .SetRSAKeySize(keySize)
@@ -1473,21 +1473,21 @@ namespace Technosoftware.UaConfiguration.Tests
             }
 
             const string rootCASubjectName = "CN=Root CA Test, O=OPC Foundation, C=US, S=Arizona";
-            using Certificate rootCA = CertificateFactory
+            using Certificate rootCA = DefaultCertificateFactory.Instance
                 .CreateCertificate(rootCASubjectName)
                 .SetNotBefore(issuerNotBefore)
                 .SetNotAfter(issuerNotAfter)
                 .SetCAConstraint(-1)
                 .CreateForRSA();
-            Certificate appCert = CertificateFactory
-                .CreateCertificate(ApplicationUri, ApplicationName, SubjectName, domainNames)
+            Certificate appCert = DefaultCertificateFactory.Instance
+                .CreateApplicationCertificate(ApplicationUri, ApplicationName, SubjectName, [.. domainNames])
                 .SetNotBefore(notBefore)
                 .SetNotAfter(notAfter)
                 .SetIssuer(rootCA)
                 .SetRSAKeySize(keySize)
                 .CreateForRSA();
 
-            return [appCert, CertificateFactory.Create(rootCA.RawData)];
+            return [appCert, Certificate.FromRawData(rootCA.RawData)];
         }
 
         /// <summary>

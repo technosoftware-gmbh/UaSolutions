@@ -156,8 +156,8 @@ namespace Technosoftware.UaClient.Tests
 
                 if (!endpoint.ServerCertificate.IsEmpty)
                 {
-                    using Certificate cert = CertificateFactory.Create(
-                        endpoint.ServerCertificate);
+                    using Certificate cert = Certificate.FromRawData(
+                        endpoint.ServerCertificate.Memory);
                     TestContext.Out.WriteLine("  [{0}]", cert.Thumbprint);
                 }
                 else

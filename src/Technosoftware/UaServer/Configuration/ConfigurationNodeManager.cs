@@ -612,7 +612,7 @@ namespace Technosoftware.UaServer
                                 }
 
                                 updateCertificate.CertificateWithPrivateKey =
-                                    CertificateFactory.CreateCertificateWithPrivateKey(
+                                    s_certificateFactory.CreateWithPrivateKey(
                                         newCert,
                                         exportableKey);
                                 try
@@ -642,7 +642,7 @@ namespace Technosoftware.UaServer
                                     false);
 
                                 updateCertificate.CertificateWithPrivateKey =
-                                    CertificateFactory.CreateCertificateWithPrivateKey(
+                                    s_certificateFactory.CreateWithPrivateKey(
                                         newCert,
                                         certWithPrivateKey);
                                 try
@@ -667,7 +667,7 @@ namespace Technosoftware.UaServer
                             for (int attempt = 0; ; attempt++)
                             {
                                 updateCertificate.CertificateWithPrivateKey =
-                                CertificateFactory.CreateCertificateWithPEMPrivateKey(
+                                s_certificateFactory.CreateWithPEMPrivateKey(
                                     newCert,
                                     privateKey.ToArray(),
                                     passwordProvider?.GetPassword(existingCertIdentifier));
@@ -919,9 +919,9 @@ namespace Technosoftware.UaServer
                 Utils.TraceMasks.Security,
                 "Create signing request {Certificate}",
                 Redact.Create(certWithPrivateKey));
-            byte[] certificateRequest = CertificateFactory.CreateSigningRequest(
+            byte[] certificateRequest = s_certificateFactory.CreateSigningRequest(
                 certWithPrivateKey,
-                X509Utils.GetDomainsFromCertificate(certWithPrivateKey));
+                X509Utils.GetDomainsFromCertificate(certWithPrivateKey).ToArray());
 
             return new CreateSigningRequestMethodStateResult
             {
@@ -938,8 +938,19 @@ namespace Technosoftware.UaServer
         {
             Certificate certificate;
 
-            ICertificateBuilder certificateBuilder = CertificateFactory
-                .CreateCertificate(m_configuration.ApplicationUri, m_configuration.ApplicationName, subjectName, domainNames)
+            // CreateApplicationCertificate does not default the domain
+            // names the way the removed CertificateFactory.CreateCertificate
+            // did, and this path is reached with none of them when the
+            // current certificate could not be resolved. Without the
+            // fallback the signing request would carry no DNS entry in its
+            // subject alternative name at all.
+            if (domainNames.IsEmpty)
+            {
+                domainNames = [Utils.GetHostName()];
+            }
+
+            ICertificateBuilder certificateBuilder = s_certificateFactory
+                .CreateApplicationCertificate(m_configuration.ApplicationUri, m_configuration.ApplicationName, subjectName, [.. domainNames])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddDays(14));
 
@@ -1320,6 +1331,7 @@ namespace Technosoftware.UaServer
         }
 
         private ServerConfigurationState m_serverConfigurationNode;
+        private static readonly ICertificateFactory s_certificateFactory = DefaultCertificateFactory.Instance;
         private readonly ApplicationConfiguration m_configuration;
         private readonly List<ServerCertificateGroup> m_certificateGroups;
         private readonly CertificateStoreIdentifier m_rejectedStore;
