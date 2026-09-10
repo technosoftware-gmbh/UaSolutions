@@ -727,6 +727,16 @@ namespace Technosoftware.UaConfiguration
                 certificate,
                 configuration.ApplicationUri);
 
+            // The identifier no longer holds the certificate it resolved to, so
+            // the metadata a later lookup goes by has to be written back; a
+            // configured identifier often carries no thumbprint at all.
+            id.Thumbprint = certificate.Thumbprint;
+            id.SubjectName = certificate.Subject;
+            if (id.CertificateType.IsNull)
+            {
+                id.CertificateType = CertificateIdentifier.GetCertificateType(certificate);
+            }
+
             return true;
         }
 
