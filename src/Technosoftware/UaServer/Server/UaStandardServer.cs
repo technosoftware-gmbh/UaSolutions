@@ -666,41 +666,48 @@ namespace Technosoftware.UaServer
             IUaSession session,
             AdditionalParametersType parameters)
         {
-            AdditionalParametersType response = null;
-
-            if (parameters != null && parameters.Parameters != null)
+            if (parameters?.Parameters == null)
             {
-                response = new AdditionalParametersType();
-
-                foreach (KeyValuePair ii in parameters.Parameters)
-                {
-                    if (ii.Key == "ECDHPolicyUri")
-                    {
-                        string policyUri = ii.Value.ToString();
-
-                        if (CryptoUtils.IsEccPolicy(policyUri))
-                        {
-                            session.SetEccUserTokenSecurityPolicy(policyUri);
-                            EphemeralKeyType key = session.GetNewEccKey();
-                            response.Parameters += new KeyValuePair
-                                {
-                                    Key = new QualifiedName("ECDHKey"),
-                                    Value = new ExtensionObject(key)
-                                };
-                        }
-                        else
-                        {
-                            response.Parameters += new KeyValuePair
-                                {
-                                    Key = new QualifiedName("ECDHKey"),
-                                    Value = StatusCodes.BadSecurityPolicyRejected
-                                };
-                        }
-                    }
-                }
+                return null;
             }
 
-            return response;
+            var responseParameters = new List<KeyValuePair>();
+
+            foreach (KeyValuePair ii in parameters.Parameters)
+            {
+                if (ii.Key != AdditionalParameterNames.ECDHPolicyUri ||
+                    !ii.Value.TryGetValue(out string policyUri))
+                {
+                    responseParameters.Add(ii);
+                    continue;
+                }
+
+                // 2.0 added policies that derive an ephemeral key without being
+                // ECC policies - the RSA_DH ones - so the policy's own
+                // ephemeral key algorithm decides, not whether it is ECC.
+                SecurityPolicyInfo securityPolicy = SecurityPolicies.Default.GetInfo(policyUri);
+
+                if (securityPolicy != null &&
+                    securityPolicy.EphemeralKeyAlgorithm != CertificateKeyAlgorithm.None)
+                {
+                    session.SetEccUserTokenSecurityPolicy(policyUri);
+                    EphemeralKeyType key = session.GetNewEccKey();
+                    responseParameters.Add(new KeyValuePair
+                    {
+                        Key = new QualifiedName(AdditionalParameterNames.ECDHKey),
+                        Value = new ExtensionObject(key)
+                    });
+                    continue;
+                }
+
+                responseParameters.Add(new KeyValuePair
+                {
+                    Key = new QualifiedName(AdditionalParameterNames.ECDHKey),
+                    Value = StatusCodes.BadSecurityPolicyRejected
+                });
+            }
+
+            return new AdditionalParametersType { Parameters = responseParameters };
         }
 
         /// <summary>

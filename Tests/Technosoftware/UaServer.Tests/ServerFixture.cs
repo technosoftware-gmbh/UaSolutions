@@ -133,6 +133,30 @@ namespace Technosoftware.UaServer.Tests
                     .AddSignAndEncryptPolicies()
                     .AddEccSignPolicies()
                     .AddEccSignAndEncryptPolicies();
+
+                // 2.0 adds the AEAD policies, which the client fixtures walk
+                // through; a server that does not offer them leaves those
+                // cases without an endpoint to connect to.
+                foreach (string securityPolicyUri in new[]
+                {
+                    SecurityPolicies.RSA_DH_AesGcm,
+                    SecurityPolicies.RSA_DH_ChaChaPoly,
+                    SecurityPolicies.ECC_nistP256_AesGcm,
+                    SecurityPolicies.ECC_nistP256_ChaChaPoly,
+                    SecurityPolicies.ECC_nistP384_AesGcm,
+                    SecurityPolicies.ECC_nistP384_ChaChaPoly,
+                    SecurityPolicies.ECC_brainpoolP256r1_AesGcm,
+                    SecurityPolicies.ECC_brainpoolP256r1_ChaChaPoly,
+                    SecurityPolicies.ECC_brainpoolP384r1_AesGcm,
+                    SecurityPolicies.ECC_brainpoolP384r1_ChaChaPoly
+                })
+                {
+                    AddPolicyIfSupported(serverConfig, MessageSecurityMode.Sign, securityPolicyUri);
+                    AddPolicyIfSupported(
+                        serverConfig,
+                        MessageSecurityMode.SignAndEncrypt,
+                        securityPolicyUri);
+                }
             }
 
             if (OperationLimits)
@@ -347,6 +371,20 @@ namespace Technosoftware.UaServer.Tests
             ActivityListener?.Dispose();
             ActivityListener = null;
             await Task.Delay(100).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Adds a policy only when this build of the stack implements it.
+        /// </summary>
+        private static void AddPolicyIfSupported(
+            IUaApplicationConfigurationServerSelected serverConfig,
+            MessageSecurityMode securityMode,
+            string securityPolicyUri)
+        {
+            if (SecurityPolicies.Default.GetInfo(securityPolicyUri) != null)
+            {
+                serverConfig.AddPolicy(securityMode, securityPolicyUri);
+            }
         }
 
         private readonly Func<ITelemetryContext, T> m_factory;
