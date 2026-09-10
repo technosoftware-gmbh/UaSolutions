@@ -295,7 +295,7 @@ namespace Technosoftware.UaClient
                         {
                             // skip unsupported security policies, for backward compatibility only
                             // may contain policies for which no certificate is available
-                            if (SecurityPolicies.GetDisplayName(endpoint.SecurityPolicyUri) == null)
+                            if (SecurityPolicies.Default.GetDisplayName(endpoint.SecurityPolicyUri) == null)
                             {
                                 continue;
                             }

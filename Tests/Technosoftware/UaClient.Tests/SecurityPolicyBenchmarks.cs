@@ -149,9 +149,9 @@ namespace Technosoftware.UaClient.Tests
         public new IEnumerable<string> BenchPolicies()
         {
             // Return all security policies except None
-            foreach (string displayName in SecurityPolicies.GetDisplayNames())
+            foreach (string displayName in SecurityPolicies.Default.GetDisplayNames())
             {
-                string policyUri = SecurityPolicies.GetUri(displayName);
+                string policyUri = SecurityPolicies.Default.GetUri(displayName);
                 if (policyUri != SecurityPolicies.None)
                 {
                     yield return policyUri;
@@ -844,7 +844,7 @@ namespace Technosoftware.UaClient.Tests
 
             foreach (string policyUri in policies)
             {
-                string displayName = SecurityPolicies.GetDisplayName(policyUri);
+                string displayName = SecurityPolicies.Default.GetDisplayName(policyUri);
                 TestContext.Out.WriteLine($"\nTesting policy: {displayName} ({policyUri})");
 
                 try

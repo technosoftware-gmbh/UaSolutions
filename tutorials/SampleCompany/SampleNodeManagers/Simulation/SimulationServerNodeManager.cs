@@ -4030,7 +4030,7 @@ namespace SampleCompany.NodeManagers.Simulation
             ref StatusCode statusCode,
             ref DateTimeUtc timestamp)
         {
-            var typeInfo = TypeInfo.Construct(value);
+            TypeInfo typeInfo = value.TypeInfo;
 
             if (!(node is MultiStateValueDiscreteState variable) ||
                 typeInfo.IsUnknown ||
@@ -4130,7 +4130,7 @@ namespace SampleCompany.NodeManagers.Simulation
             ref StatusCode statusCode,
             ref DateTimeUtc timestamp)
         {
-            var typeInfo = TypeInfo.Construct(value);
+            TypeInfo typeInfo = value.TypeInfo;
 
             if (node is not PropertyState<Opc.Ua.Range> variable ||
                 typeInfo.IsUnknown ||

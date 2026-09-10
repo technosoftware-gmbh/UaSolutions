@@ -868,7 +868,13 @@ namespace Technosoftware.UaServer
 
             if (string.IsNullOrEmpty(subjectName))
             {
-                subjectName = existingCertIdentifier.Certificate.Subject;
+                // The identifier is metadata only in 2.0, so the subject to
+                // sign for comes from the certificate that is actually in use.
+                using CertificateEntry subjectEntry =
+                    (m_configuration.CertificateManager as ICertificateRegistry)?
+                        .AcquireApplicationCertificateByType(certificateTypeId);
+                subjectName = subjectEntry?.Certificate?.Subject
+                    ?? existingCertIdentifier.SubjectName;
             }
 
             certificateGroup.TemporaryApplicationCertificate?.Dispose();
@@ -1121,10 +1127,33 @@ namespace Technosoftware.UaServer
                     StatusCodes.BadInvalidArgument,
                     "Certificate group invalid.");
 
-            certificateTypeIds = certificateGroup.CertificateTypes;
-            certificates = certificateGroup.ApplicationCertificates
-                .Select(s => s.Certificate?.RawData.ToByteString() ?? default)
-                .ToArrayOf();
+            // The configured identifier no longer caches the certificate it
+            // resolved to, so each slot is looked up in the manager's registry
+            // and the two arrays are built together - they are returned as
+            // parallel lists and the group's certificate types are not
+            // guaranteed to line up with its configured identifiers.
+            var registry = m_configuration.CertificateManager as ICertificateRegistry;
+            var occupiedTypes = new List<NodeId>();
+            var occupiedCertificates = new List<ByteString>();
+
+            foreach (CertificateIdentifier applicationCertificate in
+                certificateGroup.ApplicationCertificates)
+            {
+                using CertificateEntry entry = registry?
+                    .AcquireApplicationCertificateByType(applicationCertificate.CertificateType);
+                Certificate certificate = entry?.Certificate;
+
+                if (certificate == null)
+                {
+                    continue;
+                }
+
+                occupiedTypes.Add(applicationCertificate.CertificateType);
+                occupiedCertificates.Add(certificate.RawData.ToByteString());
+            }
+
+            certificateTypeIds = occupiedTypes.ToArrayOf();
+            certificates = occupiedCertificates.ToArrayOf();
 
             return ServiceResult.Good;
         }

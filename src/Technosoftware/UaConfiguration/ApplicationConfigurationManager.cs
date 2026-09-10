@@ -472,7 +472,7 @@ namespace Technosoftware.UaConfiguration
             MessageSecurityMode securityMode,
             string securityPolicy)
         {
-            if (!SecurityPolicies.IsValidSecurityPolicyUri(securityPolicy))
+            if (!SecurityPolicies.Default.IsValidSecurityPolicyUri(securityPolicy))
             {
                 throw new ArgumentException("Unknown security policy", nameof(securityPolicy));
             }
@@ -1366,11 +1366,11 @@ namespace Technosoftware.UaConfiguration
             bool policyNone = false)
         {
             // create list of supported policies
-            System.Collections.Generic.List<string> defaultPolicyUris = [.. SecurityPolicies
+            System.Collections.Generic.List<string> defaultPolicyUris = [.. SecurityPolicies.Default
                 .GetDefaultUris()];
             if (deprecated)
             {
-                defaultPolicyUris.AddRange(SecurityPolicies.GetDefaultDeprecatedUris());
+                defaultPolicyUris.AddRange(SecurityPolicies.Default.GetDefaultDeprecatedUris());
             }
 
             List<ServerSecurityPolicy> policies =
@@ -1401,7 +1401,7 @@ namespace Technosoftware.UaConfiguration
         private void AddEccSecurityPolicies(bool sign = false)
         {
             // create list of supported policies
-            string[] defaultPolicyUris = SecurityPolicies.GetDefaultEccUris();
+            string[] defaultPolicyUris = SecurityPolicies.Default.GetDefaultEccUris();
             MessageSecurityMode securityMode = sign
                 ? MessageSecurityMode.Sign
                 : MessageSecurityMode.SignAndEncrypt;

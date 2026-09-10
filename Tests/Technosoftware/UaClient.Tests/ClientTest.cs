@@ -1794,7 +1794,7 @@ namespace Technosoftware.UaClient.Tests
 
                     // Mock the channel and session
                     var channelMock = new Mock<ITransportChannel>();
-                    var messageContext = new ServiceMessageContext(telemetry);
+                    var messageContext = ServiceMessageContext.Create(telemetry);
                     channelMock.Setup(mock => mock.MessageContext).Returns(messageContext);
 
                     var testableTraceableRequestHeaderClientSession

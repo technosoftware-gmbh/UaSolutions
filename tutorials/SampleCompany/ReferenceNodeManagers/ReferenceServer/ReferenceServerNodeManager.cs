@@ -4174,7 +4174,7 @@ namespace SampleCompany.NodeManagers.Reference
             ref StatusCode statusCode,
             ref DateTimeUtc timestamp)
         {
-            var typeInfo = TypeInfo.Construct(value);
+            TypeInfo typeInfo = value.TypeInfo;
 
             if (node is not MultiStateValueDiscreteState variable ||
                 typeInfo.IsUnknown ||
@@ -4280,7 +4280,7 @@ namespace SampleCompany.NodeManagers.Reference
             ref StatusCode statusCode,
             ref DateTimeUtc timestamp)
         {
-            var typeInfo = TypeInfo.Construct(value);
+            TypeInfo typeInfo = value.TypeInfo;
 
             if (node is not PropertyState<Range> variable ||
                 typeInfo.IsUnknown ||

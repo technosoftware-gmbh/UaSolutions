@@ -94,7 +94,7 @@ namespace Technosoftware.UaClient.Tests
         [DatapointSource]
         public static readonly string[] Policies =
         [
-            .. SecurityPolicies.GetDisplayNames().Select(SecurityPolicies.GetUri)
+            .. SecurityPolicies.Default.GetDisplayNames().Select(SecurityPolicies.Default.GetUri)
         ];
 
         /// <summary>

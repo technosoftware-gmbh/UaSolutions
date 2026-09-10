@@ -92,7 +92,7 @@ namespace Technosoftware.UaServer
             }
             // translate localized text.
             LocalizedText translatedText;
-            if (LocalizedText.IsNullOrEmpty(result.LocalizedText))
+            if (result.LocalizedText.IsNullOrEmpty)
             {
                 // extract any additional arguments from the translation info.
                 object[] args = null;

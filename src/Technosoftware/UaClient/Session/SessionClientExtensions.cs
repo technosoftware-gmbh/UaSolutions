@@ -409,7 +409,7 @@ namespace Technosoftware.UaClient
                 // extract the name.
                 LocalizedText displayName = results[ii].GetValue(LocalizedText.Null);
 
-                if (!LocalizedText.IsNullOrEmpty(displayName))
+                if (!displayName.IsNullOrEmpty)
                 {
                     displayNames[ii] = displayName.Text;
                 }
