@@ -115,7 +115,7 @@ namespace Technosoftware.UaServer
             if (!StatusCode.IsBad(value.StatusCode))
             {
                 // set aggregate bits fon non Bad values
-                value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+                value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
             }
             // return result.
             return value;
@@ -148,7 +148,7 @@ namespace Technosoftware.UaServer
                 .WithWrappedValue(new Variant(count, TypeInfo.Scalars.Int32))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
-            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;
@@ -199,7 +199,7 @@ namespace Technosoftware.UaServer
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
             value = value.WithStatus(GetTimeBasedStatusCode(regions, value.StatusCode));
-            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;
@@ -267,7 +267,7 @@ namespace Technosoftware.UaServer
                 .WithWrappedValue(new Variant(count, TypeInfo.Scalars.Int32))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
-            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
             value = value.WithStatus(GetValueBasedStatusCode(slice, values, value.StatusCode));
 
             // return result.

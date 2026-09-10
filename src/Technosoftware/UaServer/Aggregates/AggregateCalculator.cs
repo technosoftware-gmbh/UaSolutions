@@ -178,7 +178,7 @@ namespace Technosoftware.UaServer
             {
                 if (m_startOfData > earlyTime && m_startOfData < lateTime)
                 {
-                    value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
+                    value = value.WithStatus(value.StatusCode.WithAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
                 }
 
                 if (!UsingExtrapolation &&
@@ -186,7 +186,7 @@ namespace Technosoftware.UaServer
                     m_endOfData >= earlyTime &&
                     m_endOfData < lateTime)
                 {
-                    value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
+                    value = value.WithStatus(value.StatusCode.WithAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
                 }
             }
 
@@ -242,7 +242,7 @@ namespace Technosoftware.UaServer
                     m_endOfData >= earlyTime &&
                     m_endOfData < lateTime)
                 {
-                    value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
+                    value = value.WithStatus(value.StatusCode.WithAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
                 }
             }
             else
@@ -801,7 +801,7 @@ namespace Technosoftware.UaServer
 
                     if (!ReferenceEquals(slice.EarlyBound.Next, slice.LateBound))
                     {
-                        dataValue = dataValue.WithStatus(dataValue.StatusCode .SetCodeBits(StatusCodes.UncertainDataSubNormal));
+                        dataValue = dataValue.WithStatus(dataValue.StatusCode .WithCodeBits(StatusCodes.UncertainDataSubNormal));
                     }
 
                     return dataValue;
@@ -818,7 +818,7 @@ namespace Technosoftware.UaServer
                             timestamp,
                             slice.SecondEarlyBound.Value,
                             slice.EarlyBound.Value);
-                        dataValue = dataValue.WithStatus(dataValue.StatusCode .SetCodeBits(StatusCodes.UncertainDataSubNormal));
+                        dataValue = dataValue.WithStatus(dataValue.StatusCode .WithCodeBits(StatusCodes.UncertainDataSubNormal));
                         return dataValue;
                     }
 
@@ -836,7 +836,7 @@ namespace Technosoftware.UaServer
                     CompareTimestamps(timestamp, slice.EarlyBound.Next) > 0)
                 {
                     UsingExtrapolation = true;
-                    dataValue = dataValue.WithStatus(dataValue.StatusCode .SetCodeBits(StatusCodes.UncertainDataSubNormal));
+                    dataValue = dataValue.WithStatus(dataValue.StatusCode .WithCodeBits(StatusCodes.UncertainDataSubNormal));
                 }
 
                 return dataValue;
@@ -875,7 +875,7 @@ namespace Technosoftware.UaServer
                 dataValue = dataValue.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            dataValue = dataValue.WithStatus(dataValue.StatusCode .SetAggregateBits(AggregateBits.Interpolated));
+            dataValue = dataValue.WithStatus(dataValue.StatusCode .WithAggregateBits(AggregateBits.Interpolated));
             return dataValue;
         }
 
@@ -902,7 +902,7 @@ namespace Technosoftware.UaServer
 
                     if (StatusCode.IsNotBad(dataValue2.StatusCode))
                     {
-                        dataValue2 = dataValue2.WithStatus(dataValue2.StatusCode .SetCodeBits(StatusCodes.UncertainDataSubNormal));
+                        dataValue2 = dataValue2.WithStatus(dataValue2.StatusCode .WithCodeBits(StatusCodes.UncertainDataSubNormal));
                     }
 
                     return dataValue2;
@@ -934,7 +934,7 @@ namespace Technosoftware.UaServer
                     dataValue = dataValue.WithStatus(StatusCodes.UncertainDataSubNormal);
                 }
 
-                dataValue = dataValue.WithStatus(dataValue.StatusCode .SetAggregateBits(AggregateBits.Interpolated));
+                dataValue = dataValue.WithStatus(dataValue.StatusCode .WithAggregateBits(AggregateBits.Interpolated));
 
                 return dataValue;
             }
@@ -1044,7 +1044,7 @@ namespace Technosoftware.UaServer
             if (StatusCode.IsGood(value.StatusCode) && revertToStepped)
             {
                 value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
-                value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Interpolated));
+                value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Interpolated));
             }
 
             return value;
@@ -1400,7 +1400,7 @@ namespace Technosoftware.UaServer
             if (totalCount == 0 || goodCount / totalCount * 100 >= Configuration.PercentDataGood)
             {
                 // good if the good count is greater than or equal to the configured threshold.
-                statusCode = statusCode.SetCodeBits(StatusCodes.Good);
+                statusCode = statusCode.WithCodeBits(StatusCodes.Good);
             }
             else if (badCount / totalCount * 100 >= Configuration.PercentDataBad)
             {
@@ -1410,7 +1410,7 @@ namespace Technosoftware.UaServer
             else
             {
                 // uncertain if did not meet the Good or Bad requirements
-                statusCode = statusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                statusCode = statusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal);
             }
 
             return statusCode;
@@ -1474,7 +1474,7 @@ namespace Technosoftware.UaServer
                 goodDuration / totalDuration * 100 >= Configuration.PercentDataGood)
             {
                 // good if the good duration is greater than or equal to the configured threshold.
-                statusCode = statusCode.SetCodeBits(StatusCodes.Good);
+                statusCode = statusCode.WithCodeBits(StatusCodes.Good);
             }
             else if (badDuration / totalDuration * 100 >= Configuration.PercentDataBad)
             {
@@ -1484,7 +1484,7 @@ namespace Technosoftware.UaServer
             else
             {
                 // uncertain if did not meet the Good or Bad requirements
-                statusCode = statusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                statusCode = statusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal);
             }
 
             // always calculated.

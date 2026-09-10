@@ -132,7 +132,7 @@ namespace Technosoftware.UaServer
                 .WithWrappedValue(new Variant(result, TypeInfo.Scalars.Double))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
-            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
             value = value.WithStatus(GetValueBasedStatusCode(slice, values, value.StatusCode));
 
             // return result.
@@ -226,7 +226,7 @@ namespace Technosoftware.UaServer
                 }
             }
 
-            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;

@@ -129,7 +129,7 @@ namespace Technosoftware.UaServer
                 .WithWrappedValue(new Variant(duration, TypeInfo.Scalars.Double))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
-            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;
@@ -196,12 +196,12 @@ namespace Technosoftware.UaServer
                 .WithWrappedValue(new Variant(worstQuality, TypeInfo.Scalars.StatusCode))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
-            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             if ((StatusCode.IsBad(worstQuality) && badQualityCount > 1) ||
                 (StatusCode.IsUncertain(worstQuality) && uncertainQualityCount > 1))
             {
-                value = value.WithStatus(value.StatusCode.SetAggregateBits( value.StatusCode.AggregateBits | AggregateBits.MultipleValues));
+                value = value.WithStatus(value.StatusCode.WithAggregateBits( value.StatusCode.AggregateBits | AggregateBits.MultipleValues));
             }
 
             // return result.

@@ -188,7 +188,7 @@ namespace Technosoftware.UaServer
                 value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // calculate delta.
             double delta = endValue - startValue;
@@ -242,7 +242,7 @@ namespace Technosoftware.UaServer
 
                 if (StatusCode.IsNotBad(value.StatusCode))
                 {
-                    value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+                    value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
                 }
             }
 
@@ -311,7 +311,7 @@ namespace Technosoftware.UaServer
                 value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            value = value.WithStatus(value.StatusCode.SetAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // calculate delta.
             double delta = endValue - startValue;
