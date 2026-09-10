@@ -806,7 +806,7 @@ namespace Technosoftware.UaClient
             {
                 for (int ii = 0; ii < args.Length; ii++)
                 {
-                    inputArguments.Add(new Variant(args[ii]));
+                    inputArguments.Add(VariantHelper.CastFromWithReflectionFallback(args[ii]));
                 }
             }
 

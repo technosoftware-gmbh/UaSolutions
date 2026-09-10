@@ -3924,7 +3924,7 @@ namespace SampleCompany.NodeManagers.Reference
             variable.EURange.Value = customRange ?? new Range(100, 0);
 
             variable.Value = initialValues != null
-                ? new Variant(initialValues)
+                ? VariantHelper.CastFromWithReflectionFallback(initialValues)
                 : TypeInfo.GetDefaultVariantValue(dataType, valueRank, ServerData.TypeTree);
 
             variable.StatusCode = StatusCodes.Good;

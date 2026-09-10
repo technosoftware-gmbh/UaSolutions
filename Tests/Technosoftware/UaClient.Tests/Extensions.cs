@@ -58,7 +58,7 @@ namespace Technosoftware.UaClient.Tests
                         StatusCode = result,
                         OutputArguments = outputArguments == null ?
                             default :
-                            [.. outputArguments.Select(o => new Variant(o))]
+                            [.. outputArguments.Select(VariantHelper.CastFromWithReflectionFallback)]
                     }
                 ]
             };

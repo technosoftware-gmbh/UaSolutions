@@ -281,7 +281,7 @@ namespace Technosoftware.UaServer
 
             if (initialValue != null)
             {
-                propertyState.Value = new Variant(initialValue);
+                propertyState.Value = VariantHelper.CastFromWithReflectionFallback(initialValue);
             }
 
             parent?.AddChild(propertyState);
@@ -463,7 +463,7 @@ namespace Technosoftware.UaServer
                 Historizing = false
             };
 
-            baseDataVariableTypeState.Value = new Variant(
+            baseDataVariableTypeState.Value = VariantHelper.CastFromWithReflectionFallback(
                 initialValue ?? GetNewValue(baseDataVariableTypeState));
             baseDataVariableTypeState.StatusCode = StatusCodes.Good;
             baseDataVariableTypeState.Timestamp = DateTime.UtcNow;
@@ -560,7 +560,7 @@ namespace Technosoftware.UaServer
                 Historizing = false
             };
 
-            baseDataVariableTypeState.Value = new Variant(
+            baseDataVariableTypeState.Value = VariantHelper.CastFromWithReflectionFallback(
                 initialValue ?? GetNewValue(baseDataVariableTypeState));
             baseDataVariableTypeState.StatusCode = StatusCodes.Good;
             baseDataVariableTypeState.Timestamp = DateTime.UtcNow;
@@ -657,7 +657,7 @@ namespace Technosoftware.UaServer
                 Historizing = false
             };
 
-            baseDataVariableTypeState.Value = new Variant(
+            baseDataVariableTypeState.Value = VariantHelper.CastFromWithReflectionFallback(
                 initialValue ?? GetNewValue(baseDataVariableTypeState));
             baseDataVariableTypeState.StatusCode = StatusCodes.Good;
             baseDataVariableTypeState.Timestamp = DateTime.UtcNow;
@@ -791,7 +791,7 @@ namespace Technosoftware.UaServer
             variable.Historizing = false;
 
             variable.Value = initialValue != null
-                ? new Variant(initialValue)
+                ? VariantHelper.CastFromWithReflectionFallback(initialValue)
                 : Opc.Ua.TypeInfo.GetDefaultVariantValue(
                     new NodeId((uint)dataType),
                     valueRank,
@@ -1100,7 +1100,7 @@ namespace Technosoftware.UaServer
             variable.EURange.UserAccessLevel = accessLevel;
 
             variable.Value = initialValue != null
-                ? new Variant(initialValue)
+                ? VariantHelper.CastFromWithReflectionFallback(initialValue)
                 : Opc.Ua.TypeInfo.GetDefaultVariantValue(dataType, valueRank, ServerData.TypeTree);
 
             variable.StatusCode = StatusCodes.Good;
@@ -1314,7 +1314,7 @@ namespace Technosoftware.UaServer
             variable.UserAccessLevel = accessLevel;
             variable.Historizing = false;
 
-            variable.Value = new Variant(initialValue ?? (uint)0);
+            variable.Value = VariantHelper.CastFromWithReflectionFallback(initialValue ?? (uint)0);
 
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
@@ -1426,7 +1426,7 @@ namespace Technosoftware.UaServer
             variable.UserAccessLevel = accessLevel;
             variable.Historizing = false;
 
-            variable.Value = new Variant(initialValue ?? (uint)0);
+            variable.Value = VariantHelper.CastFromWithReflectionFallback(initialValue ?? (uint)0);
 
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;

@@ -4477,7 +4477,7 @@ namespace SampleCompany.NodeManagers.Simulation
                     DateTime timeStamp = DateTime.UtcNow;
                     foreach (BaseDataVariableState variable in m_dynamicNodes)
                     {
-                        variable.Value = new Variant(GetNewValue(variable));
+                        variable.Value = VariantHelper.CastFromWithReflectionFallback(GetNewValue(variable));
                         variable.Timestamp = timeStamp;
                         variable.ClearChangeMasks(SystemContext, false);
                     }

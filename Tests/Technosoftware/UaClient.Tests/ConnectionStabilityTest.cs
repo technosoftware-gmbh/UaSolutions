@@ -239,7 +239,7 @@ namespace Technosoftware.UaClient.Tests
                                 NodeId = node.Key,
                                 AttributeId = Attributes.Value,
                                 Value = new DataValue(
-                                    new Variant(
+                                    VariantHelper.CastFromWithReflectionFallback(
                                         Convert.ChangeType(writeCount, node.Value, CultureInfo.InvariantCulture)
                                     )
                                 )
