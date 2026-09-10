@@ -77,14 +77,20 @@ namespace Technosoftware.UaServer
         /// <param name="queueFactory">the factory for <see cref="IUaDataChangeMonitoredItemQueue"/></param>
         /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
         /// <param name="discardedValueHandler">Handler for discarded values</param>
+        /// <param name="timeProvider">
+        /// The time source the sampling interval is measured against. Defaults
+        /// to <see cref="TimeProvider.System"/>.
+        /// </param>
         public DataChangeQueueHandler(
             uint monitoredItemId,
             bool createDurable,
             IUaMonitoredItemQueueFactory queueFactory,
             ITelemetryContext telemetry,
-            Action discardedValueHandler = null)
+            Action discardedValueHandler = null,
+            TimeProvider timeProvider = null)
         {
             m_logger = telemetry.CreateLogger<DataChangeQueueHandler>();
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_dataValueQueue = queueFactory.CreateDataChangeQueue(createDurable, monitoredItemId);
 
             m_discardedValueHandler = discardedValueHandler;
@@ -100,14 +106,20 @@ namespace Technosoftware.UaServer
         /// Create a DatachangeQueueHandler from an existing queue
         /// Used for restore after a server restart
         /// </summary>
+        /// <param name="timeProvider">
+        /// The time source the sampling interval is measured against. Defaults
+        /// to <see cref="TimeProvider.System"/>.
+        /// </param>
         public DataChangeQueueHandler(
             IUaDataChangeMonitoredItemQueue dataValueQueue,
             bool discardOldest,
             double samplingInterval,
             ITelemetryContext telemetry,
-            Action discardedValueHandler = null)
+            Action discardedValueHandler = null,
+            TimeProvider timeProvider = null)
         {
             m_logger = telemetry.CreateLogger<DataChangeQueueHandler>();
+            m_timeProvider = timeProvider ?? TimeProvider.System;
 
             m_dataValueQueue = dataValueQueue;
             m_monitoredItemId = dataValueQueue.QueueSize;
@@ -203,7 +215,7 @@ namespace Technosoftware.UaServer
         /// <returns>true of overflow occured</returns>
         public bool QueueValue(DataValue value, ServiceResult error)
         {
-            long now = HiResClock.TickCount64;
+            long now = m_timeProvider.GetTimestampMilliseconds();
 
             if (m_dataValueQueue.ItemsInQueue > 0)
             {
@@ -414,6 +426,7 @@ namespace Technosoftware.UaServer
 
         private readonly IUaDataChangeMonitoredItemQueue m_dataValueQueue;
         private readonly ILogger m_logger;
+        private readonly TimeProvider m_timeProvider;
         private readonly uint m_monitoredItemId;
         private bool m_discardOldest;
         private long m_nextSampleTime;

@@ -41,6 +41,19 @@ namespace Technosoftware.UaServer
         IServiceMessageContext MessageContext { get; }
 
         /// <summary>
+        /// The time source the server and everything it owns measures
+        /// durations and timestamps with.
+        /// </summary>
+        /// <remarks>
+        /// Implementations should return <see cref="TimeProvider.System"/>
+        /// rather than <c>null</c>. Consumers inside the stack fall back to it
+        /// anyway, so an implementation written against an earlier version -
+        /// or a test double - keeps working.
+        /// </remarks>
+        /// <value>The time provider.</value>
+        TimeProvider TimeProvider { get; }
+
+        /// <summary>
         /// The default system context for the server.
         /// </summary>
         /// <value>The default system context.</value>

@@ -55,15 +55,22 @@ namespace Technosoftware.UaServer
         /// <param name="serverDescription">The server description.</param>
         /// <param name="configuration">The configuration.</param>
         /// <param name="messageContext">The message context.</param>
+        /// <param name="timeProvider">
+        /// The time source to measure durations and timestamps with, so a test
+        /// can drive the publishing and sampling clocks. Defaults to
+        /// <see cref="TimeProvider.System"/>.
+        /// </param>
 
         public GenericServerData(
             ServerProperties serverDescription,
             ApplicationConfiguration configuration,
-            IServiceMessageContext messageContext)
+            IServiceMessageContext messageContext,
+            TimeProvider timeProvider = null)
         {
             m_serverDescription = serverDescription;
             m_configuration = configuration;
             MessageContext = messageContext;
+            TimeProvider = timeProvider ?? TimeProvider.System;
 
             m_endpointAddresses = [];
 
@@ -231,6 +238,9 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <value>The message context.</value>
         public IServiceMessageContext MessageContext { get; }
+
+        /// <inheritdoc/>
+        public TimeProvider TimeProvider { get; }
 
         /// <summary>
         /// The default system context for the server.

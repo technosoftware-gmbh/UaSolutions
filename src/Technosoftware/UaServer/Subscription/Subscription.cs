@@ -49,6 +49,7 @@ namespace Technosoftware.UaServer
             Id = subscriptionId;
             Session = session ?? throw new ArgumentNullException(nameof(session));
             m_server = server ?? throw new ArgumentNullException(nameof(server));
+            m_timeProvider = m_server.TimeProvider ?? TimeProvider.System;
             m_logger = server.Telemetry.CreateLogger<Subscription>();
             m_publishingInterval = publishingInterval;
             m_maxLifetimeCount = maxLifetimeCount;
@@ -56,7 +57,7 @@ namespace Technosoftware.UaServer
             m_maxNotificationsPerPublish = maxNotificationsPerPublish;
             m_publishingEnabled = publishingEnabled;
             Priority = priority;
-            m_publishTimerExpiry = HiResClock.TickCount64 + (long)publishingInterval;
+            m_publishTimerExpiry = m_timeProvider.GetTimestampMilliseconds() + (long)publishingInterval;
             //Per OPC UA spec Part 4 Section 5.13.1.2, the server must send a message (notification or keep-alive)
             //at the end of the first publishing cycle to inform the client the subscription is operational
             //So we initialize the keep-alive counter to maxKeepAliveCount to force a message at the end of the first publish cycle
@@ -149,6 +150,7 @@ namespace Technosoftware.UaServer
             }
 
             m_server = server;
+            m_timeProvider = m_server.TimeProvider ?? TimeProvider.System;
             m_logger = server.Telemetry.CreateLogger<Subscription>();
             Session = null;
             Id = storedSubscription.Id;
@@ -159,7 +161,7 @@ namespace Technosoftware.UaServer
             m_maxNotificationsPerPublish = storedSubscription.MaxNotificationsPerPublish;
             m_publishingEnabled = false;
             Priority = storedSubscription.Priority;
-            m_publishTimerExpiry = HiResClock.TickCount64 +
+            m_publishTimerExpiry = m_timeProvider.GetTimestampMilliseconds() +
                 (long)storedSubscription.PublishingInterval;
             m_keepAliveCounter = 0;
             m_waitingForPublish = false;
@@ -423,7 +425,7 @@ namespace Technosoftware.UaServer
         {
             lock (m_lock)
             {
-                long currentTime = HiResClock.TickCount64;
+                long currentTime = m_timeProvider.GetTimestampMilliseconds();
 
                 // check if publish interval has elapsed.
                 if (m_publishTimerExpiry >= currentTime)
@@ -1263,7 +1265,7 @@ namespace Technosoftware.UaServer
                 if (publishingInterval != m_publishingInterval)
                 {
                     m_publishingInterval = publishingInterval;
-                    m_publishTimerExpiry = HiResClock.TickCount64 + (long)publishingInterval;
+                    m_publishTimerExpiry = m_timeProvider.GetTimestampMilliseconds() + (long)publishingInterval;
                     ResetKeepaliveCount();
                 }
 
@@ -2730,6 +2732,7 @@ namespace Technosoftware.UaServer
 
         private readonly object m_lock = new();
         private readonly IUaServerData m_server;
+        private readonly TimeProvider m_timeProvider;
         private IUserIdentity m_savedOwnerIdentity;
         private double m_publishingInterval;
         private uint m_maxLifetimeCount;

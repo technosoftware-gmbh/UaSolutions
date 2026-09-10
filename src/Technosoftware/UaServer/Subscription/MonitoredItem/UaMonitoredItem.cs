@@ -66,6 +66,7 @@ namespace Technosoftware.UaServer
             Initialize();
 
             m_server = server;
+            m_timeProvider = server.TimeProvider ?? TimeProvider.System;
             NodeManager = nodeManager;
             ManagerHandle = managerHandle;
             SubscriptionId = subscriptionId;
@@ -87,7 +88,7 @@ namespace Technosoftware.UaServer
             m_discardOldest = discardOldest;
             m_sourceSamplingInterval = (int)sourceSamplingInterval;
             m_calculator = null;
-            m_nextSamplingTime = HiResClock.TickCount64;
+            m_nextSamplingTime = m_timeProvider.GetTimestampMilliseconds();
             AlwaysReportUpdates = false;
             m_monitoredItemQueueFactory = m_server.MonitoredItemQueueFactory;
             m_subscriptionStore = m_server.SubscriptionStore;
@@ -163,6 +164,7 @@ namespace Technosoftware.UaServer
             Initialize();
 
             m_server = server;
+            m_timeProvider = server.TimeProvider ?? TimeProvider.System;
             NodeManager = nodeManager;
             ManagerHandle = managerHandle;
             SubscriptionId = storedMonitoredItem.SubscriptionId;
@@ -184,7 +186,7 @@ namespace Technosoftware.UaServer
             m_discardOldest = storedMonitoredItem.DiscardOldest;
             m_sourceSamplingInterval = storedMonitoredItem.SourceSamplingInterval;
             m_calculator = null;
-            m_nextSamplingTime = HiResClock.TickCount64;
+            m_nextSamplingTime = m_timeProvider.GetTimestampMilliseconds();
             m_monitoredItemQueueFactory = m_server.MonitoredItemQueueFactory;
             m_subscriptionStore = m_server.SubscriptionStore;
             IsDurable = storedMonitoredItem.IsDurable;
@@ -312,7 +314,7 @@ namespace Technosoftware.UaServer
                 if (m_sourceSamplingInterval == 0)
                 {
                     // re-queue if too little time has passed since the last publish, in case it doesn't ResendData
-                    long now = HiResClock.TickCount64;
+                    long now = m_timeProvider.GetTimestampMilliseconds();
 
                     if (m_nextSamplingTime > now)
                     {
@@ -794,7 +796,7 @@ namespace Technosoftware.UaServer
 
                 if (previousMode == MonitoringMode.Disabled)
                 {
-                    m_nextSamplingTime = HiResClock.TickCount64;
+                    m_nextSamplingTime = m_timeProvider.GetTimestampMilliseconds();
                     m_lastError = null;
                     m_lastValue = default;
                 }
@@ -1182,7 +1184,7 @@ namespace Technosoftware.UaServer
         private void IncrementSampleTime()
         {
             // update next sample time.
-            long now = HiResClock.TickCount64;
+            long now = m_timeProvider.GetTimestampMilliseconds();
             long samplingInterval = (long)m_samplingInterval;
 
             if (m_nextSamplingTime > 0)
@@ -1546,7 +1548,7 @@ namespace Technosoftware.UaServer
                         return 0;
                     }
 
-                    long now = HiResClock.TickCount64;
+                    long now = m_timeProvider.GetTimestampMilliseconds();
 
                     if (m_nextSamplingTime <= now)
                     {
@@ -1905,7 +1907,8 @@ namespace Technosoftware.UaServer
                                 IsDurable,
                                 m_monitoredItemQueueFactory,
                                 m_server.Telemetry,
-                                QueueOverflowHandler);
+                                QueueOverflowHandler,
+                                m_timeProvider);
                             queueLastValue = true;
                         }
 
@@ -1995,7 +1998,8 @@ namespace Technosoftware.UaServer
                                 m_discardOldest,
                                 m_samplingInterval,
                                 m_server.Telemetry,
-                                QueueOverflowHandler);
+                                QueueOverflowHandler,
+                                m_timeProvider);
                         }
                         else
                         {
@@ -2005,7 +2009,8 @@ namespace Technosoftware.UaServer
                                 IsDurable,
                                 m_monitoredItemQueueFactory,
                                 m_server.Telemetry,
-                                QueueOverflowHandler);
+                                QueueOverflowHandler,
+                                m_timeProvider);
 
                             m_dataChangeQueueHandler.SetQueueSize(
                                 QueueSize,
@@ -2086,6 +2091,7 @@ namespace Technosoftware.UaServer
         private readonly Lock m_lock = new();
         private readonly ILogger m_logger;
         private IUaServerData m_server;
+        private readonly TimeProvider m_timeProvider;
         private string m_indexRange;
         private NumericRange m_parsedIndexRange;
         private TimestampsToReturn m_timestampsToReturn;

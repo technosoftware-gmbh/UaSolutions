@@ -784,10 +784,7 @@ namespace SampleCompany.NodeManagers.TestData
 
         private void DoSample(object state)
         {
-            m_logger.LogTrace(
-                "DoSample HiRes={HiRes:ss.ffff} Now={CurrentTime:ss.ffff}",
-                HiResClock.UtcNow,
-                DateTime.UtcNow);
+            m_logger.LogTrace("DoSample Now={CurrentTime:ss.ffff}", DateTime.UtcNow);
 
             var samples = new Queue<Sample>();
             var generateValues = new List<BaseVariableState>();
