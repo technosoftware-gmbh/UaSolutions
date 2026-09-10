@@ -76,8 +76,8 @@ namespace Technosoftware.UaServer
         protected FolderState CreateFolderState(NodeState parent, string browseName, LocalizedText displayName,
             LocalizedText description, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -87,16 +87,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var folderState = new FolderState(parent)
@@ -166,8 +156,8 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description,
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -177,16 +167,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var baseObjectState = new BaseObjectState(parent)
@@ -266,8 +246,8 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description, BuiltInType dataType, int valueRank, byte accessLevel,
             object initialValue, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -277,16 +257,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var propertyState = new PropertyState(parent)
@@ -367,8 +337,8 @@ namespace Technosoftware.UaServer
             IDictionary<NodeId, IList<IReference>> externalReferences, string browseName, LocalizedText displayName,
             LocalizedText description, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -378,16 +348,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var viewState = new ViewState
@@ -470,8 +430,8 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description, BuiltInType dataType, int valueRank, byte accessLevel,
             object initialValue, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -481,16 +441,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var baseDataVariableTypeState = new BaseDataVariableState(parent)
@@ -577,8 +527,8 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description, NodeId dataType, int valueRank, byte accessLevel,
             object initialValue, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -588,16 +538,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var baseDataVariableTypeState = new BaseDataVariableState(parent)
@@ -684,8 +624,8 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description, ExpandedNodeId dataType, int valueRank,
             byte accessLevel, object initialValue, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -695,16 +635,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var baseDataVariableTypeState = new BaseDataVariableState(parent)
@@ -811,8 +741,8 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null, double? valuePrecision = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -822,16 +752,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new DataItemState(parent);
@@ -990,8 +910,8 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null, double? valuePrecision = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             return CreateAnalogItemState(parent, browseName, displayName, description,
                 new NodeId((uint)dataType), valueRank,
@@ -1078,8 +998,8 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null, double? valuePrecision = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -1089,16 +1009,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new AnalogItemState(parent)
@@ -1251,8 +1161,8 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
             if (displayName.IsNull)
             {
@@ -1262,16 +1172,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new TwoStateDiscreteState(parent);
@@ -1367,8 +1267,8 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null, params LocalizedText[] values)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default, params LocalizedText[] values)
         {
             if (displayName.IsNull)
             {
@@ -1378,16 +1278,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new MultiStateDiscreteState(parent);
@@ -1489,8 +1379,8 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null, params LocalizedText[] enumNames)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default, params LocalizedText[] enumNames)
         {
             if (displayName.IsNull)
             {
@@ -1500,16 +1390,6 @@ namespace Technosoftware.UaServer
             if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new MultiStateValueDiscreteState(parent);

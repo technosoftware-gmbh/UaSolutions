@@ -1488,8 +1488,8 @@ namespace SampleCompany.NodeManagers.Simulation
                             AttributeWriteMask.None,
                             String.Empty,
                             2,
-                            null,
-                            null);
+                            default,
+                            default);
 
                         // set initial value to String.Empty for String node.
                         if (name == BuiltInType.String.ToString())
@@ -1898,8 +1898,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText("open"),
                         new LocalizedText("closed"),
                         new LocalizedText("jammed"));
@@ -1914,8 +1914,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText("red"),
                         new LocalizedText("green"),
                         new LocalizedText("blue"),
@@ -1931,8 +1931,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText("lolo"),
                         new LocalizedText("lo"),
                         new LocalizedText("normal"),
@@ -1949,8 +1949,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText("left"),
                         new LocalizedText("right"),
                         new LocalizedText("center"));
@@ -1965,8 +1965,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText("circle"),
                         new LocalizedText("cross"),
                         new LocalizedText("triangle"));
@@ -1994,8 +1994,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("open"), new LocalizedText("closed"), new LocalizedText("jammed" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2009,8 +2009,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("red"), new LocalizedText("green"), new LocalizedText("blue"), new LocalizedText("cyan" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2024,8 +2024,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("lolo"), new LocalizedText("lo"), new LocalizedText("normal"), new LocalizedText("hi"), new LocalizedText("hihi" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2039,8 +2039,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("left"), new LocalizedText("right"), new LocalizedText("center" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2054,8 +2054,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("circle"), new LocalizedText("cross"), new LocalizedText("triangle" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
 
@@ -2071,8 +2071,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("open"), new LocalizedText("closed"), new LocalizedText("jammed" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2086,8 +2086,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("red"), new LocalizedText("green"), new LocalizedText("blue"), new LocalizedText("cyan" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2101,8 +2101,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("lolo"), new LocalizedText("lo"), new LocalizedText("normal"), new LocalizedText("hi"), new LocalizedText("hihi" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2116,8 +2116,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("left"), new LocalizedText("right"), new LocalizedText("center" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2131,8 +2131,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("open"), new LocalizedText("closed"), new LocalizedText("jammed" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2146,8 +2146,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("red"), new LocalizedText("green"), new LocalizedText("blue"), new LocalizedText("cyan" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2161,8 +2161,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("lolo"), new LocalizedText("lo"), new LocalizedText("normal"), new LocalizedText("hi"), new LocalizedText("hihi" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
@@ -2176,8 +2176,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("left"), new LocalizedText("right"), new LocalizedText("center" )});
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
 
@@ -2469,15 +2469,15 @@ namespace SampleCompany.NodeManagers.Simulation
                         AccessLevels.CurrentReadOrWrite,
                         null);
                     rpAnonymous.Description = new LocalizedText("This node can be accessed by users that have Anonymous Role");
-                    rpAnonymous.RolePermissions = new RolePermissionTypeCollection()
-                    {
+                    rpAnonymous.RolePermissions =
+                    [
                         // allow access to users with Anonymous role
                         new RolePermissionType()
                         {
                             RoleId = ObjectIds.WellKnownRole_Anonymous,
                             Permissions = (uint)(PermissionType.Browse |PermissionType.Read|PermissionType.ReadRolePermissions | PermissionType.Write)
                         },
-                    };
+                    ];
                     variables.Add(rpAnonymous);
 
                     BaseDataVariableState rpAuthenticatedUser = CreateBaseDataVariableState(
@@ -2490,15 +2490,15 @@ namespace SampleCompany.NodeManagers.Simulation
                         AccessLevels.CurrentReadOrWrite,
                         null);
                     rpAuthenticatedUser.Description = new LocalizedText("This node can be accessed by users that have AuthenticatedUser Role");
-                    rpAuthenticatedUser.RolePermissions = new RolePermissionTypeCollection()
-                    {
+                    rpAuthenticatedUser.RolePermissions =
+                    [
                         // allow access to users with AuthenticatedUser role
                         new RolePermissionType()
                         {
                             RoleId = ObjectIds.WellKnownRole_AuthenticatedUser,
                             Permissions = (uint)(PermissionType.Browse |PermissionType.Read|PermissionType.ReadRolePermissions | PermissionType.Write)
                         },
-                    };
+                    ];
                     variables.Add(rpAuthenticatedUser);
 
                     BaseDataVariableState rpSecurityAdminUser = CreateBaseDataVariableState(
@@ -2512,15 +2512,15 @@ namespace SampleCompany.NodeManagers.Simulation
                         null);
                     rpSecurityAdminUser.Description = new LocalizedText("This node can be accessed by users that have SecurityAdmin Role over an encrypted connection");
                     rpSecurityAdminUser.AccessRestrictions = AccessRestrictionType.EncryptionRequired;
-                    rpSecurityAdminUser.RolePermissions = new RolePermissionTypeCollection()
-                    {
+                    rpSecurityAdminUser.RolePermissions =
+                    [
                         // allow access to users with SecurityAdmin role
                         new RolePermissionType()
                         {
                             RoleId = ObjectIds.WellKnownRole_SecurityAdmin,
                             Permissions = (uint)(PermissionType.Browse |PermissionType.Read|PermissionType.ReadRolePermissions | PermissionType.Write)
                         },
-                    };
+                    ];
                     variables.Add(rpSecurityAdminUser);
 
                     BaseDataVariableState rpConfigAdminUser = CreateBaseDataVariableState(
@@ -2534,15 +2534,15 @@ namespace SampleCompany.NodeManagers.Simulation
                         null);
                     rpConfigAdminUser.Description = new LocalizedText("This node can be accessed by users that have ConfigureAdmin Role over an encrypted connection");
                     rpConfigAdminUser.AccessRestrictions = AccessRestrictionType.EncryptionRequired;
-                    rpConfigAdminUser.RolePermissions = new RolePermissionTypeCollection()
-                    {
+                    rpConfigAdminUser.RolePermissions =
+                    [
                         // allow access to users with ConfigureAdmin role
                         new RolePermissionType()
                         {
                             RoleId = ObjectIds.WellKnownRole_ConfigureAdmin,
                             Permissions = (uint)(PermissionType.Browse |PermissionType.Read|PermissionType.ReadRolePermissions | PermissionType.Write)
                         },
-                    };
+                    ];
                     variables.Add(rpConfigAdminUser);
 
                     // sub-folder for "AccessRestrictions"
@@ -3752,8 +3752,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         String.Empty,
                         2,
-                        null,
-                        null);
+                        default,
+                        default);
                     _ = CreateDataItemState(
                         standardServerTestFolder,
                         standardServerTest + "Double 2",
@@ -3767,8 +3767,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         String.Empty,
                         2,
-                        null,
-                        null);
+                        default,
+                        default);
 
                     _ = CreateAnalogItemState(
                         standardServerTestFolder,
@@ -3811,8 +3811,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText("open"),
                         new LocalizedText("closed"),
                         new LocalizedText("jammed"));
@@ -3828,8 +3828,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         AttributeWriteMask.None,
                         AttributeWriteMask.None,
                         null,
-                        null,
-                        null,
+                        default,
+                        default,
                         new LocalizedText[] { new LocalizedText("open"), new LocalizedText("closed"), new LocalizedText("jammed" )});
 
                     #endregion StandardServerTest
