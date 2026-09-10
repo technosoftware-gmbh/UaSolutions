@@ -727,6 +727,31 @@ namespace Technosoftware.UaClient.Tests
             Assert.Less(0, session2ConfigChanged);
         }
 
+        /// <summary>
+        /// Asserts that the client never holds more good publish requests than
+        /// it has subscriptions.
+        /// </summary>
+        /// <remarks>
+        /// KNOWN FLAKE - roughly two runs in five on a loaded machine, and not
+        /// a 2.0 migration regression: the rate is the same before and after
+        /// the migration commits, measured.
+        ///
+        /// The mechanism is confirmed. Fifty subscriptions publishing every
+        /// 100 ms is enough load that notifications sometimes stall for three
+        /// seconds, at which point every subscription's publish watchdog fires
+        /// on its own and each one calls Session.StartPublishing. That method
+        /// issues one publish request unconditionally, before anything checks
+        /// how many are already outstanding, so a single stall costs one extra
+        /// request per subscription - the outstanding count goes from 20 to
+        /// near 80 in one burst and the assertion below trips. Runs that pass
+        /// log no "PUBLISHING STOPPED" line at all.
+        ///
+        /// Guarding that first request on the pipeline already being full does
+        /// not fix it; the real answer is upstream's 2.0 rework, which replaced
+        /// this whole pipeline with a subscription engine. Left as it is until
+        /// that is taken on, so do not bisect this - a flaky test gives a
+        /// confident and meaningless answer.
+        /// </remarks>
         [Test]
         [Order(400)]
         [CancelAfter(30_000)]
