@@ -1137,6 +1137,11 @@ namespace Technosoftware.UaClient
             int length = m_configuration.SecurityConfiguration.NonceLength;
             byte[] clientNonce = Nonce.CreateRandomNonceData(length);
 
+            // The enhanced policies mix the nonce sent with CreateSession into
+            // the activate signature, and a reconnect signs on a new channel
+            // long after that call, so it is kept.
+            m_clientNonce = clientNonce;
+
             // send the application instance certificate for the client.
             BuildCertificateData(
                 out ByteString clientCertificateData,
@@ -1467,7 +1472,7 @@ namespace Technosoftware.UaClient
                 m_serverCertificate?.RawData,
                 TransportChannel.ServerChannelCertificate,
                 TransportChannel.ClientChannelCertificate,
-                []);
+                m_clientNonce ?? []);
 
             SignatureData clientSignature = m_securityPolicies.CreateSignatureData(
                 securityPolicyUri,
@@ -1544,7 +1549,7 @@ namespace Technosoftware.UaClient
                     TransportChannel.ServerChannelCertificate,
                     m_instanceCertificate?.RawData,
                     TransportChannel.ClientChannelCertificate,
-                    []);
+                    m_clientNonce ?? []);
 
                 userTokenSignature = await identityToken.SignAsync(
                     userTokenDataToSign,
@@ -2379,102 +2384,6 @@ namespace Technosoftware.UaClient
                 //
                 await LoadInstanceCertificateAsync(true, ct).ConfigureAwait(false);
 
-                // create the client signature.
-                EndpointDescription endpoint = m_endpoint.Description;
-                string channelSecurityPolicyUri =
-                    endpoint.SecurityPolicyUri ?? SecurityPolicies.None;
-                SecurityPolicyInfo? securityPolicy = m_securityPolicies
-                    .GetInfo(channelSecurityPolicyUri);
-
-                byte[] dataToSign = securityPolicy!.GetClientSignatureData(
-                    TransportChannel.ChannelThumbprint,
-                    m_serverNonce.ToArray(),
-                    m_serverCertificate?.RawData,
-                    TransportChannel.ServerChannelCertificate,
-                    TransportChannel.ClientChannelCertificate,
-                    []);
-
-                SignatureData clientSignature = m_securityPolicies.CreateSignatureData(
-                    channelSecurityPolicyUri,
-                    m_instanceCertificate!,
-                    dataToSign);
-
-                // check that the user identity is supported by the endpoint.
-                UserTokenPolicy identityPolicy = endpoint.FindUserTokenPolicy(
-                    m_identity.TokenType,
-                    m_identity.IssuedTokenType,
-                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri);
-
-                if (identityPolicy == null)
-                {
-                    m_logger.LogError(
-                        "Reconnect: Endpoint does not support the user identity type provided.");
-
-                    throw ServiceResultException.Create(
-                        StatusCodes.BadIdentityTokenInvalid,
-                        "Endpoint does not support the user identity type provided.");
-                }
-
-                // select the security policy for the user token.
-                if (m_userTokenSecurityPolicyUri == null)
-                {
-                    string? tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
-                    if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
-                    {
-                        tokenSecurityPolicyUri = endpoint.SecurityPolicyUri;
-                    }
-
-                    m_userTokenSecurityPolicyUri = tokenSecurityPolicyUri;
-                }
-
-                string userTokenSecurityPolicyUri =
-                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri;
-
-                // validate server nonce and security parameters for user identity.
-                ValidateServerNonce(
-                    m_identity,
-                    m_serverNonce,
-                    userTokenSecurityPolicyUri,
-                    m_previousServerNonce,
-                    m_endpoint.Description.SecurityMode);
-
-                // sign or encrypt with a disposable token handler copy, so the
-                // stored credentials are not mutated.
-                IUserIdentityTokenHandler identityToken = m_identity.TokenHandler.Copy();
-                identityToken.UpdatePolicy(identityPolicy);
-
-                SignatureData? userTokenSignature = null;
-
-                if (identityToken.Token is X509IdentityToken)
-                {
-                    byte[] userTokenDataToSign = securityPolicy.GetUserTokenSignatureData(
-                        TransportChannel.ChannelThumbprint,
-                        m_serverNonce.ToArray(),
-                        m_serverCertificate?.RawData,
-                        TransportChannel.ServerChannelCertificate,
-                        m_instanceCertificate?.RawData,
-                        TransportChannel.ClientChannelCertificate,
-                        []);
-
-                    userTokenSignature = await identityToken.SignAsync(
-                        userTokenDataToSign,
-                        userTokenSecurityPolicyUri,
-                        ct).ConfigureAwait(false);
-                }
-                else
-                {
-                    await identityToken.EncryptAsync(
-                        m_serverCertificate!,
-                        m_serverNonce.ToArray(),
-                        m_userTokenSecurityPolicyUri!,
-                        MessageContext,
-                        m_eccServerEphemeralKey,
-                        m_instanceCertificate,
-                        m_instanceCertificateChain,
-                        m_endpoint.Description.SecurityMode != MessageSecurityMode.None,
-                        ct).ConfigureAwait(false);
-                }
-
                 m_logger.LogInformation("Session REPLACING channel for {SessionId}.", SessionId);
 
                 if (connection != null)
@@ -2537,6 +2446,127 @@ namespace Technosoftware.UaClient
                         // disposes the existing channel.
                         TransportChannel = transportChannel;
                     }
+                }
+
+
+                // The enhanced policies mix the channel's thumbprint and
+                // certificates into the activate signature, so the signature
+                // has to be built on the channel it will travel over - the new
+                // one. 1.5 signed before the swap because none of that was
+                // part of the signed data.
+                ITransportChannel activeChannel = TransportChannel;
+                byte[] channelThumbprint = activeChannel.ChannelThumbprint;
+                byte[] serverChannelCertificate = activeChannel.ServerChannelCertificate;
+                byte[] clientChannelCertificate = activeChannel.ClientChannelCertificate;
+
+                // An HTTPS channel fills in the server's TLS certificate only
+                // after its first request, and reconnect signs before that.
+                if ((serverChannelCertificate == null || serverChannelCertificate.Length == 0) &&
+                    m_serverCertificate != null)
+                {
+                    serverChannelCertificate = m_serverCertificate.RawData;
+                }
+
+                if ((clientChannelCertificate == null || clientChannelCertificate.Length == 0) &&
+                    m_instanceCertificate != null)
+                {
+                    clientChannelCertificate = m_instanceCertificate.RawData;
+                }
+
+                // create the client signature.
+                EndpointDescription endpoint = m_endpoint.Description;
+                string channelSecurityPolicyUri =
+                    endpoint.SecurityPolicyUri ?? SecurityPolicies.None;
+                SecurityPolicyInfo? securityPolicy = m_securityPolicies
+                    .GetInfo(channelSecurityPolicyUri);
+
+                byte[] dataToSign = securityPolicy!.GetClientSignatureData(
+                    channelThumbprint,
+                    m_serverNonce.ToArray(),
+                    m_serverCertificate?.RawData,
+                    serverChannelCertificate,
+                    clientChannelCertificate,
+                    m_clientNonce ?? []);
+
+                SignatureData clientSignature = m_securityPolicies.CreateSignatureData(
+                    channelSecurityPolicyUri,
+                    m_instanceCertificate!,
+                    dataToSign);
+
+                // check that the user identity is supported by the endpoint.
+                UserTokenPolicy identityPolicy = endpoint.FindUserTokenPolicy(
+                    m_identity.TokenType,
+                    m_identity.IssuedTokenType,
+                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri);
+
+                if (identityPolicy == null)
+                {
+                    m_logger.LogError(
+                        "Reconnect: Endpoint does not support the user identity type provided.");
+
+                    throw ServiceResultException.Create(
+                        StatusCodes.BadIdentityTokenInvalid,
+                        "Endpoint does not support the user identity type provided.");
+                }
+
+                // select the security policy for the user token.
+                if (m_userTokenSecurityPolicyUri == null)
+                {
+                    string? tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
+                    if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
+                    {
+                        tokenSecurityPolicyUri = endpoint.SecurityPolicyUri;
+                    }
+
+                    m_userTokenSecurityPolicyUri = tokenSecurityPolicyUri;
+                }
+
+                string userTokenSecurityPolicyUri =
+                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri;
+
+                // validate server nonce and security parameters for user identity.
+                ValidateServerNonce(
+                    m_identity,
+                    m_serverNonce,
+                    userTokenSecurityPolicyUri,
+                    m_previousServerNonce,
+                    m_endpoint.Description.SecurityMode);
+
+                // sign or encrypt with a disposable token handler copy, so the
+                // stored credentials are not mutated.
+                IUserIdentityTokenHandler identityToken = m_identity.TokenHandler.Copy();
+                identityToken.UpdatePolicy(identityPolicy);
+
+                SignatureData? userTokenSignature = null;
+
+                if (identityToken.Token is X509IdentityToken)
+                {
+                    byte[] userTokenDataToSign = securityPolicy.GetUserTokenSignatureData(
+                        channelThumbprint,
+                        m_serverNonce.ToArray(),
+                        m_serverCertificate?.RawData,
+                        serverChannelCertificate,
+                        m_instanceCertificate?.RawData,
+                        clientChannelCertificate,
+                        m_clientNonce ?? []);
+
+                    userTokenSignature = await identityToken.SignAsync(
+                        userTokenDataToSign,
+                        userTokenSecurityPolicyUri,
+                        ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    await identityToken.EncryptAsync(
+                        m_serverCertificate!,
+                        m_serverNonce.ToArray(),
+                        m_userTokenSecurityPolicyUri!,
+                        MessageContext,
+                        m_eccServerEphemeralKey,
+                        m_instanceCertificate,
+                        m_instanceCertificateChain,
+                        m_endpoint.Description.SecurityMode != MessageSecurityMode.None,
+                        ct).ConfigureAwait(false);
                 }
 
                 m_logger.LogInformation("Session RE-ACTIVATING {SessionId}.", SessionId);
@@ -5104,6 +5134,7 @@ namespace Technosoftware.UaClient
         private readonly NodeCache m_nodeCache;
         private readonly List<IUserIdentity> m_identityHistory = [];
         private ByteString m_serverNonce;
+        private byte[]? m_clientNonce;
         private ByteString m_previousServerNonce;
         private Certificate? m_serverCertificate;
         private uint m_publishCounter;
