@@ -1524,10 +1524,12 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(response, Is.Not.Null);
 
             // Verify the triggering relationships are tracked
-            Assert.That(triggeringItem.TriggeredItems, Is.Not.Null);
-            Assert.That(triggeringItem.TriggeredItems.Count, Is.EqualTo(2));
-            Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem1.ClientHandle));
-            Assert.That(triggeringItem.TriggeredItems, Does.Contain(triggeredItem2.ClientHandle));
+            // TriggeredItems is an ArrayOf in 2.0, which NUnit's collection
+            // constraints do not accept; materialise it for the assertion.
+            uint[] triggeredItems = triggeringItem.TriggeredItems.ToArray();
+            Assert.That(triggeredItems, Has.Length.EqualTo(2));
+            Assert.That(triggeredItems, Does.Contain(triggeredItem1.ClientHandle));
+            Assert.That(triggeredItems, Does.Contain(triggeredItem2.ClientHandle));
 
             Assert.That(triggeredItem1.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
             Assert.That(triggeredItem2.TriggeringItemId, Is.EqualTo(triggeringItem.Status.Id));
