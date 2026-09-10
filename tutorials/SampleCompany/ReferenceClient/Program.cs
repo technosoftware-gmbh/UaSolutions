@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using SampleCompany.Common;
 using Technosoftware.UaClient;
 using Technosoftware.UaConfiguration;
@@ -350,7 +351,7 @@ namespace SampleCompany.ReferenceClient
                     Console.WriteLine($"Create reverse connection endpoint at {reverseConnectUrlString}.");
                     reverseConnectManager = new ReverseConnectManager(telemetry);
                     reverseConnectManager.AddEndpoint(new Uri(reverseConnectUrlString));
-                    reverseConnectManager.StartService(config);
+                    await reverseConnectManager.StartServiceAsync(config).ConfigureAwait(false);
                 }
 
                 // wait for timeout or Ctrl-C
@@ -390,7 +391,7 @@ namespace SampleCompany.ReferenceClient
                         userIdentity = UserIdentity.CreateAsync(
                             userCertificateIdentifier,
                             new CertificatePasswordProvider(userCertificatePassword),
-                            telemetry,
+                            config.CertificateManager?.CertificateProvider,
                             ct
                         ).GetAwaiter().GetResult();
 
@@ -548,8 +549,8 @@ namespace SampleCompany.ReferenceClient
                             if (jsonvalues && variableIds != null)
                             {
                                 (
-                                    IReadOnlyList<DataValue> allValues,
-                                    IReadOnlyList<ServiceResult> results
+                                    ArrayOf<DataValue> allValues,
+                                    ArrayOf<ServiceResult> results
                                 ) = await samples
                                     .ReadAllValuesAsync(uaClient, variableIds, ct)
                                     .ConfigureAwait(false);
@@ -764,7 +765,7 @@ namespace SampleCompany.ReferenceClient
         {
             CertificateIdentifier userCertificateIdentifier = null;
 
-            X509Certificate2Collection userCertificatesWithMatchingThumbprint =
+            CertificateCollection userCertificatesWithMatchingThumbprint =
                 await trustedUserCertificates.GetCertificatesAsync(telemetry, ct).ConfigureAwait(false);
             // get user certificate with matching thumbprint
             userCertificatesWithMatchingThumbprint =
@@ -773,9 +774,11 @@ namespace SampleCompany.ReferenceClient
             // create Certificate Identifier
             if (userCertificatesWithMatchingThumbprint.Count == 1)
             {
-                userCertificateIdentifier = new CertificateIdentifier(
-                    userCertificatesWithMatchingThumbprint[0])
+                // A CertificateIdentifier no longer wraps a certificate; it
+                // names the store and the thumbprint to resolve it by.
+                userCertificateIdentifier = new CertificateIdentifier
                 {
+                    Thumbprint = userCertificatesWithMatchingThumbprint[0].Thumbprint,
                     StorePath = trustedUserCertificates.StorePath,
                     StoreType = trustedUserCertificates.StoreType
                 };

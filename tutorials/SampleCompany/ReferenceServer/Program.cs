@@ -120,7 +120,9 @@ namespace SampleCompany.ReferenceServer
                 }
 
                 // create the UA server
-                var server = new MyUaServer<NodeManagers.Reference.ReferenceServer>(telemetry)
+                var server = new MyUaServer<NodeManagers.Reference.ReferenceServer>(
+                    telemetry,
+                    serverTelemetry => new NodeManagers.Reference.ReferenceServer(serverTelemetry))
                 {
                     AutoAccept = autoAccept,
                     Password = password

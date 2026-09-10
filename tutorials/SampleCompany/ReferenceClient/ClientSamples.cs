@@ -121,7 +121,7 @@ namespace SampleCompany.ReferenceClient
                 ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // Validate the results
-                ValidateResponse(resultsValues, nodesToRead);
+                ValidateResponse(resultsValues, nodesToRead.ToArrayOf());
 
                 // Display the results.
                 foreach (DataValue result in resultsValues)
@@ -164,7 +164,7 @@ namespace SampleCompany.ReferenceClient
                 {
                     NodeId = NodeId.Parse("ns=2;s=Scalar_Static_Int32"),
                     AttributeId = Attributes.Value,
-                    Value = new DataValue { Value = 100 }
+                    Value = new DataValue(Variant.From(100))
                 };
                 nodesToWrite.Add(intWriteVal);
 
@@ -173,7 +173,7 @@ namespace SampleCompany.ReferenceClient
                 {
                     NodeId = NodeId.Parse("ns=2;s=Scalar_Static_Float"),
                     AttributeId = Attributes.Value,
-                    Value = new DataValue { Value = (float)100.5 }
+                    Value = new DataValue(Variant.From((float)100.5))
                 };
                 nodesToWrite.Add(floatWriteVal);
 
@@ -182,7 +182,7 @@ namespace SampleCompany.ReferenceClient
                 {
                     NodeId = NodeId.Parse("ns=2;s=Scalar_Static_String"),
                     AttributeId = Attributes.Value,
-                    Value = new DataValue { Value = "String Test" }
+                    Value = new DataValue(Variant.From("String Test"))
                 };
                 nodesToWrite.Add(stringWriteVal);
 
@@ -199,7 +199,7 @@ namespace SampleCompany.ReferenceClient
                 ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // Validate the response
-                ValidateResponse(results, nodesToWrite);
+                ValidateResponse(results, nodesToWrite.ToArrayOf());
 
                 // Display the results.
                 Console.WriteLine("Write Results :");
@@ -500,14 +500,17 @@ namespace SampleCompany.ReferenceClient
                 {
                     AttributeId = Attributes.Value,
                     TypeDefinitionId = ObjectTypeIds.ExclusiveLevelAlarmType,
-                    BrowsePath = new QualifiedNameCollection(["EventType"])
+                    BrowsePath = [.. new QualifiedName[] { new("EventType") }]
                 };
                 var desiredEventType = new LiteralOperand
                 {
                     Value = new Variant(ObjectTypeIds.ExclusiveLevelAlarmType)
                 };
 
-                whereClause.Push(FilterOperator.Equals, [existingEventType, desiredEventType]);
+                whereClause.Push(
+                    FilterOperator.Equals,
+                    Variant.FromStructure(existingEventType),
+                    Variant.FromStructure(desiredEventType));
 
                 filter.WhereClause = whereClause;
 
@@ -723,7 +726,10 @@ namespace SampleCompany.ReferenceClient
                 }
             }
 
-            var nodesToBrowse = new List<NodeId> { startingNode ?? ObjectIds.RootFolder };
+            var nodesToBrowse = new List<NodeId>
+            {
+                startingNode.IsNull ? ObjectIds.RootFolder : startingNode
+            };
 
             const int kMaxReferencesPerNode = 1000;
 
@@ -879,7 +885,7 @@ namespace SampleCompany.ReferenceClient
                 browseDescription
                 ?? new BrowseDescription
                 {
-                    NodeId = startingNode ?? ObjectIds.RootFolder,
+                    NodeId = startingNode.IsNull ? ObjectIds.RootFolder : startingNode,
                     BrowseDirection = BrowseDirection.Forward,
                     ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
                     IncludeSubtypes = true,
@@ -888,7 +894,7 @@ namespace SampleCompany.ReferenceClient
                 };
             ArrayOf<BrowseDescription> browseDescriptionCollection
                 = CreateBrowseDescriptionCollectionFromNodeId(
-                [.. new NodeId[] { startingNode ?? ObjectIds.RootFolder }],
+                [.. new NodeId[] { startingNode.IsNull ? ObjectIds.RootFolder : startingNode }],
                 browseTemplate);
 
             // Browse
@@ -907,7 +913,7 @@ namespace SampleCompany.ReferenceClient
 
                 var allBrowseResults = new List<BrowseResult>();
                 bool repeatBrowse;
-                var browseResultCollection = new List<BrowseResult>();
+                ArrayOf<BrowseResult> browseResultCollection = default;
                 var unprocessedOperations = new List<BrowseDescription>();
                 ArrayOf<DiagnosticInfo> diagnosticsInfoCollection;
                 do
@@ -983,16 +989,9 @@ namespace SampleCompany.ReferenceClient
                     }
                 } while (repeatBrowse);
 
-                if (maxNodesPerBrowse == 0)
-                {
-                    browseDescriptionCollection.Clear();
-                }
-                else
-                {
-                    browseDescriptionCollection = browseDescriptionCollection
-                        .ToArray().Skip(browseResultCollection.Count)
-                        .ToArray();
-                }
+                browseDescriptionCollection = maxNodesPerBrowse == 0
+                    ? default
+                    : browseDescriptionCollection[browseResultCollection.Count..];
 
                 // Browse next
                 ArrayOf<ByteString> continuationPoints = PrepareBrowseNext(browseResultCollection);
@@ -1045,11 +1044,10 @@ namespace SampleCompany.ReferenceClient
                 {
                     m_logger.LogInformation("Browse Result {Count} duplicate nodes were ignored.", duplicates);
                 }
-                browseDescriptionCollection.AddRange(
-                    CreateBrowseDescriptionCollectionFromNodeId(browseTable, browseTemplate));
-
-                // add unprocessed nodes if any
-                browseDescriptionCollection.ToArray().AddRange(unprocessedOperations);
+                browseDescriptionCollection = ArrayOf.Combine(
+                    browseDescriptionCollection,
+                    CreateBrowseDescriptionCollectionFromNodeId(browseTable, browseTemplate),
+                    unprocessedOperations); // add unprocessed nodes if any
             }
 
             stopWatch.Stop();
@@ -1113,8 +1111,8 @@ namespace SampleCompany.ReferenceClient
             CancellationToken ct = default)
         {
             bool retrySingleRead = false;
-            ArrayOf<DataValue> values = default;
-            IList<ServiceResult> errors = null;
+            List<DataValue> values = null;
+            List<ServiceResult> errors = null;
 
             do
             {
@@ -1125,7 +1123,7 @@ namespace SampleCompany.ReferenceClient
                         values = [];
                         errors = [];
 
-                        foreach (NodeId variableId in variableIds)
+                        foreach (NodeId variableId in variableIds.ToList())
                         {
                             try
                             {
@@ -1153,15 +1151,19 @@ namespace SampleCompany.ReferenceClient
                             catch (ServiceResultException sre)
                             {
                                 m_logger.LogError(sre, "Error");
-                                values.Add(new DataValue(sre.StatusCode));
+                                values.Add(DataValue.FromStatusCode(sre.StatusCode));
                                 errors.Add(sre.Result);
                             }
                         }
                     }
                     else
                     {
-                        (values, errors) = await uaClient.Session.ReadValuesAsync(variableIds, ct)
-                            .ConfigureAwait(false);
+                        (List<DataValue> valueList, IList<ServiceResult> errorList) =
+                            await uaClient.Session.ReadValuesAsync(variableIds, ct)
+                                .ConfigureAwait(false);
+
+                        values = valueList;
+                        errors = errorList.ToList();
 
                         int ii = 0;
                         foreach (DataValue value in values)
@@ -1260,7 +1262,9 @@ namespace SampleCompany.ReferenceClient
                         StartNodeId = item.NodeId,
                         AttributeId = Attributes.Value,
                         SamplingInterval = samplingInterval,
-                        DisplayName = item.DisplayName?.Text ?? item.BrowseName?.Name ?? "unknown",
+                        DisplayName = !item.DisplayName.IsNullOrEmpty
+                            ? item.DisplayName.Text
+                            : item.BrowseName.Name ?? "unknown",
                         QueueSize = queueSize,
                         DiscardOldest = true,
                         MonitoringMode = MonitoringMode.Reporting
@@ -1353,7 +1357,7 @@ namespace SampleCompany.ReferenceClient
         private void FastDataChangeNotification(
             Subscription subscription,
             DataChangeNotification notification,
-            IList<string> stringTable)
+            ArrayOf<string> stringTable)
         {
             try
             {
@@ -1564,12 +1568,12 @@ namespace SampleCompany.ReferenceClient
         }
 
         private void ValidateResponse<TRequest, TResponse>(
-            IReadOnlyList<TRequest> requests,
-            IReadOnlyList<TResponse> responses)
+            ArrayOf<TRequest> requests,
+            ArrayOf<TResponse> responses)
         {
             if (m_validate != null)
             {
-                m_validate(requests?.ToList(), responses?.ToList());
+                m_validate(requests.ToArray(), responses.ToArray());
             }
             else
             {

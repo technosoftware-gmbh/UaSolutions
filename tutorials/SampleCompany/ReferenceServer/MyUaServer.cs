@@ -74,9 +74,15 @@ namespace SampleCompany.ReferenceServer
         /// Ctor of the server.
         /// </summary>
         /// <param name="telemetry">The telemetry context.</param>
-        public MyUaServer(ITelemetryContext telemetry)
+        /// <remarks>
+        /// UaStandardServer takes an ITelemetryContext in 2.0, which a new()
+        /// constraint cannot express, so the server is built by a factory the
+        /// caller supplies.
+        /// </remarks>
+        public MyUaServer(ITelemetryContext telemetry, Func<ITelemetryContext, T> factory)
         {
             m_telemetry = telemetry;
+            m_factory = factory;
             m_logger = telemetry.CreateLogger<MyUaServer<T>>();
         }
 
@@ -184,7 +190,7 @@ namespace SampleCompany.ReferenceServer
             try
             {
                 // create the server.
-                Server ??= new T();
+                Server ??= m_factory(m_telemetry);
 
                 // start the server
                 await Application.StartAsync(Server).ConfigureAwait(false);
@@ -382,6 +388,7 @@ namespace SampleCompany.ReferenceServer
         }
 
         #region Private Fields
+        private readonly Func<ITelemetryContext, T> m_factory;
         private readonly ITelemetryContext m_telemetry;
         private readonly ILogger m_logger;
         private Task m_status;
