@@ -88,8 +88,10 @@ namespace Technosoftware.UaClient
         public SessionReconnectHandler(
             ITelemetryContext telemetry,
             bool reconnectAbort = false,
-            int maxReconnectPeriod = -1)
+            int maxReconnectPeriod = -1,
+            TimeProvider? timeProvider = null)
         {
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_telemetry = telemetry;
             m_logger = telemetry.CreateLogger<SessionReconnectHandler>();
             m_reconnectAbort = reconnectAbort;
@@ -299,7 +301,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         private async void OnReconnectAsync(object? state)
         {
-            int reconnectStart = HiResClock.TickCount;
+            int reconnectStart = m_timeProvider.GetTickCount();
             try
             {
                 // check for exit.
@@ -368,7 +370,7 @@ namespace Technosoftware.UaClient
                     }
                     else
                     {
-                        int elapsed = HiResClock.TickCount - reconnectStart;
+                        int elapsed = m_timeProvider.GetTickCount() - reconnectStart;
                         m_logger.LogInformation(
                             "Reconnect period is {ReconnectPeriod} ms, {Elapsed} ms elapsed in reconnect.",
                             m_reconnectPeriod,
@@ -443,7 +445,7 @@ namespace Technosoftware.UaClient
                             // check if reactivating is still an option.
                             int timeout =
                                 Convert.ToInt32(current.SessionTimeout) -
-                                (HiResClock.TickCount - current.LastKeepAliveTickCount);
+                                (m_timeProvider.GetTickCount() - current.LastKeepAliveTickCount);
                             if (timeout > 0)
                             {
                                 m_logger.LogInformation(
@@ -599,6 +601,7 @@ namespace Technosoftware.UaClient
         private ReconnectState m_state;
         private bool m_reconnectFailed;
         private readonly ILogger m_logger;
+        private readonly TimeProvider m_timeProvider;
         private readonly bool m_reconnectAbort;
         private bool m_cancelReconnect;
         private bool m_updateFromServer;

@@ -49,9 +49,13 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Creates a empty object.
         /// </summary>
-        public Subscription(ITelemetryContext telemetry, SubscriptionOptions? options = null)
+        public Subscription(
+            ITelemetryContext telemetry,
+            SubscriptionOptions? options = null,
+            TimeProvider? timeProvider = null)
         {
             Telemetry = telemetry ?? AmbientMessageContext.Telemetry;
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_logger = Telemetry.CreateLogger<Subscription>();
             State = options ?? new SubscriptionOptions();
             DefaultItem = CreateMonitoredItem();
@@ -71,6 +75,7 @@ namespace Technosoftware.UaClient
 
             m_telemetry = template.m_telemetry;
             m_logger = template.m_logger;
+            m_timeProvider = template.m_timeProvider;
             State = template.State;
             Handle = template.Handle;
             DefaultItem = CreateMonitoredItem(template.DefaultItem.State);
@@ -726,7 +731,7 @@ namespace Technosoftware.UaClient
         {
             get
             {
-                int timeSinceLastNotification = HiResClock.TickCount - m_lastNotificationTickCount;
+                int timeSinceLastNotification = m_timeProvider.GetTickCount() - m_lastNotificationTickCount;
                 return timeSinceLastNotification > m_keepAliveInterval + kKeepAliveTimerMargin;
             }
         }
@@ -1582,7 +1587,7 @@ namespace Technosoftware.UaClient
                 DateTime now = DateTime.UtcNow;
                 Interlocked.Exchange(ref m_lastNotificationTime, now.Ticks);
 
-                int tickCount = HiResClock.TickCount;
+                int tickCount = m_timeProvider.GetTickCount();
                 m_lastNotificationTickCount = tickCount;
 
                 // create queue for the first time.
@@ -1976,7 +1981,7 @@ namespace Technosoftware.UaClient
                     // triggers the republish mechanism immediately,
                     // if event is in the past
                     DateTime now = DateTime.UtcNow.AddMilliseconds(-RepublishMessageTimeout * 2);
-                    int tickCount = HiResClock.TickCount - (RepublishMessageTimeout * 2);
+                    int tickCount = m_timeProvider.GetTickCount() - (RepublishMessageTimeout * 2);
                     uint lastSequenceNumberToRepublish = m_lastSequenceNumberProcessed - 1;
                     int availableNumbers = availableSequenceNumbers.Count;
                     int republishMessages = 0;
@@ -2043,7 +2048,7 @@ namespace Technosoftware.UaClient
                     m_publishTimer?.Dispose();
                     m_publishTimer = null;
                     Interlocked.Exchange(ref m_lastNotificationTime, DateTime.UtcNow.Ticks);
-                    m_lastNotificationTickCount = HiResClock.TickCount;
+                    m_lastNotificationTickCount = m_timeProvider.GetTickCount();
                     m_publishTimer = new Timer(
                         OnKeepAlive,
                         m_keepAliveInterval,
@@ -2512,7 +2517,7 @@ namespace Technosoftware.UaClient
                         {
                             // tolerate if a single request was received out of order
                             if (ii.Next.Next != null &&
-                                (HiResClock.TickCount -
+                                (m_timeProvider.GetTickCount() -
                                     ii.Value.TickCount) > RepublishMessageTimeout)
                             {
                                 ii.Value.Republished = true;
@@ -3161,6 +3166,7 @@ namespace Technosoftware.UaClient
         private LinkedList<IncomingMessage>? m_incomingMessages;
         private ITelemetryContext? m_telemetry;
         private ILogger m_logger;
+        private readonly TimeProvider m_timeProvider;
 
         /// <summary>
         /// A message received from the server cached until is processed or discarded.

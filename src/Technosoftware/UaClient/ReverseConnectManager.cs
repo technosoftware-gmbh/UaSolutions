@@ -180,8 +180,11 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Initializes the object with default values.
         /// </summary>
-        public ReverseConnectManager(ITelemetryContext telemetry)
+        public ReverseConnectManager(
+            ITelemetryContext telemetry,
+            TimeProvider timeProvider = null)
         {
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_telemetry = telemetry;
             m_logger = telemetry.CreateLogger<ReverseConnectManager>();
             m_state = ReverseConnectManagerState.New;
@@ -739,7 +742,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         private async Task OnConnectionWaitingAsync(object sender, ConnectionWaitingEventArgs e)
         {
-            int startTime = HiResClock.TickCount;
+            int startTime = m_timeProvider.GetTickCount();
             int endTime = startTime + (m_configuration?.HoldTime ?? 15000);
 
             bool matched = MatchRegistration(sender, e);
@@ -751,7 +754,7 @@ namespace Technosoftware.UaClient
                 {
                     ct = m_cts.Token;
                 }
-                int delay = endTime - HiResClock.TickCount;
+                int delay = endTime - m_timeProvider.GetTickCount();
                 if (delay > 0)
                 {
                     await Task.Delay(delay, ct)
@@ -766,7 +769,7 @@ namespace Technosoftware.UaClient
                                         "Matched reverse connection {ServerUri} {EndpointUrl} after {Duration}ms",
                                         e.ServerUri,
                                         e.EndpointUrl,
-                                        HiResClock.TickCount - startTime);
+                                        m_timeProvider.GetTickCount() - startTime);
                                 }
                             }
                         },
@@ -783,7 +786,7 @@ namespace Technosoftware.UaClient
                 e.Accepted ? "Accepted" : "Rejected",
                 e.ServerUri,
                 e.EndpointUrl,
-                HiResClock.TickCount - startTime);
+                m_timeProvider.GetTickCount() - startTime);
         }
 
         /// <summary>
@@ -878,6 +881,7 @@ namespace Technosoftware.UaClient
 
         private readonly Lock m_lock = new();
         private readonly ILogger m_logger;
+        private readonly TimeProvider m_timeProvider;
         private readonly ITelemetryContext m_telemetry;
         private ConfigurationWatcher? m_configurationWatcher;
         private ApplicationType m_applicationType;

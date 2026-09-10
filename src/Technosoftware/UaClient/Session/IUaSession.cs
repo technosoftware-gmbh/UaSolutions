@@ -232,7 +232,8 @@ namespace Technosoftware.UaClient
         DateTime LastKeepAliveTime { get; }
 
         /// <summary>
-        /// Gets the TickCount in ms of the last keep alive based on <see cref="HiResClock.TickCount"/>.
+        /// Gets the TickCount in ms of the last keep alive, taken from the
+        /// session's <see cref="TimeProvider"/>.
         /// </summary>
         int LastKeepAliveTickCount { get; }
 

@@ -74,12 +74,14 @@ namespace Technosoftware.UaClient
             Certificate? clientCertificate = null,
             CertificateCollection? clientCertificateChain = null,
             ArrayOf<EndpointDescription> availableEndpoints = default,
-            List<string>? discoveryProfileUris = null)
+            List<string>? discoveryProfileUris = null,
+            TimeProvider? timeProvider = null)
             : this(
                   channel,
                   configuration,
                   endpoint,
-                  channel.MessageContext ?? configuration.CreateMessageContext())
+                  channel.MessageContext ?? configuration.CreateMessageContext(),
+                  timeProvider)
         {
             m_instanceCertificate = clientCertificate;
             m_instanceCertificateChain = clientCertificateChain;
@@ -98,7 +100,8 @@ namespace Technosoftware.UaClient
                   channel,
                   template.m_configuration,
                   template.ConfiguredEndpoint,
-                  channel.MessageContext ?? template.m_configuration.CreateMessageContext())
+                  channel.MessageContext ?? template.m_configuration.CreateMessageContext(),
+                  template.m_timeProvider)
         {
             m_instanceCertificate = template.m_instanceCertificate;
             m_instanceCertificateChain = template.m_instanceCertificateChain;
@@ -155,7 +158,8 @@ namespace Technosoftware.UaClient
             ITransportChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
-            IServiceMessageContext messageContext)
+            IServiceMessageContext messageContext,
+            TimeProvider? timeProvider = null)
             : base(channel, messageContext.Telemetry)
         {
             if (messageContext == null)
@@ -163,6 +167,7 @@ namespace Technosoftware.UaClient
                 throw new ArgumentNullException(nameof(messageContext));
             }
 
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_telemetry = messageContext.Telemetry;
             m_logger = m_telemetry.CreateLogger<Session>();
 
@@ -662,7 +667,7 @@ namespace Technosoftware.UaClient
                 if (StatusCode.IsGood(lastKeepAliveErrorStatusCode) ||
                     lastKeepAliveErrorStatusCode == StatusCodes.BadNoCommunication)
                 {
-                    int delta = HiResClock.TickCount - LastKeepAliveTickCount;
+                    int delta = m_timeProvider.GetTickCount() - LastKeepAliveTickCount;
 
                     // add a guard band to allow for network lag.
                     return ((m_keepAliveInterval * m_keepAliveIntervalFactor) +
@@ -687,7 +692,7 @@ namespace Technosoftware.UaClient
         }
 
         /// <summary>
-        /// Gets the TickCount in ms of the last keep alive based on <see cref="HiResClock.TickCount"/>.
+        /// Gets the TickCount in ms of the last keep alive based on <see cref="m_timeProvider.GetTickCount()"/>.
         /// Independent of system time changes.
         /// </summary>
         public int LastKeepAliveTickCount { get; private set; }
@@ -2819,7 +2824,7 @@ namespace Technosoftware.UaClient
 
             m_lastKeepAliveErrorStatusCode = StatusCodes.Good;
             Interlocked.Exchange(ref m_lastKeepAliveTime, DateTime.UtcNow.Ticks);
-            LastKeepAliveTickCount = HiResClock.TickCount;
+            LastKeepAliveTickCount = m_timeProvider.GetTickCount();
 
             m_serverState = ServerState.Unknown;
 
@@ -2952,7 +2957,7 @@ namespace Technosoftware.UaClient
                     ? int.MaxValue
                     : PublishRequestCancelDelayOnCloseSession;
 
-                int startTime = HiResClock.TickCount;
+                int startTime = m_timeProvider.GetTickCount();
                 while (true)
                 {
                     // Check if all publish requests completed
@@ -2975,7 +2980,7 @@ namespace Technosoftware.UaClient
                     }
 
                     // Check timeout
-                    int elapsed = HiResClock.TickCount - startTime;
+                    int elapsed = m_timeProvider.GetTickCount() - startTime;
                     if (elapsed >= waitTimeout)
                     {
                         m_logger.LogWarning(
@@ -3093,7 +3098,7 @@ namespace Technosoftware.UaClient
                         RequestId = requestId,
                         RequestTypeId = typeId,
                         Result = result,
-                        TickCount = HiResClock.TickCount
+                        TickCount = m_timeProvider.GetTickCount()
                     };
 
                     m_outstandingRequests.AddLast(state);
@@ -3143,7 +3148,7 @@ namespace Technosoftware.UaClient
                         RequestId = requestId,
                         RequestTypeId = typeId,
                         Result = result,
-                        TickCount = HiResClock.TickCount,
+                        TickCount = m_timeProvider.GetTickCount(),
                         Activity = null
                     };
 
@@ -3274,7 +3279,7 @@ namespace Technosoftware.UaClient
 
                 m_lastKeepAliveErrorStatusCode = StatusCodes.Good;
                 Interlocked.Exchange(ref m_lastKeepAliveTime, DateTime.UtcNow.Ticks);
-                LastKeepAliveTickCount = HiResClock.TickCount;
+                LastKeepAliveTickCount = m_timeProvider.GetTickCount();
 
                 lock (m_outstandingRequests)
                 {
@@ -3295,7 +3300,7 @@ namespace Technosoftware.UaClient
             {
                 m_lastKeepAliveErrorStatusCode = StatusCodes.Good;
                 Interlocked.Exchange(ref m_lastKeepAliveTime, DateTime.UtcNow.Ticks);
-                LastKeepAliveTickCount = HiResClock.TickCount;
+                LastKeepAliveTickCount = m_timeProvider.GetTickCount();
             }
 
             // save server state.
@@ -3325,7 +3330,7 @@ namespace Technosoftware.UaClient
             if (result.StatusCode == StatusCodes.BadNoCommunication)
             {
                 //keep alive read timed out
-                int delta = HiResClock.TickCount - LastKeepAliveTickCount;
+                int delta = m_timeProvider.GetTickCount() - LastKeepAliveTickCount;
                 m_logger.LogInformation(
                     "KEEP ALIVE LATE: {Duration}ms, EndpointUrl={EndpointUrl}, RequestCount={Good}/{Outstanding}",
                     delta,
@@ -5094,6 +5099,11 @@ namespace Technosoftware.UaClient
         /// The session telemetry context
         /// </summary>
         protected ITelemetryContext m_telemetry;
+
+        /// <summary>
+        /// The time source used for the keep alive and publish bookkeeping.
+        /// </summary>
+        private readonly TimeProvider m_timeProvider;
 
         /// <summary>
         /// If set to<c>true</c> then the domain in the certificate must match the endpoint used.
