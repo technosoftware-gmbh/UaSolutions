@@ -3653,7 +3653,7 @@ namespace Technosoftware.UaClient
                 }
 
                 // nothing more to do if we were never connected
-                if (NodeId.IsNull(sessionId))
+                if (sessionId.IsNull)
                 {
                     return;
                 }

@@ -1124,7 +1124,7 @@ namespace Technosoftware.UaServer
             NodeId certificateTypeId)
         {
             // verify typeid must be set
-            if (NodeId.IsNull(certificateTypeId))
+            if (certificateTypeId.IsNull)
             {
                 throw new ServiceResultException(
                     StatusCodes.BadInvalidArgument,
@@ -1132,7 +1132,7 @@ namespace Technosoftware.UaServer
             }
 
             // verify requested certificate group
-            if (NodeId.IsNull(certificateGroupId))
+            if (certificateGroupId.IsNull)
             {
                 certificateGroupId = ObjectIds
                     .ServerConfiguration_CertificateGroups_DefaultApplicationGroup;

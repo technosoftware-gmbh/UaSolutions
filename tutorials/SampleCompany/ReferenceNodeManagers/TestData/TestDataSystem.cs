@@ -551,13 +551,13 @@ namespace SampleCompany.NodeManagers.TestData
                         return GetRandomStructure();
                     case Variables.Data_Static_Structure_ScalarStructure_NumberValue:
                     case Variables.Data_Dynamic_Structure_ScalarStructure_NumberValue:
-                        return new Variant(m_generator.GetRandomNumber());
+                        return Variant.From(m_generator.GetRandomNumber());
                     case Variables.Data_Static_Structure_ScalarStructure_IntegerValue:
                     case Variables.Data_Dynamic_Structure_ScalarStructure_IntegerValue:
-                        return new Variant(m_generator.GetRandomInteger());
+                        return Variant.From(m_generator.GetRandomInteger());
                     case Variables.Data_Static_Structure_ScalarStructure_UIntegerValue:
                     case Variables.Data_Dynamic_Structure_ScalarStructure_UIntegerValue:
-                        return new Variant(m_generator.GetRandomUInteger());
+                        return Variant.From(m_generator.GetRandomUInteger());
                     default:
                         return null;
                 }
@@ -687,9 +687,9 @@ namespace SampleCompany.NodeManagers.TestData
                 LocalizedTextValue = m_generator.GetRandomLocalizedText(false),
                 StatusCodeValue = m_generator.GetRandomStatusCode(false),
                 VariantValue = m_generator.GetRandomVariant(false),
-                IntegerValue = new Variant(m_generator.GetRandomInteger()),
-                UIntegerValue = new Variant(m_generator.GetRandomUInteger()),
-                NumberValue = new Variant(m_generator.GetRandomNumber())
+                IntegerValue = Variant.From(m_generator.GetRandomInteger()),
+                UIntegerValue = Variant.From(m_generator.GetRandomUInteger()),
+                NumberValue = Variant.From(m_generator.GetRandomNumber())
             };
         }
 

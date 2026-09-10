@@ -72,7 +72,7 @@ namespace Technosoftware.UaClient
             var spanContextParameter = new Opc.Ua.KeyValuePair
             {
                 Key = new QualifiedName("SpanContext"),
-                Value = new Variant(new SpanContextDataType
+                Value = Variant.FromStructure(new SpanContextDataType
                 {
                     SpanId = BitConverter.ToUInt64(spanId),
                     TraceId = (Uuid)new Guid(traceId)

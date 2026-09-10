@@ -323,7 +323,7 @@ namespace Technosoftware.UaServer
         protected virtual bool IsNodeIdInNamespace(NodeId nodeId)
         {
             // nulls are never a valid node.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return false;
             }
@@ -807,7 +807,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected void AddTypesToTypeTree(BaseTypeState type)
         {
-            if (!NodeId.IsNull(type.SuperTypeId) && !ServerData.TypeTree.IsKnown(type.SuperTypeId))
+            if (!type.SuperTypeId.IsNull && !ServerData.TypeTree.IsKnown(type.SuperTypeId))
             {
                 AddTypesToTypeTree(type.SuperTypeId);
             }
@@ -4083,7 +4083,7 @@ namespace Technosoftware.UaServer
             result = null;
 
             // nothing to do if the filter is not specified.
-            if (ExtensionObject.IsNull(filter))
+            if (filter.IsNull)
             {
                 return StatusCodes.Good;
             }

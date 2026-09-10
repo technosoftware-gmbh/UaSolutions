@@ -284,7 +284,7 @@ namespace Technosoftware.UaClient.Tests
                 throw new ArgumentNullException(nameof(nodesToBrowse));
             }
 
-            if (view != null && !NodeId.IsNull(view.ViewId))
+            if (view != null && !view.ViewId.IsNull)
             {
                 (object viewHandle, IUaStandardAsyncNodeManager viewManager) =
                     await GetManagerHandleAsync(view.ViewId, cancellationToken)

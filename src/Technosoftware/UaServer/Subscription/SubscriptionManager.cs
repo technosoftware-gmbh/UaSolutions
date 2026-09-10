@@ -671,7 +671,7 @@ namespace Technosoftware.UaServer
                 {
                     NodeId sessionId = subscription.SessionId;
 
-                    if (!NodeId.IsNull(sessionId))
+                    if (!sessionId.IsNull)
                     {
                         // check that the subscription is the owner.
                         if (context != null &&
@@ -1383,7 +1383,7 @@ namespace Technosoftware.UaServer
                     // check if new and old sessions are different
                     IUaSession ownerSession = subscription.Session;
                     if (ownerSession != null &&
-                        !NodeId.IsNull(ownerSession.Id) &&
+                        !ownerSession.Id.IsNull &&
                         ownerSession.Id == context.Session.Id)
                     {
                         result.StatusCode = StatusCodes.BadNothingToDo;
@@ -1516,7 +1516,7 @@ namespace Technosoftware.UaServer
                         bool statusQueued = false;
                         lock (m_statusMessagesLock)
                         {
-                            if (!NodeId.IsNull(ownerSession.Id) &&
+                            if (!ownerSession.Id.IsNull &&
                                 m_statusMessages.TryGetValue(
                                     ownerSession.Id,
                                     out Queue<StatusMessage> queue))

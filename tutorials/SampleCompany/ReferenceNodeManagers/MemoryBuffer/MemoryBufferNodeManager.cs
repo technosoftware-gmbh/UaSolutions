@@ -288,7 +288,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             }
 
             // data encoding not supported.
-            if (!QualifiedName.IsNull(itemToCreate.ItemToMonitor.DataEncoding))
+            if (!itemToCreate.ItemToMonitor.DataEncoding.IsNull)
             {
                 return StatusCodes.BadDataEncodingUnsupported;
             }

@@ -190,7 +190,7 @@ namespace Technosoftware.UaServer
         {
             lock (DataLock)
             {
-                if (NodeId.IsNull(nodeId))
+                if (nodeId.IsNull)
                 {
                     return null;
                 }
@@ -335,8 +335,8 @@ namespace Technosoftware.UaServer
 
                     // silently ignore bad values.
                     if (reference == null ||
-                        NodeId.IsNull(reference.ReferenceTypeId) ||
-                        NodeId.IsNull(reference.TargetId))
+                        reference.ReferenceTypeId.IsNull ||
+                        reference.TargetId.IsNull)
                     {
                         continue;
                     }
@@ -433,7 +433,7 @@ namespace Technosoftware.UaServer
             }
 
             // check reference type filter.
-            if (!NodeId.IsNull(referenceTypeId) && reference.ReferenceTypeId != referenceTypeId)
+            if (!referenceTypeId.IsNull && reference.ReferenceTypeId != referenceTypeId)
             {
                 return includeSubtypes &&
                     Server.TypeTree.IsTypeOf(reference.ReferenceTypeId, referenceTypeId);
@@ -744,7 +744,7 @@ namespace Technosoftware.UaServer
                         }
 
                         // apply data encoding.
-                        if (!QualifiedName.IsNull(nodeToRead.DataEncoding))
+                        if (!nodeToRead.DataEncoding.IsNull)
                         {
                             error = EncodeableObject.ApplyDataEncoding(
                                 Server.MessageContext,
@@ -1987,7 +1987,7 @@ namespace Technosoftware.UaServer
                         continue;
                     }
 
-                    if (QualifiedName.IsNull(browseName) || target.BrowseName == browseName)
+                    if (browseName.IsNull || target.BrowseName == browseName)
                     {
                         return (NodeId)targetId;
                     }
@@ -2411,7 +2411,7 @@ namespace Technosoftware.UaServer
                 return;
             }
 
-            if (!NodeId.IsNull(existingTypeId))
+            if (!existingTypeId.IsNull)
             {
                 if (m_nodes.TypeTree.IsTypeOf(existingTypeId, typeDefinitionId))
                 {
@@ -2867,7 +2867,7 @@ namespace Technosoftware.UaServer
                 // check need to connect subtypes to the supertype if they are being deleted.
                 ExpandedNodeId supertypeId = Server.TypeTree.FindSuperType(node.NodeId);
 
-                if (!NodeId.IsNull(supertypeId))
+                if (!supertypeId.IsNull)
                 {
                     Server.TypeTree.Remove(node.NodeId);
                 }
@@ -3427,7 +3427,7 @@ namespace Technosoftware.UaServer
                     continue;
                 }
 
-                if (QualifiedName.IsNull(browseName) || browseName == target.BrowseName)
+                if (browseName.IsNull || browseName == target.BrowseName)
                 {
                     return target;
                 }

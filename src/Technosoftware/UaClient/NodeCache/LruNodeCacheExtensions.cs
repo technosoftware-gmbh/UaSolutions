@@ -185,7 +185,7 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             NodeId typeId = datatypeId;
-            while (!NodeId.IsNull(typeId))
+            while (!typeId.IsNull)
             {
                 if (typeId.NamespaceIndex == 0 && typeId.IdType == IdType.Numeric)
                 {

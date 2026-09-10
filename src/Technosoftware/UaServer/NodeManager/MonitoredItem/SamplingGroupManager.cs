@@ -147,7 +147,7 @@ namespace Technosoftware.UaServer
             // get filter.
             MonitoringFilter filter = null;
 
-            if (!ExtensionObject.IsNull(itemToCreate.RequestedParameters.Filter))
+            if (!itemToCreate.RequestedParameters.Filter.IsNull)
             {
                 filter = itemToCreate.RequestedParameters.Filter.Body as MonitoringFilter;
             }
@@ -326,7 +326,7 @@ namespace Technosoftware.UaServer
             // get filter.
             MonitoringFilter filter = null;
 
-            if (!ExtensionObject.IsNull(itemToModify.RequestedParameters.Filter))
+            if (!itemToModify.RequestedParameters.Filter.IsNull)
             {
                 filter = (MonitoringFilter)itemToModify.RequestedParameters.Filter.Body;
             }

@@ -61,7 +61,7 @@ namespace Technosoftware.UaServer
         public static ParsedNodeId Parse(NodeId nodeId)
         {
             // can only parse non-null string node identifiers.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return null;
             }

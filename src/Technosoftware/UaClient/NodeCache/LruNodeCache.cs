@@ -255,7 +255,7 @@ namespace Technosoftware.UaClient
 
                     NodeId nodeId = ToNodeId(reference.NodeId);
 
-                    if (!NodeId.IsNull(nodeId))
+                    if (!nodeId.IsNull)
                     {
                         nodeIds.Add(nodeId);
                     }
@@ -287,7 +287,7 @@ namespace Technosoftware.UaClient
             }
             foreach (NodeId nodeId in nodeIds)
             {
-                if (NodeId.IsNull(nodeId))
+                if (nodeId.IsNull)
                 {
                     continue;
                 }
@@ -355,7 +355,7 @@ namespace Technosoftware.UaClient
 
                     NodeId nodeId = ToNodeId(reference.NodeId);
 
-                    if (!NodeId.IsNull(nodeId))
+                    if (!nodeId.IsNull)
                     {
                         nodeIds.Add(nodeId);
                     }
@@ -402,7 +402,7 @@ namespace Technosoftware.UaClient
                     .GetResult();
             }
             subTypeId = GetSuperTypeFromReferences(references);
-            return !NodeId.IsNull(subTypeId) && IsTypeOf(subTypeId, superTypeId);
+            return !subTypeId.IsNull && IsTypeOf(subTypeId, superTypeId);
         }
 
         /// <inheritdoc/>
@@ -426,7 +426,7 @@ namespace Technosoftware.UaClient
             CancellationToken ct)
         {
             NodeId typeId = datatypeId;
-            while (!NodeId.IsNull(typeId))
+            while (!typeId.IsNull)
             {
                 if (typeId.NamespaceIndex == 0 && typeId.IdType == IdType.Numeric)
                 {
@@ -453,7 +453,7 @@ namespace Technosoftware.UaClient
                 found = null;
                 while (true)
                 {
-                    if (NodeId.IsNull(nodeId))
+                    if (nodeId.IsNull)
                     {
                         // Nothing can be found since there is no
                         return null;
@@ -475,7 +475,7 @@ namespace Technosoftware.UaClient
                         if (target.BrowseName == browseName)
                         {
                             nodeId = ToNodeId(target.NodeId);
-                            if (!NodeId.IsNull(nodeId))
+                            if (!nodeId.IsNull)
                             {
                                 found = target;
                             }
@@ -510,7 +510,7 @@ namespace Technosoftware.UaClient
             NodeId nodeId,
             CancellationToken ct)
         {
-            Debug.Assert(!NodeId.IsNull(nodeId));
+            Debug.Assert(!nodeId.IsNull);
             return m_refs.GetOrAddAsync(
                 nodeId,
                 async (nodeId, context) =>
@@ -614,7 +614,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         private bool IsTypeHierarchyLoaded(IEnumerable<NodeId> typeIds)
         {
-            var types = new Queue<NodeId>(typeIds.Where(nodeId => !NodeId.IsNull(nodeId)));
+            var types = new Queue<NodeId>(typeIds.Where(nodeId => !nodeId.IsNull));
             while (types.TryDequeue(out NodeId typeId))
             {
                 if (!m_refs.TryGet(typeId, out ArrayOf<ReferenceDescription> references))

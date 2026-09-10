@@ -257,7 +257,7 @@ namespace Technosoftware.UaClient
                     }
 
                     // Always export MethodDeclarationId (important type system metadata)
-                    if (!node.TypeDefinitionId.IsNull && !NodeId.IsNull(node.TypeDefinitionId))
+                    if (!node.TypeDefinitionId.IsNull && !node.TypeDefinitionId.IsNull)
                     {
                         state.MethodDeclarationId = ExpandedNodeId.ToNodeId(node.TypeDefinitionId, context.NamespaceUris);
                     }

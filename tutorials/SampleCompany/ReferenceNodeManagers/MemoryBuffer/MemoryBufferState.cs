@@ -217,7 +217,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 return StatusCodes.BadIndexRangeInvalid;
             }
 
-            if (!QualifiedName.IsNull(dataEncoding))
+            if (!dataEncoding.IsNull)
             {
                 return StatusCodes.BadDataEncodingUnsupported;
             }
@@ -268,7 +268,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 return StatusCodes.BadIndexRangeInvalid;
             }
 
-            if (!QualifiedName.IsNull(dataEncoding))
+            if (!dataEncoding.IsNull)
             {
                 return StatusCodes.BadDataEncodingUnsupported;
             }

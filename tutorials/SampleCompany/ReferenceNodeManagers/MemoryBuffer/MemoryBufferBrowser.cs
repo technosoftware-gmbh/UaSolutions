@@ -111,7 +111,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             MemoryTagState tag;
 
             // check if a specific browse name is requested.
-            if (!QualifiedName.IsNull(BrowseName))
+            if (!BrowseName.IsNull)
             {
                 // check if match found previously.
                 if (m_position == uint.MaxValue)

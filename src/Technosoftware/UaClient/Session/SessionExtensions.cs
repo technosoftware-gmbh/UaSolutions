@@ -319,7 +319,7 @@ namespace Technosoftware.UaClient
                     continue;
                 }
 
-                if (NodeId.IsNull(results[ii].Targets[0].TargetId))
+                if ((results[ii].Targets[0].TargetId).IsNull)
                 {
                     errors[ii] = ServiceResult.Create(
                         StatusCodes.BadUnexpectedError,
@@ -369,7 +369,7 @@ namespace Technosoftware.UaClient
 
             // no encodings available if there was a problem reading the
             // data type for the node.
-            if (NodeId.IsNull(variable.DataType))
+            if (variable.DataType.IsNull)
             {
                 return [];
             }

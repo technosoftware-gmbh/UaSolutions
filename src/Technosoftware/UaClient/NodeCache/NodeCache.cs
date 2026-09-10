@@ -86,7 +86,7 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             // check for null.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -940,7 +940,7 @@ namespace Technosoftware.UaClient
             }
 
             // null expected datatype matches everything.
-            if (NodeId.IsNull(expectedTypeId))
+            if (expectedTypeId.IsNull)
             {
                 return true;
             }
@@ -1185,7 +1185,7 @@ namespace Technosoftware.UaClient
             ExpandedNodeId nodeId,
             CancellationToken ct = default)
         {
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return string.Empty;
             }
@@ -1209,7 +1209,7 @@ namespace Technosoftware.UaClient
             ReferenceDescription reference,
             CancellationToken ct = default)
         {
-            if (reference == null || NodeId.IsNull(reference.NodeId))
+            if (reference == null || reference.NodeId.IsNull)
             {
                 return string.Empty;
             }

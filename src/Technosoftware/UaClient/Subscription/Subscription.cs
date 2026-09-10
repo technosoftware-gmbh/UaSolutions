@@ -2944,7 +2944,7 @@ namespace Technosoftware.UaClient
                 foreach (MonitoredItem monitoredItem in m_monitoredItems.Values)
                 {
                     if (!string.IsNullOrEmpty(monitoredItem.RelativePath) &&
-                        NodeId.IsNull(monitoredItem.ResolvedNodeId))
+                        monitoredItem.ResolvedNodeId.IsNull)
                     {
                         // cannot change the relative path after an item is created.
                         if (monitoredItem.Created)

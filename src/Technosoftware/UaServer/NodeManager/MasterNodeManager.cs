@@ -537,7 +537,7 @@ namespace Technosoftware.UaServer
             nodeManager = null;
 
             // null node ids have no manager.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -580,7 +580,7 @@ namespace Technosoftware.UaServer
             object handle;
 
             // null node ids have no manager.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return (null, null);
             }
@@ -908,12 +908,12 @@ namespace Technosoftware.UaServer
             {
                 RelativePathElement element = relativePath.Elements[ii];
 
-                if (element == null || QualifiedName.IsNull(relativePath.Elements[ii].TargetName))
+                if (element == null || (relativePath.Elements[ii].TargetName).IsNull)
                 {
                     return StatusCodes.BadBrowseNameInvalid;
                 }
 
-                if (NodeId.IsNull(element.ReferenceTypeId))
+                if (element.ReferenceTypeId.IsNull)
                 {
                     element.ReferenceTypeId = ReferenceTypeIds.References;
                     element.IncludeSubtypes = true;
@@ -981,13 +981,13 @@ namespace Technosoftware.UaServer
             RelativePathElement element = relativePath.Elements[index];
 
             // check for valid reference type.
-            if (!element.IncludeSubtypes && NodeId.IsNull(element.ReferenceTypeId))
+            if (!element.IncludeSubtypes && element.ReferenceTypeId.IsNull)
             {
                 return;
             }
 
             // check for valid target name.
-            if (QualifiedName.IsNull(element.TargetName))
+            if (element.TargetName.IsNull)
             {
                 throw new ServiceResultException(StatusCodes.BadBrowseNameInvalid);
             }
@@ -1146,7 +1146,7 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (view != null && !NodeId.IsNull(view.ViewId))
+            if (view != null && !view.ViewId.IsNull)
             {
                 (object viewHandle, IUaStandardAsyncNodeManager viewManager) =
                     await GetManagerHandleAsync(view.ViewId, cancellationToken)
@@ -1491,7 +1491,7 @@ namespace Technosoftware.UaServer
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            if (!NodeId.IsNull(nodeToBrowse.ReferenceTypeId) &&
+            if (!nodeToBrowse.ReferenceTypeId.IsNull &&
                 !Server.TypeTree.IsKnown(nodeToBrowse.ReferenceTypeId))
             {
                 return StatusCodes.BadReferenceTypeIdInvalid;
@@ -1534,7 +1534,7 @@ namespace Technosoftware.UaServer
             };
 
             // check if reference type left unspecified.
-            if (NodeId.IsNull(cp.ReferenceTypeId))
+            if (cp.ReferenceTypeId.IsNull)
             {
                 cp.ReferenceTypeId = ReferenceTypeIds.References;
                 cp.IncludeSubtypes = true;
@@ -1873,7 +1873,7 @@ namespace Technosoftware.UaServer
             CancellationToken cancellationToken = default)
         {
             // validate history details parameter.
-            if (ExtensionObject.IsNull(historyReadDetails))
+            if (historyReadDetails.IsNull)
             {
                 throw new ServiceResultException(StatusCodes.BadHistoryOperationInvalid);
             }
@@ -2113,7 +2113,7 @@ namespace Technosoftware.UaServer
                     detailsType = details.Body.GetType();
                 }
 
-                if (!ExtensionObject.IsNull(details))
+                if (!details.IsNull)
                 {
                     nodesToUpdate.Add(details.Body as HistoryUpdateDetails);
                 }
@@ -2491,7 +2491,7 @@ namespace Technosoftware.UaServer
                 if (!itemToCreate.Processed)
                 {
                     // must make sure the filter is not null before checking its type.
-                    if (ExtensionObject.IsNull(itemToCreate.RequestedParameters.Filter))
+                    if (itemToCreate.RequestedParameters.Filter.IsNull)
                     {
                         continue;
                     }
@@ -2519,7 +2519,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // the data encoding has no meaning for event subscriptions.
-                    if (!QualifiedName.IsNull(itemToCreate.ItemToMonitor.DataEncoding))
+                    if (!itemToCreate.ItemToMonitor.DataEncoding.IsNull)
                     {
                         errors[ii] = StatusCodes.BadDataEncodingInvalid;
                         continue;
@@ -2877,7 +2877,7 @@ namespace Technosoftware.UaServer
                 itemToModify.Processed = true;
 
                 // check for a valid filter.
-                if (ExtensionObject.IsNull(itemToModify.RequestedParameters.Filter))
+                if (itemToModify.RequestedParameters.Filter.IsNull)
                 {
                     errors[ii] = StatusCodes.BadEventFilterInvalid;
                     continue;
@@ -3218,7 +3218,7 @@ namespace Technosoftware.UaServer
             }
 
             // check for known filter.
-            if (!ExtensionObject.IsNull(attributes.Filter) &&
+            if (!attributes.Filter.IsNull &&
                 attributes.Filter.Body is not MonitoringFilter)
             {
                 return new ServiceResult(StatusCodes.BadMonitoredItemFilterInvalid);
@@ -3234,7 +3234,7 @@ namespace Technosoftware.UaServer
         protected static ServiceResult ValidateMonitoringFilter(ExtensionObject filter)
         {
             // check that no filter is specified for non-value attributes.
-            if (!ExtensionObject.IsNull(filter))
+            if (!filter.IsNull)
             {
                 // validate data change filter.
                 if (filter.Body is DataChangeFilter datachangeFilter)
@@ -3300,7 +3300,7 @@ namespace Technosoftware.UaServer
             if (item.ItemToMonitor.AttributeId is not Attributes.Value and not Attributes
                 .EventNotifier)
             {
-                if (!ExtensionObject.IsNull(attributes.Filter))
+                if (!attributes.Filter.IsNull)
                 {
                     return new ServiceResult(StatusCodes.BadFilterNotAllowed);
                 }
@@ -3367,13 +3367,13 @@ namespace Technosoftware.UaServer
             }
 
             // check object id.
-            if (NodeId.IsNull(callMethodRequest.ObjectId))
+            if (callMethodRequest.ObjectId.IsNull)
             {
                 return StatusCodes.BadNodeIdInvalid;
             }
 
             // check method id.
-            if (NodeId.IsNull(callMethodRequest.MethodId))
+            if (callMethodRequest.MethodId.IsNull)
             {
                 return StatusCodes.BadMethodInvalid;
             }

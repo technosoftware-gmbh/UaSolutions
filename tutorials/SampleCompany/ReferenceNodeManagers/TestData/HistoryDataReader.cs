@@ -203,7 +203,7 @@ namespace SampleCompany.NodeManagers.TestData
                 }
 
                 // apply the data encoding.
-                if (!QualifiedName.IsNull(dataEncoding))
+                if (!dataEncoding.IsNull)
                 {
                     value = value
                         .WithWrappedValue(Variant.Null)

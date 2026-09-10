@@ -122,7 +122,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// <returns>True if the namespace is one of the nodes.</returns>
         protected virtual bool IsNodeIdInNamespace(NodeId nodeId)
         {
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return false;
             }
@@ -636,7 +636,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// </summary>
         protected void AddTypesToTypeTree(BaseTypeState type)
         {
-            if (!NodeId.IsNull(type.SuperTypeId) && !Server.TypeTree.IsKnown(type.SuperTypeId))
+            if (!type.SuperTypeId.IsNull && !Server.TypeTree.IsKnown(type.SuperTypeId))
             {
                 AddTypesToTypeTree(type.SuperTypeId);
             }
@@ -2626,7 +2626,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             DataChangeFilter filter = null;
             Opc.Ua.Range range = null;
 
-            if (!ExtensionObject.IsNull(parameters.Filter))
+            if (!parameters.Filter.IsNull)
             {
                 error = ValidateDataChangeFilter(
                     context,
@@ -2882,7 +2882,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             Opc.Ua.Range range = null;
 
             ServiceResult error;
-            if (!ExtensionObject.IsNull(parameters.Filter))
+            if (!parameters.Filter.IsNull)
             {
                 error = ValidateDataChangeFilter(
                     context,
