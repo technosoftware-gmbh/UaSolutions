@@ -447,7 +447,17 @@ namespace Technosoftware.UaConfiguration.Tests
                 .CheckApplicationInstanceCertificatesAsync(true)
                 .ConfigureAwait(false);
 
-            bool deleteAfterUse = applicationCertificate.Certificate != null;
+            // The identifier no longer caches the certificate; resolving it
+            // needs the registry and telemetry context.
+            using Certificate appCert = await CertificateIdentifierResolver
+                .ResolveAsync(
+                    applicationCertificate,
+                    registry: null,
+                    needPrivateKey: false,
+                    applicationInstance.ApplicationConfiguration.ApplicationUri,
+                    telemetry)
+                .ConfigureAwait(false);
+            bool deleteAfterUse = appCert != null;
 
             Assert.True(certOK);
             using (
@@ -457,14 +467,14 @@ namespace Technosoftware.UaConfiguration.Tests
                         .OpenStore(telemetry))
             {
                 // store public key in trusted store
-                byte[] rawData = applicationCertificate.Certificate.RawData;
+                byte[] rawData = appCert.RawData;
                 await store.AddAsync(CertificateFactory.Create(rawData))
                     .ConfigureAwait(false);
             }
 
             if (deleteAfterUse)
             {
-                string thumbprint = applicationCertificate.Certificate.Thumbprint;
+                string thumbprint = appCert.Thumbprint;
                 using (ICertificateStore store = CertificateIdentifierResolver
                     .OpenStore(applicationCertificate, telemetry))
                 {
@@ -581,7 +591,7 @@ namespace Technosoftware.UaConfiguration.Tests
                 .ApplicationConfiguration
                 .SecurityConfiguration
                 .ApplicationCertificate;
-            Assert.IsNull(applicationCertificate.Certificate);
+            Assert.That(applicationCertificate.Thumbprint, Is.Null.Or.Empty);
 
             Certificate publicKey = null;
             using (Certificate testCert = CreateInvalidCert(certType))
@@ -605,7 +615,7 @@ namespace Technosoftware.UaConfiguration.Tests
                         .ConfigureAwait(false);
 
                     Assert.True(certOK);
-                    Assert.AreEqual(publicKey, applicationCertificate.Certificate);
+                    Assert.AreEqual(publicKey.Thumbprint, applicationCertificate.Thumbprint);
                 }
                 else
                 {
@@ -679,7 +689,7 @@ namespace Technosoftware.UaConfiguration.Tests
                 .ApplicationConfiguration
                 .SecurityConfiguration
                 .ApplicationCertificate;
-            Assert.IsNull(applicationCertificate.Certificate);
+            Assert.That(applicationCertificate.Thumbprint, Is.Null.Or.Empty);
 
             CertificateCollection testCerts = CreateInvalidCertChain(certType);
             if (certType != InvalidCertType.NoIssuer)
@@ -724,7 +734,7 @@ namespace Technosoftware.UaConfiguration.Tests
                         .ConfigureAwait(false);
 
                     Assert.True(certOK);
-                    Assert.AreEqual(publicKey, applicationCertificate.Certificate);
+                    Assert.AreEqual(publicKey.Thumbprint, applicationCertificate.Thumbprint);
                 }
                 else
                 {
@@ -909,7 +919,7 @@ namespace Technosoftware.UaConfiguration.Tests
                 .ApplicationConfiguration
                 .SecurityConfiguration
                 .ApplicationCertificate;
-            Assert.IsNull(applicationCertificate.Certificate);
+            Assert.That(applicationCertificate.Thumbprint, Is.Null.Or.Empty);
 
             if (disableCertificateAutoCreation)
             {

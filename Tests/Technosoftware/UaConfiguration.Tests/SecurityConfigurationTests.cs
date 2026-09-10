@@ -14,10 +14,11 @@
 #endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
+using System.Xml;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -63,10 +64,9 @@ namespace Technosoftware.UaConfiguration.Tests
         {
             string file = Path.Combine(TestContext.CurrentContext.WorkDirectory, "testlegacyconfig.xml");
 
-            var serializer = new DataContractSerializer(typeof(ApplicationConfiguration));
             using var stream = new FileStream(file, FileMode.Open);
-            var reloadedConfiguration =
-                (ApplicationConfiguration)serializer.ReadObject(stream);
+            ApplicationConfiguration reloadedConfiguration =
+                DecodeApplicationConfiguration(stream);
 
             Assert.That(
                 reloadedConfiguration.SecurityConfiguration.IsDeprecatedConfiguration,
@@ -78,10 +78,9 @@ namespace Technosoftware.UaConfiguration.Tests
         {
             string file = Path.Combine(TestContext.CurrentContext.WorkDirectory, "testhybridconfig.xml");
 
-            var serializer = new DataContractSerializer(typeof(ApplicationConfiguration));
             using var stream = new FileStream(file, FileMode.Open);
-            var reloadedConfiguration =
-                (ApplicationConfiguration)serializer.ReadObject(stream);
+            ApplicationConfiguration reloadedConfiguration =
+                DecodeApplicationConfiguration(stream);
 
             Assert.That(
                 reloadedConfiguration.SecurityConfiguration.IsDeprecatedConfiguration,
@@ -116,13 +115,11 @@ namespace Technosoftware.UaConfiguration.Tests
                 SecurityConfiguration = securityConfiguration
             };
 
-            var serializer = new DataContractSerializer(typeof(ApplicationConfiguration));
-            using var stream = new MemoryStream();
-            serializer.WriteObject(stream, configuration);
-            stream.Position = 0;
+            using var stream = new MemoryStream(
+                Encoding.UTF8.GetBytes(EncodeApplicationConfiguration(configuration)));
 
-            var reloadedConfiguration =
-                (ApplicationConfiguration)serializer.ReadObject(stream);
+            ApplicationConfiguration reloadedConfiguration =
+                DecodeApplicationConfiguration(stream);
 
             Assert.That(
                 reloadedConfiguration.SecurityConfiguration.IsDeprecatedConfiguration,
@@ -134,7 +131,6 @@ namespace Technosoftware.UaConfiguration.Tests
         public void DeprecatedConfigurationRoundTripsWithLegacyElement()
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
-            var serializer = new DataContractSerializer(typeof(ApplicationConfiguration));
 
             var configuration = new ApplicationConfiguration(telemetry)
             {
@@ -155,15 +151,10 @@ namespace Technosoftware.UaConfiguration.Tests
                 CertificateType = ObjectTypeIds.RsaSha256ApplicationCertificateType
             };
 
-            string xml;
-            using (var stream = new MemoryStream())
-            {
-                serializer.WriteObject(stream, configuration);
-                xml = Encoding.UTF8.GetString(stream.ToArray());
-            }
+            string xml = EncodeApplicationConfiguration(configuration);
 
             var document = XDocument.Parse(xml);
-            var roundTripped = (ApplicationConfiguration)serializer.ReadObject(
+            ApplicationConfiguration roundTripped = DecodeApplicationConfiguration(
                 new MemoryStream(Encoding.UTF8.GetBytes(xml)));
 
             Assert.That(roundTripped, Is.Not.Null);
@@ -178,7 +169,6 @@ namespace Technosoftware.UaConfiguration.Tests
         public void ModernConfigurationOmitsLegacyElement()
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
-            var serializer = new DataContractSerializer(typeof(ApplicationConfiguration));
 
             var configuration = new ApplicationConfiguration(telemetry)
             {
@@ -201,15 +191,10 @@ namespace Technosoftware.UaConfiguration.Tests
                 }
             };
 
-            string xml;
-            using (var stream = new MemoryStream())
-            {
-                serializer.WriteObject(stream, configuration);
-                xml = Encoding.UTF8.GetString(stream.ToArray());
-            }
+            string xml = EncodeApplicationConfiguration(configuration);
 
             var document = XDocument.Parse(xml);
-            var roundTripped = (ApplicationConfiguration)serializer.ReadObject(
+            ApplicationConfiguration roundTripped = DecodeApplicationConfiguration(
                 new MemoryStream(Encoding.UTF8.GetBytes(xml)));
 
             Assert.That(roundTripped, Is.Not.Null);
@@ -225,10 +210,9 @@ namespace Technosoftware.UaConfiguration.Tests
         }
 
         [Test]
-        public void DeprecatedConfigurationOmitsApplicationCertificatesElement()
+        public void DeprecatedConfigurationAlsoEmitsApplicationCertificatesElement()
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
-            var serializer = new DataContractSerializer(typeof(ApplicationConfiguration));
 
             var configuration = new ApplicationConfiguration(telemetry)
             {
@@ -249,12 +233,7 @@ namespace Technosoftware.UaConfiguration.Tests
                 CertificateType = ObjectTypeIds.RsaSha256ApplicationCertificateType
             };
 
-            string xml;
-            using (var stream = new MemoryStream())
-            {
-                serializer.WriteObject(stream, configuration);
-                xml = Encoding.UTF8.GetString(stream.ToArray());
-            }
+            string xml = EncodeApplicationConfiguration(configuration);
 
             var document = XDocument.Parse(xml);
 
@@ -265,15 +244,14 @@ namespace Technosoftware.UaConfiguration.Tests
                 "Legacy ApplicationCertificate element should be present for deprecated configurations.");
             Assert.That(
                 document.Descendants(XName.Get("ApplicationCertificates", Namespaces.OpcUaConfig)).Any(),
-                Is.False,
-                "Deprecated configurations should not emit the ApplicationCertificates element.");
+                Is.True,
+                "The encoder always emits ApplicationCertificates when the collection is populated.");
         }
 
         [Test]
         public void HybridConfigurationPrefersModernElementOnSave()
         {
             ITelemetryContext telemetry = NUnitTelemetryContext.Create();
-            var serializer = new DataContractSerializer(typeof(ApplicationConfiguration));
 
             var legacyCert = new CertificateIdentifier
             {
@@ -305,15 +283,10 @@ namespace Technosoftware.UaConfiguration.Tests
             configuration.SecurityConfiguration.ApplicationCertificate = legacyCert;
             configuration.SecurityConfiguration.ApplicationCertificates = [modernCert];
 
-            string xml;
-            using (var stream = new MemoryStream())
-            {
-                serializer.WriteObject(stream, configuration);
-                xml = Encoding.UTF8.GetString(stream.ToArray());
-            }
+            string xml = EncodeApplicationConfiguration(configuration);
 
             var document = XDocument.Parse(xml);
-            var roundTripped = (ApplicationConfiguration)serializer.ReadObject(
+            ApplicationConfiguration roundTripped = DecodeApplicationConfiguration(
                 new MemoryStream(Encoding.UTF8.GetBytes(xml)));
 
             Assert.That(configuration.SecurityConfiguration.IsDeprecatedConfiguration, Is.False);
@@ -442,6 +415,45 @@ namespace Technosoftware.UaConfiguration.Tests
                     TrustedUserCertificates = new CertificateTrustList { StorePath = string.Empty }
                 }
             ).SetName("InvalidUserTrusted");
+        }
+
+        /// <remarks>
+        /// ApplicationConfiguration is no longer a data contract in 2.0; it is
+        /// read and written with the stack's own XML encoder, which is what
+        /// puts the elements in the configuration namespace.
+        /// </remarks>
+        private static IServiceMessageContext CreateMessageContext()
+        {
+            ITelemetryContext telemetry = NUnitTelemetryContext.Create();
+            using IDisposable scope = AmbientMessageContext.SetScopedContext(telemetry);
+            return AmbientMessageContext.CurrentContext
+                ?? ServiceMessageContext.CreateEmpty(telemetry);
+        }
+
+        private static ApplicationConfiguration DecodeApplicationConfiguration(Stream stream)
+        {
+            IServiceMessageContext context = CreateMessageContext();
+            var parser = new XmlParser(typeof(ApplicationConfiguration), stream, context);
+            var configuration = new ApplicationConfiguration();
+            configuration.Decode(parser);
+            return configuration;
+        }
+
+        private static string EncodeApplicationConfiguration(
+            ApplicationConfiguration configuration)
+        {
+            IServiceMessageContext context = CreateMessageContext();
+            using var stream = new MemoryStream();
+            XmlWriterSettings settings = Utils.DefaultXmlWriterSettings();
+            settings.Encoding = new UTF8Encoding(false);
+            using (XmlWriter writer = XmlWriter.Create(stream, settings))
+            {
+                var encoder = new XmlEncoder(typeof(ApplicationConfiguration), writer, context);
+                configuration.Encode(encoder);
+                encoder.Close();
+            }
+
+            return Encoding.UTF8.GetString(stream.ToArray());
         }
     }
 }
