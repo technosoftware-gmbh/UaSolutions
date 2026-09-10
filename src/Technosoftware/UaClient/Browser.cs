@@ -542,7 +542,11 @@ namespace Technosoftware.UaClient
         {
             requestHeader?.RequestHandle = 0;
 
-            var result = new List<ArrayOf<ReferenceDescription>>(nodeIds.Count);
+            // The per-node lists are shared with the continuation-point
+            // bookkeeping below and filled in place, so they stay reference
+            // types; an ArrayOf element would be copied on assignment and the
+            // references fetched by BrowseNext would never reach the caller.
+            var result = new List<List<ReferenceDescription>>(nodeIds.Count);
             (
                 _,
                 List<ByteString> continuationPoints,
@@ -560,10 +564,13 @@ namespace Technosoftware.UaClient
                     ct)
                 .ConfigureAwait(false);
 
-            result.AddRange(referenceDescriptions);
+            foreach (ArrayOf<ReferenceDescription> references in referenceDescriptions)
+            {
+                result.Add([.. references]);
+            }
 
             // process any continuation point.
-            List<ArrayOf<ReferenceDescription>> previousResults = result;
+            List<List<ReferenceDescription>> previousResults = [.. result];
             var errorAnchors = new List<ReferenceWrapper<ServiceResult>>();
             var previousErrors = new List<ReferenceWrapper<ServiceResult>>();
             foreach (ServiceResult error in errors)
@@ -573,7 +580,7 @@ namespace Technosoftware.UaClient
             }
 
             var nextContinuationPoints = new List<ByteString>();
-            var nextResults = new List<ArrayOf<ReferenceDescription>>();
+            var nextResults = new List<List<ReferenceDescription>>();
             var nextErrors = new List<ReferenceWrapper<ServiceResult>>();
 
             for (int ii = 0; ii < nodeIds.Count; ii++)
@@ -602,7 +609,7 @@ namespace Technosoftware.UaClient
 
                 for (int ii = 0; ii < browseNextResults.Count; ii++)
                 {
-                    nextResults[ii] = nextResults[ii].AddItems(browseNextResults[ii]);
+                    nextResults[ii].AddRange(browseNextResults[ii]);
                     nextErrors[ii].Reference = browseNextErrors[ii];
                 }
 
@@ -630,7 +637,9 @@ namespace Technosoftware.UaClient
                 finalErrors.Add(errorReference.Reference);
             }
 
-            return new ResultSet<ArrayOf<ReferenceDescription>>(result, finalErrors);
+            return new ResultSet<ArrayOf<ReferenceDescription>>(
+                result.ConvertAll(references => (ArrayOf<ReferenceDescription>)references),
+                finalErrors);
         }
 
         /// <summary>
