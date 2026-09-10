@@ -448,9 +448,11 @@ namespace Technosoftware.UaServer
                 m_logger);
             try
             {
-                if (certificate == null)
+                if (certificate.IsEmpty)
                 {
-                    throw new ArgumentNullException(nameof(certificate));
+                    throw new ArgumentException(
+                        "The certificate is empty.",
+                        nameof(certificate));
                 }
 
                 privateKeyFormat = privateKeyFormat?.ToUpperInvariant();
@@ -508,13 +510,10 @@ namespace Technosoftware.UaServer
                 try
                 {
                     // build issuer chain
-                    if (issuerCertificates != null)
+                    foreach (ByteString issuerRawCert in issuerCertificates)
                     {
-                        foreach (ByteString issuerRawCert in issuerCertificates)
-                        {
-                            using var issuer = Certificate.FromRawData(issuerRawCert);
-                            newIssuerCollection.Add(issuer);
-                        }
+                        using var issuer = Certificate.FromRawData(issuerRawCert);
+                        newIssuerCollection.Add(issuer);
                     }
                 }
                 catch

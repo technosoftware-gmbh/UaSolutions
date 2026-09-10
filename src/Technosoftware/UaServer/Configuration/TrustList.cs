@@ -730,7 +730,7 @@ namespace Technosoftware.UaServer
             {
                 result = StatusCodes.BadInvalidState;
             }
-            else if (certificate == null)
+            else if (certificate.IsEmpty)
             {
                 result = StatusCodes.BadInvalidArgument;
             }

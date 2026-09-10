@@ -122,7 +122,7 @@ namespace Technosoftware.UaServer
             }
             else
             {
-                if (preferredLocales == null || preferredLocales.Count == 0)
+                if (preferredLocales.Count == 0)
                 {
                     return result;
                 }
@@ -534,7 +534,7 @@ namespace Technosoftware.UaServer
             culture = null;
             TranslationTable match = null;
 
-            if (preferredLocales == null || preferredLocales.Count == 0)
+            if (preferredLocales.Count == 0)
             {
                 return null;
             }

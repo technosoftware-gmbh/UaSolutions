@@ -1155,7 +1155,7 @@ namespace Technosoftware.UaClient
                 triggeringGroups = [];
                 foreach (MonitoredItem item in m_monitoredItems.Values)
                 {
-                    if (item.TriggeredItems != null && item.TriggeredItems.Count > 0)
+                    if (item.TriggeredItems.Count > 0)
                     {
                         // This item triggers other items
                         var triggeredServerIds = new List<uint>();
@@ -2988,7 +2988,7 @@ namespace Technosoftware.UaClient
             ArrayOf<string> stringTable)
         {
             // check for empty monitored items list.
-            if (notifications.MonitoredItems == null || notifications.MonitoredItems.Count == 0)
+            if (notifications.MonitoredItems.Count == 0)
             {
                 m_logger.LogInformation(
                     "Publish response contains empty MonitoredItems list for SubscriptionId={SubscriptionId}:.",

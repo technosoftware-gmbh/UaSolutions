@@ -846,7 +846,7 @@ namespace Technosoftware.UaClient
             using Activity? activity = m_telemetry.StartActivity();
             ThrowIfDisposed();
             Restore((SessionConfiguration)state);
-            if (state.Subscriptions == null)
+            if (state.Subscriptions.IsEmpty)
             {
                 return;
             }
@@ -1100,7 +1100,7 @@ namespace Technosoftware.UaClient
             Certificate? serverCertificate = null;
             ByteString certificateData = m_endpoint.Description.ServerCertificate;
 
-            if (certificateData != null && certificateData.Length > 0)
+            if (certificateData.Length > 0)
             {
                 CertificateCollection serverCertificateChain = Utils.ParseCertificateChainBlob(
                     certificateData,
@@ -1332,7 +1332,7 @@ namespace Technosoftware.UaClient
                 }
 
                 // copy the preferred locales if provided.
-                if (preferredLocales != null && preferredLocales.Count > 0)
+                if (preferredLocales.Count > 0)
                 {
                     m_preferredLocales = [.. preferredLocales];
                 }
@@ -1355,15 +1355,12 @@ namespace Technosoftware.UaClient
                 ArrayOf<DiagnosticInfo> certificateDiagnosticInfos = activateResponse
                     .DiagnosticInfos;
 
-                if (certificateResults != null)
+                for (int i = 0; i < certificateResults.Count; i++)
                 {
-                    for (int i = 0; i < certificateResults.Count; i++)
-                    {
-                        m_logger.LogInformation(
-                            "ActivateSession result[{Index}] = {Result}",
-                            i,
-                            certificateResults[i]);
-                    }
+                    m_logger.LogInformation(
+                        "ActivateSession result[{Index}] = {Result}",
+                        i,
+                        certificateResults[i]);
                 }
 
                 // fetch namespaces.

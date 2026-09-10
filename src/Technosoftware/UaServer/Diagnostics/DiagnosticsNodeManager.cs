@@ -1841,7 +1841,7 @@ namespace Technosoftware.UaServer
 
                         if (sessionsNode != null &&
                             (
-                                sessionsNode.Value == null ||
+                                sessionsNode.Value.IsNull ||
                                 StatusCode.IsBad(sessionsNode.StatusCode) ||
                                 sessionsChanged))
                         {
@@ -1875,7 +1875,7 @@ namespace Technosoftware.UaServer
 
                         if (sessionsSecurityNode != null &&
                             (
-                                sessionsSecurityNode.Value == null ||
+                                sessionsSecurityNode.Value.IsNull ||
                                 StatusCode.IsBad(sessionsSecurityNode.StatusCode) ||
                                 sessionsSecurityChanged)
                             )
@@ -1909,7 +1909,7 @@ namespace Technosoftware.UaServer
 
                         if (subscriptionsNode != null &&
                             (
-                                subscriptionsNode.Value == null ||
+                                subscriptionsNode.Value.IsNull ||
                                 StatusCode.IsBad(subscriptionsNode.StatusCode) ||
                                 subscriptionsChanged))
                         {
@@ -1952,7 +1952,7 @@ namespace Technosoftware.UaServer
 
                             if (subscriptionsNode != null &&
                                 (
-                                    subscriptionsNode.Value == null ||
+                                    subscriptionsNode.Value.IsNull ||
                                     StatusCode.IsBad(subscriptionsNode.StatusCode) ||
                                     subscriptionsChanged))
                             {

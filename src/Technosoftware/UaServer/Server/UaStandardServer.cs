@@ -258,7 +258,7 @@ namespace Technosoftware.UaServer
                 // localize the application name if requested.
                 LocalizedText applicationName = ServerDescription.ApplicationName;
 
-                if (localeIds != null && localeIds.Count > 0)
+                if (localeIds.Count > 0)
                 {
                     applicationName = m_serverInternal.ResourceManager
                         .Translate(localeIds, applicationName);

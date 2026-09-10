@@ -460,9 +460,8 @@ namespace Technosoftware.UaServer
                         reverseConnect.RejectTimeout > 0
                             ? reverseConnect.RejectTimeout
                             : DefaultReverseConnectRejectTimeout;
-                    if (reverseConnect.Clients != null)
+                    foreach (ReverseConnectClient client in reverseConnect.Clients)
                     {
-                        foreach (ReverseConnectClient client in reverseConnect.Clients)
                         {
                             Uri uri = Utils.ParseUri(client.EndpointUrl);
                             if (uri != null)

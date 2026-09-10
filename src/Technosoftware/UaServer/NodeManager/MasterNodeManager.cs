@@ -899,7 +899,7 @@ namespace Technosoftware.UaServer
             // check the relative path.
             RelativePath relativePath = browsePath.RelativePath;
 
-            if (relativePath.Elements == null || relativePath.Elements.Count == 0)
+            if (relativePath.Elements.Count == 0)
             {
                 return StatusCodes.BadNothingToDo;
             }
@@ -1582,7 +1582,6 @@ namespace Technosoftware.UaServer
         {
             Debug.Assert(context != null);
             Debug.Assert(cp != null);
-            Debug.Assert(references != null);
 
             IUaStandardAsyncNodeManager nodeManager = cp.Manager;
             var nodeClassMask = (NodeClass)cp.NodeClassMask;
@@ -3730,7 +3729,7 @@ namespace Technosoftware.UaServer
 
             // group all permissions defined in rolePermissions by RoleId
             var roleIdPermissions = new Dictionary<NodeId, PermissionType>();
-            if (rolePermissions != null && rolePermissions.Count > 0)
+            if (rolePermissions.Count > 0)
             {
                 foreach (RolePermissionType rolePermission in rolePermissions)
                 {
@@ -3749,7 +3748,7 @@ namespace Technosoftware.UaServer
 
             // group all permissions defined in userRolePermissions by RoleId
             var roleIdPermissionsDefinedForUser = new Dictionary<NodeId, PermissionType>();
-            if (userRolePermissions != null && userRolePermissions.Count > 0)
+            if (userRolePermissions.Count > 0)
             {
                 foreach (RolePermissionType rolePermission in userRolePermissions)
                 {
@@ -3767,12 +3766,12 @@ namespace Technosoftware.UaServer
             }
 
             Dictionary<NodeId, PermissionType> commonRoleIdPermissions;
-            if (rolePermissions == null || rolePermissions.Count == 0)
+            if (rolePermissions.Count == 0)
             {
                 // there were no role permissions defined for this node only user role permissions
                 commonRoleIdPermissions = roleIdPermissionsDefinedForUser;
             }
-            else if (userRolePermissions == null || userRolePermissions.Count == 0)
+            else if (userRolePermissions.Count == 0)
             {
                 // there were no role permissions defined for this node only user role permissions
                 commonRoleIdPermissions = roleIdPermissions;

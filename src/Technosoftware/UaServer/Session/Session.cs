@@ -852,8 +852,7 @@ namespace Technosoftware.UaServer
                 identityToken.Body.GetType() == typeof(AnonymousIdentityToken))
             {
                 // check if an anonymous login is permitted.
-                if (EndpointDescription.UserIdentityTokens != null &&
-                    EndpointDescription.UserIdentityTokens.Count > 0)
+                if (EndpointDescription.UserIdentityTokens.Count > 0)
                 {
                     bool found = false;
 

@@ -298,7 +298,7 @@ namespace Technosoftware.UaClient
                         continuationPoint,
                         false,
                         ct).ConfigureAwait(false);
-                    if (additionalReferences != null && additionalReferences.Count > 0)
+                    if (additionalReferences.Count > 0)
                     {
                         references.AddRange(additionalReferences);
                     }

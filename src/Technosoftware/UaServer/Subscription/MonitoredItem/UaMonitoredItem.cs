@@ -1120,7 +1120,7 @@ namespace Technosoftware.UaServer
                 if (alarmCondition != null &&
                     alarmCondition.SupportsFilteredRetain != null &&
                     alarmCondition.SupportsFilteredRetain.Value &&
-                    filter.SelectClauses != null)
+                    !filter.SelectClauses.IsEmpty)
                 {
                     conditionId = alarmCondition.NodeId;
                 }
