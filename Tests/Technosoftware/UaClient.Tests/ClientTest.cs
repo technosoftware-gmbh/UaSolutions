@@ -369,7 +369,7 @@ namespace Technosoftware.UaClient.Tests
             };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     ClientFixture.Config.SecurityConfiguration.ApplicationCertificate.SubjectName);
 

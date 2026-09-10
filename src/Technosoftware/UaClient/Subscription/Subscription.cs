@@ -1400,7 +1400,7 @@ namespace Technosoftware.UaClient
             using Activity? activity = m_telemetry.StartActivity();
             VerifySessionAndSubscriptionState(true);
 
-            var methodsToCall = new CallMethodRequestCollection
+            var methodsToCall = new List<CallMethodRequest>
             {
                 new CallMethodRequest
                 {
@@ -1432,7 +1432,7 @@ namespace Technosoftware.UaClient
             using Activity? activity = m_telemetry.StartActivity();
             VerifySessionAndSubscriptionState(true);
 
-            var methodsToCall = new CallMethodRequestCollection
+            var methodsToCall = new List<CallMethodRequest>
             {
                 new CallMethodRequest
                 {

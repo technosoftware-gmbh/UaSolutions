@@ -460,9 +460,9 @@ namespace Technosoftware.UaServer.Tests
             return alarm;
         }
 
-        private static SimpleAttributeOperandCollection GetSelectFields()
+        private static List<SimpleAttributeOperand> GetSelectFields()
         {
-            var simpleAttributeOperands = new SimpleAttributeOperandCollection();
+            var simpleAttributeOperands = new List<SimpleAttributeOperand>();
 
             int eventIndexCounter = 0;
             var desiredEventFields = new Dictionary<int, List<QualifiedName>>

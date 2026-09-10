@@ -560,7 +560,7 @@ namespace SampleCompany.ReferenceClient
                             {
                                 // subscribe to 1000 random variables
                                 const int maxVariables = 1000;
-                                var variables = new NodeCollection();
+                                var variables = new List<Node>();
 
                                 if (fetchall)
                                 {

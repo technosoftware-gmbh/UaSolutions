@@ -110,7 +110,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry) { ApplicationName = ApplicationName };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -137,7 +137,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry) { ApplicationName = ApplicationName };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -183,7 +183,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry);
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -294,7 +294,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry) { ApplicationName = ApplicationName };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -322,7 +322,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry) { ApplicationName = ApplicationName };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -373,7 +373,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry) { ApplicationName = ApplicationName };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -420,7 +420,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry) { ApplicationName = ApplicationName };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -501,7 +501,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry) { ApplicationName = ApplicationName };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -559,7 +559,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry) { ApplicationName = ApplicationName };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -658,7 +658,7 @@ namespace Technosoftware.UaConfiguration.Tests
             var applicationInstance = new ApplicationInstance(telemetry) { ApplicationName = ApplicationName };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,
@@ -889,7 +889,7 @@ namespace Technosoftware.UaConfiguration.Tests
             Assert.NotNull(applicationInstance);
             ApplicationConfiguration config;
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     SubjectName,
                     CertificateStoreType.Directory,

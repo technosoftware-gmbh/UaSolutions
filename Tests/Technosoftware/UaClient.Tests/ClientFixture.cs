@@ -112,7 +112,7 @@ namespace Technosoftware.UaClient.Tests
 
             pkiRoot ??= Path.Combine("%LocalApplicationData%", "OPC", "pki");
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     "CN=" + clientName + ", O=OPC Foundation, DC=localhost",
                     CertificateStoreType.Directory,

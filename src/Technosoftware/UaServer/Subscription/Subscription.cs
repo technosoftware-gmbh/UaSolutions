@@ -1541,7 +1541,7 @@ namespace Technosoftware.UaServer
 
             int count = itemsToCreate.Count;
 
-            MonitoredItemCreateResultCollection results;
+            List<MonitoredItemCreateResult> results;
             List<DiagnosticInfo> diagnosticInfos;
 
             lock (m_lock)
@@ -1579,7 +1579,7 @@ namespace Technosoftware.UaServer
 
             // allocate results.
             bool diagnosticsExist = false;
-            results = new MonitoredItemCreateResultCollection(count);
+            results = new List<MonitoredItemCreateResult>(count);
             diagnosticInfos = null;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
@@ -1755,7 +1755,7 @@ namespace Technosoftware.UaServer
 
             // allocate results.
             bool diagnosticsExist = false;
-            var results = new MonitoredItemModifyResultCollection(count);
+            var results = new List<MonitoredItemModifyResult>(count);
             List<DiagnosticInfo> diagnosticInfos = null;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)

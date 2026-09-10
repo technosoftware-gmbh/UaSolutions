@@ -1034,7 +1034,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(nodesToBrowse, OperationLimits.MaxNodesPerBrowse);
 
-                (BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
+                (List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.BrowseAsync(
                         context,
                         view,
@@ -1087,7 +1087,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(continuationPoints, OperationLimits.MaxNodesPerBrowse);
 
-                (BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
+                (List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.BrowseNextAsync(
                         context,
                         releaseContinuationPoints,
@@ -1254,7 +1254,7 @@ namespace Technosoftware.UaServer
                         OperationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds);
                 }
 
-                (BrowsePathResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
+                (List<BrowsePathResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.TranslateBrowsePathsToNodeIdsAsync(
                         context,
                         browsePaths,
@@ -1373,7 +1373,7 @@ namespace Technosoftware.UaServer
                         OperationLimits.MaxNodesPerHistoryReadData);
                 }
 
-                (HistoryReadResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
+                (List<HistoryReadResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.HistoryReadAsync(
                         context,
                         historyReadDetails,
@@ -1479,7 +1479,7 @@ namespace Technosoftware.UaServer
                 // must be checked in NodeManager (TODO)
                 ValidateOperationLimits(historyUpdateDetails);
 
-                (HistoryUpdateResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
+                (List<HistoryUpdateResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.HistoryUpdateAsync(context, historyUpdateDetails, ct).ConfigureAwait(false);
 
                 return new HistoryUpdateResponse
@@ -2301,7 +2301,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(methodsToCall, OperationLimits.MaxNodesPerMethodCall);
 
-                (CallMethodResultCollection results, List<DiagnosticInfo> diagnosticInfos) =
+                (List<CallMethodResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.CallAsync(context, methodsToCall, ct)
                         .ConfigureAwait(false);
 

@@ -1323,7 +1323,7 @@ namespace Technosoftware.UaServer
             public NodeId NodeId { get; set; }
             public CertificateGroupState Node { get; set; }
             public NodeId[] CertificateTypes { get; set; }
-            public CertificateIdentifierCollection ApplicationCertificates { get; set; }
+            public List<CertificateIdentifier> ApplicationCertificates { get; set; }
             public CertificateStoreIdentifier IssuerStore { get; set; }
             public CertificateStoreIdentifier TrustedStore { get; set; }
             public UpdateCertificateData UpdateCertificate { get; set; }

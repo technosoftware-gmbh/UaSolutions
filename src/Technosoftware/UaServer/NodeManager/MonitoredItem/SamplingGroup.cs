@@ -451,7 +451,7 @@ namespace Technosoftware.UaServer
                 // read values for all enabled items.
                 if (state is List<IUaSampledDataChangeMonitoredItem> items && items.Count > 0)
                 {
-                    var itemsToRead = new ReadValueIdCollection(items.Count);
+                    var itemsToRead = new List<ReadValueId>(items.Count);
                     var values = new List<DataValue>(items.Count);
                     var errors = new List<ServiceResult>(items.Count);
 

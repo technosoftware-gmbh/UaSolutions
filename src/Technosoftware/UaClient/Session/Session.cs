@@ -2823,7 +2823,7 @@ namespace Technosoftware.UaClient
 
             m_serverState = ServerState.Unknown;
 
-            ArrayOf<ReadValueId> nodesToRead = new ReadValueIdCollection
+            ArrayOf<ReadValueId> nodesToRead = new List<ReadValueId>
             {
                 // read the server state.
                 new ReadValueId
@@ -3500,7 +3500,7 @@ namespace Technosoftware.UaClient
                 = m_PublishSequenceNumbersToAcknowledge;
 
             // collect the current set if acknowledgements.
-            SubscriptionAcknowledgementCollection? acknowledgementsToSend = null;
+            List<SubscriptionAcknowledgement>? acknowledgementsToSend = null;
             lock (m_acknowledgementsToSendLock)
             {
                 if (callback != null)
@@ -3508,7 +3508,7 @@ namespace Technosoftware.UaClient
                     try
                     {
                         var deferredAcknowledgementsToSend
-                            = new SubscriptionAcknowledgementCollection();
+                            = new List<SubscriptionAcknowledgement>();
                         callback(
                             this,
                             new PublishSequenceNumbersToAcknowledgeEventArgs(
@@ -3606,7 +3606,7 @@ namespace Technosoftware.UaClient
         private void OnPublishComplete(
             Task<PublishResponse> task,
             NodeId sessionId,
-            SubscriptionAcknowledgementCollection acknowledgementsToSend,
+            List<SubscriptionAcknowledgement> acknowledgementsToSend,
             RequestHeader requestHeader)
         {
             // extract state information.
@@ -4365,7 +4365,7 @@ namespace Technosoftware.UaClient
             lock (m_acknowledgementsToSendLock)
             {
                 // clear out acknowledgements for messages that the server does not have any more.
-                var acknowledgementsToSend = new SubscriptionAcknowledgementCollection();
+                var acknowledgementsToSend = new List<SubscriptionAcknowledgement>();
 
                 uint latestSequenceNumberToSend = 0;
 
@@ -4773,7 +4773,7 @@ namespace Technosoftware.UaClient
         }
 
         private void AddAcknowledgementToSend(
-            SubscriptionAcknowledgementCollection acknowledgementsToSend,
+            List<SubscriptionAcknowledgement> acknowledgementsToSend,
             uint subscriptionId,
             uint sequenceNumber)
         {
@@ -5119,7 +5119,7 @@ namespace Technosoftware.UaClient
         /// Time in milliseconds added to <see cref="m_keepAliveInterval"/> before <see cref="KeepAliveStopped"/> is set to true
         /// </summary>
         protected int m_keepAliveGuardBand = 1000;
-        private SubscriptionAcknowledgementCollection m_acknowledgementsToSend = [];
+        private List<SubscriptionAcknowledgement> m_acknowledgementsToSend = [];
         private readonly object m_acknowledgementsToSendLock = new();
 #if DEBUG_SEQUENTIALPUBLISHING
         private Dictionary<uint, uint> m_latestAcknowledgementsSent = [];
@@ -5312,8 +5312,8 @@ namespace Technosoftware.UaClient
         /// Creates a new instance.
         /// </summary>
         public PublishSequenceNumbersToAcknowledgeEventArgs(
-            SubscriptionAcknowledgementCollection acknowledgementsToSend,
-            SubscriptionAcknowledgementCollection deferredAcknowledgementsToSend)
+            List<SubscriptionAcknowledgement> acknowledgementsToSend,
+            List<SubscriptionAcknowledgement> deferredAcknowledgementsToSend)
         {
             AcknowledgementsToSend = acknowledgementsToSend;
             DeferredAcknowledgementsToSend = deferredAcknowledgementsToSend;
@@ -5326,7 +5326,7 @@ namespace Technosoftware.UaClient
         /// A client may also choose to remove an acknowledgement from this list to add it back
         /// to the list in a subsequent callback when the request is fully processed.
         /// </remarks>
-        public SubscriptionAcknowledgementCollection AcknowledgementsToSend { get; }
+        public List<SubscriptionAcknowledgement> AcknowledgementsToSend { get; }
 
         /// <summary>
         /// The deferred list of acknowledgements.
@@ -5335,6 +5335,6 @@ namespace Technosoftware.UaClient
         /// The callee can transfer an outstanding <see cref="SubscriptionAcknowledgement"/>
         /// to this list to defer the acknowledge of a sequence number to the next publish request.
         /// </remarks>
-        public SubscriptionAcknowledgementCollection DeferredAcknowledgementsToSend { get; }
+        public List<SubscriptionAcknowledgement> DeferredAcknowledgementsToSend { get; }
     }
 }

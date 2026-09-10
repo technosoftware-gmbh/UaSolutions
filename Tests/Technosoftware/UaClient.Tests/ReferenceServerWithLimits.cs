@@ -267,7 +267,7 @@ namespace Technosoftware.UaClient.Tests
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
-        public override async ValueTask<(BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos)> BrowseAsync(
+        public override async ValueTask<(List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos)> BrowseAsync(
             UaServerOperationContext context,
             ViewDescription view,
             uint maxReferencesPerNode,

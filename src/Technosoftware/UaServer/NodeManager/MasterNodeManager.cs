@@ -755,14 +755,14 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(BrowsePathResultCollection results, List<DiagnosticInfo> diagnosticInfos)>
+        public virtual async ValueTask<(List<BrowsePathResult> results, List<DiagnosticInfo> diagnosticInfos)>
             TranslateBrowsePathsToNodeIdsAsync(
             UaServerOperationContext context,
             ArrayOf<BrowsePath> browsePaths,
             CancellationToken cancellationToken = default)
         {
             bool diagnosticsExist = false;
-            var results = new BrowsePathResultCollection(browsePaths.Count);
+            var results = new List<BrowsePathResult>(browsePaths.Count);
             var diagnosticInfos = new List<DiagnosticInfo>(browsePaths.Count);
 
             for (int ii = 0; ii < browsePaths.Count; ii++)
@@ -1134,7 +1134,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos)> BrowseAsync(
+        public virtual async ValueTask<(List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos)> BrowseAsync(
             UaServerOperationContext context,
             ViewDescription view,
             uint maxReferencesPerNode,
@@ -1187,7 +1187,7 @@ namespace Technosoftware.UaServer
             }
 
             bool diagnosticsExist = false;
-            var results = new BrowseResultCollection(nodesToBrowse.Count);
+            var results = new List<BrowseResult>(nodesToBrowse.Count);
             var diagnosticInfos = new List<DiagnosticInfo>(nodesToBrowse.Count);
 
             uint continuationPointsAssigned = 0;
@@ -1313,7 +1313,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos)>
+        public virtual async ValueTask<(List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos)>
             BrowseNextAsync(
                 UaServerOperationContext context,
                 bool releaseContinuationPoints,
@@ -1326,7 +1326,7 @@ namespace Technosoftware.UaServer
             }
 
             bool diagnosticsExist = false;
-            var results = new BrowseResultCollection(continuationPoints.Count);
+            var results = new List<BrowseResult>(continuationPoints.Count);
             var diagnosticInfos = new List<DiagnosticInfo>(continuationPoints.Count);
 
             uint continuationPointsAssigned = 0;
@@ -1863,7 +1863,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(HistoryReadResultCollection values, List<DiagnosticInfo> diagnosticInfos)> HistoryReadAsync(
+        public virtual async ValueTask<(List<HistoryReadResult> values, List<DiagnosticInfo> diagnosticInfos)> HistoryReadAsync(
             UaServerOperationContext context,
             ExtensionObject historyReadDetails,
             TimestampsToReturn timestampsToReturn,
@@ -1884,7 +1884,7 @@ namespace Technosoftware.UaServer
 
             // create result lists.
             bool diagnosticsExist = false;
-            var results = new HistoryReadResultCollection(nodesToRead.Count);
+            var results = new List<HistoryReadResult>(nodesToRead.Count);
             var diagnosticInfos = new List<DiagnosticInfo>(nodesToRead.Count);
 
             // pre-validate items.
@@ -2095,7 +2095,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(HistoryUpdateResultCollection results, List<DiagnosticInfo> diagnosticInfos)>
+        public virtual async ValueTask<(List<HistoryUpdateResult> results, List<DiagnosticInfo> diagnosticInfos)>
             HistoryUpdateAsync(
                 UaServerOperationContext context,
                 ArrayOf<ExtensionObject> historyUpdateDetails,
@@ -2120,7 +2120,7 @@ namespace Technosoftware.UaServer
 
             // create result lists.
             bool diagnosticsExist = false;
-            var results = new HistoryUpdateResultCollection(nodesToUpdate.Count);
+            var results = new List<HistoryUpdateResult>(nodesToUpdate.Count);
             var diagnosticInfos = new List<DiagnosticInfo>(nodesToUpdate.Count);
 
             // pre-validate items.
@@ -2230,7 +2230,7 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(CallMethodResultCollection results, List<DiagnosticInfo> diagnosticInfos)>
+        public virtual async ValueTask<(List<CallMethodResult> results, List<DiagnosticInfo> diagnosticInfos)>
             CallAsync(
                 UaServerOperationContext context,
                 ArrayOf<CallMethodRequest> methodsToCall,
@@ -2242,7 +2242,7 @@ namespace Technosoftware.UaServer
             }
 
             bool diagnosticsExist = false;
-            var results = new CallMethodResultCollection(methodsToCall.Count);
+            var results = new List<CallMethodResult>(methodsToCall.Count);
             var diagnosticInfos = new List<DiagnosticInfo>(methodsToCall.Count);
             var errors = new List<ServiceResult>(methodsToCall.Count);
 

@@ -58,7 +58,7 @@ namespace SampleCompany.NodeManagers
                         TimeoutHint = 10000
                     };
                     var context = new UaServerOperationContext(requestHeader, null, RequestType.Call);
-                    (CallMethodResultCollection results, List<DiagnosticInfo> diagnosticInfos) = await server.CurrentInstance.NodeManager.CallAsync(
+                    (List<CallMethodResult> results, List<DiagnosticInfo> diagnosticInfos) = await server.CurrentInstance.NodeManager.CallAsync(
                         context,
                         methodsToCall)
                         .ConfigureAwait(false);

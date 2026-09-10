@@ -63,7 +63,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
-        ValueTask<(BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos)> BrowseAsync(
+        ValueTask<(List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos)> BrowseAsync(
             UaServerOperationContext context,
             ViewDescription view,
             uint maxReferencesPerNode,
@@ -75,7 +75,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
-        ValueTask<(BrowseResultCollection results, List<DiagnosticInfo> diagnosticInfos)> BrowseNextAsync(
+        ValueTask<(List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos)> BrowseNextAsync(
             UaServerOperationContext context,
             bool releaseContinuationPoints,
             ArrayOf<ByteString> continuationPoints,
@@ -86,7 +86,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="context"/> is <c>null</c>.</exception>
-        ValueTask<(CallMethodResultCollection results, List<DiagnosticInfo> diagnosticInfos)> CallAsync(
+        ValueTask<(List<CallMethodResult> results, List<DiagnosticInfo> diagnosticInfos)> CallAsync(
             UaServerOperationContext context,
             ArrayOf<CallMethodRequest> methodsToCall,
             CancellationToken cancellationToken = default);
@@ -147,7 +147,7 @@ namespace Technosoftware.UaServer
         /// Reads the history of a set of items.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        ValueTask<(HistoryReadResultCollection values, List<DiagnosticInfo> diagnosticInfos)> HistoryReadAsync(
+        ValueTask<(List<HistoryReadResult> values, List<DiagnosticInfo> diagnosticInfos)> HistoryReadAsync(
             UaServerOperationContext context,
             ExtensionObject historyReadDetails,
             TimestampsToReturn timestampsToReturn,
@@ -158,7 +158,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Updates the history for a set of nodes.
         /// </summary>
-        ValueTask<(HistoryUpdateResultCollection results, List<DiagnosticInfo> diagnosticInfos)> HistoryUpdateAsync(
+        ValueTask<(List<HistoryUpdateResult> results, List<DiagnosticInfo> diagnosticInfos)> HistoryUpdateAsync(
             UaServerOperationContext context,
             ArrayOf<ExtensionObject> historyUpdateDetails,
             CancellationToken cancellationToken = default);
@@ -302,7 +302,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="browsePaths"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
-        ValueTask<(BrowsePathResultCollection results, List<DiagnosticInfo> diagnosticInfos)> TranslateBrowsePathsToNodeIdsAsync(
+        ValueTask<(List<BrowsePathResult> results, List<DiagnosticInfo> diagnosticInfos)> TranslateBrowsePathsToNodeIdsAsync(
             UaServerOperationContext context,
             ArrayOf<BrowsePath> browsePaths,
             CancellationToken cancellationToken = default);

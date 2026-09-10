@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -196,7 +197,7 @@ namespace Technosoftware.UaServer.Tests
                     });
             }
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     "CN=" + typeof(T).Name + ", C=US, S=Arizona, O=OPC Foundation, DC=localhost",
                     CertificateStoreType.Directory,

@@ -481,7 +481,7 @@ namespace SampleCompany.ReferenceClient
 
                 var filter = new EventFilter();
 
-                var simpleAttributeOperands = new SimpleAttributeOperandCollection();
+                var simpleAttributeOperands = new List<SimpleAttributeOperand>();
 
                 foreach (List<QualifiedName> desiredEventField in m_desiredEventFields.Values)
                 {
@@ -1205,7 +1205,7 @@ namespace SampleCompany.ReferenceClient
         /// <param name="variableIds">The variables to subscribe.</param>
         public async Task SubscribeAllValuesAsync(
             IMyUaClient uaClient,
-            NodeCollection variableIds,
+            List<Node> variableIds,
             int samplingInterval,
             int publishingInterval,
             uint queueSize,

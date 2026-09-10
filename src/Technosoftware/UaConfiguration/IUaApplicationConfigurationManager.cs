@@ -229,7 +229,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc cref="ServerConfiguration.AvailableSamplingRates"/>
         IUaApplicationConfigurationServerOptions SetAvailableSamplingRates(
-            SamplingRateGroupCollection availableSampleRates);
+            List<SamplingRateGroup> availableSampleRates);
 
         /// <inheritdoc cref="ServerConfiguration.RegistrationEndpoint"/>
         IUaApplicationConfigurationServerOptions SetRegistrationEndpoint(
@@ -461,7 +461,7 @@ namespace Technosoftware.UaConfiguration
         /// <param name="appRoot">The path to the app cert store, if different than the pki root.</param>
         /// <param name="rejectedRoot">The path to the rejected certificate store.</param>
         [Obsolete(
-            "Use AddSecurityConfiguration(CertificateIdentifierCollection certIdList, string pkiRoot = null, string rejectedRoot = null) instead."
+            "Use AddSecurityConfiguration(List<CertificateIdentifier> certIdList, string pkiRoot = null, string rejectedRoot = null) instead."
         )]
         IUaApplicationConfigurationSecurityOptions AddSecurityConfiguration(
             string subjectName,
@@ -481,7 +481,7 @@ namespace Technosoftware.UaConfiguration
         /// <param name="pkiRoot">The path to the pki root. By default all cert stores use the pki root.</param>
         /// <param name="rejectedRoot">The path to the rejected certificate store.</param>
         IUaApplicationConfigurationSecurityOptions AddSecurityConfiguration(
-            CertificateIdentifierCollection certIdList,
+            List<CertificateIdentifier> certIdList,
             string pkiRoot = null,
             string rejectedRoot = null);
 
@@ -544,7 +544,7 @@ namespace Technosoftware.UaConfiguration
         /// </remarks>
         /// <param name="certIdList">A list of Certificate identifiers</param>
         IUaApplicationConfigurationSecurityOptions SetApplicationCertificates(
-            CertificateIdentifierCollection certIdList);
+            List<CertificateIdentifier> certIdList);
 
         /// <summary>
         /// The number of rejected certificates to keep in the store.

@@ -158,7 +158,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc/>
         public IUaApplicationConfigurationSecurityOptions AddSecurityConfiguration(
-            CertificateIdentifierCollection certIdList,
+            List<CertificateIdentifier> certIdList,
             string pkiRoot = null,
             string rejectedRoot = null)
         {
@@ -516,7 +516,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc/>
         public IUaApplicationConfigurationSecurityOptions SetApplicationCertificates(
-            CertificateIdentifierCollection certIdList)
+            List<CertificateIdentifier> certIdList)
         {
             ApplicationConfiguration.SecurityConfiguration.ApplicationCertificates = certIdList;
             return this;
@@ -869,7 +869,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc/>
         public IUaApplicationConfigurationServerOptions SetAvailableSamplingRates(
-            SamplingRateGroupCollection availableSampleRates)
+            List<SamplingRateGroup> availableSampleRates)
         {
             ApplicationConfiguration.ServerConfiguration.AvailableSamplingRates
                 = availableSampleRates;
@@ -1156,12 +1156,12 @@ namespace Technosoftware.UaConfiguration
         /// <param name="storeType">The cert store type: ex: "Directory"</param>
         /// <param name="storePath">The PKI root.</param>
         /// <returns>The application certificates.</returns>
-        public static CertificateIdentifierCollection CreateDefaultApplicationCertificates(
+        public static List<CertificateIdentifier> CreateDefaultApplicationCertificates(
             string subjectName,
             string storeType = null,
             string storePath = null)
         {
-            var certificateIdentifiers = new CertificateIdentifierCollection
+            var certificateIdentifiers = new List<CertificateIdentifier>
             {
                 new CertificateIdentifier
                 {

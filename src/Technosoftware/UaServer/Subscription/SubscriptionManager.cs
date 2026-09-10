@@ -1348,7 +1348,7 @@ namespace Technosoftware.UaServer
             bool sendInitialValues,
             CancellationToken cancellationToken = default)
         {
-            var results = new TransferResultCollection();
+            var results = new List<TransferResult>();
             var diagnosticInfos = new List<DiagnosticInfo>();
 
             m_logger.LogInformation(
