@@ -160,9 +160,12 @@ namespace Technosoftware.UaConfiguration.Tests
             Assert.True(certOK);
 
             CertificateIdentifier certId = config.SecurityConfiguration.ApplicationCertificates[0];
-            X509Certificate2 certificate = await certId
-                .FindAsync(
-                    true,
+            // CertificateIdentifier.FindAsync is gone in 2.0; loading and
+            // resolving are on CertificateIdentifierResolver.
+            using Certificate certificate = await CertificateIdentifierResolver
+                .LoadPrivateKeyAsync(
+                    certId,
+                    config.SecurityConfiguration.CertificatePasswordProvider,
                     config.ApplicationUri,
                     telemetry)
                 .ConfigureAwait(false);
@@ -462,7 +465,8 @@ namespace Technosoftware.UaConfiguration.Tests
             if (deleteAfterUse)
             {
                 string thumbprint = applicationCertificate.Certificate.Thumbprint;
-                using (ICertificateStore store = applicationCertificate.OpenStore(telemetry))
+                using (ICertificateStore store = CertificateIdentifierResolver
+                    .OpenStore(applicationCertificate, telemetry))
                 {
                     bool success = await store.DeleteAsync(thumbprint).ConfigureAwait(false);
                     Assert.IsTrue(success);
@@ -579,8 +583,8 @@ namespace Technosoftware.UaConfiguration.Tests
                 .ApplicationCertificate;
             Assert.IsNull(applicationCertificate.Certificate);
 
-            X509Certificate2 publicKey = null;
-            using (X509Certificate2 testCert = CreateInvalidCert(certType))
+            Certificate publicKey = null;
+            using (Certificate testCert = CreateInvalidCert(certType))
             {
                 Assert.NotNull(testCert);
                 Assert.True(testCert.HasPrivateKey);
@@ -677,10 +681,10 @@ namespace Technosoftware.UaConfiguration.Tests
                 .ApplicationCertificate;
             Assert.IsNull(applicationCertificate.Certificate);
 
-            X509Certificate2Collection testCerts = CreateInvalidCertChain(certType);
+            CertificateCollection testCerts = CreateInvalidCertChain(certType);
             if (certType != InvalidCertType.NoIssuer)
             {
-                using X509Certificate2 issuerCert = testCerts[1];
+                using Certificate issuerCert = testCerts[1];
                 Assert.NotNull(issuerCert);
                 Assert.False(issuerCert.HasPrivateKey);
                 await issuerCert.AddToStoreAsync(
@@ -698,8 +702,8 @@ namespace Technosoftware.UaConfiguration.Tests
                     telemetry).ConfigureAwait(false);
             }
 
-            X509Certificate2 publicKey = null;
-            using (X509Certificate2 testCert = testCerts[0])
+            Certificate publicKey = null;
+            using (Certificate testCert = testCerts[0])
             {
                 Assert.NotNull(testCert);
                 Assert.True(testCert.HasPrivateKey);
@@ -756,7 +760,7 @@ namespace Technosoftware.UaConfiguration.Tests
             DateTime notBefore = DateTime.Today.AddDays(-30);
             DateTime notAfter = DateTime.Today.AddDays(30);
 
-            using X509Certificate2 cert = CertificateFactory
+            using Certificate cert = CertificateFactory
                 .CreateCertificate(SubjectName)
                 .SetNotBefore(notBefore)
                 .SetNotAfter(notAfter)
@@ -768,7 +772,7 @@ namespace Technosoftware.UaConfiguration.Tests
                 .ConfigureAwait(false);
             ICertificateStore store = configuration.SecurityConfiguration.TrustedPeerCertificates
                 .OpenStore(telemetry);
-            X509Certificate2Collection storedCertificates = await store
+            CertificateCollection storedCertificates = await store
                 .FindByThumbprintAsync(cert.Thumbprint)
                 .ConfigureAwait(false);
 
@@ -941,14 +945,14 @@ namespace Technosoftware.UaConfiguration.Tests
             const string uri1 = "urn:localhost:opcfoundation.org:App1";
             const string uri2 = "urn:localhost:opcfoundation.org:App2";
 
-            X509Certificate2 cert1 = CertificateFactory
+            Certificate cert1 = CertificateFactory
                 .CreateCertificate(uri1, ApplicationName, SubjectName, [Utils.GetHostName()])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddYears(1))
                 .CreateForRSA();
 
             const string subjectName2 = "CN=UA Configuration Test 2, O=OPC Foundation, C=US, S=Arizona";
-            X509Certificate2 cert2 = CertificateFactory
+            Certificate cert2 = CertificateFactory
                 .CreateCertificate(uri2, ApplicationName, subjectName2, [Utils.GetHostName()])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddYears(1))
@@ -1016,14 +1020,14 @@ namespace Technosoftware.UaConfiguration.Tests
             Assert.NotNull(applicationInstance);
 
             // Create two certificates with the same ApplicationUri
-            X509Certificate2 cert1 = CertificateFactory
+            Certificate cert1 = CertificateFactory
                 .CreateCertificate(ApplicationUri, ApplicationName, SubjectName, [Utils.GetHostName()])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddYears(1))
                 .CreateForRSA();
 
             const string subjectName2 = "CN=UA Configuration Test RSA, O=OPC Foundation, C=US, S=Arizona";
-            X509Certificate2 cert2 = CertificateFactory
+            Certificate cert2 = CertificateFactory
                 .CreateCertificate(ApplicationUri, ApplicationName, subjectName2, [Utils.GetHostName()])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddYears(1))
@@ -1101,7 +1105,7 @@ namespace Technosoftware.UaConfiguration.Tests
             const string uri2 = ApplicationUri; // This matches
             const string uri3 = "https://localhost:8080/OpcUaApp";
 
-            X509Certificate2 cert = CreateCertificateWithMultipleUris(
+            Certificate cert = CreateCertificateWithMultipleUris(
                 [uri1, uri2, uri3],
                 SubjectName,
                 [Utils.GetHostName()],
@@ -1142,7 +1146,9 @@ namespace Technosoftware.UaConfiguration.Tests
 
             // Verify the certificate has multiple URIs
             // Load the certificate to check its URIs
-            X509Certificate2 loadedCert = await certId.FindAsync(false, null, telemetry).ConfigureAwait(false);
+            using Certificate loadedCert = await CertificateIdentifierResolver
+                .ResolveAsync(certId, null, false, null, telemetry)
+                .ConfigureAwait(false);
             IReadOnlyList<string> uris = X509Utils.GetApplicationUrisFromCertificate(loadedCert);
             Assert.AreEqual(3, uris.Count);
             Assert.Contains(uri1, uris.ToList());
@@ -1174,7 +1180,7 @@ namespace Technosoftware.UaConfiguration.Tests
             const string uri2 = "urn:localhost:opcfoundation.org:App2";
             const string uri3 = "https://localhost:8080/OpcUaApp";
 
-            X509Certificate2 cert = CreateCertificateWithMultipleUris(
+            Certificate cert = CreateCertificateWithMultipleUris(
                 [uri1, uri2, uri3],
                 SubjectName,
                 [Utils.GetHostName()],
@@ -1235,7 +1241,7 @@ namespace Technosoftware.UaConfiguration.Tests
             Assert.NotNull(applicationInstance);
 
             // Create first certificate with multiple URIs including ApplicationUri
-            X509Certificate2 cert1 = CreateCertificateWithMultipleUris(
+            Certificate cert1 = CreateCertificateWithMultipleUris(
                 [ApplicationUri, "https://localhost:8080/Test1", "opc.tcp://localhost:4840/Test1"],
                 SubjectName,
                 [Utils.GetHostName()],
@@ -1243,7 +1249,7 @@ namespace Technosoftware.UaConfiguration.Tests
 
             const string subjectName2 = "CN=UA Configuration Test 2, O=OPC Foundation, C=US, S=Arizona";
             // Create second certificate with multiple URIs including ApplicationUri
-            X509Certificate2 cert2 = CreateCertificateWithMultipleUris(
+            Certificate cert2 = CreateCertificateWithMultipleUris(
                 ["urn:localhost:opcfoundation.org:OtherApp", ApplicationUri, "https://localhost:9443/Test2"],
                 subjectName2,
                 [Utils.GetHostName()],
@@ -1316,7 +1322,7 @@ namespace Technosoftware.UaConfiguration.Tests
             Assert.NotNull(applicationInstance);
 
             // Create first certificate with ApplicationUri
-            X509Certificate2 cert1 = CreateCertificateWithMultipleUris(
+            Certificate cert1 = CreateCertificateWithMultipleUris(
                 [ApplicationUri, "https://localhost:8080/Test1"],
                 SubjectName,
                 [Utils.GetHostName()],
@@ -1324,7 +1330,7 @@ namespace Technosoftware.UaConfiguration.Tests
 
             const string subjectName2 = "CN=UA Configuration Test 2, O=OPC Foundation, C=US, S=Arizona";
             // Create second certificate WITHOUT ApplicationUri
-            X509Certificate2 cert2 = CreateCertificateWithMultipleUris(
+            Certificate cert2 = CreateCertificateWithMultipleUris(
                 ["urn:localhost:opcfoundation.org:OtherApp", "https://localhost:9443/Test2"],
                 subjectName2,
                 [Utils.GetHostName()],
@@ -1378,7 +1384,7 @@ namespace Technosoftware.UaConfiguration.Tests
             Assert.AreEqual(StatusCodes.BadConfigurationError, sre.StatusCode);
         }
 
-        private static X509Certificate2 CreateInvalidCert(InvalidCertType certType)
+        private static Certificate CreateInvalidCert(InvalidCertType certType)
         {
             // reasonable defaults
             DateTime notBefore = DateTime.Today.AddDays(-30);
@@ -1419,7 +1425,7 @@ namespace Technosoftware.UaConfiguration.Tests
                 .CreateForRSA();
         }
 
-        private static X509Certificate2Collection CreateInvalidCertChain(InvalidCertType certType)
+        private static CertificateCollection CreateInvalidCertChain(InvalidCertType certType)
         {
             // reasonable defaults
             DateTime notBefore = DateTime.Today.AddYears(-1);
@@ -1457,13 +1463,13 @@ namespace Technosoftware.UaConfiguration.Tests
             }
 
             const string rootCASubjectName = "CN=Root CA Test, O=OPC Foundation, C=US, S=Arizona";
-            using X509Certificate2 rootCA = CertificateFactory
+            using Certificate rootCA = CertificateFactory
                 .CreateCertificate(rootCASubjectName)
                 .SetNotBefore(issuerNotBefore)
                 .SetNotAfter(issuerNotAfter)
                 .SetCAConstraint(-1)
                 .CreateForRSA();
-            X509Certificate2 appCert = CertificateFactory
+            Certificate appCert = CertificateFactory
                 .CreateCertificate(ApplicationUri, ApplicationName, SubjectName, domainNames)
                 .SetNotBefore(notBefore)
                 .SetNotAfter(notAfter)
@@ -1498,7 +1504,7 @@ namespace Technosoftware.UaConfiguration.Tests
         /// <param name="subjectName">The subject name for the certificate</param>
         /// <param name="domainNames">The domain names for the certificate</param>
         /// <returns>A certificate with multiple URIs in the SAN extension</returns>
-        private static X509Certificate2 CreateCertificateWithMultipleUris(
+        private static Certificate CreateCertificateWithMultipleUris(
             IList<string> applicationUris,
             string subjectName,
             IList<string> domainNames,
@@ -1507,8 +1513,12 @@ namespace Technosoftware.UaConfiguration.Tests
             DateTime notBefore = DateTime.Today.AddDays(-1);
             DateTime notAfter = DateTime.Today.AddYears(1);
 
-            // Default to RSA if not specified
-            certificateType ??= ObjectTypeIds.RsaSha256ApplicationCertificateType;
+            // Default to RSA if not specified. NodeId is a struct in 2.0, so
+            // the absent value is the default one, not null.
+            if (certificateType.IsNull)
+            {
+                certificateType = ObjectTypeIds.RsaSha256ApplicationCertificateType;
+            }
 
             // Create the SAN extension with multiple URIs
             var subjectAltName = new X509SubjectAltNameExtension(applicationUris, domainNames);
