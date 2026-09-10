@@ -1559,7 +1559,7 @@ namespace SampleCompany.SampleClient
             var continuationPoints = new List<ByteString>();
             foreach (BrowseResult browseResult in browseResultCollection)
             {
-                if (browseResult.ContinuationPoint != null)
+                if (!browseResult.ContinuationPoint.IsEmpty)
                 {
                     continuationPoints.Add(browseResult.ContinuationPoint);
                 }

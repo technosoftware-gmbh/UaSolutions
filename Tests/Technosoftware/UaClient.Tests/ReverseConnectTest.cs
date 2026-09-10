@@ -329,7 +329,7 @@ namespace Technosoftware.UaClient.Tests
             await m_requiredLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (Endpoints == null)
+                if (Endpoints.IsEmpty)
                 {
                     await GetEndpointsInternalAsync().ConfigureAwait(false);
                 }

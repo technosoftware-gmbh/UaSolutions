@@ -895,10 +895,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(statusMessage, Does.Contain("Status=GoodSubscriptionTransferred"));
 
             // static node, do not acknowledge
-            if (publishResponse.AvailableSequenceNumbers != null)
-            {
-                Assert.AreEqual(0, publishResponse.AvailableSequenceNumbers.Count);
-            }
+            Assert.AreEqual(0, publishResponse.AvailableSequenceNumbers.Count);
 
             if (deleteSubscriptions)
             {

@@ -154,7 +154,7 @@ namespace Technosoftware.UaClient.Tests
                     endpoint.SecurityMode,
                     endpoint.SecurityPolicyUri);
 
-                if (endpoint.ServerCertificate != null)
+                if (!endpoint.ServerCertificate.IsEmpty)
                 {
                     using Certificate cert = CertificateFactory.Create(
                         endpoint.ServerCertificate);

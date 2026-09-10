@@ -376,7 +376,7 @@ namespace Technosoftware.UaClient.Tests
         public IList<NodeId> GetTestSetStatic(NamespaceTable namespaceUris)
         {
             return [.. TestSetStatic.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                .Where(n => n != null)];
+                .Where(n => !n.IsNull)];
         }
 
         /// <summary>
@@ -394,7 +394,7 @@ namespace Technosoftware.UaClient.Tests
                 foreach (ExpandedNodeId expandedNodeId in entry.NodeIds)
                 {
                     var nodeId = ExpandedNodeId.ToNodeId(expandedNodeId, namespaceUris);
-                    if (nodeId != null)
+                    if (!nodeId.IsNull)
                     {
                         result[nodeId] = type;
                     }
@@ -411,7 +411,7 @@ namespace Technosoftware.UaClient.Tests
         public IList<NodeId> GetTestSetSimulation(NamespaceTable namespaceUris)
         {
             return [.. TestSetSimulation.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                .Where(n => n != null)];
+                .Where(n => !n.IsNull)];
         }
 
         /// <summary>
@@ -423,11 +423,11 @@ namespace Technosoftware.UaClient.Tests
         {
             var simulation = TestSetSimulation
                 .Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                .Where(n => n != null)
+                .Where(n => !n.IsNull)
                 .ToList();
             simulation.AddRange(
                 TestSetDataSimulation.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                    .Where(n => n != null));
+                    .Where(n => !n.IsNull));
             return simulation;
         }
 
@@ -441,7 +441,7 @@ namespace Technosoftware.UaClient.Tests
             return
             [
                 .. TestSetDataSimulation.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                    .Where(n => n != null)
+                    .Where(n => !n.IsNull)
             ];
         }
 
@@ -453,7 +453,7 @@ namespace Technosoftware.UaClient.Tests
         public IList<NodeId> GetTestSetHistory(NamespaceTable namespaceUris)
         {
             return [.. TestSetHistory.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                .Where(n => n != null)];
+                .Where(n => !n.IsNull)];
         }
 
         /// <summary>

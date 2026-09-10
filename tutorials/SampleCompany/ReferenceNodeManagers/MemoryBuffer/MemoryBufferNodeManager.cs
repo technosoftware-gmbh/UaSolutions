@@ -96,7 +96,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 namespaceIndex = Server.NamespaceUris
                     .GetIndexOrAppend(Namespaces.MemoryBuffer + "/Instance");
 
-                if (m_configuration != null && m_configuration.Buffers != null)
+                if (m_configuration != null)
                 {
                     for (int ii = 0; ii < m_configuration.Buffers.Count; ii++)
                     {

@@ -279,11 +279,6 @@ namespace Technosoftware.UaClient.Tests
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (nodesToBrowse == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToBrowse));
-            }
-
             if (view != null && !view.ViewId.IsNull)
             {
                 (object viewHandle, IUaStandardAsyncNodeManager viewManager) =
@@ -339,7 +334,6 @@ namespace Technosoftware.UaClient.Tests
                     foreach (BrowseResult current in results)
                     {
                         if (current != null &&
-                            current.ContinuationPoint != null &&
                             current.ContinuationPoint.Length > 0)
                         {
                             UaContinuationPoint cp = context.Session
@@ -381,7 +375,7 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 // check for continuation point.
-                if (result.ContinuationPoint != null && result.ContinuationPoint.Length > 0)
+                if (result.ContinuationPoint.Length > 0)
                 {
                     continuationPointsAssigned++;
                 }

@@ -588,7 +588,7 @@ namespace SampleCompany.SampleClient
                                 ];
                             }
 
-                            if (jsonvalues && variableIds != null)
+                            if (jsonvalues && !variableIds.IsEmpty)
                             {
                                 (
                                     ArrayOf<DataValue> allValues,

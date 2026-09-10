@@ -200,7 +200,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
 
                 NodeState parent = null;
 
-                if (parentId != null)
+                if (!parentId.IsNull)
                 {
                     if (!PredefinedNodes.TryGetValue(parentId, out parent))
                     {
@@ -670,7 +670,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// <returns>Returns null if not found or not of the correct type.</returns>
         public NodeState FindPredefinedNode(NodeId nodeId, Type expectedType)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -695,7 +695,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
         /// <returns>Returns null if not found or not of the correct type.</returns>
         public T FindPredefinedNode<T>(NodeId nodeId) where T : NodeState
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return null;
             }

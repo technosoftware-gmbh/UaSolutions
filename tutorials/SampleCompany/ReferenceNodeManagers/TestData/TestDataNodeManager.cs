@@ -547,7 +547,7 @@ namespace SampleCompany.NodeManagers.TestData
             var dataValues = new List<DataValue>();
 
             HistoryDataReader reader;
-            if (nodeToRead.ContinuationPoint != null && nodeToRead.ContinuationPoint.Length > 0)
+            if (nodeToRead.ContinuationPoint.Length > 0)
             {
                 // restore the continuation point.
                 reader = RestoreDataReader(serverContext, nodeToRead.ContinuationPoint);
