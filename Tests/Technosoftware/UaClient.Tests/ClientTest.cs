@@ -325,7 +325,7 @@ namespace Technosoftware.UaClient.Tests
                 ServerUrl,
                 endpointConfiguration,
                 telemetry).ConfigureAwait(false);
-            var profileUris = new StringCollection();
+            var profileUris = new List<string>();
             for (int i = 0; i < 10000; i++)
             {
                 // dummy uri to create a bigger message
@@ -1176,7 +1176,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task ChangePreferredLocalesAsync()
         {
             // change locale
-            var localeCollection = new StringCollection { "de-de", "en-us" };
+            var localeCollection = new List<string> { "de-de", "en-us" };
             await Session.ChangePreferredLocalesAsync(localeCollection).ConfigureAwait(false);
         }
 

@@ -465,7 +465,7 @@ namespace Technosoftware.UaServer.Tests
             var simpleAttributeOperands = new SimpleAttributeOperandCollection();
 
             int eventIndexCounter = 0;
-            var desiredEventFields = new Dictionary<int, QualifiedNameCollection>
+            var desiredEventFields = new Dictionary<int, List<QualifiedName>>
             {
                 { eventIndexCounter++, [.. new QualifiedName[] { new QualifiedName(BrowseNames.EventId )}] },
                 { eventIndexCounter++, [.. new QualifiedName[] { new QualifiedName(BrowseNames.EventType )}] },
@@ -488,7 +488,7 @@ namespace Technosoftware.UaServer.Tests
                 }
             };
 
-            foreach (QualifiedNameCollection desiredEventField in desiredEventFields.Values)
+            foreach (List<QualifiedName> desiredEventField in desiredEventFields.Values)
             {
                 simpleAttributeOperands.Add(
                     new SimpleAttributeOperand

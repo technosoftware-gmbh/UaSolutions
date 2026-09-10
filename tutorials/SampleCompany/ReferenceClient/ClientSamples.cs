@@ -483,7 +483,7 @@ namespace SampleCompany.ReferenceClient
 
                 var simpleAttributeOperands = new SimpleAttributeOperandCollection();
 
-                foreach (QualifiedNameCollection desiredEventField in m_desiredEventFields.Values)
+                foreach (List<QualifiedName> desiredEventField in m_desiredEventFields.Values)
                 {
                     simpleAttributeOperands.Add(
                         new SimpleAttributeOperand
@@ -1411,7 +1411,7 @@ namespace SampleCompany.ReferenceClient
                 // Log MonitoredItem Notification event
                 var notification = e.NotificationValue as EventFieldList;
 
-                foreach (KeyValuePair<int, QualifiedNameCollection> entry in m_desiredEventFields)
+                foreach (KeyValuePair<int, List<QualifiedName>> entry in m_desiredEventFields)
                 {
                     Variant field = notification.EventFields[entry.Key];
                     if (field.TypeInfo.BuiltInType != BuiltInType.Null)
@@ -1586,7 +1586,7 @@ namespace SampleCompany.ReferenceClient
         private readonly ILogger m_logger;
         private readonly ManualResetEvent m_quitEvent;
         private readonly bool m_verbose;
-        private readonly Dictionary<int, QualifiedNameCollection> m_desiredEventFields;
+        private readonly Dictionary<int, List<QualifiedName>> m_desiredEventFields;
         private int m_processedEvents;
         private DateTime m_lastEventTime = DateTime.Now;
     }
