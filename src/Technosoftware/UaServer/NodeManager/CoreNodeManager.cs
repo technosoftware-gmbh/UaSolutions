@@ -503,7 +503,7 @@ namespace Technosoftware.UaServer
                     else
                     {
                         metadata.WriteMask = (AttributeWriteMask)
-                            (int)((uint)(int)metadata.WriteMask & (uint)value.Value);
+                            (int)((uint)(int)metadata.WriteMask & (uint)value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy));
                     }
                 }
 
@@ -539,7 +539,7 @@ namespace Technosoftware.UaServer
                             break;
                         }
 
-                        metadata.AccessLevel = (byte)(metadata.AccessLevel & (byte)value.Value);
+                        metadata.AccessLevel = (byte)(metadata.AccessLevel & (byte)value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy));
                         break;
                     }
                     case NodeClass.Method:
@@ -561,7 +561,7 @@ namespace Technosoftware.UaServer
                                 break;
                             }
 
-                            metadata.Executable = (bool)value.Value;
+                            metadata.Executable = (bool)value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
                         }
 
                         break;
@@ -3560,7 +3560,9 @@ namespace Technosoftware.UaServer
 
             if (!filter.IsNull)
             {
-                datachangeFilter = filter.Body as DataChangeFilter;
+                datachangeFilter = filter.TryGetValue(out DataChangeFilter parsedFilter)
+                    ? parsedFilter
+                    : null;
             }
 
             if (datachangeFilter != null)

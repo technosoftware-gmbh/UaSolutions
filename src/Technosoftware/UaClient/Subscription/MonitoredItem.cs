@@ -564,7 +564,7 @@ namespace Technosoftware.UaClient
                                 "Overflow bit set for data change with ServerTimestamp {ServerTimestamp} " +
                                 "and value {Value} for MonitoredItemId {MonitoredItemId}",
                                 datachange.Value.ServerTimestamp.ToLocalTime(),
-                                datachange.Value.Value,
+                                datachange.Value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
                                 ClientHandle);
                         }
                     }

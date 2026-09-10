@@ -1877,7 +1877,7 @@ namespace Technosoftware.UaServer
                 throw new ServiceResultException(StatusCodes.BadHistoryOperationInvalid);
             }
 
-            if (historyReadDetails.Body is not HistoryReadDetails details)
+            if (!historyReadDetails.TryGetValue(out HistoryReadDetails details))
             {
                 throw new ServiceResultException(StatusCodes.BadHistoryOperationInvalid);
             }
@@ -2107,15 +2107,13 @@ namespace Technosoftware.UaServer
             // verify that all extension objects in the list have the same type.
             foreach (ExtensionObject details in historyUpdateDetails)
             {
-                if (detailsType == null)
+                if (!details.TryGetValue(out IEncodeable detail))
                 {
-                    detailsType = details.Body.GetType();
+                    continue;
                 }
 
-                if (!details.IsNull)
-                {
-                    nodesToUpdate.Add(details.Body as HistoryUpdateDetails);
-                }
+                detailsType ??= detail.GetType();
+                nodesToUpdate.Add(detail as HistoryUpdateDetails);
             }
 
             // create result lists.
@@ -2496,7 +2494,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // all event subscriptions required an event filter.
-                    if (itemToCreate.RequestedParameters.Filter.Body is not EventFilter filter)
+                    if (!itemToCreate.RequestedParameters.Filter.TryGetValue(out EventFilter filter))
                     {
                         continue;
                     }
@@ -2884,7 +2882,7 @@ namespace Technosoftware.UaServer
 
                 // all event subscriptions required an event filter.
 
-                if (itemToModify.RequestedParameters.Filter.Body is not EventFilter filter)
+                if (!itemToModify.RequestedParameters.Filter.TryGetValue(out EventFilter filter))
                 {
                     errors[ii] = StatusCodes.BadEventFilterInvalid;
                     continue;
@@ -3218,7 +3216,7 @@ namespace Technosoftware.UaServer
 
             // check for known filter.
             if (!attributes.Filter.IsNull &&
-                attributes.Filter.Body is not MonitoringFilter)
+                !attributes.Filter.TryGetValue(out MonitoringFilter _))
             {
                 return new ServiceResult(StatusCodes.BadMonitoredItemFilterInvalid);
             }
@@ -3236,7 +3234,7 @@ namespace Technosoftware.UaServer
             if (!filter.IsNull)
             {
                 // validate data change filter.
-                if (filter.Body is DataChangeFilter datachangeFilter)
+                if (filter.TryGetValue(out DataChangeFilter datachangeFilter))
                 {
                     ServiceResult error = datachangeFilter.Validate();
 

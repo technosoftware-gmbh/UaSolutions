@@ -149,7 +149,10 @@ namespace Technosoftware.UaServer
 
             if (!itemToCreate.RequestedParameters.Filter.IsNull)
             {
-                filter = itemToCreate.RequestedParameters.Filter.Body as MonitoringFilter;
+                filter = itemToCreate.RequestedParameters.Filter
+                    .TryGetValue(out MonitoringFilter parsedFilter)
+                    ? parsedFilter
+                    : null;
             }
 
             // update limits for event filters.
@@ -328,7 +331,7 @@ namespace Technosoftware.UaServer
 
             if (!itemToModify.RequestedParameters.Filter.IsNull)
             {
-                filter = (MonitoringFilter)itemToModify.RequestedParameters.Filter.Body;
+                itemToModify.RequestedParameters.Filter.TryGetValue(out filter);
             }
 
             // update limits for event filters.

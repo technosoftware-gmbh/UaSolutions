@@ -1360,7 +1360,7 @@ namespace Technosoftware.UaServer
 
             try
             {
-                if (historyReadDetails.Body is ReadEventDetails)
+                if (historyReadDetails.TryGetValue(out ReadEventDetails _))
                 {
                     ValidateOperationLimits(
                         nodesToRead,

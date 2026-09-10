@@ -52,13 +52,13 @@ namespace Technosoftware.UaClient
             object[] values = new object[dataValues.Count];
             for (int ii = 0; ii < variableIds.Count; ii++)
             {
-                object value = dataValues[ii].Value;
+                object value = dataValues[ii].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
 
                 // extract the body from extension objects.
                 if (value is ExtensionObject extension &&
-                    extension.Body is IEncodeable)
+                    extension.TryGetValue(out IEncodeable body))
                 {
-                    value = extension.Body;
+                    value = body;
                 }
 
                 // check expected type.
@@ -465,11 +465,12 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             DataValue dataValue = await session.ReadValueAsync(nodeId, ct).ConfigureAwait(false);
-            object value = dataValue.Value;
+            object value = dataValue.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
 
-            if (value is ExtensionObject extension)
+            if (value is ExtensionObject extension &&
+                extension.TryGetValue(out IEncodeable body))
             {
-                value = extension.Body;
+                value = body;
             }
 
             if (!typeof(T).IsInstanceOfType(value))
@@ -753,7 +754,7 @@ namespace Technosoftware.UaClient
                         throw new ServiceResultException(serviceResult);
                     }
 
-                    if (results[0].Value is not byte[] chunk || chunk.Length == 0)
+                    if (results[0].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy) is not byte[] chunk || chunk.Length == 0)
                     {
                         // End of stream - fast path (no stream allocated yet)
                         // will return empty array constant.

@@ -846,10 +846,16 @@ namespace Technosoftware.UaServer
         {
             UserTokenPolicy policy = null;
 
+            // ExtensionObject.Body is gone; what it held is reached either as
+            // an encodeable or, when the token arrived binary encoded and has
+            // not been decoded yet, as the raw blob.
+            bool hasEncodeable = identityToken.TryGetValue(out IEncodeable tokenBody);
+            bool hasBinaryBody = identityToken.TryGetAsBinary(out _);
+
             // check for empty token.
             if (identityToken.IsNull ||
-                identityToken.Body == null ||
-                identityToken.Body.GetType() == typeof(AnonymousIdentityToken))
+                (!hasEncodeable && !hasBinaryBody) ||
+                tokenBody is AnonymousIdentityToken)
             {
                 // check if an anonymous login is permitted.
                 if (EndpointDescription.UserIdentityTokens.Count > 0)
@@ -884,11 +890,15 @@ namespace Technosoftware.UaServer
             UserIdentityToken token;
             IUserIdentityTokenHandler handler;
             // check for unrecognized token.
-            if (!typeof(UserIdentityToken).IsInstanceOfType(identityToken.Body))
+            if (tokenBody is not UserIdentityToken decodedToken)
             {
-                //handle the use case when the UserIdentityToken is binary encoded over xml message encoding
+                // handle the use case when the UserIdentityToken is binary
+                // encoded over xml message encoding. In 1.5 the undecoded body
+                // was a byte[]; it is a ByteString now, so the old type test
+                // would never have matched and a binary encoded token would
+                // have been rejected outright.
                 if (identityToken.Encoding == ExtensionObjectEncoding.Binary &&
-                    typeof(byte[]).IsInstanceOfType(identityToken.Body))
+                    hasBinaryBody)
                 {
                     if (BaseVariableState.DecodeExtensionObject(
                             null,
@@ -966,7 +976,7 @@ namespace Technosoftware.UaServer
             else
             {
                 // get the token.
-                token = (UserIdentityToken)identityToken.Body;
+                token = decodedToken;
             }
 
             // find the user token policy.

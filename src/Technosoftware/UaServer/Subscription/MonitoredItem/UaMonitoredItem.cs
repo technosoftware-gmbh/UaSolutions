@@ -1703,7 +1703,12 @@ namespace Technosoftware.UaServer
             }
 
             // check if reference to same object.
-            if (!Equals(lastValue.Value, value.Value, deadbandType, deadband, range))
+            if (!Equals(
+                    lastValue.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
+                    value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
+                    deadbandType,
+                    deadband,
+                    range))
             {
                 return true;
             }

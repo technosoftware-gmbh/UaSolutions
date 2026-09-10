@@ -1913,7 +1913,7 @@ namespace Technosoftware.UaServer
                     {
                         try
                         {
-                            if (nodeToWrite.Value.Value is Array array)
+                            if (nodeToWrite.Value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy) is Array array)
                             {
                                 bool isOutOfRange = false;
                                 foreach (object arrayValue in array)
@@ -1937,7 +1937,7 @@ namespace Technosoftware.UaServer
                             else
                             {
                                 double newValue = Convert.ToDouble(
-                                    nodeToWrite.Value.Value,
+                                    nodeToWrite.Value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
                                     CultureInfo.InvariantCulture);
 
                                 if (newValue > analogItemState.InstrumentRange.Value.High ||

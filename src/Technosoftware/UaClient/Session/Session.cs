@@ -1942,7 +1942,7 @@ namespace Technosoftware.UaClient
                 DataValue value = values[index];
                 ServiceResult error = errors.Count > 0 ? errors[index] : ServiceResult.Good;
                 index++;
-                if (ServiceResult.IsNotBad(error) && value.Value is T retVal)
+                if (ServiceResult.IsNotBad(error) && value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy) is T retVal)
                 {
                     return retVal;
                 }
@@ -3237,7 +3237,7 @@ namespace Technosoftware.UaClient
 
                     // send notification that keep alive completed.
                     OnKeepAlive(
-                        (ServerState)(int)values[0].Value,
+                        (ServerState)(int)values[0].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
                         (DateTime)responseHeader.Timestamp);
                 }
                 catch (ServiceResultException sre)
@@ -3430,7 +3430,7 @@ namespace Technosoftware.UaClient
                     "Cannot read NamespaceArray node. Validation of returned value failed.");
             }
 
-            string[] namespaceArray = (string[])values[0].Value;
+            string[] namespaceArray = (string[])values[0].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
             if (namespaceArray.Length == 0)
             {
                 throw ServiceResultException.Unexpected(
@@ -3466,7 +3466,7 @@ namespace Technosoftware.UaClient
                     "Cannot read ServerArray node. Validation of returned value failed.");
             }
 
-            string[] serverArray = (string[])values[1].Value;
+            string[] serverArray = (string[])values[1].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
             ServerUris.Update(serverArray);
         }
 
