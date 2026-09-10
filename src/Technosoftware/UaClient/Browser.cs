@@ -694,12 +694,17 @@ namespace Technosoftware.UaClient
         /// </summary>
         public static Browser? Load(Stream stream, ITelemetryContext telemetry)
         {
-            // secure settings
-            XmlReaderSettings settings = Utils.DefaultXmlReaderSettings();
-            using var reader = XmlReader.Create(stream, settings);
-            var serializer = new DataContractSerializer(typeof(BrowserOptions));
-            using IDisposable scope = AmbientMessageContext.SetScopedContext(telemetry);
-            var options = (BrowserOptions?)serializer.ReadObject(reader);
+            var context = ServiceMessageContext.Create(telemetry);
+            using var decoder = new BinaryDecoder(stream, context, true);
+            ArrayOf<string?> nsUris = decoder.ReadStringArray(null);
+            ArrayOf<string?> serverUris = decoder.ReadStringArray(null);
+
+            // The tables on the wire are nullable string arrays, but the
+            // decoder never yields a null entry for them.
+            context.NamespaceUris = new NamespaceTable(nsUris.Memory.ToArray()!);
+            context.ServerUris = new StringTable(serverUris.Memory.ToArray()!);
+            var options = new BrowserOptions();
+            options.Decode(decoder);
             return new Browser(telemetry, options);
         }
 
@@ -708,10 +713,12 @@ namespace Technosoftware.UaClient
         /// </summary>
         public void Save(Stream stream)
         {
-            // secure settings
-            using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
-            var serializer = new DataContractSerializer(typeof(BrowserOptions));
-            serializer.WriteObject(stream, State);
+            IServiceMessageContext context = AmbientMessageContext.CurrentContext
+                ?? ServiceMessageContext.Create(m_telemetry);
+            using var encoder = new BinaryEncoder(stream, context, true);
+            encoder.WriteStringArray(null, context.NamespaceUris.ToArrayOf());
+            encoder.WriteStringArray(null, context.ServerUris.ToArrayOf());
+            State.Encode(encoder);
         }
 
         /// <summary>

@@ -423,11 +423,11 @@ namespace Technosoftware.UaClient.Tests
                             var value = new DataValue();
                             if (r.AttributeId == Attributes.MinimumSamplingInterval)
                             {
-                                return new DataValue(StatusCodes.BadNotReadable);
+                                return DataValue.FromStatusCode(StatusCodes.BadNotReadable);
                             }
                             if (r.AttributeId == Attributes.Description)
                             {
-                                return new DataValue(StatusCodes.BadAttributeIdInvalid);
+                                return DataValue.FromStatusCode(StatusCodes.BadAttributeIdInvalid);
                             }
                             if (r.NodeId == nodeIds[0])
                             {
@@ -550,7 +550,7 @@ namespace Technosoftware.UaClient.Tests
                     new ValueTask<IServiceResponse>(new ReadResponse
                     {
                         Results = [.. request.NodesToRead
-                                .ToArray().Select(r => new DataValue(StatusCodes.BadAlreadyExists))],
+                                .ToArray().Select(r => DataValue.FromStatusCode(StatusCodes.BadAlreadyExists))],
                         DiagnosticInfos = [.. request.NodesToRead.ToArray().Select(_ => new DiagnosticInfo())]
                     }))
                 .Verifiable(Times.Once);
@@ -615,7 +615,7 @@ namespace Technosoftware.UaClient.Tests
                                 nodes[0].Read(null, r.AttributeId, ref value);
                                 return value;
                             }
-                            return new DataValue(StatusCodes.BadUnexpectedError);
+                            return DataValue.FromStatusCode(StatusCodes.BadUnexpectedError);
                         }));
                     return new ValueTask<IServiceResponse>(new ReadResponse
                     {

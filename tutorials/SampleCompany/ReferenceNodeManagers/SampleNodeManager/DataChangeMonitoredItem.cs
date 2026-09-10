@@ -359,7 +359,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
 
             if (ServiceResult.IsBad(error))
             {
-                value = new DataValue(error.StatusCode);
+                value = DataValue.FromStatusCode(error.StatusCode);
             }
 
             value = value.WithServerTimestamp(DateTime.UtcNow);

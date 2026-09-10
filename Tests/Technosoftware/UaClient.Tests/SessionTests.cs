@@ -193,7 +193,7 @@ namespace Technosoftware.UaClient.Tests
 
             var dataValues = new List<DataValue>
             {
-                new DataValue(StatusCodes.BadUnexpectedError)
+                DataValue.FromStatusCode(StatusCodes.BadUnexpectedError)
             };
 
             var diagnosticInfos = new List<DiagnosticInfo>();
@@ -589,7 +589,7 @@ namespace Technosoftware.UaClient.Tests
             CancellationToken ct = CancellationToken.None;
 
             var namespaceArray = new DataValue(new Variant([Opc.Ua.Namespaces.OpcUa, "http://namespace2"]));
-            var serverArray = new DataValue(StatusCodes.BadUnexpectedError);
+            var serverArray = DataValue.FromStatusCode(StatusCodes.BadUnexpectedError);
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -648,8 +648,8 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var namespaceArray = new DataValue(StatusCodes.BadUnexpectedError);
-            var serverArray = new DataValue(StatusCodes.BadUnexpectedError);
+            var namespaceArray = DataValue.FromStatusCode(StatusCodes.BadUnexpectedError);
+            var serverArray = DataValue.FromStatusCode(StatusCodes.BadUnexpectedError);
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
