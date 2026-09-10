@@ -153,9 +153,9 @@ namespace Technosoftware.UaServer
             if (predefinedNode is BaseObjectState passiveNode)
             {
                 NodeId typeId = passiveNode.TypeDefinitionId;
-                if (IsNodeIdInNamespace(typeId) && typeId.IdType == IdType.Numeric)
+                if (IsNodeIdInNamespace(typeId) && typeId.TryGetValue(out uint numericTypeId))
                 {
-                    switch ((uint)typeId.Identifier)
+                    switch (numericTypeId)
                     {
                         case ObjectTypes.ServerConfigurationType:
                         {

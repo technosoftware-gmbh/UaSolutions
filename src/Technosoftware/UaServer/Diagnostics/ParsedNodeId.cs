@@ -66,7 +66,7 @@ namespace Technosoftware.UaServer
                 return null;
             }
 
-            string identifier = nodeId.Identifier as string;
+            nodeId.TryGetValue(out string identifier);
 
             if (string.IsNullOrEmpty(identifier))
             {
@@ -262,7 +262,7 @@ namespace Technosoftware.UaServer
             }
 
             // parent must have a string identifier.
-            if (instance.Parent.NodeId.Identifier is not string parentId)
+            if (!instance.Parent.NodeId.TryGetValue(out string parentId))
             {
                 return default;
             }

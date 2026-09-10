@@ -705,11 +705,11 @@ namespace Technosoftware.UaClient.Tests
                         }
                         else
                         {
-                            recreated = new NodeId(
-                                referenceDescription.NodeId.Identifier,
-                                referenceDescription.NodeId.NamespaceIndex);
+                            recreated = ExpandedNodeId.ToNodeId(
+                                referenceDescription.NodeId,
+                                Session.NamespaceUris);
 
-                            if (recreated.IsNullNodeId)
+                            if (recreated.IsNull)
                             {
                                 TestContext.Out.WriteLine(
                                     "Subscription Reference {0} Recreated Node is Null",

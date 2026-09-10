@@ -57,13 +57,11 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected override DataValue ComputeValue(TimeSlice slice)
         {
-            uint? id = AggregateId.Identifier as uint?;
-
-            if (id == null)
+            if (!AggregateId.TryGetValue(out uint id))
             {
                 return base.ComputeValue(slice);
             }
-            switch (id.Value)
+            switch (id)
             {
                 case Objects.AggregateFunction_Start:
                     return ComputeStartEnd(slice, false);

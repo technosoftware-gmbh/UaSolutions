@@ -625,12 +625,12 @@ namespace Technosoftware.UaServer
 
             NodeId typeId = passiveNode.TypeDefinitionId;
 
-            if (!IsNodeIdInNamespace(typeId) || typeId.IdType != IdType.Numeric)
+            if (!IsNodeIdInNamespace(typeId) || !typeId.TryGetValue(out uint numericTypeId))
             {
                 return predefinedNode;
             }
 
-            switch ((uint)typeId.Identifier)
+            switch (numericTypeId)
             {
                 case ObjectTypes.ServerType:
                 {
@@ -741,12 +741,13 @@ namespace Technosoftware.UaServer
 
             NodeId typeId = instance.TypeDefinitionId;
 
-            if (typeId.IsNull || typeId.IdType != IdType.Numeric || typeId.NamespaceIndex != 0)
+            if (typeId.IsNull || typeId.NamespaceIndex != 0 ||
+                !typeId.TryGetValue(out uint numericTypeId))
             {
                 return false;
             }
 
-            switch ((uint)typeId.Identifier)
+            switch (numericTypeId)
             {
                 case VariableTypes.ServerDiagnosticsSummaryType:
                 case ObjectTypes.SessionDiagnosticsObjectType:

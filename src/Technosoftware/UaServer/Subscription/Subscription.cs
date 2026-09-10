@@ -384,7 +384,7 @@ namespace Technosoftware.UaServer
         public async ValueTask DeleteAsync(UaServerOperationContext context, CancellationToken cancellationToken = default)
         {
             // delete the diagnostics.
-            if (!m_diagnosticsId.IsNull && !m_diagnosticsId.IsNullNodeId)
+            if (!m_diagnosticsId.IsNull)
             {
                 UaServerContext systemContext = m_server.DefaultSystemContext.Copy(Session);
                 m_server.DiagnosticsNodeManager

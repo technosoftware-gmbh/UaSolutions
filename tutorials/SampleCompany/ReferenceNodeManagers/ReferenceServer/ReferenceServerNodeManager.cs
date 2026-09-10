@@ -81,7 +81,7 @@ namespace SampleCompany.NodeManagers.Reference
         {
             if (node is BaseInstanceState instance &&
                 instance.Parent != null &&
-                instance.Parent.NodeId.Identifier is string id)
+                instance.Parent.NodeId.TryGetValue(out string id))
             {
                 return new NodeId(
                     id + "_" + instance.SymbolicName,

@@ -90,7 +90,7 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             if (node is BaseInstanceState instance &&
                 instance.Parent != null &&
-                instance.Parent.NodeId.Identifier is string id)
+                instance.Parent.NodeId.TryGetValue(out string id))
             {
                 return new NodeId(
                     id + "_" + instance.SymbolicName,
@@ -562,10 +562,8 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             AlarmHolder alarmHolder = null;
 
-            Type nodeIdType = node.Identifier.GetType();
-            if (nodeIdType.Name == "String")
+            if (node.TryGetValue(out string unmodifiedName))
             {
-                string unmodifiedName = node.Identifier.ToString();
 
                 // This is bad, but I'm not sure why the NodeName is being attached with an underscore, it messes with this lookup.
                 string name = unmodifiedName.Replace(
@@ -612,9 +610,8 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             string unit = string.Empty;
 
-            if (nodeId.IdType == IdType.String)
+            if (nodeId.TryGetValue(out string nodeIdString))
             {
-                string nodeIdString = (string)nodeId.Identifier;
                 string[] splitString = nodeIdString.Split('.');
                 // Alarms.UnitName.MethodName
                 if (splitString.Length >= 1)
@@ -650,9 +647,8 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             string sourceName = string.Empty;
 
-            if (nodeId.IdType == IdType.String)
+            if (nodeId.TryGetValue(out string nodeIdString))
             {
-                string nodeIdString = (string)nodeId.Identifier;
                 string[] splitString = nodeIdString.Split('.');
                 // Alarms.UnitName.AnalogSource
                 if (splitString.Length >= 2)

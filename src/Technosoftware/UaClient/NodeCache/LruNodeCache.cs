@@ -428,9 +428,9 @@ namespace Technosoftware.UaClient
             NodeId typeId = datatypeId;
             while (!typeId.IsNull)
             {
-                if (typeId.NamespaceIndex == 0 && typeId.IdType == IdType.Numeric)
+                if (typeId.NamespaceIndex == 0 && typeId.TryGetValue(out uint numericId))
                 {
-                    var id = (BuiltInType)(int)(uint)typeId.Identifier;
+                    var id = (BuiltInType)(int)numericId;
                     if (id is > BuiltInType.Null and <= BuiltInType.Enumeration and not BuiltInType.DiagnosticInfo)
                     {
                         return id;

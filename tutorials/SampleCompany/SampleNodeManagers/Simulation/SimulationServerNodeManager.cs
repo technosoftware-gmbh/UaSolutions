@@ -82,7 +82,7 @@ namespace SampleCompany.NodeManagers.Simulation
         {
             if (node is BaseInstanceState instance &&
                 instance.Parent != null &&
-                instance.Parent.NodeId.Identifier is string id)
+                instance.Parent.NodeId.TryGetValue(out string id))
             {
                 return new NodeId(
                     id + "_" + instance.SymbolicName,
@@ -2666,7 +2666,7 @@ namespace SampleCompany.NodeManagers.Simulation
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
                         null);
-                    opaqueNodeId.NodeId = new NodeId(new byte[] { 9, 2, 0, 5 }, NamespaceIndex);
+                    opaqueNodeId.NodeId = new NodeId(ByteString.From([9, 2, 0, 5]), NamespaceIndex);
                     variables.Add(opaqueNodeId);
                     #endregion NodeIds
 

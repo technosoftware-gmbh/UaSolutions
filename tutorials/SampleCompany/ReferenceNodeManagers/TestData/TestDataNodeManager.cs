@@ -289,12 +289,13 @@ namespace SampleCompany.NodeManagers.TestData
             {
                 NodeId typeId = passiveNode.TypeDefinitionId;
 
-                if (!IsNodeIdInNamespace(typeId) || typeId.IdType != IdType.Numeric)
+                if (!IsNodeIdInNamespace(typeId) ||
+                    !typeId.TryGetValue(out uint numericTypeId))
                 {
                     return predefinedNode;
                 }
 
-                switch ((uint)typeId.Identifier)
+                switch (numericTypeId)
                 {
                     case ObjectTypes.TestSystemConditionType:
                     {
@@ -429,12 +430,13 @@ namespace SampleCompany.NodeManagers.TestData
             {
                 NodeId typeId = variableNode.TypeDefinitionId;
 
-                if (!IsNodeIdInNamespace(typeId) || typeId.IdType != IdType.Numeric)
+                if (!IsNodeIdInNamespace(typeId) ||
+                    !typeId.TryGetValue(out uint numericTypeId))
                 {
                     return predefinedNode;
                 }
 
-                switch ((uint)typeId.Identifier)
+                switch (numericTypeId)
                 {
                     case VariableTypes.ScalarStructureVariableType:
                     {

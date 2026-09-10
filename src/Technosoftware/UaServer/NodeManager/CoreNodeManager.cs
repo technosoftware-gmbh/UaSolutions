@@ -3301,7 +3301,7 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                return GetLocalNode(new NodeId(nodeId.Identifier, (ushort)namespaceIndex));
+                return GetLocalNode(((NodeId)nodeId).WithNamespaceIndex((ushort)namespaceIndex));
             }
 
             return GetLocalNode((NodeId)nodeId);

@@ -54,7 +54,7 @@ namespace Technosoftware.UaServer.Tests
 
                 var baseObject = new BaseObjectState(null);
                 var nodeHandle = new UaNodeHandle(
-                    new NodeId((string)CommonTestWorkers.NodeIdTestSetStatic[0].Identifier, 0),
+                    ToNodeIdInNamespace(CommonTestWorkers.NodeIdTestSetStatic[0], 0),
                     baseObject);
 
                 //Act
@@ -96,8 +96,8 @@ namespace Technosoftware.UaServer.Tests
                 int index = server.CurrentInstance.NamespaceUris.GetIndex(ns);
 
                 var baseObject = new DataItemState(null);
-                var nodeId = new NodeId(
-                    (string)CommonTestWorkers.NodeIdTestSetStatic[0].Identifier,
+                NodeId nodeId = ToNodeIdInNamespace(
+                    CommonTestWorkers.NodeIdTestSetStatic[0],
                     (ushort)index);
 
                 baseObject.NodeId = nodeId;
@@ -239,6 +239,23 @@ namespace Technosoftware.UaServer.Tests
             }
 
             return (error == null, error);
+        }
+
+        /// <summary>
+        /// Takes the identifier of an absolute expanded node id and pairs it
+        /// with a namespace index of this server's, which is what the test set
+        /// entries need: they carry a namespace URI, so casting them to a
+        /// NodeId throws.
+        /// </summary>
+        private static NodeId ToNodeIdInNamespace(
+            ExpandedNodeId expandedNodeId,
+            ushort namespaceIndex)
+        {
+            Assert.That(
+                expandedNodeId.TryGetValue(out string identifier),
+                Is.True,
+                "The test set is expected to hold string identifiers.");
+            return new NodeId(identifier, namespaceIndex);
         }
     }
 
