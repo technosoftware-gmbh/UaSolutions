@@ -1433,7 +1433,7 @@ namespace SampleCompany.ReferenceClient
                         {
                             try
                             {
-                                var currentTime = (DateTime)field.Value;
+                                var currentTime = (DateTime)field.AsBoxedObject(Variant.BoxingBehavior.Legacy);
                                 TimeSpan timeSpan = currentTime - m_lastEventTime;
                                 m_lastEventTime = currentTime;
                                 m_processedEvents++;
@@ -1462,7 +1462,7 @@ namespace SampleCompany.ReferenceClient
                             "\tField [{Index}] \"{Name}\" = [{Value}]",
                             entry.Key,
                             fieldName,
-                            field.Value);
+                            field.AsBoxedObject(Variant.BoxingBehavior.Legacy));
                     }
                 }
             }

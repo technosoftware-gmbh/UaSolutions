@@ -124,7 +124,7 @@ namespace Technosoftware.UaServer
 
             // set the timestamp and status.
             var value = new DataValue()
-                .WithWrappedValue(new Variant(duration, TypeInfo.Scalars.Double))
+                .WithWrappedValue(Variant.From(duration))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
             value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
@@ -191,7 +191,7 @@ namespace Technosoftware.UaServer
 
             // set the timestamp and status.
             var value = new DataValue()
-                .WithWrappedValue(new Variant(worstQuality, TypeInfo.Scalars.StatusCode))
+                .WithWrappedValue(Variant.From(worstQuality))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
             value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));

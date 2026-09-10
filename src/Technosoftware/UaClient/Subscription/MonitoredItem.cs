@@ -821,7 +821,7 @@ namespace Technosoftware.UaClient
                     }
 
                     // ignore event type id when matching null browse paths.
-                    return eventFields.EventFields[ii].Value;
+                    return eventFields.EventFields[ii].AsBoxedObject(Variant.BoxingBehavior.Legacy);
                 }
 
                 // match browse path.
@@ -857,7 +857,7 @@ namespace Technosoftware.UaClient
                 }
 
                 // return value.
-                return eventFields.EventFields[ii].Value;
+                return eventFields.EventFields[ii].AsBoxedObject(Variant.BoxingBehavior.Legacy);
             }
 
             // no event type in event field list.

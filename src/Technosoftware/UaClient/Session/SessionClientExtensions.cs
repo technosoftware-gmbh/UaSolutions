@@ -840,7 +840,7 @@ namespace Technosoftware.UaClient
 
             foreach (Variant arg in results[0].OutputArguments)
             {
-                outputArguments.Add(arg.Value);
+                outputArguments.Add(arg.AsBoxedObject(Variant.BoxingBehavior.Legacy));
             }
 
             return outputArguments;

@@ -1745,7 +1745,7 @@ namespace Technosoftware.UaClient.Tests
                 {
                     continue;
                 }
-                if (item.Value.Value is ExtensionObject eo &&
+                if (item.Value.AsBoxedObject(Variant.BoxingBehavior.Legacy) is ExtensionObject eo &&
                     eo.Body is SpanContextDataType spanContext)
                 {
                     Span<byte> spanIdBytes = stackalloc byte[8];

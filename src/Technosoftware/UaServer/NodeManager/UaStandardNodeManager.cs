@@ -5079,7 +5079,7 @@ namespace Technosoftware.UaServer
                 // skip Variant Null
                 if (value is Variant variant)
                 {
-                    if (variant.Value == null)
+                    if (variant.IsNull)
                     {
                         value = null;
                     }

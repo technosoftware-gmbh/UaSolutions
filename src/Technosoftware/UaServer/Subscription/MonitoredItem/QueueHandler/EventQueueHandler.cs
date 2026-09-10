@@ -209,7 +209,7 @@ namespace Technosoftware.UaServer
             {
                 foreach (Variant field in fields.EventFields)
                 {
-                    if (field.Value is StatusResult statusResult)
+                    if (field.AsBoxedObject(Variant.BoxingBehavior.Legacy) is StatusResult statusResult)
                     {
                         statusResult.ApplyDiagnosticMasks(
                             context.DiagnosticsMask,

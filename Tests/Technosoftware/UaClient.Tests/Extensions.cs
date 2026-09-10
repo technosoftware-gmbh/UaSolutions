@@ -34,7 +34,7 @@ namespace Technosoftware.UaClient.Tests
             }
             for (int i = 0; i < argTypes.Length; i++)
             {
-                if (requests[0].InputArguments[i].Value.GetType() != argTypes[i])
+                if (requests[0].InputArguments[i].AsBoxedObject(Variant.BoxingBehavior.Legacy).GetType() != argTypes[i])
                 {
                     return false;
                 }

@@ -1790,8 +1790,8 @@ namespace Technosoftware.UaServer
 
                 if (isVariant)
                 {
-                    element1 = ((Variant)element1).Value;
-                    element2 = ((Variant)element2).Value;
+                    element1 = ((Variant)element1).AsBoxedObject(Variant.BoxingBehavior.Legacy);
+                    element2 = ((Variant)element2).AsBoxedObject(Variant.BoxingBehavior.Legacy);
                 }
 
                 if (!Equals(element1, element2, deadbandType, deadband, range))

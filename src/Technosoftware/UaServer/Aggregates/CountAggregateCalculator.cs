@@ -105,7 +105,7 @@ namespace Technosoftware.UaServer
 
             // set the timestamp and status.
             var value = new DataValue()
-                .WithWrappedValue(new Variant(count, TypeInfo.Scalars.Int32))
+                .WithWrappedValue(Variant.From(count))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
             value = value.WithStatus(GetValueBasedStatusCode(slice, values, value.StatusCode));
@@ -143,7 +143,7 @@ namespace Technosoftware.UaServer
 
             // set the timestamp and status.
             var value = new DataValue()
-                .WithWrappedValue(new Variant(count, TypeInfo.Scalars.Int32))
+                .WithWrappedValue(Variant.From(count))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
             value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
@@ -193,7 +193,7 @@ namespace Technosoftware.UaServer
 
             // set the timestamp and status.
             var value = new DataValue()
-                .WithWrappedValue(new Variant(duration, TypeInfo.Scalars.Double))
+                .WithWrappedValue(Variant.From(duration))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
             value = value.WithStatus(GetTimeBasedStatusCode(regions, value.StatusCode));
@@ -262,7 +262,7 @@ namespace Technosoftware.UaServer
 
             // set the timestamp and status.
             var value = new DataValue()
-                .WithWrappedValue(new Variant(count, TypeInfo.Scalars.Int32))
+                .WithWrappedValue(Variant.From(count))
                 .WithSourceTimestamp(GetTimestamp(slice))
                 .WithServerTimestamp(GetTimestamp(slice));
             value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));

@@ -4301,7 +4301,7 @@ namespace SampleCompany.NodeManagers.Reference
                 return StatusCodes.BadIndexRangeInvalid;
             }
 
-            var parentTypeInfo = TypeInfo.Construct(parent.Value);
+            TypeInfo parentTypeInfo = parent.WrappedValue.TypeInfo;
             Range parentRange = GetAnalogRange(parentTypeInfo.BuiltInType);
             if (parentRange.High < newRange.High || parentRange.Low > newRange.Low)
             {

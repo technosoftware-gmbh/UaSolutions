@@ -966,7 +966,7 @@ namespace Technosoftware.UaServer
                             errors[ii] = StatusCodes.BadIndexRangeInvalid;
                             continue;
                         }
-                        if (valueToWrite.Value is not Array array ||
+                        if (valueToWrite.AsBoxedObject(Variant.BoxingBehavior.Legacy) is not Array array ||
                             nodeToWrite.ParsedIndexRange.Count != array.Length)
                         {
                             errors[ii] = StatusCodes.BadIndexRangeInvalid;
