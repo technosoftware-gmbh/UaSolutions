@@ -153,7 +153,11 @@ namespace Technosoftware.UaClient.Tests
             {
                 NodeId = nodeId,
                 AttributeId = Attributes.Value,
-                Value = new DataValue(new Variant(chunk)),
+                // byte[] converts implicitly to ArrayOf<byte> but only
+                // explicitly to ByteString, so new Variant(chunk) picks the
+                // Byte array overload and the server rejects the write to a
+                // ByteString node with BadTypeMismatch.
+                Value = new DataValue(Variant.From(ByteString.From(chunk))),
                 IndexRange = null
             };
             var writeValues = new List<WriteValue> { writeValue };

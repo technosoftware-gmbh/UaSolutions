@@ -754,7 +754,13 @@ namespace Technosoftware.UaClient
                         throw new ServiceResultException(serviceResult);
                     }
 
-                    if (results[0].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy) is not byte[] chunk || chunk.Length == 0)
+                    // A scalar ByteString does not box as a byte[] - it boxes
+                    // as a ByteString - so the chunk has to be read through the
+                    // typed accessor. Testing the boxed value for byte[] never
+                    // matched, and every read ended after the first chunk with
+                    // an empty result.
+                    if (!wrappedValue.TryGetValue(out ByteString chunk) ||
+                        chunk.Length == 0)
                     {
                         // End of stream - fast path (no stream allocated yet)
                         // will return empty array constant.
@@ -763,10 +769,10 @@ namespace Technosoftware.UaClient
                     if (chunk.Length < maxByteStringLength && offset == 0)
                     {
                         // Fast path for small values, just return the chunk
-                        return chunk;
+                        return chunk.ToArray();
                     }
                     stream ??= new MemoryStream();
-                    await stream.WriteAsync(chunk, ct).ConfigureAwait(false);
+                    await stream.WriteAsync(chunk.Memory, ct).ConfigureAwait(false);
                     if (chunk.Length < maxByteStringLength)
                     {
                         break;
