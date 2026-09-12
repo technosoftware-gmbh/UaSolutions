@@ -181,7 +181,7 @@ jobs:
       contents: read
       packages: write
     steps:
-    - uses: actions/download-artifact@v7
+    - uses: actions/download-artifact@v8
       with:
         name: nupkg
         path: artifacts
@@ -235,7 +235,7 @@ jobs:
       # Lets this job request the OIDC token that NuGet/login exchanges for a key.
       id-token: write
     steps:
-    - uses: actions/download-artifact@v7
+    - uses: actions/download-artifact@v8
       with:
         name: nupkg
         path: artifacts
@@ -273,7 +273,7 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/download-artifact@v7
+    - uses: actions/download-artifact@v8
       with:
         name: nupkg
         path: artifacts
