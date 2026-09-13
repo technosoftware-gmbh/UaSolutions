@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <Company>Technosoftware GmbH</Company>
+    <Product>OPC UA Solutions .NET</Product>
+    <Description>OPC UA Solutions .NET Configuration Library</Description>
+    <Copyright>Copyright © 2026 Technosoftware GmbH</Copyright>
     <AssemblyName>$(AssemblyPrefix).UaConfiguration</AssemblyName>
     <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
     <PackageId>$(PackagePrefix).UaConfiguration</PackageId>
     <RootNamespace>Technosoftware.UaConfiguration</RootNamespace>
-    <Company>Technosoftware GmbH</Company>
-    <Product>OPC UA Solutions .NET</Product>
-    <Description>OPC UA Solutions .NET Configuration Library</Description>
-    <Copyright>Copyright © 2018 - 2026 Technosoftware GmbH</Copyright>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
@@ -17,6 +17,19 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <PackageId>$(PackageId).Debug</PackageId>
   </PropertyGroup>
+  <!--
+    The licensed flavour, used to produce the shipped NuGet packages:
+        dotnet build -p:Licensed=true
+    A plain build is the MIT flavour: no dependency on the licensing library and no
+    license check. TECHNOSOFTWARE_LICENSED must appear in exactly one source file
+    (Licensing/LicenseHandlerGate.cs) plus the ApplicationInstance hook.
+  -->
+  <PropertyGroup Condition="'$(Licensed)' == 'true'">
+    <DefineConstants>$(DefineConstants);TECHNOSOFTWARE_LICENSED</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Licensed)' == 'true'">
+    <ProjectReference Include="..\UaUtilities\Technosoftware.UaUtilities.csproj" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" />  
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Types" />

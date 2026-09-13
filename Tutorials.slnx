@@ -12,7 +12,5 @@
     <File Path="LICENSE.md" />
     <File Path="README.md" />
     <File Path="targets.props" />
-    <File Path="version.json" />
-    <File Path="version.props" />
   </Folder>
 </Solution>

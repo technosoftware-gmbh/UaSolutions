@@ -1,6 +1,37 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 6.0.3
+
+### Changes
+
+- The packages are now published to nuget.org as well as to GitHub Packages.
+- No functional changes over 6.0.2. This release exists so that the first
+  nuget.org publication carries a version number of its own; 6.0.2 remains
+  supported and behaves identically.
+
+-------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 6.0.2
+
+### Changes
+
+- Improved license validation.
+- Fixed a rare crash in the client session: when a publish response returned an error
+  while subscriptions were being created or deleted on another thread, the session
+  could throw an unhandled exception on a thread pool thread and terminate the process.
+- The assembly file version now carries the patch number in the revision field: 6.0.2 ships
+  as file version 6.0.0.2. The exact patch level is therefore visible in the file properties,
+  which is what we ask for when you report an issue.
+- The NuGet packages now show the Technosoftware icon on nuget.org.
+
+-------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 6.0.1
+
+### Integrated OPC UA Stack Version
+
+- Use of the original OPC Foundation Stack Version 1.5.378.156
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.0
 
 Version 6.0 has the same functionality as version 5.0.0 and uses also the same OPC Foundation Stack Version 1.5.378.145.

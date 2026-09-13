@@ -1,5 +1,19 @@
 <Project>
+  <!--
+    The licence test seam (-p:LicenseTestSeam=true) is a second, differently compiled
+    variant of Technosoftware.UaUtilities: UaUtilities.Tests references it that way
+    while UaConfiguration references the ordinary one, so a single solution build
+    produces both. They would otherwise share obj/ and bin/ and the last writer would
+    win - the seam build ending up in every output, including the one that gets packed.
+    Give the seam variant its own compile and output folders. Only IntermediateOutputPath
+    and OutputPath are redirected, not BaseIntermediateOutputPath: restore does not see
+    this property, so project.assets.json must stay where restore writes it.
+  -->
+  <PropertyGroup Condition="'$(LicenseTestSeam)' == 'true' And '$(TargetFramework)' != ''">
+    <IntermediateOutputPath>obj/$(Configuration)/seam/</IntermediateOutputPath>
+    <OutputPath>bin/$(Configuration)/seam/</OutputPath>
+  </PropertyGroup>
+
   <Import Project="targets.props" />
   <Import Project="common.props" />
-  <Import Project="version.props" />
 </Project>

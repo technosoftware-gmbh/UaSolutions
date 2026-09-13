@@ -506,6 +506,13 @@ namespace Technosoftware.UaClient.Tests
             var testSet2 = testSetAll.Skip(kTestSetSize).Take(kTestSetSize).ToList();
             var testSet3 = testSetAll.Skip(kTestSetSize * 2).Take(kTestSetSize).ToList();
 
+            // The sets are a random slice of every Variable node in the address space, so a
+            // failure here is about the nodes this run happened to draw. Record the ones the
+            // single-node cases use, otherwise the next failure is as undiagnosable as the last.
+            TestContext.Out.WriteLine(
+                $"node selection: testSet1[0]={testSet1[0]}, testSet2[0]={testSet2[0]}, testSet3[0]={testSet3[0]} " +
+                $"(of {testSetAll.Count} variable nodes)");
+
             var taskList = new List<Task>();
             var refTypeIds = new List<NodeId> { ReferenceTypeIds.HierarchicalReferences };
 

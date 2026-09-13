@@ -3539,7 +3539,21 @@ namespace Technosoftware.UaClient
             }
             catch (Exception e)
             {
-                if (m_subscriptions.Count == 0)
+                // Snapshot the subscription state under the lock: this runs on a publish
+                // completion callback while another thread may be creating or deleting
+                // subscriptions, and an unsynchronized enumeration below would throw
+                // "Collection was modified" on a thread pool thread, taking the process
+                // down. The callbacks further down must not be invoked while holding it.
+                int subscriptionCount;
+                bool anySubscriptionCreated;
+
+                lock (m_lock)
+                {
+                    subscriptionCount = m_subscriptions.Count;
+                    anySubscriptionCreated = m_subscriptions.Any(s => s.Created);
+                }
+
+                if (subscriptionCount == 0)
                 {
                     // Publish responses with error should occur after deleting the last subscription.
                     m_logger.LogWarning(
@@ -3560,7 +3574,7 @@ namespace Technosoftware.UaClient
                 var error = new ServiceResult(e);
 
                 // raise publish error even for BadNoSubscription if there are active subscriptions.
-                if (error.Code != StatusCodes.BadNoSubscription || m_subscriptions.Any(s => s.Created))
+                if (error.Code != StatusCodes.BadNoSubscription || anySubscriptionCreated)
                 {
                     EventHandler<PublishErrorEventArgs>? callback = m_PublishError;
 

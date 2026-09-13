@@ -24,6 +24,7 @@ using Opc.Ua;
 using SampleCompany.Common;
 using SampleCompany.NodeManagers;
 using SampleCompany.ReferenceServer;
+using Technosoftware.UaConfiguration;
 #endregion Using Directives
 
 namespace SampleCompany.ReferenceServer
@@ -40,6 +41,18 @@ namespace SampleCompany.ReferenceServer
         public static async Task<int> Main(string[] args)
         {
             Console.WriteLine("OPC UA Console Reference Server");
+
+            #region License validation
+            // The gate is a no-op in the MIT build and the real license check in the
+            // licensed build; the sample needs no conditional compilation for either.
+            const string licenseData = "";
+            if (!UaLicensing.Gate.TryApplyLicense(licenseData))
+            {
+                Console.WriteLine("WARNING: No valid license applied.");
+            }
+
+            UaLicensing.Gate.WriteLicenseInfo(Console.Out);
+            #endregion License validation
 
             // The application name and config file name
             const string applicationName = "SampleCompany.ReferenceServer";

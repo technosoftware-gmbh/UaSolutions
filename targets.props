@@ -79,10 +79,10 @@
     </When>
     <Otherwise>
       <PropertyGroup>
-        <AppTargetFrameworks>net10.0</AppTargetFrameworks>
-        <AppTargetFramework>net10.0</AppTargetFramework>
-        <TestsTargetFrameworks>net10.0</TestsTargetFrameworks>
-        <LibTargetFrameworks>net10.0</LibTargetFrameworks>
+        <AppTargetFrameworks>net10.0;net9.0;net8.0</AppTargetFrameworks>
+        <AppTargetFramework>net10.0;net9.0;net8.0</AppTargetFramework>
+        <TestsTargetFrameworks>net10.0;net9.0;net8.0</TestsTargetFrameworks>
+        <LibTargetFrameworks>net10.0;net9.0;net8.0</LibTargetFrameworks>
       </PropertyGroup>
     </Otherwise>
   </Choose>

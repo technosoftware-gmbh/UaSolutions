@@ -41,6 +41,10 @@ namespace Technosoftware.UaConfiguration
             m_telemetry = telemetry;
             m_logger = telemetry.CreateLogger<ApplicationInstance>();
             DisableCertificateAutoCreation = false;
+#if TECHNOSOFTWARE_LICENSED
+            UaLicensing.Gate = new LicenseHandlerGate(m_logger);
+            UaUtilities.LicenseHandler.Instance.IsLicenseValid();
+#endif
         }
 
         /// <summary>
@@ -289,6 +293,19 @@ namespace Technosoftware.UaConfiguration
                     .ConfigureAwait(false);
                 result = result && nextResult;
             }
+
+#if TECHNOSOFTWARE_LICENSED
+            if (UaUtilities.LicenseHandler.Instance.IsEvaluation)
+            {
+                m_logger.LogInformation(
+                    "License used = Evaluation, Features = {LicensedFeatures}, "
+                        + "Evaluation period = {EvaluationPeriod} minutes, "
+                        + "ProductVersion = {ProductVersion}.",
+                    UaUtilities.LicenseHandler.Instance.LicensedFeatures,
+                    UaUtilities.LicenseHandler.Instance.EvaluationPeriod,
+                    UaUtilities.LicenseHandler.Instance.ProductVersion);
+            }
+#endif
 
             return result;
         }
