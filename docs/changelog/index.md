@@ -1,6 +1,25 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 7.0.0 (unreleased)
+
+### Breaking Changes
+
+- The NuGet package IDs no longer carry `UaSolutions`. Update your package references:
+
+  | 6.x                                          | 7.0                              |
+  |----------------------------------------------|----------------------------------|
+  | `Technosoftware.UaSolutions.UaClient`        | `Technosoftware.UaClient`        |
+  | `Technosoftware.UaSolutions.UaServer`        | `Technosoftware.UaServer`        |
+  | `Technosoftware.UaSolutions.UaConfiguration` | `Technosoftware.UaConfiguration` |
+  | `Technosoftware.UaSolutions.UaUtilities`     | `Technosoftware.UaUtilities`     |
+  | `Technosoftware.UaSolutions.ClientGateway`   | `Technosoftware.ClientGateway`   |
+
+  The package IDs now match the assembly names; namespaces and assembly names are unchanged.
+  The four libraries are published to nuget.org and GitHub Packages. The 6.x packages remain
+  available on GitHub Packages under their old IDs.
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.3
 
 ### Changes

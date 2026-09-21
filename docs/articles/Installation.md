@@ -62,14 +62,14 @@ The solution consists of the following main components:
 - Opc.Ua.Types.dll
 - Opc.Ua.Core.dll
 - Opc.Ua.Bindings.Https.dll
-- Technosoftware.UaSolutions.UaConfiguration.dll
+- Technosoftware.UaConfiguration.dll
   
 These DLLs are used by all applications using the solution. In addition, one or several of the following DLL’s might be required:
 
-- Technosoftware.UaSolutions.UaClient.dll
+- Technosoftware.UaClient.dll
   
   Client Applications require this DLL.
-- Technosoftware.UaSolutions.UaServer.dll
+- Technosoftware.UaServer.dll
   
   Server Applications require this DLL.
   

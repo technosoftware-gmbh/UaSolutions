@@ -9,7 +9,7 @@
     <MinVerMinimumMajorMinor>6.0</MinVerMinimumMajorMinor>
     <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
     <Copyright>Copyright © 2026 Technosoftware GmbH</Copyright>
-    <PackagePrefix>Technosoftware.UaSolutions</PackagePrefix>
+    <PackagePrefix>Technosoftware</PackagePrefix>
     <AssemblyPrefix>Technosoftware</AssemblyPrefix>
     <Company>Technosoftware GmbH</Company>
     <Authors>Technosoftware GmbH</Authors>

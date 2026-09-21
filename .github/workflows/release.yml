@@ -1,6 +1,6 @@
 name: Release
 
-# This repository is the single source of the four Technosoftware.UaSolutions.*
+# This repository is the single source of the four Technosoftware.Ua*
 # libraries and publishes them. ClientGateway is released separately from the
 # private UaSolutionsNet repository, after this one.
 #
@@ -105,7 +105,7 @@ jobs:
         set -euo pipefail
         found=0
         mkdir -p "$RUNNER_TEMP/unpack"
-        for pkg in artifacts/Technosoftware.UaSolutions.UaUtilities.*.nupkg; do
+        for pkg in artifacts/Technosoftware.UaUtilities.*.nupkg; do
           unzip -o -q "$pkg" -d "$RUNNER_TEMP/unpack"
         done
         while IFS= read -r asm; do
@@ -122,9 +122,9 @@ jobs:
       shell: bash
       run: |
         set -euo pipefail
-        pkg="$(ls artifacts/Technosoftware.UaSolutions.UaClient.*.nupkg | head -1)"
+        pkg="$(ls artifacts/Technosoftware.UaClient.*.nupkg | head -1)"
         produced="$(basename "$pkg" .nupkg)"
-        produced="${produced#Technosoftware.UaSolutions.UaClient.}"
+        produced="${produced#Technosoftware.UaClient.}"
         echo "MinVer produced version: ${produced}"
         ls artifacts
         if [ "${{ github.event_name }}" = "push" ] && [ "$produced" != "${GITHUB_REF_NAME}" ]; then
@@ -252,18 +252,22 @@ jobs:
         user: ${{ secrets.NUGET_USER }}
 
     - name: Push
-      # Only the Technosoftware.UaSolutions.* packages belong on the public
-      # gallery. artifacts/ also holds the SampleCompany tutorial package, which
-      # stays on GitHub Packages: the Trusted Publishing policy is scoped to
-      # Technosoftware.UaSolutions.* and answers anything else with a 403, which
-      # would fail the job - possibly after some real packages had gone up.
+      # Only these four packages belong on the public gallery. artifacts/ also
+      # holds the SampleCompany tutorial package, which stays on GitHub Packages.
+      # The Trusted Publishing policy lists exactly these four ids and answers
+      # anything else with a 403, which would fail the job - possibly after some
+      # real packages had gone up. Keep this list and the policy in step.
+      # UaUtilities first: the others depend on it.
       shell: bash
       run: |
         set -euo pipefail
-        dotnet nuget push "artifacts/Technosoftware.UaSolutions.*.nupkg" \
-          --source https://api.nuget.org/v3/index.json \
-          --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
-          --skip-duplicate
+        for id in Technosoftware.UaUtilities Technosoftware.UaConfiguration \
+                  Technosoftware.UaClient Technosoftware.UaServer; do
+          dotnet nuget push artifacts/"${id}".[0-9]*.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
+            --skip-duplicate
+        done
 
   github-release:
     name: Create GitHub Release
