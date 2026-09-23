@@ -4,10 +4,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="MinVer" Version="7.0.0" />
-    <PackageVersion Include="Technosoftware.UaSolutions.UaUtilities" Version="6.0.1" />
-    <PackageVersion Include="Technosoftware.UaSolutions.UaConfiguration" Version="6.0.1" />
-    <PackageVersion Include="Technosoftware.UaSolutions.UaClient" Version="6.0.1" />
-    <PackageVersion Include="Technosoftware.UaSolutions.UaServer" Version="6.0.1" />
+    <PackageVersion Include="Technosoftware.UaSolutions.UaUtilities" Version="6.0.3" />
+    <PackageVersion Include="Technosoftware.UaSolutions.UaConfiguration" Version="6.0.3" />
+    <PackageVersion Include="Technosoftware.UaSolutions.UaClient" Version="6.0.3" />
+    <PackageVersion Include="Technosoftware.UaSolutions.UaServer" Version="6.0.3" />
     <PackageVersion Include="Technosoftware.UaSolutions.ClientGateway" Version="6.0.1" />
     <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Types" Version="1.5.378.156" />
     <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.5.378.156" />

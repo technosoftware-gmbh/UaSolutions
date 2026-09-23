@@ -18,7 +18,7 @@ namespace Technosoftware.UaUtilities
     internal class ValidationChainBuilder : IStartValidationChain, IValidationChain
     {
         private readonly List<ILicenseValidator> m_validators;
-        private ILicenseValidator m_currentValidatorChain;
+        private LicenseValidator m_currentValidatorChain;
         private readonly License m_license;
 
         public ValidationChainBuilder(License license)
