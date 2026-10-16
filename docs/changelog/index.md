@@ -6,9 +6,8 @@
 ### Changes
 
 - The packages are published to GitHub Packages.
-- No functional changes over 6.0.2. This release exists so that the first
-  nuget.org publication carries a version number of its own; 6.0.2 remains
-  supported and behaves identically.
+- No functional changes over 6.0.2. This release exists to get a first version on nuget.org but unfortunately
+  that was not possible. 6.0.2 remains supported and behaves identically.
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.2
