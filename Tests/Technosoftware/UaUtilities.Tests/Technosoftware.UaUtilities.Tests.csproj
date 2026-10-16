@@ -46,13 +46,15 @@
     command line already build it through the ProjectReference.
     The fast up-to-date check does not see the seam output either, so a change in
     UaUtilities would otherwise leave this project on a stale seam build.
+    Never run it in a design-time build: Visual Studio runs those in the background to
+    feed IntelliSense and NuGet restore, and a real build nested inside one breaks both.
   -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
     <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
   <Target Name="BuildLicenseTestSeamInsideVisualStudio"
           BeforeTargets="ResolveProjectReferences"
-          Condition="'$(BuildingInsideVisualStudio)' == 'true' And '$(TargetFramework)' != ''">
+          Condition="'$(BuildingInsideVisualStudio)' == 'true' And '$(DesignTimeBuild)' != 'true' And '$(TargetFramework)' != ''">
     <MSBuild Projects="..\..\..\src\Technosoftware\UaUtilities\Technosoftware.UaUtilities.csproj"
              Targets="Build"
              Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework);LicenseTestSeam=true" />
