@@ -5,7 +5,7 @@
 
 ### Changes
 
-- The packages are now published to nuget.org as well as to GitHub Packages.
+- The packages are published to GitHub Packages.
 - No functional changes over 6.0.2. This release exists so that the first
   nuget.org publication carries a version number of its own; 6.0.2 remains
   supported and behaves identically.
