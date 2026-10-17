@@ -5,6 +5,7 @@
 | **Version** | **Date**    | **Comment**                          |
 |-------------|-------------|--------------------------------------|
 | 6.0         | 04-JUL-2026 | Updated to cover version 6.0         |
+| 6.1         | 17-OCT-2026 | Added .NET 4.8 (version 6.1 and later) |
 
 **Supported in the following product versions**
 
@@ -72,6 +73,11 @@ Last Updated: 08-MAY-2026
 | ----------------------------- | -------------------------------------------------------- |
 | Apple                         | [.NET 10.0][15]                                          |
 | Linux                         | [.NET 10.0][15]                                          |
-| Windows                       | [.NET 10.0][15]                                          |
+| Windows                       | [.NET 10.0][15], [.NET 4.8][16] (version 6.1 and later)  |
 
 [15]: https://dotnet.microsoft.com/en-us/download/dotnet/10.0
+[16]: https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48
+
+.NET 4.8 is supported for the client, server, configuration and utilities packages starting with
+version 6.1, and will remain supported in the upcoming version 7. The UA Client Gateway and
+.NET 4.7.2 remain available in version 5 only.

@@ -5,8 +5,10 @@
 | **Version** | **Date**    | **Comment**                          |
 |-------------|-------------|--------------------------------------|
 | 6.0         | 04-JUL-2026 | Updated to cover version 6.0         |
+| 6.1         | 17-OCT-2026 | Updated to cover version 6.1         |
 
 - [Migration Guide](#migration-guide)
+  - [Migrating from 6.0 to 6.1](#migrating-from-60-to-61)
   - [Migrating from 5.0 to 6.0](#migrating-from-50-to-60)
     - [General Upgrades to 6.0](#general-upgrades-to-60)
     - [Upgrade client application to 6.0](#upgrade-client-application-to-60)
@@ -15,6 +17,20 @@
     - [General Upgrades to 5.0](#general-upgrades-to-50)
     - [Upgrade client application to 5.0](#upgrade-client-application-to-50)
     - [Upgrade server application to 5.0](#upgrade-server-application-to-50)
+
+## Migrating from 6.0 to 6.1
+
+Version 6.1 has the same API as version 6.0 and uses the same OPC Foundation Stack Version 1.5.378.156.
+No code changes are required.
+
+Version 6.1 adds .NET 4.8 as a target framework. To build your application for .NET 4.8 add `net48` to
+the target frameworks of your project, for example in targets.props:
+
+```
+<AppTargetFrameworks>net10.0;net48</AppTargetFrameworks>
+```
+
+The upcoming version 7 will also support .NET 4.8.
 
 ## Migrating from 5.0 to 6.0
 

@@ -1,6 +1,17 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 6.1.0
+
+### Enhancements
+
+- Added support for .NET 4.8. The UaClient, UaServer, UaConfiguration and UaUtilities packages now target
+  .NET 10.0, .NET 9.0, .NET 8.0 and .NET 4.8. The upcoming version 7 will support .NET 4.8 as well.
+- No API changes over 6.0.3 and the same OPC Foundation Stack Version 1.5.378.156.
+- On .NET 4.8 the license validation uses BouncyCastle for the signature check, because .NET Framework
+  cannot import the license keys. Licenses are the same on all target frameworks.
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.3
 
 ### Changes
