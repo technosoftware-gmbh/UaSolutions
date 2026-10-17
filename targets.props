@@ -2,11 +2,11 @@
   <!-- 
     Supported frameworks:
        .NET Core 10 until 14-NOV-2028
+       .NET 4.8 (library and test targets only; the apps and tools stay .NET only)
 
     Only supported in UASolutions version 5:
        .NET Core 9 until 10-NOV-2026
        .NET Core 8 until 10-NOV-2026
-       .NET 4.8
        .NET 4.7.2
 
     No longer supported frameworks because of dependencies:
@@ -35,7 +35,7 @@
   A build with all custom targets which are not part of a regular build
   is scheduled once a week in the DevOps build pipeline.
   Uncomment the following lines to test a custom test target
-  supported values: net8.0, net9.0, net10.0
+  supported values: net48, net8.0, net9.0, net10.0
    -->
   <!--
   <PropertyGroup>
@@ -45,6 +45,15 @@
   <Choose>
     <!-- Note: to test targets which support deprecated platforms,
          set the CustomTestTarget environment variable accordingly -->
+    <When Condition="'$(CustomTestTarget)' == 'net48'">
+      <PropertyGroup>
+        <!-- the apps and tools stay .NET only; tests reference the node managers, not the apps -->
+        <AppTargetFrameworks>net10.0</AppTargetFrameworks>
+        <AppTargetFramework>net10.0</AppTargetFramework>
+        <TestsTargetFrameworks>net48</TestsTargetFrameworks>
+        <LibTargetFrameworks>net48</LibTargetFrameworks>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(CustomTestTarget)' == 'net8.0'">
       <PropertyGroup>
         <AppTargetFrameworks>net8.0</AppTargetFrameworks>
@@ -81,8 +90,8 @@
       <PropertyGroup>
         <AppTargetFrameworks>net10.0;net9.0;net8.0</AppTargetFrameworks>
         <AppTargetFramework>net10.0;net9.0;net8.0</AppTargetFramework>
-        <TestsTargetFrameworks>net10.0;net9.0;net8.0</TestsTargetFrameworks>
-        <LibTargetFrameworks>net10.0;net9.0;net8.0</LibTargetFrameworks>
+        <TestsTargetFrameworks>net10.0;net9.0;net8.0;net48</TestsTargetFrameworks>
+        <LibTargetFrameworks>net10.0;net9.0;net8.0;net48</LibTargetFrameworks>
       </PropertyGroup>
     </Otherwise>
   </Choose>

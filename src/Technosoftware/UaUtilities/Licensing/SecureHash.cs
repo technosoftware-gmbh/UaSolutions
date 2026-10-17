@@ -66,7 +66,7 @@ namespace Technosoftware.UaUtilities
 
             FileInfo fileInfo = new(pathFile);
 
-            using FileStream fileStream = fileInfo.Open(new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.Read });
+            using FileStream fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read);
             try
             {
                 // Create a fileStream for the file.

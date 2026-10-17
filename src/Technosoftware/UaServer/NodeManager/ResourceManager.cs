@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Xml;
 using Opc.Ua;
@@ -342,7 +343,7 @@ namespace Technosoftware.UaServer
             {
                 Dictionary<string, string> translations =
                     defaultText?.Translations != null
-                        ? new Dictionary<string, string>(defaultText.Translations)
+                        ? defaultText.Translations.ToDictionary(pair => pair.Key, pair => pair.Value)
                         : [];
                 // If only mul/qst is requested, return all available translations for the key.
                 if (preferredLocales.Count == 1)

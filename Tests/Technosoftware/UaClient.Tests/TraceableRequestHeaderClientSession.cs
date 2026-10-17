@@ -73,7 +73,11 @@ namespace Technosoftware.UaClient
                 Value = new Variant(new SpanContextDataType
                 {
                     SpanId = BitConverter.ToUInt64(spanId),
+#if NETFRAMEWORK
+                    TraceId = (Uuid)new Guid(traceId.ToArray())
+#else
                     TraceId = (Uuid)new Guid(traceId)
+#endif
                 })
             };
             traceData = new AdditionalParametersType();

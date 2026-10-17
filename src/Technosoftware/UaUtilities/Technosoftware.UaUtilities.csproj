@@ -32,5 +32,9 @@
     <PackageReference Include="System.Formats.Asn1" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
+  <!-- .NET Framework: ECDsa cannot import PKCS#8 / SubjectPublicKeyInfo keys, see BouncyCastleSigner. -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="BouncyCastle.Cryptography" />
+  </ItemGroup>
   <Target Name="GetPackagingOutputs" />
 </Project>

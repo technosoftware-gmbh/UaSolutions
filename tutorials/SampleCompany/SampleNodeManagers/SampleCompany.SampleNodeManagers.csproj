@@ -2,7 +2,8 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <AssemblyName>SampleCompany.NodeManagers</AssemblyName>
-    <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
+    <!-- Built against the published packages, like the SampleServer app that uses it. -->
+    <TargetFrameworks>$(AppTargetFrameworks)</TargetFrameworks>
     <PackageId>SampleCompany.NodeManagers</PackageId>
     <RootNamespace>SampleCompany.NodeManagers</RootNamespace>
     <Company>SampleCompany</Company>
