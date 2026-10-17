@@ -90,8 +90,13 @@
       <PropertyGroup>
         <AppTargetFrameworks>net10.0;net9.0;net8.0</AppTargetFrameworks>
         <AppTargetFramework>net10.0;net9.0;net8.0</AppTargetFramework>
-        <TestsTargetFrameworks>net10.0;net9.0;net8.0;net48</TestsTargetFrameworks>
+        <TestsTargetFrameworks>net10.0;net9.0;net8.0</TestsTargetFrameworks>
         <LibTargetFrameworks>net10.0;net9.0;net8.0;net48</LibTargetFrameworks>
+      </PropertyGroup>
+      <!-- net48 tests need the .NET Framework runtime, which only Windows has; on Linux and macOS
+           dotnet test fails with "Could not find 'mono' host". The libraries still build net48 everywhere. -->
+      <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        <TestsTargetFrameworks>$(TestsTargetFrameworks);net48</TestsTargetFrameworks>
       </PropertyGroup>
     </Otherwise>
   </Choose>
