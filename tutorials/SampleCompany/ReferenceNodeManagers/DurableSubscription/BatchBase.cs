@@ -34,6 +34,15 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         }
 
         /// <summary>
+        /// Creates a batch that keeps its Id across a restart, which names its file on disk
+        /// </summary>
+        protected BatchBase(Guid id, uint batchSize, uint monitoredItemId)
+            : this(batchSize, monitoredItemId)
+        {
+            Id = id;
+        }
+
+        /// <summary>
         /// The unique Id of the batch
         /// </summary>
         public Guid Id { get; }

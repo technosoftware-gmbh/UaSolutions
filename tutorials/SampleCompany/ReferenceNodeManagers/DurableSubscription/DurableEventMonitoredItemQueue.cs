@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Opc.Ua;
 using Technosoftware.UaServer;
 #endregion Using Directives
@@ -61,11 +62,13 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             IBatchPersistor batchPersistor)
         {
             IsDurable = queue.IsDurable;
+            m_logger = NullLogger<DurableEventMonitoredItemQueue>.Instance;
             m_enqueueBatch = queue.EnqueueBatch;
             m_eventBatches = queue.EventBatches;
-            m_dequeueBatch = queue.DequeueBatch;
+            // a null dequeue batch means it was the enqueue batch when the queue was stored
+            m_dequeueBatch = queue.DequeueBatch ?? m_enqueueBatch;
             QueueSize = queue.QueueSize;
-            ItemsInQueue = 0;
+            ItemsInQueue = queue.ItemsInQueue;
             MonitoredItemId = queue.MonitoredItemId;
             m_batchPersistor = batchPersistor;
         }
@@ -354,7 +357,8 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 DequeueBatch = m_dequeueBatch,
                 EnqueueBatch = m_enqueueBatch,
                 EventBatches = m_eventBatches,
-                QueueSize = QueueSize
+                QueueSize = QueueSize,
+                ItemsInQueue = ItemsInQueue
             };
         }
 
@@ -397,6 +401,15 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             Events = events;
         }
 
+        /// <summary>
+        /// Creates a batch restored from disk, which keeps the Id it was stored with
+        /// </summary>
+        public EventBatch(Guid id, List<EventFieldList> events, uint batchSize, uint monitoredItemId)
+            : base(id, batchSize, monitoredItemId)
+        {
+            Events = events;
+        }
+
         public List<EventFieldList> Events { get; private set; }
 
         public override void SetPersisted()
@@ -419,6 +432,8 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         public bool IsDurable { get; set; }
 
         public uint MonitoredItemId { get; set; }
+
+        public int ItemsInQueue { get; set; }
 
         public EventBatch EnqueueBatch { get; set; }
 

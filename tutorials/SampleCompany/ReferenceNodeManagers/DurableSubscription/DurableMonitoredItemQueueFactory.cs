@@ -19,7 +19,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Opc.Ua;
 using Technosoftware.UaServer;
 #endregion Using Directives
@@ -34,14 +33,10 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         private readonly BatchPersistor m_batchPersistor;
         private readonly ILogger m_logger;
         private readonly ITelemetryContext m_telemetry;
-
-        private static readonly JsonSerializerSettings s_settings = new()
-        {
-            TypeNameHandling = TypeNameHandling.All
-        };
+        private readonly IServiceMessageContext m_messageContext;
 
         private const string kQueueDirectory = "Queues";
-        private const string kBase_filename = "_queue.txt";
+        private const string kBase_filename = "_queue.bin";
 
         private ConcurrentDictionary<uint, DurableDataChangeMonitoredItemQueue> m_dataChangeQueues = new();
         private ConcurrentDictionary<uint, DurableEventMonitoredItemQueue> m_eventQueues = new();
@@ -49,11 +44,14 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         /// <inheritdoc/>
         public bool SupportsDurableQueues => true;
 
-        public DurableMonitoredItemQueueFactory(ITelemetryContext telemetry)
+        public DurableMonitoredItemQueueFactory(
+            ITelemetryContext telemetry,
+            IServiceMessageContext messageContext = null)
         {
             m_telemetry = telemetry;
+            m_messageContext = messageContext;
             m_logger = telemetry.CreateLogger<DurableDataChangeMonitoredItemQueue>();
-            m_batchPersistor = new BatchPersistor(telemetry);
+            m_batchPersistor = new BatchPersistor(telemetry, messageContext);
         }
 
         /// <inheritdoc/>
@@ -125,6 +123,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 Directory.CreateDirectory(targetPath);
             }
             using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
+            IServiceMessageContext context = m_messageContext ?? AmbientMessageContext.CurrentContext;
             foreach (uint id in ids)
             {
                 try
@@ -134,10 +133,10 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                         out DurableDataChangeMonitoredItemQueue queue))
                     {
                         //store
-                        string result = JsonConvert.SerializeObject(
-                            queue.ToStorableQueue(),
-                            s_settings);
-                        File.WriteAllText(Path.Combine(targetPath, id + kBase_filename), result);
+                        using FileStream stream = File.Create(Path.Combine(targetPath, id + kBase_filename));
+                        using var encoder = new BinaryEncoder(stream, context, true);
+                        WriteMappingTables(encoder, context);
+                        EncodeDataChangeQueue(encoder, queue.ToStorableQueue());
                         continue;
                     }
 
@@ -146,10 +145,10 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                         out DurableEventMonitoredItemQueue eventQueue))
                     {
                         //store
-                        string result = JsonConvert.SerializeObject(
-                            eventQueue.ToStorableQueue(),
-                            s_settings);
-                        File.WriteAllText(Path.Combine(targetPath, id + kBase_filename), result);
+                        using FileStream stream = File.Create(Path.Combine(targetPath, id + kBase_filename));
+                        using var encoder = new BinaryEncoder(stream, context, true);
+                        WriteMappingTables(encoder, context);
+                        EncodeEventQueue(encoder, eventQueue.ToStorableQueue());
                         continue;
                     }
                     m_logger.LogWarning(
@@ -183,12 +182,16 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 {
                     return null;
                 }
-                string result = File.ReadAllText(targetFile);
-                File.Delete(targetFile);
                 using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
-                StorableEventQueue template = JsonConvert.DeserializeObject<StorableEventQueue>(
-                    result,
-                    s_settings);
+                IServiceMessageContext context = m_messageContext ?? AmbientMessageContext.CurrentContext;
+                StorableEventQueue template;
+                using (FileStream stream = File.OpenRead(targetFile))
+                using (var decoder = new BinaryDecoder(stream, context, true))
+                {
+                    ReadMappingTables(decoder);
+                    template = DecodeEventQueue(decoder);
+                }
+                File.Delete(targetFile);
 
                 var queue = new DurableEventMonitoredItemQueue(template, m_batchPersistor);
                 m_eventQueues.AddOrUpdate(id, queue, (_, _) => queue);
@@ -217,12 +220,16 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 {
                     return null;
                 }
-                string result = File.ReadAllText(targetFile);
-                File.Delete(targetFile);
                 using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
-                StorableDataChangeQueue template = JsonConvert.DeserializeObject<StorableDataChangeQueue>(
-                    result,
-                    s_settings);
+                IServiceMessageContext context = m_messageContext ?? AmbientMessageContext.CurrentContext;
+                StorableDataChangeQueue template;
+                using (FileStream stream = File.OpenRead(targetFile))
+                using (var decoder = new BinaryDecoder(stream, context, true))
+                {
+                    ReadMappingTables(decoder);
+                    template = DecodeDataChangeQueue(decoder);
+                }
+                File.Delete(targetFile);
 
                 var queue = new DurableDataChangeMonitoredItemQueue(template, m_batchPersistor);
                 m_dataChangeQueues.AddOrUpdate(id, queue, (_, _) => queue);
@@ -282,6 +289,232 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                 m_dataChangeQueues = null;
                 m_eventQueues = null;
             }
+        }
+
+        /// <summary>
+        /// Writes the tables the indexes in the encoded values refer to
+        /// </summary>
+        internal static void WriteMappingTables(BinaryEncoder encoder, IServiceMessageContext context)
+        {
+            encoder.WriteStringArray(null, context.NamespaceUris.ToArrayOf());
+            encoder.WriteStringArray(null, context.ServerUris.ToArrayOf());
+        }
+
+        /// <summary>
+        /// Reads the tables written by <see cref="WriteMappingTables"/>
+        /// </summary>
+        internal static void ReadMappingTables(BinaryDecoder decoder)
+        {
+            ArrayOf<string> namespaceUris = decoder.ReadStringArray(null);
+            ArrayOf<string> serverUris = decoder.ReadStringArray(null);
+            decoder.SetMappingTables(
+                new NamespaceTable(namespaceUris.Memory.ToArray()),
+                new StringTable(serverUris.Memory.ToArray()));
+        }
+
+        private static void EncodeDataChangeQueue(BinaryEncoder encoder, StorableDataChangeQueue queue)
+        {
+            encoder.WriteBoolean(null, queue.IsDurable);
+            encoder.WriteUInt32(null, queue.MonitoredItemId);
+            encoder.WriteInt32(null, queue.ItemsInQueue);
+            encoder.WriteUInt32(null, queue.QueueSize);
+            EncodeDataChangeBatch(encoder, queue.EnqueueBatch);
+            // a single batch is both the enqueue and the dequeue batch: store it once
+            EncodeDataChangeBatch(
+                encoder,
+                ReferenceEquals(queue.DequeueBatch, queue.EnqueueBatch) ? null : queue.DequeueBatch);
+
+            encoder.WriteInt32(null, queue.DataChangeBatches.Count);
+            foreach (DataChangeBatch batch in queue.DataChangeBatches)
+            {
+                EncodeDataChangeBatch(encoder, batch);
+            }
+        }
+
+        private static StorableDataChangeQueue DecodeDataChangeQueue(BinaryDecoder decoder)
+        {
+            var queue = new StorableDataChangeQueue
+            {
+                IsDurable = decoder.ReadBoolean(null),
+                MonitoredItemId = decoder.ReadUInt32(null),
+                ItemsInQueue = decoder.ReadInt32(null),
+                QueueSize = decoder.ReadUInt32(null),
+                EnqueueBatch = DecodeDataChangeBatch(decoder),
+                DequeueBatch = DecodeDataChangeBatch(decoder)
+            };
+
+            int count = decoder.ReadInt32(null);
+            queue.DataChangeBatches = new List<DataChangeBatch>(count);
+            for (int i = 0; i < count; i++)
+            {
+                queue.DataChangeBatches.Add(DecodeDataChangeBatch(decoder));
+            }
+            return queue;
+        }
+
+        /// <summary>
+        /// Encodes the batch. A batch already on disk keeps its Id, which names its file,
+        /// and is restored from that file when it is needed again.
+        /// </summary>
+        internal static void EncodeDataChangeBatch(BinaryEncoder encoder, DataChangeBatch batch)
+        {
+            encoder.WriteBoolean(null, batch != null);
+            if (batch == null)
+            {
+                return;
+            }
+
+            lock (batch)
+            {
+                encoder.WriteGuid(null, batch.Id);
+                encoder.WriteUInt32(null, batch.BatchSize);
+                encoder.WriteUInt32(null, batch.MonitoredItemId);
+                encoder.WriteBoolean(null, batch.IsPersisted);
+
+                int count = batch.Values?.Count ?? 0;
+                encoder.WriteInt32(null, count);
+                for (int i = 0; i < count; i++)
+                {
+                    (DataValue value, ServiceResult error) = batch.Values[i];
+                    encoder.WriteDataValue(null, value);
+                    encoder.WriteStatusCode(null, error?.StatusCode ?? StatusCodes.Good);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decodes a batch written by <see cref="EncodeDataChangeBatch"/>
+        /// </summary>
+        internal static DataChangeBatch DecodeDataChangeBatch(BinaryDecoder decoder)
+        {
+            if (!decoder.ReadBoolean(null))
+            {
+                return null;
+            }
+
+            Guid id = decoder.ReadGuid(null);
+            uint batchSize = decoder.ReadUInt32(null);
+            uint monitoredItemId = decoder.ReadUInt32(null);
+            bool isPersisted = decoder.ReadBoolean(null);
+
+            int count = decoder.ReadInt32(null);
+            var values = new List<(DataValue, ServiceResult)>(count);
+            for (int i = 0; i < count; i++)
+            {
+                DataValue value = decoder.ReadDataValue(null);
+                StatusCode error = decoder.ReadStatusCode(null);
+                values.Add((value, error == StatusCodes.Good ? null : new ServiceResult(error)));
+            }
+
+            var batch = new DataChangeBatch(id, values, batchSize, monitoredItemId);
+            if (isPersisted)
+            {
+                batch.SetPersisted();
+            }
+            return batch;
+        }
+
+        private static void EncodeEventQueue(BinaryEncoder encoder, StorableEventQueue queue)
+        {
+            encoder.WriteBoolean(null, queue.IsDurable);
+            encoder.WriteUInt32(null, queue.MonitoredItemId);
+            encoder.WriteInt32(null, queue.ItemsInQueue);
+            encoder.WriteUInt32(null, queue.QueueSize);
+            EncodeEventBatch(encoder, queue.EnqueueBatch);
+            // a single batch is both the enqueue and the dequeue batch: store it once
+            EncodeEventBatch(
+                encoder,
+                ReferenceEquals(queue.DequeueBatch, queue.EnqueueBatch) ? null : queue.DequeueBatch);
+
+            encoder.WriteInt32(null, queue.EventBatches.Count);
+            foreach (EventBatch batch in queue.EventBatches)
+            {
+                EncodeEventBatch(encoder, batch);
+            }
+        }
+
+        private static StorableEventQueue DecodeEventQueue(BinaryDecoder decoder)
+        {
+            var queue = new StorableEventQueue
+            {
+                IsDurable = decoder.ReadBoolean(null),
+                MonitoredItemId = decoder.ReadUInt32(null),
+                ItemsInQueue = decoder.ReadInt32(null),
+                QueueSize = decoder.ReadUInt32(null),
+                EnqueueBatch = DecodeEventBatch(decoder),
+                DequeueBatch = DecodeEventBatch(decoder)
+            };
+
+            int count = decoder.ReadInt32(null);
+            queue.EventBatches = new List<EventBatch>(count);
+            for (int i = 0; i < count; i++)
+            {
+                queue.EventBatches.Add(DecodeEventBatch(decoder));
+            }
+            return queue;
+        }
+
+        /// <summary>
+        /// Encodes the batch. A batch already on disk keeps its Id, which names its file,
+        /// and is restored from that file when it is needed again.
+        /// </summary>
+        internal static void EncodeEventBatch(BinaryEncoder encoder, EventBatch batch)
+        {
+            encoder.WriteBoolean(null, batch != null);
+            if (batch == null)
+            {
+                return;
+            }
+
+            lock (batch)
+            {
+                encoder.WriteGuid(null, batch.Id);
+                encoder.WriteUInt32(null, batch.BatchSize);
+                encoder.WriteUInt32(null, batch.MonitoredItemId);
+                encoder.WriteBoolean(null, batch.IsPersisted);
+
+                int count = batch.Events?.Count ?? 0;
+                encoder.WriteInt32(null, count);
+                for (int i = 0; i < count; i++)
+                {
+                    encoder.WriteUInt32(null, batch.Events[i].ClientHandle);
+                    encoder.WriteVariantArray(null, batch.Events[i].EventFields);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decodes a batch written by <see cref="EncodeEventBatch"/>
+        /// </summary>
+        internal static EventBatch DecodeEventBatch(BinaryDecoder decoder)
+        {
+            if (!decoder.ReadBoolean(null))
+            {
+                return null;
+            }
+
+            Guid id = decoder.ReadGuid(null);
+            uint batchSize = decoder.ReadUInt32(null);
+            uint monitoredItemId = decoder.ReadUInt32(null);
+            bool isPersisted = decoder.ReadBoolean(null);
+
+            int count = decoder.ReadInt32(null);
+            var events = new List<EventFieldList>(count);
+            for (int i = 0; i < count; i++)
+            {
+                events.Add(new EventFieldList
+                {
+                    ClientHandle = decoder.ReadUInt32(null),
+                    EventFields = decoder.ReadVariantArray(null)
+                });
+            }
+
+            var batch = new EventBatch(id, events, batchSize, monitoredItemId);
+            if (isPersisted)
+            {
+                batch.SetPersisted();
+            }
+            return batch;
         }
     }
 }

@@ -36,6 +36,9 @@
     short nonce stays accepted there.
 
   A session of this kind failed between this version and the OPC Foundation stack before.
+- The durable subscription sample in `tutorials/SampleCompany/ReferenceNodeManagers` could not store
+  batches and queues on the 2.0 stack and only logged the error. It now writes them with the UA binary
+  encoder as `.bin` files, so existing `.txt` files are not read.
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.3

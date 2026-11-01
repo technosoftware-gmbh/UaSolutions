@@ -123,7 +123,7 @@ namespace SampleCompany.NodeManagers.Reference
         {
             if (configuration?.ServerConfiguration?.DurableSubscriptionsEnabled == true)
             {
-                return new DurableMonitoredItemQueueFactory(server.Telemetry);
+                return new DurableMonitoredItemQueueFactory(server.Telemetry, server.MessageContext);
             }
             return new MonitoredItemQueueFactory(server.Telemetry);
         }
