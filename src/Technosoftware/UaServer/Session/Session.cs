@@ -675,7 +675,7 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                var id = new Guid(continuationPoint.Span);
+                var id = new Guid(continuationPoint.ToArray());
 
                 for (int ii = 0; ii < m_browseContinuationPoints.Count; ii++)
                 {
@@ -751,7 +751,7 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                var id = new Guid(continuationPoint.Span);
+                var id = new Guid(continuationPoint.ToArray());
 
                 for (int ii = 0; ii < m_historyContinuationPoints.Count; ii++)
                 {

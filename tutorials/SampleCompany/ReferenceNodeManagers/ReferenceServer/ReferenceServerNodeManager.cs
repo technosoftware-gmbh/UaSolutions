@@ -1704,7 +1704,11 @@ namespace SampleCompany.NodeManagers.Reference
                         "DataItem");
                     const string daDataItem = "DataAccess_DataItem_";
 
+#if NETFRAMEWORK
+                    var builtInTypes = (BuiltInType[])Enum.GetValues(typeof(BuiltInType));
+#else
                     BuiltInType[] builtInTypes = Enum.GetValues<BuiltInType>();
+#endif
                     foreach (BuiltInType builtInType in builtInTypes)
                     {
                         string name = builtInType.ToString();

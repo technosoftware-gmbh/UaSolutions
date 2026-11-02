@@ -21,7 +21,11 @@ namespace Technosoftware.UaUtilities
         /// <returns></returns>
         public static Signer Create()
         {
+#if NETFRAMEWORK
+            return new BouncyCastleSigner();
+#else
             return new NativeSigner();
+#endif
         }
 
         /// <summary>

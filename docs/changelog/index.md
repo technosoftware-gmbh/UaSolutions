@@ -25,6 +25,10 @@
 
 ### Changes
 
+- The built-in evaluation license is issued for 7.0. A license for an earlier major version does not
+  unlock 7.0.
+- Supports .NET 4.8 again, as in 6.1. The UaClient, UaServer, UaConfiguration and UaUtilities packages
+  target .NET 10.0, .NET 9.0, .NET 8.0 and .NET 4.8.
 - Moved to version 2.0.1 of the OPC Foundation .NET Standard stack, which needs the
   `Microsoft.Extensions.*` and `System.*` packages at 10.0.12.
 - X509 user tokens now calculate their signature the way the OPC Foundation stack does:
@@ -40,15 +44,33 @@
   batches and queues on the 2.0 stack and only logged the error. It now writes them with the UA binary
   encoder as `.bin` files, so existing `.txt` files are not read.
 
+### Known Issues
+
+- On .NET 4.8 the client can stall for 10 seconds or more under reconnect or subscription transfer
+  load with the security policies implemented by BouncyCastle there (brainpool and ChaCha20). A stall
+  longer than the session timeout closes the session. The cause appears to be thread pool starvation;
+  a fix will follow. Workaround: raise the thread pool minimum at application start-up, for example
+  `ThreadPool.SetMinThreads(64, 64)`.
+
+-------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 6.1.0
+
+### Enhancements
+
+- Added support for .NET 4.8. The UaClient, UaServer, UaConfiguration and UaUtilities packages now target
+  .NET 10.0, .NET 9.0, .NET 8.0 and .NET 4.8. The upcoming version 7 will support .NET 4.8 as well.
+- No API changes over 6.0.3 and the same OPC Foundation Stack Version 1.5.378.156.
+- On .NET 4.8 the license validation uses BouncyCastle for the signature check, because .NET Framework
+  cannot import the license keys. Licenses are the same on all target frameworks.
+
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.3
 
 ### Changes
 
-- The packages are now published to nuget.org as well as to GitHub Packages.
-- No functional changes over 6.0.2. This release exists so that the first
-  nuget.org publication carries a version number of its own; 6.0.2 remains
-  supported and behaves identically.
+- The packages are published to GitHub Packages.
+- No functional changes over 6.0.2. This release exists to get a first version on nuget.org but unfortunately
+  that was not possible. 6.0.2 remains supported and behaves identically.
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.2

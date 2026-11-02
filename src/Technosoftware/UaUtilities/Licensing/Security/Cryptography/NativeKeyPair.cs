@@ -13,6 +13,7 @@ using System;
 using System.Security.Cryptography;
 #endregion Using Directives
 
+#if !NETFRAMEWORK
 namespace Technosoftware.UaUtilities
 {
     /// <inheritdoc/>
@@ -49,3 +50,4 @@ namespace Technosoftware.UaUtilities
         }
     }
 }
+#endif
