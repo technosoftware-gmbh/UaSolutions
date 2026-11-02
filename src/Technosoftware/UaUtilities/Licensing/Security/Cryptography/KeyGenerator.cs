@@ -21,7 +21,11 @@ namespace Technosoftware.UaUtilities
         /// <returns></returns>
         public static KeyGenerator Create()
         {
+#if NETFRAMEWORK
+            return new BouncyCastleKeyGenerator();
+#else
             return new NativeKeyGenerator();
+#endif
         }
 
         ///

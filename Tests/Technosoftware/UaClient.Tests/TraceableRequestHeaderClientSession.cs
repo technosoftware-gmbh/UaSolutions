@@ -75,7 +75,11 @@ namespace Technosoftware.UaClient
                 Value = Variant.FromStructure(new SpanContextDataType
                 {
                     SpanId = BitConverter.ToUInt64(spanId),
+#if NETFRAMEWORK
+                    TraceId = (Uuid)new Guid(traceId.ToArray())
+#else
                     TraceId = (Uuid)new Guid(traceId)
+#endif
                 })
             };
             // Parameters is an immutable ArrayOf in 2.0.

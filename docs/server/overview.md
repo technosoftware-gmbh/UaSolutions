@@ -2,7 +2,7 @@
 
 The **OPC UA Server NET** offers a fast and easy access to the OPC Unified Architecture (UA) technology.
 
-Develop OPC UA compliant Servers with C# targeting .NET 10.0. Up to versin 5 we also support .NET 9.0, .NET 8.0 and .NET 4.8 and .NET 4.7.2 support for backward compatibility.
+Develop OPC UA compliant Servers with C# targeting .NET 10.0, .NET 9.0 and .NET 8.0. Starting with version 6.1 we also support .NET 4.8, and the upcoming version 7 will support it as well. .NET 4.7.2 is only supported up to version 5.
 
 .NET allows you develop applications that run on all common platforms available today, including Linux, macOS and Windows 11/10 (including embedded/IoT editions) without requiring platform-specific modifications.
 
