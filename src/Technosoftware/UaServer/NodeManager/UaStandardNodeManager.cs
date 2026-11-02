@@ -1651,6 +1651,8 @@ namespace Technosoftware.UaServer
                         continue;
                     }
 
+                    DateTime readTime = DateTime.UtcNow;
+
                     // read the attribute value.
                     errors[ii] = handle.Node.ReadAttribute(
                         systemContext,
@@ -1666,16 +1668,29 @@ namespace Technosoftware.UaServer
                     {
                         if (value.SourceTimestamp == DateTime.MinValue)
                         {
-                            value = value.WithSourceTimestamp(DateTime.UtcNow);
+                            value = value.WithSourceTimestamp(readTime);
                         }
-                        value = value.WithServerTimestamp(value.SourceTimestamp);
+
+                        // ServerTimestamp reflects when the Server verified the value. A
+                        // value whose SourceTimestamp was produced as part of this read (e.g.
+                        // ServerStatus children) keeps ServerTimestamp aligned with
+                        // SourceTimestamp; a stored/static value is verified now, so
+                        // ServerTimestamp is stamped with the current read time.
+                        if (value.SourceTimestamp >= readTime)
+                        {
+                            value = value.WithServerTimestamp(value.SourceTimestamp);
+                        }
+                        else
+                        {
+                            value = value.WithServerTimestamp(readTime);
+                        }
                     }
                     else
                     {
                         // For non-value attributes, only ServerTimestamp is relevant
                         if (value.ServerTimestamp == DateTime.MinValue)
                         {
-                            value = value.WithServerTimestamp(DateTime.UtcNow);
+                            value = value.WithServerTimestamp(readTime);
                         }
                     }
 #if DEBUG
