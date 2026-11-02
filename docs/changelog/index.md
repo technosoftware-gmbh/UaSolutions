@@ -43,14 +43,9 @@
 - The durable subscription sample in `tutorials/SampleCompany/ReferenceNodeManagers` could not store
   batches and queues on the 2.0 stack and only logged the error. It now writes them with the UA binary
   encoder as `.bin` files, so existing `.txt` files are not read.
-
-### Known Issues
-
-- On .NET 4.8 the client can stall for 10 seconds or more under reconnect or subscription transfer
-  load with the security policies implemented by BouncyCastle there (brainpool and ChaCha20). A stall
-  longer than the session timeout closes the session. The cause appears to be thread pool starvation;
-  a fix will follow. Workaround: raise the thread pool minimum at application start-up, for example
-  `ThreadPool.SetMinThreads(64, 64)`.
+- On .NET 4.8 the client could stall for 10 seconds or more during reconnects and subscription
+  transfers, long enough to close the session. Each publish response blocked a thread pool thread
+  while a reconnect held its lock; it now waits for the lock asynchronously.
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.1.0
