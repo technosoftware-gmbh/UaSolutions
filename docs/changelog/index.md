@@ -22,6 +22,14 @@
   On a secured channel a missing or empty nonce is rejected with `BadNonceInvalid`, where a missing
   one used to be accepted. A nonce longer than 128 bytes is rejected on every channel. Clients that
   do not send a nonce on a secured channel must now do so.
+- `RequestManager.CancelRequests` takes the session ID of the Cancel request, and Cancel now only
+  matches requests of that session. A session could cancel another session's requests before.
+- An event monitored item that asks for a queue size of 0 or 1 now gets the server default of 1000
+  (`EventManager.DefaultEventQueueSize`), as OPC 10000-4 7.21 defines for events. It used to get a
+  queue of one.
+- History reads: a read-modified request with returnBounds set returns `BadInvalidArgument`, and a
+  ReadRawModified request without the times it needs returns `BadHistoryOperationInvalid` instead of
+  `BadInvalidTimestampArgument`. `TimestampsToReturn.Neither` is rejected for history reads.
 
 ### Changes
 
@@ -46,6 +54,25 @@
 - On .NET 4.8 the client could stall for 10 seconds or more during reconnects and subscription
   transfers, long enough to close the session. Each publish response blocked a thread pool thread
   while a reconnect held its lock; it now waits for the lock asynchronously.
+- Ported the fixes of the OPC Foundation 1.5.378 maintenance line, which the client and server
+  sources are based on:
+  - Security: the server always issues random authentication tokens, also on secured channels; user
+    identity token decryption errors no longer reveal their cause to the client; the session nonce is
+    at least 32 bytes, which fixes connections with Basic128Rsa15; history continuation points have a
+    limit, with the new `Session.TrySaveHistoryContinuationPoint`.
+  - Server publishing: a publish request could be stranded so that notifications stopped; publish
+    queue timestamp ordering; a publish with the maximum TimeoutHint; MaxNotificationsPerPublish 0 now
+    means unlimited; queued data is delivered right after a durable subscription transfer; only the
+    excess sent messages are evicted when the retransmission queue is full.
+  - Server events: the trailing event of a filtered-retain item carries Retain = false; RefreshRequired
+    is sent after an event queue overflow lost Condition events; the OpenSecureChannel audit event
+    carries the ClientAuditEntryId; triggered items are set for items already queued for publishing.
+  - Server browse and read: browse continuation point limits; no continuation point is returned with
+    BadNoContinuationPoints or once a browse is finished; ServerTimestamp is the read time for stored
+    values; the ServerConfiguration ApplicationUri and ProductUri are filled; aggregate fixes found by
+    the CTT.
+  - Client: the endpoint list of CreateSession is validated regardless of order; reverse connections
+    are held for their own hold time when several servers share one listener.
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.1.0
