@@ -25,6 +25,8 @@
 
 ### Changes
 
+- The built-in evaluation license is issued for 7.0. A license for an earlier major version does not
+  unlock 7.0.
 - Supports .NET 4.8 again, as in 6.1. The UaClient, UaServer, UaConfiguration and UaUtilities packages
   target .NET 10.0, .NET 9.0, .NET 8.0 and .NET 4.8.
 - Moved to version 2.0.1 of the OPC Foundation .NET Standard stack, which needs the

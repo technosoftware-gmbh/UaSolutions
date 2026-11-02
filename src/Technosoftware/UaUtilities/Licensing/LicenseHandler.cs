@@ -90,7 +90,7 @@ namespace Technosoftware.UaUtilities
                                           <Product>
                                             <Name>OPC UA Solutions</Name>
                                             <Type>ClientAndServer</Type>
-                                            <Version>6.0.0</Version>
+                                            <Version>7.0.0</Version>
                                             <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
                                           </Product>
                                           <License>
@@ -116,7 +116,7 @@ namespace Technosoftware.UaUtilities
                                             <Attribute name=""Product Identity"">a8482b9cc1d5cf8519bb80e0c979315703643f74ced77435eae31a6208b9c738</Attribute>
                                             <Attribute name=""Assembly Identity""></Attribute>
                                           </LicenseAttributes>
-                                          <Signature>MIGIAkIByabU63PQgwCwpoMJf5vfvNheg4hhd27e+24Ieyd3jr0rdlctW5C/oY8n07eJNO1rwPto6FuYlAu0xA2HAwk++loCQgHjWKwBWH+DY/S10SQMHVfP+LBJMQATPHu0dSZ65Td8OuYm7DywDIhiCHtwqR7atAdv45uvCPizRrtBrANCguJiJw==</Signature>
+                                          <Signature>MIGHAkEqasMWOapfccOYgamqV3vplI2Zqf8AvuUYwPxmUD1kVHnJjArpfpd+6+BuHAJjDUPttYiDUmB2zb2c7PJooWm/7wJCANd3jHy8q17tKg2/nsyDyfCYO9qNgvE0ORWP2qZ4u+P3a+FHgEGNQPHG5HmmzMMkFP5Dmb2MIphTVK4T+eoNIsvt</Signature>
                                         </License>";
 #pragma warning restore RCS1266 // Use raw string literal
         #endregion Constants
