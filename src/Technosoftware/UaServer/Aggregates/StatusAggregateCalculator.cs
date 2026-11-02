@@ -151,7 +151,7 @@ namespace Technosoftware.UaServer
                 DataValue startBound = GetSimpleBound(startTime, slice);
                 int startIndex = TimeFlowsBackward ? values.Count - 1 : 0;
 
-                if (startBound != null &&
+                if (!startBound.IsNull &&
                     (values.Count == 0 || values[startIndex].SourceTimestamp != startTime))
                 {
                     if (TimeFlowsBackward)

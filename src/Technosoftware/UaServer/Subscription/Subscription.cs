@@ -647,7 +647,7 @@ namespace Technosoftware.UaServer
                 // checked its monitored item queues. Force the next timer check to inspect
                 // queued data before the new session's first Publish, even when initial
                 // values were not requested.
-                m_publishTimerExpiry = HiResClock.TickCount64 - 1;
+                m_publishTimerExpiry = m_timeProvider.GetTimestampMilliseconds() - 1;
             }
 
             lock (DiagnosticsWriteLock)

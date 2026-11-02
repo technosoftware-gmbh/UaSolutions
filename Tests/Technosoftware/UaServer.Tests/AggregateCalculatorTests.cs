@@ -646,7 +646,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(result, Is.Not.Null);
             Assert.That(result.WrappedValue.IsNull, Is.False);
             Assert.That(
-                Convert.ToDouble(result.Value, CultureInfo.InvariantCulture),
+                Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture),
                 Is.EqualTo(10.0).Within(0.0001));
         }
     }

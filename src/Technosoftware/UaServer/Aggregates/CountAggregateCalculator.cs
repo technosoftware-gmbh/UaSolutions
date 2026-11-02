@@ -220,7 +220,7 @@ namespace Technosoftware.UaServer
             // The first non-bad value is a transition when no previous non-bad value exists.
             LinkedListNode<DataValue> previousValue = slice.NonBadEarlyBound;
             bool hasLastValue = previousValue != null;
-            object lastValue = previousValue?.Value.Value;
+            Variant lastValue = hasLastValue ? previousValue.Value.WrappedValue : default;
 
             // count the transitions.
             int count = 0;
@@ -232,9 +232,9 @@ namespace Technosoftware.UaServer
                     continue;
                 }
 
-                object nextValue = values[ii].Value;
+                Variant nextValue = values[ii].WrappedValue;
 
-                if (!hasLastValue || !Utils.IsEqual(lastValue, nextValue))
+                if (!hasLastValue || lastValue != nextValue)
                 {
                     count++;
                 }
