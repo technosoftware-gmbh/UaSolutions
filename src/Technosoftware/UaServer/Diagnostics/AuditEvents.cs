@@ -1624,6 +1624,13 @@ namespace Technosoftware.UaServer
                     actionTimestamp
                 ); // initializes Status, ActionTimeStamp, ServerId, ClientAuditEntryId, ClientUserId
 
+                // the channel has no session context yet: the audit entry id comes from the request.
+                e.SetChildValue(
+                    systemContext,
+                    BrowseNames.ClientAuditEntryId,
+                    request?.RequestHeader?.AuditEntryId,
+                    false);
+
                 e.SetChildValue(
                     systemContext,
                     BrowseNames.SourceName,
