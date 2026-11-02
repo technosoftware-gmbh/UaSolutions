@@ -259,7 +259,11 @@ namespace Technosoftware.UaServer.UserDatabase
 
         private static bool Check(string hash, ReadOnlySpan<byte> password)
         {
+#if NETFRAMEWORK
+            string[] parts = Array.ConvertAll(hash.Split(['.'], 3), part => part.Trim());
+#else
             string[] parts = hash.Split('.', 3, StringSplitOptions.TrimEntries);
+#endif
 
             if (parts.Length != 3)
             {

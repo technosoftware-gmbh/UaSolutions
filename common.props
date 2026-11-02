@@ -6,7 +6,7 @@
          mechanism is used in the UaSolutionsNet repository. Do not set
          VersionPrefix/VersionSuffix here: a hardcoded prefix plus a date-stamped
          suffix shadows MinVer and makes the version non-reproducible. -->
-    <MinVerMinimumMajorMinor>6.0</MinVerMinimumMajorMinor>
+    <MinVerMinimumMajorMinor>6.1</MinVerMinimumMajorMinor>
     <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
     <Copyright>Copyright © 2026 Technosoftware GmbH</Copyright>
     <PackagePrefix>Technosoftware.UaSolutions</PackagePrefix>
