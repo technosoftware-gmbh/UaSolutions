@@ -15,12 +15,14 @@
 
 #region Using Directives
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -67,13 +69,33 @@ namespace SampleCompany.Common
         }
 
         /// <inheritdoc/>
+        public Meter CreateMeter(Assembly assembly)
+        {
+            AssemblyName name = (assembly ?? throw new ArgumentNullException(nameof(assembly))).GetName();
+            return new Meter(name.Name, name.Version?.ToString());
+        }
+
+        /// <inheritdoc/>
         public ActivitySource ActivitySource { get; }
+
+        /// <inheritdoc/>
+        public ActivitySource GetActivitySource(Assembly assembly)
+        {
+            AssemblyName name = (assembly ?? throw new ArgumentNullException(nameof(assembly))).GetName();
+            return m_activitySources.GetOrAdd(
+                name.Name,
+                key => new ActivitySource(key, name.Version?.ToString()));
+        }
 
         /// <inheritdoc/>
         public void Dispose()
         {
             CreateMeter().Dispose();
             ActivitySource.Dispose();
+            foreach (ActivitySource activitySource in m_activitySources.Values)
+            {
+                activitySource.Dispose();
+            }
             LoggerFactory.Dispose();
 
             AppDomain.CurrentDomain.UnhandledException -= CurrentDomain_UnhandledException;
@@ -195,6 +217,7 @@ namespace SampleCompany.Common
         }
 
         private Microsoft.Extensions.Logging.ILogger m_logger;
+        private readonly ConcurrentDictionary<string, ActivitySource> m_activitySources = new();
     }
 
     /// <summary>

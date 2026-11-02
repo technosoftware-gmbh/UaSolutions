@@ -18,6 +18,27 @@
   The package IDs now match the assembly names; namespaces and assembly names are unchanged.
   The four libraries are published to nuget.org and GitHub Packages. The 6.x packages remain
   available on GitHub Packages under their old IDs.
+- `UaStandardServer.CreateSessionAsync` now applies the client nonce rules of OPC 10000-4 5.7.2.3.
+  On a secured channel a missing or empty nonce is rejected with `BadNonceInvalid`, where a missing
+  one used to be accepted. A nonce longer than 128 bytes is rejected on every channel. Clients that
+  do not send a nonce on a secured channel must now do so.
+
+### Changes
+
+- Moved to version 2.0.1 of the OPC Foundation .NET Standard stack, which needs the
+  `Microsoft.Extensions.*` and `System.*` packages at 10.0.12.
+- X509 user tokens now calculate their signature the way the OPC Foundation stack does:
+  - The client uses the security policy of the user token instead of the channel. This also
+    changes the signature on a secured channel whose security policy differs from the token's.
+  - On a None channel with an enhanced user token policy, client and server sign and verify
+    `ServerNonce | Hash(ServerCertificate) | ClientNonce`.
+  - The server keeps the client nonce sent on a None channel, which that signature covers. A
+    short nonce stays accepted there.
+
+  A session of this kind failed between this version and the OPC Foundation stack before.
+- The durable subscription sample in `tutorials/SampleCompany/ReferenceNodeManagers` could not store
+  batches and queues on the 2.0 stack and only logged the error. It now writes them with the UA binary
+  encoder as `.bin` files, so existing `.txt` files are not read.
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.0.3

@@ -450,18 +450,23 @@ namespace Technosoftware.UaServer
                 }
 
                 // verify the nonce provided by the client.
-                if (!clientNonce.IsNull)
+                if (context.SecurityPolicyUri != SecurityPolicies.None)
                 {
-                    if (clientNonce.Length < m_minNonceLength)
+                    if (clientNonce.Length < m_minNonceLength || clientNonce.Length > 128)
                     {
                         throw new ServiceResultException(StatusCodes.BadNonceInvalid);
                     }
-
-                    // ignore nonce if security policy set to none
-                    if (context.SecurityPolicyUri == SecurityPolicies.None)
-                    {
-                        clientNonce = default;
-                    }
+                }
+                else if (clientNonce.Length > 128)
+                {
+                    // A nonce sent on a None channel is kept: the None channel
+                    // variant of an enhanced user token signature
+                    // (ServerNonce | Hash(ServerCertificate) | ClientNonce)
+                    // covers the nonce the client sent. Part 4 5.7.2.3 (Table 16)
+                    // requires Bad_NonceInvalid for a nonce longer than 128 bytes
+                    // on every channel. An empty or short nonce stays accepted on
+                    // a None channel, where nothing else requires one.
+                    throw new ServiceResultException(StatusCodes.BadNonceInvalid);
                 }
 
                 // load the certificate for the security profile. The session takes
@@ -566,11 +571,11 @@ namespace Technosoftware.UaServer
                         SecureChannelContext channelContext = context.ChannelContext;
 
                         byte[] dataToSign = securityPolicy.GetServerSignatureData(
-                            channelContext.ChannelThumbprint,
+                            channelContext.ChannelThumbprint.ToArrayOrNull(),
                             clientNonce.ToArray(),
-                            channelContext.ServerChannelCertificate,
+                            channelContext.ServerChannelCertificate.ToArrayOrNull(),
                             parsedClientCertificate.RawData,
-                            channelContext.ClientChannelCertificate,
+                            channelContext.ClientChannelCertificate.ToArrayOrNull(),
                             serverNonce.ToArray());
 
                         serverSignature = policies.CreateSignatureData(

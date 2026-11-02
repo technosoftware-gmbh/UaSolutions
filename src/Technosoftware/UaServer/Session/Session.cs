@@ -474,11 +474,11 @@ namespace Technosoftware.UaServer
                     byte[] clientNonceData = ClientNonce.ToArray();
 
                     byte[] dataToSign = securityPolicy.GetClientSignatureData(
-                        context.ChannelContext.ChannelThumbprint,
+                        context.ChannelContext.ChannelThumbprint.ToArrayOrNull(),
                         m_serverNonce.Data,
                         m_serverCertificate.RawData,
-                        context.ChannelContext.ServerChannelCertificate,
-                        context.ChannelContext.ClientChannelCertificate,
+                        context.ChannelContext.ServerChannelCertificate.ToArrayOrNull(),
+                        context.ChannelContext.ClientChannelCertificate.ToArrayOrNull(),
                         clientNonceData);
 
                     if (!m_securityPolicies.VerifySignatureData(
@@ -507,11 +507,11 @@ namespace Technosoftware.UaServer
                             byte[] serverCertificateChainData = [.. serverCertificateChainList];
 
                             dataToSign = securityPolicy.GetClientSignatureData(
-                                context.ChannelContext.ChannelThumbprint,
+                                context.ChannelContext.ChannelThumbprint.ToArrayOrNull(),
                                 m_serverNonce.Data,
                                 serverCertificateChainData,
-                                context.ChannelContext.ServerChannelCertificate,
-                                context.ChannelContext.ClientChannelCertificate,
+                                context.ChannelContext.ServerChannelCertificate.ToArrayOrNull(),
+                                context.ChannelContext.ClientChannelCertificate.ToArrayOrNull(),
                                 clientNonceData);
 
                             if (!m_securityPolicies.VerifySignatureData(
@@ -1046,13 +1046,14 @@ namespace Technosoftware.UaServer
                     byte[] clientNonceData = ClientNonce.ToArray();
 
                     byte[] dataToSign = securityPolicy.GetUserTokenSignatureData(
-                        channelContext.ChannelThumbprint,
+                        channelContext.ChannelThumbprint.ToArrayOrNull(),
                         m_serverNonce.Data,
                         m_serverCertificate.RawData,
-                        channelContext.ServerChannelCertificate,
+                        channelContext.ServerChannelCertificate.ToArrayOrNull(),
                         ClientCertificate?.RawData,
-                        channelContext.ClientChannelCertificate,
-                        clientNonceData);
+                        channelContext.ClientChannelCertificate.ToArrayOrNull(),
+                        clientNonceData,
+                        EndpointDescription.SecurityMode);
 
                     if (!await handler.VerifyAsync(
                             dataToSign,
@@ -1078,13 +1079,14 @@ namespace Technosoftware.UaServer
                             }
 
                             dataToSign = securityPolicy.GetUserTokenSignatureData(
-                                channelContext.ChannelThumbprint,
+                                channelContext.ChannelThumbprint.ToArrayOrNull(),
                                 m_serverNonce.Data,
                                 [.. serverCertificateChainList],
-                                channelContext.ServerChannelCertificate,
+                                channelContext.ServerChannelCertificate.ToArrayOrNull(),
                                 ClientCertificate?.RawData,
-                                channelContext.ClientChannelCertificate,
-                                clientNonceData);
+                                channelContext.ClientChannelCertificate.ToArrayOrNull(),
+                                clientNonceData,
+                                EndpointDescription.SecurityMode);
 
                             if (!await handler.VerifyAsync(
                                     dataToSign,

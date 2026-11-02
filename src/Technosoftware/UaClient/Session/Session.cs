@@ -278,6 +278,18 @@ namespace Technosoftware.UaClient
         }
 
         /// <summary>
+        /// Returns the security policy of the selected user token policy, which
+        /// defines how a UserTokenSignature is calculated (OPC 10000-4 6.1.8), or
+        /// the channel policy when the token policy is not available.
+        /// </summary>
+        private SecurityPolicyInfo GetUserTokenPolicyInfo(
+            string? tokenSecurityPolicyUri,
+            SecurityPolicyInfo channelSecurityPolicy)
+        {
+            return m_securityPolicies.GetInfo(tokenSecurityPolicyUri ?? string.Empty) ?? channelSecurityPolicy;
+        }
+
+        /// <summary>
         /// Validates the server nonce and security parameters of user identity.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
@@ -1307,14 +1319,16 @@ namespace Technosoftware.UaClient
                 if (identityToken.Token is X509IdentityToken)
                 {
                     // sign data with user token.
-                    byte[] userTokenDataToSign = securityPolicy.GetUserTokenSignatureData(
-                        TransportChannel.ChannelThumbprint,
-                        serverNonce.ToArray(),
-                        serverCertificate?.RawData,
-                        TransportChannel.ServerChannelCertificate,
-                        m_instanceCertificate?.RawData,
-                        TransportChannel.ClientChannelCertificate,
-                        clientNonce);
+                    byte[] userTokenDataToSign = GetUserTokenPolicyInfo(tokenSecurityPolicyUri, securityPolicy)
+                        .GetUserTokenSignatureData(
+                            TransportChannel.ChannelThumbprint,
+                            serverNonce.ToArray(),
+                            serverCertificate?.RawData,
+                            TransportChannel.ServerChannelCertificate,
+                            m_instanceCertificate?.RawData,
+                            TransportChannel.ClientChannelCertificate,
+                            clientNonce,
+                            m_endpoint.Description.SecurityMode);
 
                     userTokenSignature = await identityToken.SignAsync(
                         userTokenDataToSign,
@@ -1544,14 +1558,16 @@ namespace Technosoftware.UaClient
 
             if (identityToken.Token is X509IdentityToken)
             {
-                byte[] userTokenDataToSign = securityPolicy.GetUserTokenSignatureData(
-                    TransportChannel.ChannelThumbprint,
-                    serverNonce.ToArray(),
-                    m_serverCertificate?.RawData,
-                    TransportChannel.ServerChannelCertificate,
-                    m_instanceCertificate?.RawData,
-                    TransportChannel.ClientChannelCertificate,
-                    m_clientNonce ?? []);
+                byte[] userTokenDataToSign = GetUserTokenPolicyInfo(tokenSecurityPolicyUri, securityPolicy)
+                    .GetUserTokenSignatureData(
+                        TransportChannel.ChannelThumbprint,
+                        serverNonce.ToArray(),
+                        m_serverCertificate?.RawData,
+                        TransportChannel.ServerChannelCertificate,
+                        m_instanceCertificate?.RawData,
+                        TransportChannel.ClientChannelCertificate,
+                        m_clientNonce ?? [],
+                        m_endpoint.Description.SecurityMode);
 
                 userTokenSignature = await identityToken.SignAsync(
                     userTokenDataToSign,
@@ -2543,14 +2559,16 @@ namespace Technosoftware.UaClient
 
                 if (identityToken.Token is X509IdentityToken)
                 {
-                    byte[] userTokenDataToSign = securityPolicy.GetUserTokenSignatureData(
-                        channelThumbprint,
-                        m_serverNonce.ToArray(),
-                        m_serverCertificate?.RawData,
-                        serverChannelCertificate,
-                        m_instanceCertificate?.RawData,
-                        clientChannelCertificate,
-                        m_clientNonce ?? []);
+                    byte[] userTokenDataToSign = GetUserTokenPolicyInfo(userTokenSecurityPolicyUri, securityPolicy)
+                        .GetUserTokenSignatureData(
+                            channelThumbprint,
+                            m_serverNonce.ToArray(),
+                            m_serverCertificate?.RawData,
+                            serverChannelCertificate,
+                            m_instanceCertificate?.RawData,
+                            clientChannelCertificate,
+                            m_clientNonce ?? [],
+                            m_endpoint.Description.SecurityMode);
 
                     userTokenSignature = await identityToken.SignAsync(
                         userTokenDataToSign,
