@@ -617,7 +617,7 @@ namespace Technosoftware.UaServer
                 m_browseContinuationPoints ??= [];
 
                 // remove the first continuation point if too many points.
-                while (m_browseContinuationPoints.Count > MaxBrowseContinuationPoints)
+                while (m_browseContinuationPoints.Count >= MaxBrowseContinuationPoints)
                 {
                     UaContinuationPoint cp = m_browseContinuationPoints[0];
                     m_browseContinuationPoints.RemoveAt(0);
