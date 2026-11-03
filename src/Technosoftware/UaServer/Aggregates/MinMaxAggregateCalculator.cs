@@ -239,7 +239,7 @@ namespace Technosoftware.UaServer
             }
 
             // set calculated if not returning actual time and value is not at the start time.
-            if (!returnActualTime && processedTimestamp != slice.StartTime)
+            if (!returnActualTime && processedTimestamp != GetTimestamp(slice))
             {
                 statusCode = statusCode.SetAggregateBits(AggregateBits.Calculated);
             }
@@ -423,7 +423,7 @@ namespace Technosoftware.UaServer
 
             // set calculated if not returning actual time and value is not at the start time.
             if (!returnActualTime &&
-                processedTimestamp != slice.StartTime &&
+                processedTimestamp != GetTimestamp(slice) &&
                 (statusCode.AggregateBits & AggregateBits.Interpolated) == 0)
             {
                 statusCode = statusCode.SetAggregateBits(
