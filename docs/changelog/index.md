@@ -1,6 +1,64 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 6.2.0
+
+Update to the OPC Foundation Stack Version 1.5.378.182, together with the server and client fixes of the
+1.5.378 maintenance line (master378) ported into the UaServer, UaClient and UaConfiguration source, including
+fixes that are not yet in an OPC Foundation release.
+
+### Security
+
+- Certificate renewal (ServerConfiguration.UpdateCertificate) validates the new certificate against the
+  server's configured trust and issuer stores and its certificate validation policy. For the application
+  certificate group, issuer certificates supplied in the request are ignored: the issuer must already be
+  in the server's trust list. Previously a certificate signed by an arbitrary CA was accepted when the
+  client passed that CA along (upstream #4678).
+- Cancel only affects the requests of the session that sends it; before, a client could cancel requests
+  of other sessions with a matching request handle (upstream #4267).
+- Session authentication tokens are always random 32-byte values, and identity token decryption failures
+  are reported as BadIdentityTokenInvalid without details of the cause (upstream #4665).
+- Server nonces have the length the security policy requires, which fixes connections with
+  Basic128Rsa15 (upstream #4904).
+- The per-session limits for browse and history continuation points are enforced (upstream #4270, #4862).
+
+### Behaviour Changes
+
+- The default AggregateConfiguration has TreatUncertainAsBad = true, as OPC UA Part 13 specifies, and the
+  aggregate calculators return the CTT-conformant status codes (upstream #4326).
+- HistoryRead rejects TimestampsToReturn.Neither with BadTimestampsToReturnInvalid, a raw-modified read
+  without bounds with BadHistoryOperationInvalid, and a read-modified request with ReturnBounds with
+  BadInvalidArgument (upstream #4326, #4888).
+- Event monitored items created with QueueSize 0 get a queue of EventManager.DefaultEventQueueSize (1000)
+  events instead of 1 (upstream #4932).
+- MaxNotificationsPerPublish = 0 is treated as unlimited (upstream #4263).
+- A subscription that overflowed an event queue holding condition events sends RefreshRequired (upstream #4925).
+- When the retransmission queue is full, only the excess sent messages are evicted (upstream #4920).
+- A filtered-retain monitored item gets the trailing event of a condition with Retain = false (upstream #4454).
+- Queued data is delivered right after a durable subscription transfer (upstream #4622) and after
+  ResendData (upstream #4926).
+- The client no longer blocks a thread pool thread per outstanding publish while a reconnect or transfer
+  is in progress, which could stall clients on .NET 4.8.
+- Further fixes for the publish queue (#4017, #4084, #4373), browse continuation points (#4168, #4266,
+  #4268), endpoint validation (#4269), ServerTimestamp on reads (#4260), reverse connect (#4341) and
+  the ServerConfiguration URIs (#4592).
+
+### API Changes
+
+- `RequestManager.CancelRequests(NodeId sessionId, uint requestHandle, out uint cancelCount)` is new.
+  `CancelRequests(uint requestHandle, out uint cancelCount)` is kept, marked `[Obsolete]`, and still
+  matches requests of all sessions.
+- `UaMonitoredItem.CanSendFilteredAlarm` has an overload with an `out bool overrideRetain` parameter.
+- `Session.TrySaveHistoryContinuationPoint` and `EventManager.DefaultEventQueueSize` are new.
+- `SetOutputFilePath`, `SetDeleteOnLoad` and `SetTraceMasks` of the application configuration builder are
+  `[Obsolete]`, following the obsolete `ApplicationConfiguration.TraceConfiguration` of the stack. Use
+  `ITelemetryContext` and `ILogger` based logging instead.
+
+### Integrated OPC UA Stack Version
+
+- Use of the original OPC Foundation Stack Version 1.5.378.182
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.1.0
 
 ### Enhancements
