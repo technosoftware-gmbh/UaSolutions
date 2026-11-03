@@ -15,7 +15,8 @@ fixes that are not yet in an OPC Foundation release.
   in the server's trust list. Previously a certificate signed by an arbitrary CA was accepted when the
   client passed that CA along (upstream #4678).
 - Cancel only affects the requests of the session that sends it; before, a client could cancel requests
-  of other sessions with a matching request handle (upstream #4267).
+  of other sessions with a matching request handle (upstream #4267). Cancelling a request that has no
+  session yet, such as an ActivateSession, no longer throws (upstream #3853).
 - Session authentication tokens are always random 32-byte values, and identity token decryption failures
   are reported as BadIdentityTokenInvalid without details of the cause (upstream #4665).
 - Server nonces have the length the security policy requires, which fixes connections with
