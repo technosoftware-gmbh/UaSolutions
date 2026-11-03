@@ -118,6 +118,7 @@ namespace Technosoftware.UaClient.Tests
                     pkiRoot);
 
             // build the application configuration.
+#pragma warning disable CS0618 // Type or member is obsolete
             Config = await application
                 .CreateApplicationConfigurationManager(
                     "urn:localhost:opcfoundation.org:" + clientName,
@@ -140,6 +141,7 @@ namespace Technosoftware.UaClient.Tests
                 .SetOutputFilePath(Path.Combine(pkiRoot, "Logs", "Opc.Ua.Client.Tests.log.txt"))
                 .CreateAsync()
                 .ConfigureAwait(false);
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // check the application certificate.
             bool haveAppCertificate = await application

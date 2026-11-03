@@ -256,7 +256,7 @@ namespace Technosoftware.UaClient
             try
             {
                 // process any continuation point.
-                while (continuationPoint != null)
+                while (continuationPoint?.Length > 0)
                 {
                     ReferenceDescriptionCollection additionalReferences;
 

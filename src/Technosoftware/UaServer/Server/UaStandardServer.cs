@@ -937,7 +937,10 @@ namespace Technosoftware.UaServer
 
             try
             {
-                m_serverInternal.RequestManager.CancelRequests(requestHandle, out uint cancelCount);
+                m_serverInternal.RequestManager.CancelRequests(
+                    context.SessionId,
+                    requestHandle,
+                    out uint cancelCount);
 
                 return Task.FromResult(new CancelResponse
                 {
@@ -2835,10 +2838,9 @@ namespace Technosoftware.UaServer
                     ct: cancellationToken).ConfigureAwait(false);
 
                 // update trace configuration.
+#pragma warning disable CS0618 // Type or member is obsolete
                 Configuration.TraceConfiguration = configuration.TraceConfiguration ??
                     new TraceConfiguration();
-
-#pragma warning disable CS0618 // Type or member is obsolete
                 Configuration.TraceConfiguration.ApplySettings();
 #pragma warning restore CS0618 // Type or member is obsolete
             }

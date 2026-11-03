@@ -704,6 +704,8 @@ namespace Technosoftware.UaServer
                     // owned by this node manager.
                     nodeToRead.Processed = true;
 
+                    DateTime readTime = DateTime.UtcNow;
+
                     // read the default value (also verifies that the attribute id is valid for the node).
                     ServiceResult error = node.Read(context, nodeToRead.AttributeId, value);
 
@@ -769,14 +771,16 @@ namespace Technosoftware.UaServer
                         // Set SourceTimestamp if not already set by the node
                         if (value.SourceTimestamp == DateTime.MinValue)
                         {
-                            value.SourceTimestamp = DateTime.UtcNow;
+                            value.SourceTimestamp = readTime;
                         }
 
-                        // Set ServerTimestamp to match SourceTimestamp for Value attributes
-                        // This ensures ServerTimestamp and SourceTimestamp are equal,
-                        // which is important for nodes like ServerStatus children where
-                        // the node's read callback sets a specific timestamp
-                        value.ServerTimestamp = value.SourceTimestamp;
+                        // Set timestamps after ReadAttribute. ServerTimestamp reflects
+                        // when the Server verified the value. A value whose
+                        // SourceTimestamp was produced as part of this read (e.g.
+                        // ServerStatus children) keeps ServerTimestamp aligned with
+                        // SourceTimestamp; a stored/static value is verified now, so
+                        // ServerTimestamp is stamped with the current read time.
+                        value.ServerTimestamp = value.SourceTimestamp >= readTime ? value.SourceTimestamp : readTime;
                     }
                 }
             }

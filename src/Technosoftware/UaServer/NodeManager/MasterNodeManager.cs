@@ -1234,7 +1234,11 @@ namespace Technosoftware.UaServer
                 BrowseDescription nodeToBrowse = nodesToBrowse[ii];
 
                 // initialize result.
-                var result = new BrowseResult { StatusCode = StatusCodes.Good };
+                var result = new BrowseResult
+                {
+                    StatusCode = StatusCodes.Good,
+                    ContinuationPoint = default
+                };
                 results.Add(result);
 
                 ServiceResult error;
@@ -1394,7 +1398,11 @@ namespace Technosoftware.UaServer
                         .ConfigureAwait(false);
                     if (ServiceResult.IsBad(validationResult))
                     {
-                        var badResult = new BrowseResult { StatusCode = validationResult.Code };
+                        var badResult = new BrowseResult
+                        {
+                            StatusCode = validationResult.Code,
+                            ContinuationPoint = default
+                        };
                         results.Add(badResult);
 
                         // put placeholder for diagnostics
@@ -1404,7 +1412,11 @@ namespace Technosoftware.UaServer
                 }
 
                 // initialize result.
-                var result = new BrowseResult { StatusCode = StatusCodes.Good };
+                var result = new BrowseResult
+                {
+                    StatusCode = StatusCodes.Good,
+                    ContinuationPoint = default
+                };
                 results.Add(result);
 
                 // check if simply releasing the continuation point.
@@ -1476,7 +1488,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // check for continuation point.
-                if (cp != null)
+                if (cp != null && ServiceResult.IsGood(error))
                 {
                     result.StatusCode = StatusCodes.Good;
                     result.ContinuationPoint = cp.Id.ToByteArray();
@@ -1579,7 +1591,7 @@ namespace Technosoftware.UaServer
             result.References = references;
 
             // save continuation point.
-            if (cp != null)
+            if (cp != null && ServiceResult.IsGood(error))
             {
                 result.StatusCode = StatusCodes.Good;
                 result.ContinuationPoint = cp.Id.ToByteArray();
@@ -1661,7 +1673,8 @@ namespace Technosoftware.UaServer
                 {
                     if (!assignContinuationPoint)
                     {
-                        return (StatusCodes.BadNoContinuationPoints, cp, references);
+                        cp.Dispose();
+                        return (StatusCodes.BadNoContinuationPoints, null, references);
                     }
 
                     cp.Id = Guid.NewGuid();

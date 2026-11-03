@@ -3414,7 +3414,7 @@ namespace Technosoftware.UaClient
                 AsyncRequestStarted(task, activity, requestHeader.RequestHandle, DataTypes.PublishRequest);
                 task.ConfigureAwait(false)
                     .GetAwaiter()
-                    .OnCompleted(() => OnPublishComplete(
+                    .OnCompleted(() => _ = OnPublishCompleteAsync(
                         task,
                         SessionId,
                         acknowledgementsToSend,
@@ -3452,7 +3452,13 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Completes an asynchronous publish operation.
         /// </summary>
-        private void OnPublishComplete(
+        /// <remarks>
+        /// Runs on a thread pool thread for every publish response, so it waits for the
+        /// reconnect lock asynchronously: a synchronous wait holds one pool thread per
+        /// outstanding publish for as long as a reconnect or transfer holds the lock, which
+        /// on .NET Framework can stall the process while the pool slowly adds threads.
+        /// </remarks>
+        private async Task OnPublishCompleteAsync(
             Task<PublishResponse> task,
             NodeId sessionId,
             SubscriptionAcknowledgementCollection acknowledgementsToSend,
@@ -3469,7 +3475,7 @@ namespace Technosoftware.UaClient
             try
             {
                 // gate entry if transfer/reactivate is busy
-                m_reconnectLock.Wait();
+                await m_reconnectLock.WaitAsync().ConfigureAwait(false);
                 bool reconnecting = Reconnecting;
                 m_reconnectLock.Release();
 
@@ -3974,43 +3980,13 @@ namespace Technosoftware.UaClient
                         "Server did not return a number of ServerEndpoints that matches the one from GetEndpoints.");
                 }
 
-                for (int ii = 0; ii < expectedServerEndpoints.Count; ii++)
+                if (!HaveEquivalentServerEndpoints(
+                        expectedServerEndpoints,
+                        m_discoveryServerEndpoints))
                 {
-                    EndpointDescription serverEndpoint = expectedServerEndpoints[ii];
-                    EndpointDescription expectedServerEndpoint = m_discoveryServerEndpoints[ii];
-
-                    if (serverEndpoint.SecurityMode != expectedServerEndpoint.SecurityMode ||
-                        serverEndpoint.SecurityPolicyUri != expectedServerEndpoint
-                            .SecurityPolicyUri ||
-                        serverEndpoint.TransportProfileUri != expectedServerEndpoint
-                            .TransportProfileUri ||
-                        serverEndpoint.SecurityLevel != expectedServerEndpoint.SecurityLevel)
-                    {
-                        throw ServiceResultException.Create(
-                            StatusCodes.BadSecurityChecksFailed,
-                            "The list of ServerEndpoints returned at CreateSession does not match the list from GetEndpoints.");
-                    }
-
-                    if (serverEndpoint.UserIdentityTokens.Count != expectedServerEndpoint
-                        .UserIdentityTokens
-                        .Count)
-                    {
-                        throw ServiceResultException.Create(
-                            StatusCodes.BadSecurityChecksFailed,
-                            "The list of ServerEndpoints returned at CreateSession does not match the one from GetEndpoints.");
-                    }
-
-                    for (int jj = 0; jj < serverEndpoint.UserIdentityTokens.Count; jj++)
-                    {
-                        if (!serverEndpoint
-                                .UserIdentityTokens[jj]
-                                .IsEqual(expectedServerEndpoint.UserIdentityTokens[jj]))
-                        {
-                            throw ServiceResultException.Create(
-                                StatusCodes.BadSecurityChecksFailed,
-                                "The list of ServerEndpoints returned at CreateSession does not match the one from GetEndpoints.");
-                        }
-                    }
+                    throw ServiceResultException.Create(
+                        StatusCodes.BadSecurityChecksFailed,
+                        "The list of ServerEndpoints returned at CreateSession does not match the list from GetEndpoints.");
                 }
             }
 
@@ -4048,6 +4024,81 @@ namespace Technosoftware.UaClient
                     StatusCodes.BadSecurityChecksFailed,
                     "Server did not return an EndpointDescription that matched the one used to create the secure channel.");
             }
+        }
+
+        private static bool HaveEquivalentServerEndpoints(
+            EndpointDescriptionCollection serverEndpoints,
+            EndpointDescriptionCollection discoveryEndpoints)
+        {
+            if (serverEndpoints.Count != discoveryEndpoints.Count)
+            {
+                return false;
+            }
+
+            var unmatchedDiscoveryEndpoints = new List<EndpointDescription>(discoveryEndpoints);
+
+            foreach (EndpointDescription serverEndpoint in serverEndpoints)
+            {
+                int matchIndex = unmatchedDiscoveryEndpoints.FindIndex(
+                    discoveryEndpoint => AreEquivalentServerEndpoints(
+                        serverEndpoint,
+                        discoveryEndpoint));
+
+                if (matchIndex < 0)
+                {
+                    return false;
+                }
+
+                unmatchedDiscoveryEndpoints.RemoveAt(matchIndex);
+            }
+
+            return unmatchedDiscoveryEndpoints.Count == 0;
+        }
+
+        private static bool AreEquivalentServerEndpoints(
+            EndpointDescription serverEndpoint,
+            EndpointDescription discoveryEndpoint)
+        {
+            return serverEndpoint.SecurityMode == discoveryEndpoint.SecurityMode &&
+                string.Equals(
+                    serverEndpoint.SecurityPolicyUri,
+                    discoveryEndpoint.SecurityPolicyUri,
+                    StringComparison.Ordinal) &&
+                string.Equals(
+                    serverEndpoint.TransportProfileUri,
+                    discoveryEndpoint.TransportProfileUri,
+                    StringComparison.Ordinal) &&
+                serverEndpoint.SecurityLevel == discoveryEndpoint.SecurityLevel &&
+                HaveEquivalentUserIdentityTokens(
+                    serverEndpoint.UserIdentityTokens,
+                    discoveryEndpoint.UserIdentityTokens);
+        }
+
+        private static bool HaveEquivalentUserIdentityTokens(
+            UserTokenPolicyCollection serverTokens,
+            UserTokenPolicyCollection discoveryTokens)
+        {
+            if (serverTokens.Count != discoveryTokens.Count)
+            {
+                return false;
+            }
+
+            var unmatchedDiscoveryTokens = new List<UserTokenPolicy>(discoveryTokens);
+
+            foreach (UserTokenPolicy serverToken in serverTokens)
+            {
+                int matchIndex = unmatchedDiscoveryTokens.FindIndex(
+                    discoveryToken => serverToken.IsEqual(discoveryToken));
+
+                if (matchIndex < 0)
+                {
+                    return false;
+                }
+
+                unmatchedDiscoveryTokens.RemoveAt(matchIndex);
+            }
+
+            return unmatchedDiscoveryTokens.Count == 0;
         }
 
         /// <summary>

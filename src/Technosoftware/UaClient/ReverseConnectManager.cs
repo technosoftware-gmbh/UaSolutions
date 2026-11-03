@@ -212,6 +212,19 @@ namespace Technosoftware.UaClient
             }
             if (m_cts != null)
             {
+                // release the connections which are held by OnConnectionWaitingAsync
+                // before the token source is disposed.
+                lock (m_registrationsLock)
+                {
+                    m_shutdown = true;
+                    try
+                    {
+                        m_cts.Cancel();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                    }
+                }
                 Utils.SilentDispose(m_cts);
             }
             DisposeHosts();
@@ -460,6 +473,10 @@ namespace Technosoftware.UaClient
                 {
                     m_configurationWatcher = null;
                     OnUpdateConfiguration(configuration);
+                    lock (m_registrationsLock)
+                    {
+                        m_shutdown = false;
+                    }
                     OpenHosts();
                     m_state = ReverseConnectManagerState.Started;
                 }
@@ -600,6 +617,12 @@ namespace Technosoftware.UaClient
         /// </summary>
         private void StopService()
         {
+            lock (m_registrationsLock)
+            {
+                m_shutdown = true;
+            }
+
+            // releases the connections which are held by OnConnectionWaitingAsync.
             ClearWaitingConnections();
             lock (m_lock)
             {
@@ -613,6 +636,11 @@ namespace Technosoftware.UaClient
         /// </summary>
         private void StartService()
         {
+            lock (m_registrationsLock)
+            {
+                m_shutdown = false;
+            }
+
             lock (m_lock)
             {
                 OpenHosts();
@@ -661,6 +689,17 @@ namespace Technosoftware.UaClient
         }
 
         /// <summary>
+        /// Invokes the internal <see cref="OnConnectionWaitingAsync"/> callback
+        /// against a supplied waiting connection event, exactly as a listener
+        /// would. Exposed internally so a test can drive a held connection
+        /// without opening a listener.
+        /// </summary>
+        internal Task InvokeConnectionWaitingForTest(ConnectionWaitingEventArgs e)
+        {
+            return OnConnectionWaitingAsync(this, e);
+        }
+
+        /// <summary>
         /// Raised when a reverse connection is waiting,
         /// finds and calls a waiting connection.
         /// </summary>
@@ -672,37 +711,53 @@ namespace Technosoftware.UaClient
             bool matched = MatchRegistration(sender, e);
             while (!matched)
             {
-                m_logger.LogInformation("Holding reverse connection: {ServerUri} {EndpointUrl}", e.ServerUri, e.EndpointUrl);
+                int delay = endTime - HiResClock.TickCount;
+                if (delay <= 0)
+                {
+                    // the hold time expired without a matching registration.
+                    break;
+                }
+
                 CancellationToken ct;
                 lock (m_registrationsLock)
                 {
+                    if (m_shutdown)
+                    {
+                        // the manager is stopping, release the connection.
+                        break;
+                    }
                     ct = m_cts.Token;
                 }
-                int delay = endTime - HiResClock.TickCount;
-                if (delay > 0)
-                {
-                    await Task.Delay(delay, ct)
-                        .ContinueWith(tsk =>
-                        {
-                            if (tsk.IsCanceled)
-                            {
-                                matched = MatchRegistration(sender, e);
-                                if (matched)
-                                {
-                                    m_logger.LogInformation(
-                                        "Matched reverse connection {ServerUri} {EndpointUrl} after {Duration}ms",
-                                        e.ServerUri,
-                                        e.EndpointUrl,
-                                        HiResClock.TickCount - startTime);
-                                }
-                            }
-                        },
+
+                m_logger.LogInformation("Holding reverse connection: {ServerUri} {EndpointUrl}", e.ServerUri, e.EndpointUrl);
+
+                bool registrationsChanged = false;
+                await Task.Delay(delay, ct)
+                    .ContinueWith(
+                        tsk => registrationsChanged = tsk.IsCanceled,
                         default,
                         TaskContinuationOptions.None,
                         TaskScheduler.Default)
-                        .ConfigureAwait(false);
+                    .ConfigureAwait(false);
+
+                if (!registrationsChanged)
+                {
+                    // the hold time elapsed without a matching registration.
+                    break;
                 }
-                break;
+
+                // the registrations changed, try to match again. If the registration
+                // which caused the wakeup was for another server, keep holding this
+                // connection for the remainder of its own hold time.
+                matched = MatchRegistration(sender, e);
+                if (matched)
+                {
+                    m_logger.LogInformation(
+                        "Matched reverse connection {ServerUri} {EndpointUrl} after {Duration}ms",
+                        e.ServerUri,
+                        e.EndpointUrl,
+                        HiResClock.TickCount - startTime);
+                }
             }
 
             m_logger.LogInformation(
@@ -815,5 +870,11 @@ namespace Technosoftware.UaClient
         private readonly List<Registration> m_registrations;
         private readonly Lock m_registrationsLock = new();
         private CancellationTokenSource m_cts;
+
+        /// <summary>
+        /// Set while the manager is stopped or disposed to release the
+        /// reverse connections which are held by OnConnectionWaitingAsync.
+        /// </summary>
+        private bool m_shutdown;
     }
 }
