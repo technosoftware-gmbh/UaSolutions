@@ -24,6 +24,12 @@
   do not send a nonce on a secured channel must now do so.
 - `RequestManager.CancelRequests` takes the session ID of the Cancel request, and Cancel now only
   matches requests of that session. A session could cancel another session's requests before.
+- Security: certificate renewal (`ServerConfiguration.UpdateCertificate`) for the default application
+  group ignores the issuer certificates supplied in the request, as OPC 10000-12 7.10.5 requires, and
+  validates the new certificate against the group's configured trusted and issuer stores. A certificate
+  whose CA is not in those stores is rejected with `BadCertificateChainIncomplete`; the issuers a client
+  sends are no longer trusted or imported for this group (upstream #4678, ported the way upstream 2.0.1
+  does it in #4683). Install the issuing CA in the trust list before pushing a CA-signed certificate.
 - An event monitored item that asks for a queue size of 0 or 1 now gets the server default of 1000
   (`EventManager.DefaultEventQueueSize`), as OPC 10000-4 7.21 defines for events. It used to get a
   queue of one.
