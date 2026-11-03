@@ -183,7 +183,7 @@ namespace Technosoftware.UaServer
 
                         // report the AuditCancelEventType
                         m_server.ReportAuditCancelEvent(
-                            request.Session.Id,
+                            request.SessionId,
                             requestHandle,
                             StatusCodes.Good,
                             m_logger);
