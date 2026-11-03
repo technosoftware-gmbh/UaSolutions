@@ -653,12 +653,15 @@ namespace Technosoftware.UaConfiguration
     public interface IUaApplicationConfigurationTraceConfiguration : IUaApplicationConfigurationCreate
     {
         /// <inheritdoc cref="TraceConfiguration.OutputFilePath"/>
+        [Obsolete("Use ITelemetryContext and ILogger-based diagnostics instead.")]
         IUaApplicationConfigurationTraceConfiguration SetOutputFilePath(string outputFilePath);
 
         /// <inheritdoc cref="TraceConfiguration.DeleteOnLoad"/>
+        [Obsolete("Use ITelemetryContext and ILogger-based diagnostics instead.")]
         IUaApplicationConfigurationTraceConfiguration SetDeleteOnLoad(bool deleteOnLoad);
 
         /// <inheritdoc cref="TraceConfiguration.TraceMasks"/>
+        [Obsolete("Use ITelemetryContext and ILogger-based diagnostics instead.")]
         IUaApplicationConfigurationTraceConfiguration SetTraceMasks(int traceMasks);
     }
 

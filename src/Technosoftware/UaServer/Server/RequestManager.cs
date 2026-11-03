@@ -137,7 +137,36 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Called when the client wishes to cancel one or more requests.
         /// </summary>
+        /// <remarks>
+        /// This overload matches the request handle across all sessions. Use
+        /// <see cref="CancelRequests(NodeId, uint, out uint)"/> to restrict the
+        /// cancellation to the requests of the calling session.
+        /// </remarks>
+        [Obsolete("Use CancelRequests(NodeId sessionId, uint requestHandle, out uint cancelCount) to scope the cancellation to the calling session.")]
         public void CancelRequests(uint requestHandle, out uint cancelCount)
+        {
+            CancelRequests(null, false, requestHandle, out cancelCount);
+        }
+
+        /// <summary>
+        /// Called when the client wishes to cancel one or more requests of a session.
+        /// </summary>
+        /// <param name="sessionId">The id of the session that sent the cancel request.</param>
+        /// <param name="requestHandle">The client handle of the requests to cancel.</param>
+        /// <param name="cancelCount">The number of requests that were cancelled.</param>
+        public void CancelRequests(NodeId sessionId, uint requestHandle, out uint cancelCount)
+        {
+            CancelRequests(sessionId, true, requestHandle, out cancelCount);
+        }
+
+        /// <summary>
+        /// Flags the matching requests as cancelled and raises the notifications.
+        /// </summary>
+        private void CancelRequests(
+            NodeId sessionId,
+            bool matchSession,
+            uint requestHandle,
+            out uint cancelCount)
         {
             var cancelledRequests = new List<uint>();
 
@@ -146,14 +175,15 @@ namespace Technosoftware.UaServer
             {
                 foreach (UaServerOperationContext request in m_requests.Values)
                 {
-                    if (request.ClientHandle == requestHandle)
+                    if ((!matchSession || request.SessionId == sessionId) &&
+                        request.ClientHandle == requestHandle)
                     {
                         request.SetStatusCode(StatusCodes.BadRequestCancelledByRequest);
                         cancelledRequests.Add(request.RequestId);
 
                         // report the AuditCancelEventType
                         m_server.ReportAuditCancelEvent(
-                            request.Session.Id,
+                            request.SessionId,
                             requestHandle,
                             StatusCodes.Good,
                             m_logger);

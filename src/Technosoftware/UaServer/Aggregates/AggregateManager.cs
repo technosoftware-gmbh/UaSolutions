@@ -113,7 +113,8 @@ namespace Technosoftware.UaServer
                 {
                     PercentDataBad = 100,
                     PercentDataGood = 100,
-                    TreatUncertainAsBad = false,
+                    // OPC UA Part 13 specifies that uncertain values are treated as bad by default.
+                    TreatUncertainAsBad = true,
                     UseSlopedExtrapolation = false,
                     UseServerCapabilitiesDefaults = false
                 };
@@ -198,7 +199,10 @@ namespace Technosoftware.UaServer
                 m_factories[aggregateId] = factory;
             }
 
-            m_server?.DiagnosticsNodeManager.AddAggregateFunction(aggregateId, aggregateName, true);
+            m_server?.DiagnosticsNodeManager?.AddAggregateFunction(
+                aggregateId,
+                aggregateName,
+                true);
         }
 
         /// <summary>
