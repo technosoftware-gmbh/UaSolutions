@@ -516,38 +516,19 @@ namespace Technosoftware.UaServer
 
                 var newIssuerCollection = new CertificateCollection();
 
-                try
+                if (Utils.IsEqual(
+                    certificateGroup.NodeId,
+                    ObjectIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup))
                 {
-                    // build issuer chain
-                    foreach (ByteString issuerRawCert in issuerCertificates)
-                    {
-                        using var issuer = Certificate.FromRawData(issuerRawCert);
-                        newIssuerCollection.Add(issuer);
-                    }
-                }
-                catch
-                {
-                    throw new ServiceResultException(
-                        StatusCodes.BadCertificateInvalid,
-                        "Issuer certificate data is invalid.");
-                }
-
-                // self signed
-                bool selfSigned = X509Utils.IsSelfSigned(newCert);
-                if (selfSigned && newIssuerCollection.Count != 0)
-                {
-                    throw new ServiceResultException(
-                        StatusCodes.BadCertificateInvalid,
-                        "Issuer list not empty for self signed certificate.");
-                }
-
-                if (!selfSigned)
-                {
+                    // OPC 10000-12 7.10.5: for the application certificate group the
+                    // issuer certificates are already required to be in the TrustList,
+                    // so the supplied list is ignored and the new certificate is
+                    // validated against the group's configured trust and issuer stores.
                     try
                     {
-                        await ValidatePushCertificateAndIssuerChainAsync(
+                        await ValidateCertificateAgainstGroupTrustListAsync(
+                            certificateGroup,
                             newCert,
-                            newIssuerCollection,
                             m_configuration.SecurityConfiguration,
                             ServerData.Telemetry,
                             ct).ConfigureAwait(false);
@@ -563,12 +544,70 @@ namespace Technosoftware.UaServer
                         m_logger.LogError(
                             Utils.TraceMasks.Security,
                             ex,
-                            "Failed to verify integrity of the new certificate {Certificate} and the issuer list.",
+                            "Failed to verify integrity of the new certificate {Certificate} against the trust list.",
                             Redact.Create(newCert));
                         throw new ServiceResultException(
                             StatusCodes.BadSecurityChecksFailed,
-                            "Failed to verify integrity of the new certificate and the issuer list.",
+                            "Failed to verify integrity of the new certificate against the certificate group's TrustList.",
                             ex);
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        // build issuer chain
+                        foreach (ByteString issuerRawCert in issuerCertificates)
+                        {
+                            using var issuer = Certificate.FromRawData(issuerRawCert);
+                            newIssuerCollection.Add(issuer);
+                        }
+                    }
+                    catch
+                    {
+                        throw new ServiceResultException(
+                            StatusCodes.BadCertificateInvalid,
+                            "Issuer certificate data is invalid.");
+                    }
+
+                    // self signed
+                    bool selfSigned = X509Utils.IsSelfSigned(newCert);
+                    if (selfSigned && newIssuerCollection.Count != 0)
+                    {
+                        throw new ServiceResultException(
+                            StatusCodes.BadCertificateInvalid,
+                            "Issuer list not empty for self signed certificate.");
+                    }
+
+                    if (!selfSigned)
+                    {
+                        try
+                        {
+                            await ValidatePushCertificateAndIssuerChainAsync(
+                                newCert,
+                                newIssuerCollection,
+                                m_configuration.SecurityConfiguration,
+                                ServerData.Telemetry,
+                                ct).ConfigureAwait(false);
+                        }
+                        catch (ServiceResultException)
+                        {
+                            // the validator already reports the specific status
+                            // code; do not flatten it to BadSecurityChecksFailed.
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            m_logger.LogError(
+                                Utils.TraceMasks.Security,
+                                ex,
+                                "Failed to verify integrity of the new certificate {Certificate} and the issuer list.",
+                                Redact.Create(newCert));
+                            throw new ServiceResultException(
+                                StatusCodes.BadSecurityChecksFailed,
+                                "Failed to verify integrity of the new certificate and the issuer list.",
+                                ex);
+                        }
                     }
                 }
 
@@ -1297,6 +1336,54 @@ namespace Technosoftware.UaServer
                     // ignore errors
                 }
             }
+        }
+
+        /// <summary>
+        /// Validates a new application certificate against the configured trust
+        /// and issuer stores of its certificate group.
+        /// </summary>
+        /// <remarks>
+        /// OPC 10000-12 7.10.5: suppressible errors are ignored, every other error
+        /// fails. Since the 2.0 stack, a missing issuer (BadCertificateChainIncomplete)
+        /// is not suppressible, so a certificate whose CA is not in the group's stores
+        /// is rejected.
+        /// </remarks>
+        private static async Task ValidateCertificateAgainstGroupTrustListAsync(
+            ServerCertificateGroup certificateGroup,
+            Certificate newCertificate,
+            SecurityConfiguration securityConfiguration,
+            ITelemetryContext telemetry,
+            CancellationToken ct)
+        {
+            ArgumentNullException.ThrowIfNull(certificateGroup);
+            ArgumentNullException.ThrowIfNull(certificateGroup.TrustedStore);
+            ArgumentNullException.ThrowIfNull(newCertificate);
+            ArgumentNullException.ThrowIfNull(securityConfiguration);
+            ArgumentNullException.ThrowIfNull(telemetry);
+
+            var trustList = new TrustListIdentifier(certificateGroup.BrowseName);
+            using CertificateManager validator = CertificateManagerFactory.Create(
+                securityConfiguration,
+                telemetry,
+                managerOptions => managerOptions.AddTrustList(
+                    trustList.Name,
+                    certificateGroup.TrustedStore.StorePath,
+                    certificateGroup.IssuerStore?.StorePath));
+
+            using var validationChain = new CertificateCollection { newCertificate };
+
+            var options = new Opc.Ua.Security.Certificates.CertificateValidationOptions
+            {
+                AllowCertificateDownload = false,
+                UrlRetrievalTimeout = TimeSpan.FromMilliseconds(1),
+                AcceptError = static (_, _) => true
+            };
+
+            Opc.Ua.CertificateValidationResult validationResult = await validator
+                .ValidateAsync(validationChain, trustList: trustList, options: options, ct)
+                .ConfigureAwait(false);
+
+            validationResult.ThrowIfInvalid();
         }
 
         /// <summary>
