@@ -3414,7 +3414,7 @@ namespace Technosoftware.UaClient
                 AsyncRequestStarted(task, activity, requestHeader.RequestHandle, DataTypes.PublishRequest);
                 task.ConfigureAwait(false)
                     .GetAwaiter()
-                    .OnCompleted(() => OnPublishComplete(
+                    .OnCompleted(() => _ = OnPublishCompleteAsync(
                         task,
                         SessionId,
                         acknowledgementsToSend,
@@ -3452,7 +3452,13 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Completes an asynchronous publish operation.
         /// </summary>
-        private void OnPublishComplete(
+        /// <remarks>
+        /// Runs on a thread pool thread for every publish response, so it waits for the
+        /// reconnect lock asynchronously: a synchronous wait holds one pool thread per
+        /// outstanding publish for as long as a reconnect or transfer holds the lock, which
+        /// on .NET Framework can stall the process while the pool slowly adds threads.
+        /// </remarks>
+        private async Task OnPublishCompleteAsync(
             Task<PublishResponse> task,
             NodeId sessionId,
             SubscriptionAcknowledgementCollection acknowledgementsToSend,
@@ -3469,7 +3475,7 @@ namespace Technosoftware.UaClient
             try
             {
                 // gate entry if transfer/reactivate is busy
-                m_reconnectLock.Wait();
+                await m_reconnectLock.WaitAsync().ConfigureAwait(false);
                 bool reconnecting = Reconnecting;
                 m_reconnectLock.Release();
 
