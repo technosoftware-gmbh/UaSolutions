@@ -1476,7 +1476,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // check for continuation point.
-                if (cp != null)
+                if (cp != null && ServiceResult.IsGood(error))
                 {
                     result.StatusCode = StatusCodes.Good;
                     result.ContinuationPoint = cp.Id.ToByteArray();
@@ -1579,7 +1579,7 @@ namespace Technosoftware.UaServer
             result.References = references;
 
             // save continuation point.
-            if (cp != null)
+            if (cp != null && ServiceResult.IsGood(error))
             {
                 result.StatusCode = StatusCodes.Good;
                 result.ContinuationPoint = cp.Id.ToByteArray();
@@ -1661,7 +1661,8 @@ namespace Technosoftware.UaServer
                 {
                     if (!assignContinuationPoint)
                     {
-                        return (StatusCodes.BadNoContinuationPoints, cp, references);
+                        cp.Dispose();
+                        return (StatusCodes.BadNoContinuationPoints, null, references);
                     }
 
                     cp.Id = Guid.NewGuid();
