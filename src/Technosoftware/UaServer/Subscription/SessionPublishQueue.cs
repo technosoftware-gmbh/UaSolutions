@@ -97,7 +97,7 @@ namespace Technosoftware.UaServer
             }
 
             QueuedSubscription subscriptionToPublish;
-            lock (m_subscriptionPublishLock)
+            lock (m_lock)
             {
                 // find the waiting subscription with the highest priority.
                 subscriptionToPublish = GetSubscriptionToPublish();
@@ -106,10 +106,7 @@ namespace Technosoftware.UaServer
                 {
                     return Task.FromResult(subscriptionToPublish.Subscription);
                 }
-            }
 
-            lock (m_lock)
-            {
                 // check if queue is full.
                 if (m_queuedRequests.Count >= m_maxRequestCount)
                 {
@@ -139,8 +136,12 @@ namespace Technosoftware.UaServer
         /// <returns>The list of subscriptions in the queue.</returns>
         public IList<IUaSubscription> Close()
         {
+            List<IUaSubscription> subscriptions;
+
             lock (m_lock)
             {
+                subscriptions = new List<IUaSubscription>(m_queuedSubscriptions.Count);
+
                 // TraceState("SESSION CLOSED");
 
                 // set any waiting publish requests to Status BadSessionClosed.
@@ -153,19 +154,21 @@ namespace Technosoftware.UaServer
                 }
 
                 // tell the subscriptions that the session is closed.
-                var subscriptions = new List<IUaSubscription>(m_queuedSubscriptions.Count);
-
                 foreach (KeyValuePair<uint, QueuedSubscription> entry in m_queuedSubscriptions)
                 {
                     subscriptions.Add(entry.Value.Subscription);
-                    entry.Value.Subscription.SessionClosed();
                 }
 
                 // clear the queue.
                 m_queuedSubscriptions.Clear();
-
-                return subscriptions;
             }
+
+            foreach (IUaSubscription subscription in subscriptions)
+            {
+                subscription.SessionClosed();
+            }
+
+            return subscriptions;
         }
 
         /// <summary>
@@ -364,19 +367,19 @@ namespace Technosoftware.UaServer
             if (m_queuedSubscriptions.TryGetValue(subscription.Id,
                 out QueuedSubscription queuedSubscription))
             {
-                queuedSubscription.Publishing = false;
-
-                if (moreNotifications)
+                lock (m_lock)
                 {
-                    lock (m_subscriptionPublishLock)
+                    queuedSubscription.Publishing = false;
+
+                    if (moreNotifications)
                     {
                         AssignSubscriptionToRequest(queuedSubscription);
                     }
-                }
-                else
-                {
-                    queuedSubscription.ReadyToPublish = false;
-                    queuedSubscription.Timestamp = DateTime.UtcNow;
+                    else
+                    {
+                        queuedSubscription.ReadyToPublish = false;
+                        queuedSubscription.Timestamp = DateTime.UtcNow;
+                    }
                 }
             }
         }
@@ -388,8 +391,11 @@ namespace Technosoftware.UaServer
         {
             if (m_queuedSubscriptions.TryGetValue(subscription.Id, out QueuedSubscription queuedSubscription))
             {
-                queuedSubscription.Publishing = false;
-                queuedSubscription.ReadyToPublish = true;
+                lock (m_lock)
+                {
+                    queuedSubscription.Publishing = false;
+                    queuedSubscription.ReadyToPublish = true;
+                }
             }
         }
 
@@ -423,18 +429,15 @@ namespace Technosoftware.UaServer
                     continue;
                 }
 
-                // do nothing if subscription has already been flagged as available.
-                if (subscription.ReadyToPublish)
-                {
-                    continue;
-                }
-
                 // assign subscription to request if one is available.
                 if (!subscription.Publishing)
                 {
-                    lock (m_subscriptionPublishLock)
+                    lock (m_lock)
                     {
-                        AssignSubscriptionToRequest(subscription);
+                        if (!subscription.Publishing)
+                        {
+                            AssignSubscriptionToRequest(subscription);
+                        }
                     }
                 }
             }
@@ -652,7 +655,6 @@ namespace Technosoftware.UaServer
         }
 
         private readonly Lock m_lock = new();
-        private readonly Lock m_subscriptionPublishLock = new();
         private readonly ILogger m_logger;
         private readonly IUaServerData m_server;
         private readonly IUaSession m_session;
