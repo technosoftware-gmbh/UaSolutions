@@ -699,6 +699,8 @@ namespace Technosoftware.UaServer
                     // owned by this node manager.
                     nodeToRead.Processed = true;
 
+                    DateTime readTime = DateTime.UtcNow;
+
                     // read the default value (also verifies that the attribute id is valid for the node).
                     ServiceResult error = node.Read(context, nodeToRead.AttributeId, ref value);
 
@@ -764,14 +766,22 @@ namespace Technosoftware.UaServer
                         // Set SourceTimestamp if not already set by the node
                         if (value.SourceTimestamp == DateTime.MinValue)
                         {
-                            value = value.WithSourceTimestamp(DateTime.UtcNow);
+                            value = value.WithSourceTimestamp(readTime);
                         }
 
-                        // Set ServerTimestamp to match SourceTimestamp for Value attributes
-                        // This ensures ServerTimestamp and SourceTimestamp are equal,
-                        // which is important for nodes like ServerStatus children where
-                        // the node's read callback sets a specific timestamp
-                        value = value.WithServerTimestamp(value.SourceTimestamp);
+                        // ServerTimestamp reflects when the Server verified the value. A
+                        // value whose SourceTimestamp was produced as part of this read (e.g.
+                        // ServerStatus children) keeps ServerTimestamp aligned with
+                        // SourceTimestamp; a stored/static value is verified now, so
+                        // ServerTimestamp is stamped with the current read time.
+                        if (value.SourceTimestamp >= readTime)
+                        {
+                            value = value.WithServerTimestamp(value.SourceTimestamp);
+                        }
+                        else
+                        {
+                            value = value.WithServerTimestamp(readTime);
+                        }
                     }
                 }
             }

@@ -474,63 +474,7 @@ namespace Technosoftware.UaServer
                 // check for monitored items.
                 if (m_publishingEnabled && Session != null)
                 {
-                    // check for monitored items that are ready to publish.
-                    LinkedListNode<IUaMonitoredItem> current = m_itemsToCheck.First;
-                    bool itemsTriggered = false;
-
-                    while (current != null)
-                    {
-                        LinkedListNode<IUaMonitoredItem> next = current.Next;
-                        IUaMonitoredItem monitoredItem = current.Value;
-
-                        // check if the item is ready to publish.
-                        if (monitoredItem.IsReadyToPublish || monitoredItem.IsResendData)
-                        {
-                            m_itemsToCheck.Remove(current);
-                            m_itemsToPublish.AddLast(current);
-                        }
-
-                        // update any triggered items.
-
-                        if (monitoredItem.IsReadyToTrigger &&
-                            m_itemsToTrigger.TryGetValue(
-                                current.Value.Id,
-                                out List<IUaTriggeredMonitoredItem> triggeredItems))
-                        {
-                            for (int ii = 0; ii < triggeredItems.Count; ii++)
-                            {
-                                if (triggeredItems[ii].SetTriggered())
-                                {
-                                    itemsTriggered = true;
-                                }
-                            }
-
-                            // clear ReadyToTrigger flag after trigger
-                            monitoredItem.IsReadyToTrigger = false;
-                        }
-
-                        current = next;
-                    }
-
-                    // need to go through the list again if items were triggered.
-                    if (itemsTriggered)
-                    {
-                        current = m_itemsToCheck.First;
-
-                        while (current != null)
-                        {
-                            LinkedListNode<IUaMonitoredItem> next = current.Next;
-                            IUaMonitoredItem monitoredItem = current.Value;
-
-                            if (monitoredItem.IsReadyToPublish)
-                            {
-                                m_itemsToCheck.Remove(current);
-                                m_itemsToPublish.AddLast(current);
-                            }
-
-                            current = next;
-                        }
-                    }
+                    CheckItemsToPublish();
 
                     if (m_itemsToPublish.Count > 0)
                     {
@@ -559,6 +503,104 @@ namespace Technosoftware.UaServer
                 // do nothing.
                 return PublishingState.Idle;
             }
+        }
+
+        /// <summary>
+        /// Moves the monitored items that are ready to publish from m_itemsToCheck to
+        /// m_itemsToPublish and sets the items they trigger.
+        /// </summary>
+        /// <remarks>The caller holds <c>m_lock</c>.</remarks>
+        private void CheckItemsToPublish()
+        {
+            bool itemsTriggered = false;
+
+            // items already waiting in m_itemsToPublish (queued by ResendData, or by a
+            // cycle without a waiting Publish request) can get new values that trigger
+            // linked items. Publishing clears the trigger flag, so set them now.
+            LinkedListNode<IUaMonitoredItem> current = m_itemsToPublish.First;
+
+            while (current != null)
+            {
+                if (TriggerLinkedItems(current.Value))
+                {
+                    itemsTriggered = true;
+                }
+
+                current = current.Next;
+            }
+
+            // check for monitored items that are ready to publish.
+            current = m_itemsToCheck.First;
+
+            while (current != null)
+            {
+                LinkedListNode<IUaMonitoredItem> next = current.Next;
+                IUaMonitoredItem monitoredItem = current.Value;
+
+                // check if the item is ready to publish.
+                if (monitoredItem.IsReadyToPublish || monitoredItem.IsResendData)
+                {
+                    m_itemsToCheck.Remove(current);
+                    m_itemsToPublish.AddLast(current);
+                }
+
+                // update any triggered items.
+                if (TriggerLinkedItems(monitoredItem))
+                {
+                    itemsTriggered = true;
+                }
+
+                current = next;
+            }
+
+            // need to go through the list again if items were triggered.
+            if (itemsTriggered)
+            {
+                current = m_itemsToCheck.First;
+
+                while (current != null)
+                {
+                    LinkedListNode<IUaMonitoredItem> next = current.Next;
+                    IUaMonitoredItem monitoredItem = current.Value;
+
+                    if (monitoredItem.IsReadyToPublish)
+                    {
+                        m_itemsToCheck.Remove(current);
+                        m_itemsToPublish.AddLast(current);
+                    }
+
+                    current = next;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sets the items linked to a triggering item that is ready to trigger.
+        /// </summary>
+        /// <returns>True if at least one linked item was triggered.</returns>
+        /// <remarks>The caller holds <c>m_lock</c>.</remarks>
+        private bool TriggerLinkedItems(IUaMonitoredItem monitoredItem)
+        {
+            bool itemsTriggered = false;
+
+            if (monitoredItem.IsReadyToTrigger &&
+                m_itemsToTrigger.TryGetValue(
+                    monitoredItem.Id,
+                    out List<IUaTriggeredMonitoredItem> triggeredItems))
+            {
+                for (int ii = 0; ii < triggeredItems.Count; ii++)
+                {
+                    if (triggeredItems[ii].SetTriggered())
+                    {
+                        itemsTriggered = true;
+                    }
+                }
+
+                // clear ReadyToTrigger flag after trigger
+                monitoredItem.IsReadyToTrigger = false;
+            }
+
+            return itemsTriggered;
         }
 
         /// <summary>
@@ -597,6 +639,17 @@ namespace Technosoftware.UaServer
                 m_logger.LogTrace("Failed to transfer {Count} Monitored Items", badTransfers);
             }
 
+            lock (m_lock)
+            {
+                ResetLifetimeCount();
+
+                // An abandoned subscription can be waiting for a keep-alive without having
+                // checked its monitored item queues. Force the next timer check to inspect
+                // queued data before the new session's first Publish, even when initial
+                // values were not requested.
+                m_publishTimerExpiry = m_timeProvider.GetTimestampMilliseconds() - 1;
+            }
+
             lock (DiagnosticsWriteLock)
             {
                 Diagnostics.SessionId = Session.Id;
@@ -616,6 +669,17 @@ namespace Technosoftware.UaServer
                     .ToList())
                 {
                     monitoredItem.SetupResendDataTrigger();
+                }
+
+                // Queue the items for the next Publish response. If a publishing cycle
+                // has already moved changed items to m_itemsToPublish while no Publish
+                // request was waiting, the next request is answered from that list
+                // without another check of m_itemsToCheck, and unchanged items would
+                // miss the resent values. The regular check also sets the items that
+                // are triggered by items leaving m_itemsToCheck here.
+                if (m_publishingEnabled)
+                {
+                    CheckItemsToPublish();
                 }
             }
         }
@@ -1043,21 +1107,15 @@ namespace Technosoftware.UaServer
             }
 
             // remove old messages if queue is full.
-            if (m_sentMessages.Count > m_maxMessageCount - messages.Count)
+            int excessCount = m_sentMessages.Count + messages.Count - (int)m_maxMessageCount;
+            if (excessCount > 0)
             {
                 lock (DiagnosticsWriteLock)
                 {
                     Diagnostics.UnacknowledgedMessageCount += (uint)messages.Count;
                 }
 
-                if (m_maxMessageCount <= messages.Count)
-                {
-                    m_sentMessages.Clear();
-                }
-                else
-                {
-                    m_sentMessages.RemoveRange(0, messages.Count);
-                }
+                m_sentMessages.RemoveRange(0, excessCount);
             }
 
             // save new message
@@ -1133,13 +1191,17 @@ namespace Technosoftware.UaServer
                 Diagnostics.NextSequenceNumber = m_sequenceNumber;
             }
 
+            uint notificationLimit = m_maxNotificationsPerPublish == 0
+                ? uint.MaxValue
+                : m_maxNotificationsPerPublish;
+
             // add events.
-            if (events.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
+            if (events.Count > 0 && notificationCount < notificationLimit)
             {
                 var notification = new EventNotificationList();
                 var eventFields = new List<EventFieldList>();
 
-                while (events.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
+                while (events.Count > 0 && notificationCount < notificationLimit)
                 {
                     eventFields.Add(events.Dequeue());
                     notificationCount++;
@@ -1151,14 +1213,14 @@ namespace Technosoftware.UaServer
             }
 
             // add datachanges (space permitting).
-            if (datachanges.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
+            if (datachanges.Count > 0 && notificationCount < notificationLimit)
             {
                 bool diagnosticsExist = false;
                 var notification = new DataChangeNotification();
                 var monitoredItems = new List<MonitoredItemNotification>(datachanges.Count);
                 var diagnosticInfos = new List<DiagnosticInfo>(datachanges.Count);
 
-                while (datachanges.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
+                while (datachanges.Count > 0 && notificationCount < notificationLimit)
                 {
                     MonitoredItemNotification datachange = datachanges.Dequeue();
                     monitoredItems.Add(datachange);

@@ -993,7 +993,10 @@ namespace Technosoftware.UaServer
 
             try
             {
-                m_serverInternal.RequestManager.CancelRequests(requestHandle, out uint cancelCount);
+                m_serverInternal.RequestManager.CancelRequests(
+                    context.SessionId,
+                    requestHandle,
+                    out uint cancelCount);
 
                 return ValueTask.FromResult(new CancelResponse
                 {

@@ -305,14 +305,21 @@ namespace Technosoftware.UaServer.Tests
             bool expected = true;
             CanSendFilteredAlarm(monitoredItem, filterContext, filter, alarm, expected, telemetry);
 
-            // 2 Placed Out of Service
+            // 2 Placed Out of Service - the trailing event, "Retain sent" = False
             Debug.WriteLine("// 2 Placed Out of Service");
             alarm.OutOfServiceState.Value = OutOfService;
             if (!supportsFilteredRetain)
             {
                 expected = false;
             }
-            CanSendFilteredAlarm(monitoredItem, filterContext, filter, alarm, expected, telemetry);
+            CanSendFilteredAlarm(
+                monitoredItem,
+                filterContext,
+                filter,
+                alarm,
+                expected,
+                telemetry,
+                expectedOverrideRetain: supportsFilteredRetain);
 
             // 3 Alarm Suppressed; No event since OutOfService
             Debug.WriteLine("// 3 Alarm Suppressed; No event since OutOfService");
@@ -343,7 +350,8 @@ namespace Technosoftware.UaServer.Tests
             expected = true;
             CanSendFilteredAlarm(monitoredItem, filterContext, filter, alarm, expected, telemetry);
 
-            // 8 Alarm goes inactive
+            // 8 Alarm goes inactive - with the ActiveState clause this is the trailing
+            // event, "Retain sent" = False
             Debug.WriteLine("// 8 Alarm goes inactive");
             alarm.SetLimitState(systemContext, LimitAlarmStates.Inactive);
             alarm.Retain.Value = false;
@@ -351,7 +359,14 @@ namespace Technosoftware.UaServer.Tests
             {
                 expected = false;
             }
-            CanSendFilteredAlarm(monitoredItem, filterContext, filter, alarm, expected, telemetry);
+            CanSendFilteredAlarm(
+                monitoredItem,
+                filterContext,
+                filter,
+                alarm,
+                expected,
+                telemetry,
+                expectedOverrideRetain: supportsFilteredRetain);
 
             // 9 Alarm Suppressed; No event since not active
             Debug.WriteLine("// 9 Alarm Suppressed; No event since not active");
@@ -405,7 +420,8 @@ namespace Technosoftware.UaServer.Tests
             EventFilter filter,
             BaseObjectState alarm,
             bool expected,
-            ITelemetryContext telemetry)
+            ITelemetryContext telemetry,
+            bool? expectedOverrideRetain = null)
         {
             SystemContext systemContext = GetSystemContext(telemetry);
 
@@ -415,11 +431,22 @@ namespace Technosoftware.UaServer.Tests
             const BindingFlags eFlags = BindingFlags.Instance | BindingFlags.NonPublic;
             MethodInfo methodInfo = typeof(UaMonitoredItem).GetMethod("CanSendFilteredAlarm", eFlags);
             Debug.WriteLine("Expecting " + expected.ToString());
-            object result = methodInfo.Invoke(monitoredItem, [context, filter, eventSnapshot]);
+
+            // the out parameter is read back from the argument array after the call.
+            object[] arguments = [context, filter, eventSnapshot, false];
+            object result = methodInfo.Invoke(monitoredItem, arguments);
 
             Assert.That(result, Is.Not.Null);
             Assert.That(result.GetType().Name, Is.EqualTo("Boolean"));
             Assert.That((bool)result, Is.EqualTo(expected));
+
+            if (expectedOverrideRetain.HasValue)
+            {
+                Assert.That(
+                    (bool)arguments[3],
+                    Is.EqualTo(expectedOverrideRetain.Value),
+                    "Retain sent");
+            }
         }
 
         private ExclusiveLevelAlarmState GetExclusiveLevelAlarm(

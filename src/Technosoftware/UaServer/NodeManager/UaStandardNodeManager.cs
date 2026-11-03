@@ -1651,6 +1651,11 @@ namespace Technosoftware.UaServer
                         continue;
                     }
 
+                    // Capture the time immediately before reading the attribute. Values
+                    // produced by the read use their source timestamp as the server
+                    // timestamp; cached/static values receive a fresh server timestamp.
+                    DateTime readTime = DateTime.UtcNow;
+
                     // read the attribute value.
                     errors[ii] = handle.Node.ReadAttribute(
                         systemContext,
@@ -1666,16 +1671,29 @@ namespace Technosoftware.UaServer
                     {
                         if (value.SourceTimestamp == DateTime.MinValue)
                         {
-                            value = value.WithSourceTimestamp(DateTime.UtcNow);
+                            value = value.WithSourceTimestamp(readTime);
                         }
-                        value = value.WithServerTimestamp(value.SourceTimestamp);
+
+                        // ServerTimestamp reflects when the Server verified the value. A
+                        // value whose SourceTimestamp was produced as part of this read (e.g.
+                        // ServerStatus children) keeps ServerTimestamp aligned with
+                        // SourceTimestamp; a stored/static value is verified now, so
+                        // ServerTimestamp is stamped with the current read time.
+                        if (value.SourceTimestamp >= readTime)
+                        {
+                            value = value.WithServerTimestamp(value.SourceTimestamp);
+                        }
+                        else
+                        {
+                            value = value.WithServerTimestamp(readTime);
+                        }
                     }
                     else
                     {
                         // For non-value attributes, only ServerTimestamp is relevant
                         if (value.ServerTimestamp == DateTime.MinValue)
                         {
-                            value = value.WithServerTimestamp(DateTime.UtcNow);
+                            value = value.WithServerTimestamp(readTime);
                         }
                     }
 #if DEBUG
@@ -2483,7 +2501,7 @@ namespace Technosoftware.UaServer
             }
 
             // check timestamps to return.
-            if (timestampsToReturn is < TimestampsToReturn.Source or > TimestampsToReturn.Neither)
+            if (timestampsToReturn is < TimestampsToReturn.Source or >= TimestampsToReturn.Neither)
             {
                 throw new ServiceResultException(StatusCodes.BadTimestampsToReturnInvalid);
             }
@@ -2496,7 +2514,7 @@ namespace Technosoftware.UaServer
                 if (readRawModifiedDetails.StartTime == DateTime.MinValue &&
                     readRawModifiedDetails.EndTime == DateTime.MinValue)
                 {
-                    throw new ServiceResultException(StatusCodes.BadInvalidTimestampArgument);
+                    throw new ServiceResultException(StatusCodes.BadHistoryOperationInvalid);
                 }
 
                 // if one is null the num values must be provided.
@@ -2505,8 +2523,21 @@ namespace Technosoftware.UaServer
                 {
                     if (readRawModifiedDetails.NumValuesPerNode == 0)
                     {
-                        throw new ServiceResultException(StatusCodes.BadInvalidTimestampArgument);
+                        throw new ServiceResultException(StatusCodes.BadHistoryOperationInvalid);
                     }
+                }
+
+                // OPC 10000-11 6.5.3.3: for read modified "the returnBounds parameter
+                // shall be set to FALSE ..., otherwise the Server returns a
+                // Bad_InvalidArgument StatusCode". Reported per operation.
+                if (readRawModifiedDetails.IsReadModified && readRawModifiedDetails.ReturnBounds)
+                {
+                    for (int ii = 0; ii < nodesToProcess.Count; ii++)
+                    {
+                        errors[nodesToProcess[ii].Index] = StatusCodes.BadInvalidArgument;
+                    }
+
+                    return;
                 }
 
                 HistoryReadRawModified(

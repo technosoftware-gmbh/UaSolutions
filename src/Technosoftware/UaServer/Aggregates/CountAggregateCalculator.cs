@@ -217,46 +217,29 @@ namespace Technosoftware.UaServer
                 return GetNoDataValue(slice);
             }
 
-            // determine whether a transition occurs at the StartTime
-            double lastValue = double.NaN;
-
-            if (slice.EarlyBound != null && StatusCode.IsGood(slice.EarlyBound.Value.StatusCode))
-            {
-                try
-                {
-                    lastValue = CastToDouble(slice.EarlyBound.Value);
-                }
-                catch (Exception)
-                {
-                    lastValue = double.NaN;
-                }
-            }
+            // The first non-bad value is a transition when no previous non-bad value exists.
+            LinkedListNode<DataValue> previousValue = slice.NonBadEarlyBound;
+            bool hasLastValue = previousValue != null;
+            Variant lastValue = hasLastValue ? previousValue.Value.WrappedValue : default;
 
             // count the transitions.
             int count = 0;
 
             for (int ii = 0; ii < values.Count; ii++)
             {
-                if (!IsGood(values[ii]))
+                if (StatusCode.IsBad(values[ii].StatusCode))
                 {
                     continue;
                 }
 
-                double nextValue;
-                try
-                {
-                    nextValue = CastToDouble(values[ii]);
-                }
-                catch (Exception)
-                {
-                    continue;
-                }
+                Variant nextValue = values[ii].WrappedValue;
 
-                if (!double.IsNaN(lastValue) && lastValue != nextValue)
+                if (!hasLastValue || lastValue != nextValue)
                 {
                     count++;
                 }
 
+                hasLastValue = true;
                 lastValue = nextValue;
             }
 
