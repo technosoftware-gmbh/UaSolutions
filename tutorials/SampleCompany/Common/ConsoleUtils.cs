@@ -131,7 +131,9 @@ namespace SampleCompany.Common
             LogLevel fileLevel = LogLevel.Information;
 
             // switch for Trace/Verbose output
+#pragma warning disable CS0618 // Type or member is obsolete
             int traceMasks = configuration.TraceConfiguration.TraceMasks;
+#pragma warning restore CS0618 // Type or member is obsolete
             if ((traceMasks &
                 ~(
                     Utils.TraceMasks.Information |
@@ -147,7 +149,9 @@ namespace SampleCompany.Common
             // add file logging if configured
             if (logFile)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 string outputFilePath = configuration.TraceConfiguration.OutputFilePath;
+#pragma warning restore CS0618 // Type or member is obsolete
                 if (!string.IsNullOrWhiteSpace(outputFilePath))
                 {
                     loggerConfiguration.WriteTo.File(
