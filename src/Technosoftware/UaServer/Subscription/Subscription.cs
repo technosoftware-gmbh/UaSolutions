@@ -1122,12 +1122,16 @@ namespace Technosoftware.UaServer
                 Diagnostics.NextSequenceNumber = m_sequenceNumber;
             }
 
+            uint notificationLimit = m_maxNotificationsPerPublish == 0
+                ? uint.MaxValue
+                : m_maxNotificationsPerPublish;
+
             // add events.
-            if (events.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
+            if (events.Count > 0 && notificationCount < notificationLimit)
             {
                 var notification = new EventNotificationList();
 
-                while (events.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
+                while (events.Count > 0 && notificationCount < notificationLimit)
                 {
                     notification.Events.Add(events.Dequeue());
                     notificationCount++;
@@ -1137,7 +1141,7 @@ namespace Technosoftware.UaServer
             }
 
             // add datachanges (space permitting).
-            if (datachanges.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
+            if (datachanges.Count > 0 && notificationCount < notificationLimit)
             {
                 bool diagnosticsExist = false;
                 var notification = new DataChangeNotification
@@ -1146,7 +1150,7 @@ namespace Technosoftware.UaServer
                     DiagnosticInfos = new DiagnosticInfoCollection(datachanges.Count)
                 };
 
-                while (datachanges.Count > 0 && notificationCount < m_maxNotificationsPerPublish)
+                while (datachanges.Count > 0 && notificationCount < notificationLimit)
                 {
                     MonitoredItemNotification datachange = datachanges.Dequeue();
                     notification.MonitoredItems.Add(datachange);
