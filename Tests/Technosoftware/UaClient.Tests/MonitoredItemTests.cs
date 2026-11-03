@@ -153,12 +153,15 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(loadedSession.Subscriptions.Count(), Is.EqualTo(1));
             Assert.That(loadedSession.Subscriptions.First().MonitoredItems.Count(), Is.EqualTo(monitoredItems.Count));
 
+            // MonitoredItems does not guarantee an order, so compare the items by ClientId.
             List<MonitoredItemState> originalStates = monitoredItems
                 .ConvertAll(item =>
                 {
                     item.Snapshot(out MonitoredItemState state);
                     return state;
-                });
+                })
+                .OrderBy(state => state.ClientId)
+                .ToList();
 
             var loadedItems = loadedSession.Subscriptions.First().MonitoredItems.ToList();
             List<MonitoredItemState> loadedStates = loadedItems
@@ -166,7 +169,9 @@ namespace Technosoftware.UaClient.Tests
                 {
                     item.Snapshot(out MonitoredItemState state);
                     return state;
-                });
+                })
+                .OrderBy(state => state.ClientId)
+                .ToList();
 
             for (int i = 0; i < monitoredItems.Count; i++)
             {
