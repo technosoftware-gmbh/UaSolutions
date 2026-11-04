@@ -341,9 +341,8 @@ namespace Technosoftware.UaConfiguration
                 AddSecurityPolicies();
             }
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            ApplicationConfiguration.TraceConfiguration?.ApplySettings();
-#pragma warning restore CS0618 // Type or member is obsolete
+            // TraceConfiguration.ApplySettings was removed in 2.0: logging is configured
+            // through the ITelemetryContext, so there is nothing to apply here.
 
             await ApplicationConfiguration.ValidateAsync(ApplicationInstance.ApplicationType, ct)
                 .ConfigureAwait(false);
