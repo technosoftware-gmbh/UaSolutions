@@ -17,7 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,8 +24,8 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua.Security.Certificates;
 using System.Security.Cryptography;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Opc.Ua;
+using Opc.Ua.Redaction;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -154,9 +153,9 @@ namespace Technosoftware.UaServer
             if (predefinedNode is BaseObjectState passiveNode)
             {
                 NodeId typeId = passiveNode.TypeDefinitionId;
-                if (IsNodeIdInNamespace(typeId) && typeId.IdType == IdType.Numeric)
+                if (IsNodeIdInNamespace(typeId) && typeId.TryGetValue(out uint numericTypeId))
                 {
-                    switch ((uint)typeId.Identifier)
+                    switch (numericTypeId)
                     {
                         case ObjectTypes.ServerConfigurationType:
                         {
@@ -188,52 +187,54 @@ namespace Technosoftware.UaServer
                         }
                         case ObjectTypes.CertificateGroupFolderType:
                         {
-                            var activeNode = new CertificateGroupFolderState(passiveNode.Parent);
-                            activeNode.Create(context, passiveNode);
-
-                            // delete unsupported groups
-                            if (m_certificateGroups.All(group =>
-                                    group.BrowseName != activeNode.DefaultHttpsGroup?.BrowseName))
+                            // The standard address space carries
+                            // CertificateGroupFolderType instances under several
+                            // types. Only the server's own certificate groups
+                            // folder is managed here; the others keep the
+                            // structure they were built with.
+                            if (passiveNode.NodeId !=
+                                ObjectIds.ServerConfiguration_CertificateGroups)
                             {
-                                activeNode.DefaultHttpsGroup = null;
-                            }
-                            if (m_certificateGroups.All(group =>
-                                    group.BrowseName != activeNode.DefaultUserTokenGroup?
-                                        .BrowseName))
-                            {
-                                activeNode.DefaultUserTokenGroup = null;
-                            }
-                            if (m_certificateGroups.All(group =>
-                                    group.BrowseName != activeNode.DefaultApplicationGroup?
-                                        .BrowseName))
-                            {
-                                activeNode.DefaultApplicationGroup = null;
+                                break;
                             }
 
-                            // replace the node in the parent.
-                            passiveNode.Parent?.ReplaceChild(context, activeNode);
+                            // The node arrives fully built from the generated
+                            // model, so it is taken as it is rather than being
+                            // recreated. DefaultApplicationGroup is mandatory;
+                            // the HTTPS and user token groups are optional and
+                            // exist only once they are added, which is what
+                            // replaces the 1.5 code that deleted the groups the
+                            // configuration did not ask for.
+                            var activeNode = (CertificateGroupFolderState)passiveNode;
+
+                            ServerCertificateGroup applicationGroup = m_certificateGroups
+                                .FirstOrDefault(group =>
+                                    group.BrowseName == BrowseNames.DefaultApplicationGroup);
+                            if (applicationGroup != null)
+                            {
+                                applicationGroup.Node = activeNode.DefaultApplicationGroup;
+                            }
+
+                            ServerCertificateGroup httpsGroup = m_certificateGroups
+                                .FirstOrDefault(group =>
+                                    group.BrowseName == BrowseNames.DefaultHttpsGroup);
+                            if (httpsGroup != null)
+                            {
+                                activeNode.AddDefaultHttpsGroup(context);
+                                httpsGroup.Node = activeNode.DefaultHttpsGroup;
+                            }
+
+                            ServerCertificateGroup userTokenGroup = m_certificateGroups
+                                .FirstOrDefault(group =>
+                                    group.BrowseName == BrowseNames.DefaultUserTokenGroup);
+                            if (userTokenGroup != null)
+                            {
+                                activeNode.AddDefaultUserTokenGroup(context);
+                                userTokenGroup.Node = activeNode.DefaultUserTokenGroup;
+                            }
+
                             return activeNode;
                         }
-                        case ObjectTypes.CertificateGroupType:
-                        {
-                            ServerCertificateGroup result = m_certificateGroups
-                                .FirstOrDefault(group =>
-                                    group.NodeId == passiveNode.NodeId);
-
-                            if (result != null)
-                            {
-                                var activeNode = new CertificateGroupState(passiveNode.Parent);
-                                activeNode.Create(context, passiveNode);
-
-                                result.NodeId = activeNode.NodeId;
-                                result.Node = activeNode;
-
-                                // replace the node in the parent.
-                                passiveNode.Parent?.ReplaceChild(context, activeNode);
-                                return activeNode;
-                            }
-                        }
-                        break;
                     }
                 }
             }
@@ -263,7 +264,7 @@ namespace Technosoftware.UaServer
             ];
             m_serverConfigurationNode.ServerCapabilities.ValueRank = ValueRanks.OneDimension;
             m_serverConfigurationNode.ServerCapabilities.ArrayDimensions
-                = new ReadOnlyList<uint>([0]);
+                = [0];
             m_serverConfigurationNode.SupportedPrivateKeyFormats.Value =
             [
                 .. configuration.ServerConfiguration.SupportedPrivateKeyFormats
@@ -271,7 +272,7 @@ namespace Technosoftware.UaServer
             m_serverConfigurationNode.SupportedPrivateKeyFormats.ValueRank = ValueRanks
                 .OneDimension;
             m_serverConfigurationNode.SupportedPrivateKeyFormats.ArrayDimensions
-                = new ReadOnlyList<uint>([0]);
+                = [0];
             m_serverConfigurationNode.MaxTrustListSize.Value = (uint)configuration
                 .ServerConfiguration
                 .MaxTrustListSize;
@@ -371,9 +372,9 @@ namespace Technosoftware.UaServer
                     SystemContext,
                     default,
                     namespaceMetadataState.BrowseName,
-                    null,
+                    default,
                     true);
-                namespaceMetadataState.DisplayName = namespaceUri;
+                namespaceMetadataState.DisplayName = new LocalizedText(namespaceUri);
                 namespaceMetadataState.SymbolicName = namespaceUri;
                 namespaceMetadataState.NamespaceUri.Value = namespaceUri;
 
@@ -427,26 +428,26 @@ namespace Technosoftware.UaServer
             NodeId objectId,
             NodeId certificateGroupId,
             NodeId certificateTypeId,
-            byte[] certificate,
-            byte[][] issuerCertificates,
+            ByteString certificate,
+            ArrayOf<ByteString> issuerCertificates,
             string privateKeyFormat,
-            byte[] privateKey,
+            ByteString privateKey,
             CancellationToken ct)
         {
             bool applyChangesRequired = false;
             HasApplicationSecureAdminAccess(context);
 
-            object[] inputArguments =
+            ArrayOf<Variant> inputArguments =
             [
-                certificateGroupId,
-                certificateTypeId,
-                certificate,
-                issuerCertificates,
-                privateKeyFormat,
-                privateKey
+                Variant.From(certificateGroupId),
+                Variant.From(certificateTypeId),
+                Variant.From(certificate),
+                Variant.From(issuerCertificates),
+                Variant.From(privateKeyFormat),
+                Variant.From(privateKey)
             ];
-            X509Certificate2 newCert = null;
-            X509Certificate2 certWithPrivateKey = null;
+            Certificate newCert = null;
+            Certificate certWithPrivateKey = null;
 
             ServerData.ReportCertificateUpdateRequestedAuditEvent(
                 context,
@@ -456,9 +457,11 @@ namespace Technosoftware.UaServer
                 m_logger);
             try
             {
-                if (certificate == null)
+                if (certificate.IsEmpty)
                 {
-                    throw new ArgumentNullException(nameof(certificate));
+                    throw new ArgumentException(
+                        "The certificate is empty.",
+                        nameof(certificate));
                 }
 
                 privateKeyFormat = privateKeyFormat?.ToUpperInvariant();
@@ -476,7 +479,7 @@ namespace Technosoftware.UaServer
 
                 try
                 {
-                    newCert = CertificateFactory.Create(certificate);
+                    newCert = DefaultCertificateFactory.Instance.CreateFromRawData(certificate);
                 }
                 catch
                 {
@@ -495,91 +498,116 @@ namespace Technosoftware.UaServer
 
                 // identify the existing certificate to be updated
                 // it should be of the same type and same subject name as the new certificate
+                // CertificateIdentifier.Certificate is gone in 2.0 - resolving
+                // an identifier is asynchronous and needs a registry - so the
+                // fallback for a subject that changed mid-rotation matches on
+                // the certificate type alone, as upstream does, rather than by
+                // reading each identifier's certificate for its application URI.
                 CertificateIdentifier existingCertIdentifier =
                     (
                         certificateGroup.ApplicationCertificates.FirstOrDefault(cert =>
                             X509Utils.CompareDistinguishedName(cert.SubjectName, newCert.Subject) &&
                             cert.CertificateType == certificateTypeId)
                         ?? certificateGroup.ApplicationCertificates.FirstOrDefault(cert =>
-                            cert.Certificate != null &&
-                            X509Utils.GetApplicationUrisFromCertificate(cert.Certificate)
-                                .Any(uri => uri.Equals(m_configuration.ApplicationUri, StringComparison.Ordinal)) &&
                             cert.CertificateType == certificateTypeId))
                     ?? throw new ServiceResultException(
                         StatusCodes.BadInvalidArgument,
                         "No existing certificate found for the specified certificate type and subject name.");
 
-                bool isApplicationCertificateGroup = Utils.IsEqual(
+                var newIssuerCollection = new CertificateCollection();
+
+                if (Utils.IsEqual(
                     certificateGroup.NodeId,
-                    ObjectIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup);
-                var newIssuerCollection = new X509Certificate2Collection();
-
-                try
+                    ObjectIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup))
                 {
-                    // Application-group issuers must already be installed in the
-                    // configured TrustList. Ignore supplied issuer bytes entirely.
-                    if (!isApplicationCertificateGroup && issuerCertificates != null)
-                    {
-                        foreach (byte[] issuerRawCert in issuerCertificates)
-                        {
-                            newIssuerCollection.Add(CertificateFactory.Create(issuerRawCert));
-                        }
-                    }
-                }
-                catch
-                {
-                    throw new ServiceResultException(
-                        StatusCodes.BadCertificateInvalid,
-                        "Issuer certificate data is invalid.");
-                }
-
-                // self signed
-                bool selfSigned = X509Utils.IsSelfSigned(newCert);
-                if (selfSigned && newIssuerCollection.Count != 0)
-                {
-                    throw new ServiceResultException(
-                        StatusCodes.BadCertificateInvalid,
-                        "Issuer list not empty for self signed certificate.");
-                }
-
-                if (!selfSigned)
-                {
+                    // OPC 10000-12 7.10.5: for the application certificate group the
+                    // issuer certificates are already required to be in the TrustList,
+                    // so the supplied list is ignored and the new certificate is
+                    // validated against the group's configured trust and issuer stores.
                     try
                     {
-                        // Honor the server's certificate validation policy and use its
-                        // configured trust and issuer stores for application certificates.
-                        var certValidator = new CertificateValidator(ServerData.Telemetry);
-                        await certValidator.UpdateAsync(
+                        await ValidateCertificateAgainstGroupTrustListAsync(
+                            certificateGroup,
+                            newCert,
                             m_configuration.SecurityConfiguration,
-                            m_configuration.ApplicationUri,
+                            ServerData.Telemetry,
                             ct).ConfigureAwait(false);
-
-                        if (newIssuerCollection.Count > 0)
-                        {
-                            // Preserve supplied-chain handling for other certificate groups.
-                            var issuerStore = new CertificateTrustList();
-                            var issuerCollection = new CertificateIdentifierCollection();
-                            foreach (X509Certificate2 issuerCert in newIssuerCollection)
-                            {
-                                issuerCollection.Add(new CertificateIdentifier(issuerCert));
-                            }
-                            issuerStore.TrustedCertificates = issuerCollection;
-                            certValidator.Update(issuerStore, issuerStore, null);
-                        }
-
-                        await certValidator.ValidateAsync(newCert, ct).ConfigureAwait(false);
+                    }
+                    catch (ServiceResultException)
+                    {
+                        // the validator already reports the specific status
+                        // code; do not flatten it to BadSecurityChecksFailed.
+                        throw;
                     }
                     catch (Exception ex)
                     {
                         m_logger.LogError(
                             Utils.TraceMasks.Security,
                             ex,
-                            "Failed to verify integrity of the new certificate {Certificate} and the issuer list.",
-                            newCert.AsLogSafeString());
+                            "Failed to verify integrity of the new certificate {Certificate} against the trust list.",
+                            Redact.Create(newCert));
                         throw new ServiceResultException(
                             StatusCodes.BadSecurityChecksFailed,
-                            "Failed to verify integrity of the new certificate and the issuer list.",
+                            "Failed to verify integrity of the new certificate against the certificate group's TrustList.",
                             ex);
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        // build issuer chain
+                        foreach (ByteString issuerRawCert in issuerCertificates)
+                        {
+                            using var issuer = Certificate.FromRawData(issuerRawCert);
+                            newIssuerCollection.Add(issuer);
+                        }
+                    }
+                    catch
+                    {
+                        throw new ServiceResultException(
+                            StatusCodes.BadCertificateInvalid,
+                            "Issuer certificate data is invalid.");
+                    }
+
+                    // self signed
+                    bool selfSigned = X509Utils.IsSelfSigned(newCert);
+                    if (selfSigned && newIssuerCollection.Count != 0)
+                    {
+                        throw new ServiceResultException(
+                            StatusCodes.BadCertificateInvalid,
+                            "Issuer list not empty for self signed certificate.");
+                    }
+
+                    if (!selfSigned)
+                    {
+                        try
+                        {
+                            await ValidatePushCertificateAndIssuerChainAsync(
+                                newCert,
+                                newIssuerCollection,
+                                m_configuration.SecurityConfiguration,
+                                ServerData.Telemetry,
+                                ct).ConfigureAwait(false);
+                        }
+                        catch (ServiceResultException)
+                        {
+                            // the validator already reports the specific status
+                            // code; do not flatten it to BadSecurityChecksFailed.
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            m_logger.LogError(
+                                Utils.TraceMasks.Security,
+                                ex,
+                                "Failed to verify integrity of the new certificate {Certificate} and the issuer list.",
+                                Redact.Create(newCert));
+                            throw new ServiceResultException(
+                                StatusCodes.BadSecurityChecksFailed,
+                                "Failed to verify integrity of the new certificate and the issuer list.",
+                                ex);
+                        }
                     }
                 }
 
@@ -597,101 +625,44 @@ namespace Technosoftware.UaServer
                     {
                         case null:
                         case "":
-                            // use the new generated private key if one exists and matches the provided public key.
-                            // Resolve the key once: a failed attempt has already deleted the existing
-                            // certificate from the store, so a retry could not load its key again.
-                            X509Certificate2 keySource;
-                            if (certificateGroup.TemporaryApplicationCertificate != null &&
-                                X509Utils.VerifyKeyPair(
-                                    newCert,
-                                    certificateGroup.TemporaryApplicationCertificate))
-                            {
-                                keySource = certificateGroup.TemporaryApplicationCertificate;
-                            }
-                            else
-                            {
-                                certWithPrivateKey = await existingCertIdentifier
-                                    .LoadPrivateKeyExAsync(
-                                        passwordProvider,
-                                        m_configuration.ApplicationUri,
-                                        ServerData.Telemetry,
-                                        ct)
-                                    .ConfigureAwait(false);
-                                if (certWithPrivateKey == null)
-                                {
-                                    throw new ServiceResultException(
-                                        StatusCodes.BadSecurityChecksFailed,
-                                        "A private key was not found");
-                                }
-                                keySource = certWithPrivateKey;
-                            }
-
                             for (int attempt = 0; ; attempt++)
                             {
-                                X509Certificate2 exportableKey = X509Utils.CreateCopyWithPrivateKey(
-                                    keySource,
-                                    false);
-
-                                // On Windows the copy keeps its key in a temporary key container that is
-                                // deleted when the copy is released (or finalized). The combined certificate
-                                // only references that container, so keep the copy alive until the store
-                                // has exported the combined certificate; otherwise a GC in between fails
-                                // the export with "Keyset does not exist".
-                                using X509Certificate2 ownedKeyCopy = ReferenceEquals(exportableKey, keySource)
-                                    ? null
-                                    : exportableKey;
-
-                                // On macOS combine the new certificate with a private copy of
-                                // the key. CopyWithPrivateKey shares the native key handle with
-                                // its source; disposing the combined certificate later would
-                                // invalidate that key for RSA-PSS, and the source is the
-                                // certificate new channels use until ApplyChanges reloads it.
-                                // Linux keys are in memory and Windows already has a detached
-                                // copy, so those platforms keep using the source as is.
-                                using (X509Certificate2 keyCopy = RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
-                                    ? CreateDetachedKeyCopy(exportableKey)
-                                    : null)
+                                Certificate exportableKey;
+                                // use the new generated private key if one exists and matches the provided public key
+                                if (certificateGroup.TemporaryApplicationCertificate != null &&
+                                    X509Utils.VerifyKeyPair(
+                                        newCert,
+                                        certificateGroup.TemporaryApplicationCertificate))
                                 {
-                                    updateCertificate.CertificateWithPrivateKey =
-                                        CertificateFactory.CreateCertificateWithPrivateKey(
-                                            newCert,
-                                            keyCopy ?? exportableKey);
-                                    try
-                                    {
-                                        await UpdateCertificateInternalAsync(
-                                            certificateGroup,
+                                    exportableKey = X509Utils.CreateCopyWithPrivateKey(
+                                        certificateGroup.TemporaryApplicationCertificate,
+                                        false);
+                                }
+                                else
+                                {
+                                    certWithPrivateKey = await CertificateIdentifierResolver
+                                        .LoadPrivateKeyAsync(
                                             existingCertIdentifier,
-                                            updateCertificate, ct).ConfigureAwait(false);
-                                        break;
-                                    }
-                                    catch (Exception ex) when (ShouldRetry(attempt, ex))
+                                            passwordProvider,
+                                            m_configuration.ApplicationUri,
+                                            ServerData.Telemetry,
+                                            ct)
+                                        .ConfigureAwait(false);
+                                    if (certWithPrivateKey == null)
                                     {
-                                        // release the failed attempt's certificate; the retry creates a new one
-                                        updateCertificate.CertificateWithPrivateKey.Dispose();
-                                        updateCertificate.CertificateWithPrivateKey = null;
-                                        m_logger.LogDebug(
-                                            Utils.TraceMasks.Security,
-                                            ex,
-                                            "Failed to update certificate {Certificate}. Retrying...",
-                                            newCert.AsLogSafeString());
+                                        throw new ServiceResultException(
+                                            StatusCodes.BadSecurityChecksFailed,
+                                            "A private key was not found");
                                     }
+                                    exportableKey = X509Utils.CreateCopyWithPrivateKey(
+                                        certWithPrivateKey,
+                                        false);
                                 }
-                            }
-                            break;
-                        case "PFX":
-                            for (int attempt = 0; ; attempt++)
-                            {
-                                // keep the imported key alive until the store has exported the combined
-                                // certificate, its key container is deleted when it is released
-                                using X509Certificate2 pfxKey = X509Utils.CreateCertificateFromPKCS12(
-                                    privateKey,
-                                    passwordProvider?.GetPassword(existingCertIdentifier),
-                                    false);
 
                                 updateCertificate.CertificateWithPrivateKey =
-                                    CertificateFactory.CreateCertificateWithPrivateKey(
+                                    s_certificateFactory.CreateWithPrivateKey(
                                         newCert,
-                                        pfxKey);
+                                        exportableKey);
                                 try
                                 {
                                     await UpdateCertificateInternalAsync(
@@ -702,14 +673,41 @@ namespace Technosoftware.UaServer
                                 }
                                 catch (Exception ex) when (ShouldRetry(attempt, ex))
                                 {
-                                    // release the failed attempt's certificate; the retry creates a new one
-                                    updateCertificate.CertificateWithPrivateKey.Dispose();
-                                    updateCertificate.CertificateWithPrivateKey = null;
+                                    m_logger.LogDebug(
+                                        Utils.TraceMasks.Security,
+                                        ex,
+                                        "Failed to update certificate {Certificate}. Retrying...",
+                                        Redact.Create(newCert));
+                                }
+                            }
+                            break;
+                        case "PFX":
+                            for (int attempt = 0; ; attempt++)
+                            {
+                                certWithPrivateKey = X509Utils.CreateCertificateFromPKCS12(
+                                    privateKey.ToArray(),
+                                    passwordProvider?.GetPassword(existingCertIdentifier),
+                                    false);
+
+                                updateCertificate.CertificateWithPrivateKey =
+                                    s_certificateFactory.CreateWithPrivateKey(
+                                        newCert,
+                                        certWithPrivateKey);
+                                try
+                                {
+                                    await UpdateCertificateInternalAsync(
+                                        certificateGroup,
+                                        existingCertIdentifier,
+                                        updateCertificate, ct).ConfigureAwait(false);
+                                    break;
+                                }
+                                catch (Exception ex) when (ShouldRetry(attempt, ex))
+                                {
                                     m_logger.LogDebug(
                                         Utils.TraceMasks.Security,
                                         ex,
                                         "Failed to update certificate {Certificate} with PFX private key. Retrying...",
-                                        newCert.AsLogSafeString());
+                                        Redact.Create(newCert));
                                 }
                             }
                             break;
@@ -717,9 +715,9 @@ namespace Technosoftware.UaServer
                             for (int attempt = 0; ; attempt++)
                             {
                                 updateCertificate.CertificateWithPrivateKey =
-                                CertificateFactory.CreateCertificateWithPEMPrivateKey(
+                                s_certificateFactory.CreateWithPEMPrivateKey(
                                     newCert,
-                                    privateKey,
+                                    privateKey.ToArray(),
                                     passwordProvider?.GetPassword(existingCertIdentifier));
                                 try
                                 {
@@ -731,14 +729,11 @@ namespace Technosoftware.UaServer
                                 }
                                 catch (Exception ex) when (ShouldRetry(attempt, ex))
                                 {
-                                    // release the failed attempt's certificate; the retry creates a new one
-                                    updateCertificate.CertificateWithPrivateKey.Dispose();
-                                    updateCertificate.CertificateWithPrivateKey = null;
                                     m_logger.LogDebug(
                                         Utils.TraceMasks.Security,
                                         ex,
                                         "Failed to update certificate {Certificate} with PEM private key. Retrying...",
-                                        newCert.AsLogSafeString());
+                                        Redact.Create(newCert));
                                 }
                             }
                             break;
@@ -802,7 +797,8 @@ namespace Technosoftware.UaServer
             {
                 try
                 {
-                    using (ICertificateStore appStore = existingCertIdentifier.OpenStore(ServerData.Telemetry))
+                    using (ICertificateStore appStore = CertificateIdentifierResolver
+                        .OpenStore(existingCertIdentifier, ServerData.Telemetry))
                     {
                         if (appStore == null)
                         {
@@ -812,8 +808,8 @@ namespace Technosoftware.UaServer
 
                         m_logger.LogInformation(
                             Utils.TraceMasks.Security,
-                            "Delete application certificate {Certificate}",
-                            existingCertIdentifier.Certificate.AsLogSafeString());
+                            "Delete application certificate {Thumbprint}",
+                            existingCertIdentifier.Thumbprint);
                         await appStore.DeleteAsync(
                             existingCertIdentifier.Thumbprint,
                             ct)
@@ -824,7 +820,7 @@ namespace Technosoftware.UaServer
                         m_logger.LogInformation(
                             Utils.TraceMasks.Security,
                             "Add new application certificate {Certificate}",
-                            updateCertificate.CertificateWithPrivateKey.AsLogSafeString());
+                            Redact.Create(updateCertificate.CertificateWithPrivateKey));
                         Debug.Assert(updateCertificate.CertificateWithPrivateKey.HasPrivateKey);
                         await appStore.AddAsync(
                             updateCertificate.CertificateWithPrivateKey,
@@ -832,16 +828,13 @@ namespace Technosoftware.UaServer
                             ct)
                             .ConfigureAwait(false);
                         // keep only track of cert without private key
-                        X509Certificate2 certOnly = CertificateFactory.Create(
+                        Certificate certOnly = DefaultCertificateFactory.Instance.CreateFromRawData(
                             updateCertificate.CertificateWithPrivateKey.RawData);
                         updateCertificate.CertificateWithPrivateKey.Dispose();
                         updateCertificate.CertificateWithPrivateKey = certOnly;
-                        // update certificate identifier with new certificate
-                        await existingCertIdentifier.FindAsync(
-                            m_configuration.ApplicationUri,
-                            ServerData.Telemetry,
-                            ct)
-                            .ConfigureAwait(false);
+                        // the identifier no longer caches a resolved
+                        // certificate; the store is the single source of truth
+                        // and callers resolve when they need one.
                     }
 
                     ICertificateStore issuerStore = certificateGroup.IssuerStore.OpenStore(ServerData.Telemetry);
@@ -853,14 +846,14 @@ namespace Technosoftware.UaServer
                                 "Failed to open issuer certificate store.");
                         }
 
-                        foreach (X509Certificate2 issuer in updateCertificate.IssuerCollection)
+                        foreach (Certificate issuer in updateCertificate.IssuerCollection)
                         {
                             try
                             {
                                 m_logger.LogInformation(
                                     Utils.TraceMasks.Security,
                                     "Add new issuer certificate {Certificate}",
-                                    issuer.AsLogSafeString());
+                                    Redact.Create(issuer));
                                 await issuerStore.AddAsync(issuer, ct: ct).ConfigureAwait(false);
                             }
                             catch (ArgumentException)
@@ -889,7 +882,7 @@ namespace Technosoftware.UaServer
                         Utils.TraceMasks.Security,
                         ex,
                         "Failed to update certificate {Certificate}.",
-                        newCert.AsLogSafeString());
+                        Redact.Create(newCert));
                     throw new ServiceResultException(
                         StatusCodes.BadSecurityChecksFailed,
                         "Failed to update certificate.",
@@ -906,7 +899,7 @@ namespace Technosoftware.UaServer
             NodeId certificateTypeId,
             string subjectName,
             bool regeneratePrivateKey,
-            byte[] nonce,
+            ByteString nonce,
             CancellationToken cancellationToken)
         {
             HasApplicationSecureAdminAccess(context);
@@ -923,16 +916,32 @@ namespace Technosoftware.UaServer
 
             if (string.IsNullOrEmpty(subjectName))
             {
-                subjectName = existingCertIdentifier.Certificate.Subject;
+                // The identifier is metadata only in 2.0, so the subject to
+                // sign for comes from the certificate that is actually in use.
+                using CertificateEntry subjectEntry =
+                    (m_configuration.CertificateManager as ICertificateRegistry)?
+                        .AcquireApplicationCertificateByType(certificateTypeId);
+                subjectName = subjectEntry?.Certificate?.Subject
+                    ?? existingCertIdentifier.SubjectName;
             }
 
             certificateGroup.TemporaryApplicationCertificate?.Dispose();
             certificateGroup.TemporaryApplicationCertificate = null;
 
-            X509Certificate2 certWithPrivateKey;
+            Certificate certWithPrivateKey;
             if (regeneratePrivateKey)
             {
-                IList<string> domainNames = X509Utils.GetDomainsFromCertificate(existingCertIdentifier.Certificate);
+                // the configured identifier is metadata only in 2.0; the
+                // currently-active certificate comes from the manager's
+                // registry, and its domains seed the temporary certificate.
+                using CertificateEntry currentEntry =
+                    (m_configuration.CertificateManager as ICertificateRegistry)?
+                        .AcquireApplicationCertificateByType(certificateTypeId);
+                Certificate currentCert = currentEntry?.Certificate;
+
+                ArrayOf<string> domainNames = currentCert != null
+                    ? X509Utils.GetDomainsFromCertificate(currentCert)
+                    : default;
 
                 certWithPrivateKey = GenerateTemporaryApplicationCertificate(
                     certificateTypeId,
@@ -945,11 +954,13 @@ namespace Technosoftware.UaServer
                 ICertificatePasswordProvider passwordProvider = m_configuration
                     .SecurityConfiguration
                     .CertificatePasswordProvider;
-                certWithPrivateKey = await existingCertIdentifier
-                    .LoadPrivateKeyExAsync(passwordProvider,
-                                           m_configuration.ApplicationUri,
-                                           ServerData.Telemetry,
-                                           cancellationToken)
+                certWithPrivateKey = await CertificateIdentifierResolver
+                    .LoadPrivateKeyAsync(
+                        existingCertIdentifier,
+                        passwordProvider,
+                        m_configuration.ApplicationUri,
+                        ServerData.Telemetry,
+                        cancellationToken)
                     .ConfigureAwait(false);
 
                 if (certWithPrivateKey == null)
@@ -961,32 +972,43 @@ namespace Technosoftware.UaServer
             m_logger.LogInformation(
                 Utils.TraceMasks.Security,
                 "Create signing request {Certificate}",
-                certWithPrivateKey.AsLogSafeString());
-            byte[] certificateRequest = CertificateFactory.CreateSigningRequest(
+                Redact.Create(certWithPrivateKey));
+            byte[] certificateRequest = s_certificateFactory.CreateSigningRequest(
                 certWithPrivateKey,
-                X509Utils.GetDomainsFromCertificate(certWithPrivateKey));
+                X509Utils.GetDomainsFromCertificate(certWithPrivateKey).ToArray());
 
             return new CreateSigningRequestMethodStateResult
             {
                 ServiceResult = ServiceResult.Good,
-                CertificateRequest = certificateRequest
+                CertificateRequest = certificateRequest.ToByteString()
             };
         }
 
-        private X509Certificate2 GenerateTemporaryApplicationCertificate(
+        private Certificate GenerateTemporaryApplicationCertificate(
             NodeId certificateTypeId,
             ServerCertificateGroup certificateGroup,
             string subjectName,
-            IList<string> domainNames)
+            ArrayOf<string> domainNames)
         {
-            X509Certificate2 certificate;
+            Certificate certificate;
 
-            ICertificateBuilder certificateBuilder = CertificateFactory
-                .CreateCertificate(m_configuration.ApplicationUri, m_configuration.ApplicationName, subjectName, domainNames)
+            // CreateApplicationCertificate does not default the domain
+            // names the way the removed CertificateFactory.CreateCertificate
+            // did, and this path is reached with none of them when the
+            // current certificate could not be resolved. Without the
+            // fallback the signing request would carry no DNS entry in its
+            // subject alternative name at all.
+            if (domainNames.IsEmpty)
+            {
+                domainNames = [Utils.GetHostName()];
+            }
+
+            ICertificateBuilder certificateBuilder = s_certificateFactory
+                .CreateApplicationCertificate(m_configuration.ApplicationUri, m_configuration.ApplicationName, subjectName, [.. domainNames])
                 .SetNotBefore(DateTime.Today.AddDays(-1))
                 .SetNotAfter(DateTime.Today.AddDays(14));
 
-            if (certificateTypeId == null ||
+            if (certificateTypeId.IsNull ||
                 certificateTypeId == ObjectTypeIds.ApplicationCertificateType ||
                 certificateTypeId == ObjectTypeIds.RsaMinApplicationCertificateType ||
                 certificateTypeId == ObjectTypeIds.RsaSha256ApplicationCertificateType)
@@ -997,7 +1019,7 @@ namespace Technosoftware.UaServer
             else
             {
                 ECCurve? curve =
-                    EccUtils.GetCurveFromCertificateTypeId(certificateTypeId)
+                    CryptoUtils.GetCurveFromCertificateTypeId(certificateTypeId)
                     ?? throw new ServiceResultException(
                         StatusCodes.BadNotSupported,
                         "The Ecc certificate type is not supported.");
@@ -1009,94 +1031,12 @@ namespace Technosoftware.UaServer
             return certificate;
         }
 
-        /// <summary>
-        /// Returns a copy of a certificate whose private key is independent
-        /// of the source, or null if the key cannot be exported.
-        /// </summary>
-        /// <remarks>
-        /// <c>X509Certificate2.CopyWithPrivateKey</c> does not deep copy the
-        /// key: the result shares the native key handle with the certificate
-        /// the key came from. On macOS the stack loads keys into a temporary
-        /// keychain, and disposing a certificate that shares such a key leaves
-        /// the source unable to export key parameters, which RSA-PSS signing
-        /// needs (OSStatus -50). Round-tripping the source through an
-        /// in-memory PFX gives the copy a key of its own, the technique
-        /// <c>X509Utils.CreateCopyWithPrivateKey</c> already uses on
-        /// Windows. A key that cannot be exported (TPM, HSM, PKCS#11) is not
-        /// affected, so null is returned and the caller uses the source as is.
-        /// The caller decides on which platform a copy is needed and verifies
-        /// the key pair when it combines the copy with the new certificate.
-        /// </remarks>
-        private static X509Certificate2 CreateDetachedKeyCopy(
-            X509Certificate2 certificateWithPrivateKey)
-        {
-            char[] passcode = GeneratePasscode();
-            byte[] pfx = null;
-            try
-            {
-                using var securePasscode = new SecureString();
-                foreach (char c in passcode)
-                {
-                    securePasscode.AppendChar(c);
-                }
-                securePasscode.MakeReadOnly();
-
-                try
-                {
-                    pfx = certificateWithPrivateKey.Export(X509ContentType.Pfx, securePasscode);
-                }
-                catch (CryptographicException)
-                {
-                    // not exportable: nothing to copy
-                    return null;
-                }
-
-                return X509CertificateLoader.LoadPkcs12(
-                    pfx,
-                    passcode,
-                    X509KeyStorageFlags.Exportable);
-            }
-            finally
-            {
-                if (pfx != null)
-                {
-                    Array.Clear(pfx, 0, pfx.Length);
-                }
-                Array.Clear(passcode, 0, passcode.Length);
-            }
-        }
-
-        /// <summary>
-        /// Creates a random passcode for the in-memory PFX round trip.
-        /// </summary>
-        /// <remarks>
-        /// Same approach as the internal <c>X509Utils.GeneratePasscode</c> of the stack.
-        /// </remarks>
-        private static char[] GeneratePasscode()
-        {
-            const int kLength = 18;
-            byte[] tokenBuffer = Nonce.CreateRandomNonceData(kLength);
-            char[] charToken = new char[kLength * 3];
-            int length = Convert.ToBase64CharArray(
-                tokenBuffer,
-                0,
-                tokenBuffer.Length,
-                charToken,
-                0,
-                Base64FormattingOptions.None);
-            Array.Clear(tokenBuffer, 0, tokenBuffer.Length);
-            char[] passcode = new char[length];
-            charToken.AsSpan(0, length).CopyTo(passcode);
-            Array.Clear(charToken, 0, charToken.Length);
-            return passcode;
-        }
-
         private ServiceResult ApplyChanges(
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             HasApplicationSecureAdminAccess(context);
 
@@ -1113,7 +1053,7 @@ namespace Technosoftware.UaServer
                         m_logger.LogInformation(
                             Utils.TraceMasks.Security,
                             "Apply Changes for certificate {Certificate}",
-                            updateCertificate.CertificateWithPrivateKey.AsLogSafeString());
+                            Redact.Create(updateCertificate.CertificateWithPrivateKey));
                     }
                 }
                 finally
@@ -1152,8 +1092,11 @@ namespace Technosoftware.UaServer
                             Utils.TraceMasks.Security,
                             "----- Apply Changes for application certificate update running...");
 
+                        // CertificateValidator.UpdateCertificateAsync is gone
+                        // in 2.0; the manager reloads the application
+                        // certificate snapshot from the configuration instead.
                         await m_configuration
-                            .CertificateValidator.UpdateCertificateAsync(
+                            .CertificateManager.ReloadApplicationCertificatesAsync(
                                 m_configuration.SecurityConfiguration,
                                 m_configuration.ApplicationUri)
                             .ConfigureAwait(false);
@@ -1182,7 +1125,7 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            ref byte[][] certificates)
+            ref ArrayOf<ByteString> certificates)
         {
             HasApplicationSecureAdminAccess(context);
 
@@ -1198,13 +1141,13 @@ namespace Technosoftware.UaServer
             {
                 if (store != null)
                 {
-                    X509Certificate2Collection collection = store.EnumerateAsync().Result;
-                    var rawList = new List<byte[]>();
-                    foreach (X509Certificate2 cert in collection)
+                    using CertificateCollection collection = store.EnumerateAsync().Result;
+                    var rawList = new List<ByteString>();
+                    foreach (Certificate cert in collection)
                     {
-                        rawList.Add(cert.RawData);
+                        rawList.Add(cert.RawData.ToByteString());
                     }
-                    certificates = [.. rawList];
+                    certificates = rawList.ToArrayOf();
                 }
             }
             finally
@@ -1220,8 +1163,8 @@ namespace Technosoftware.UaServer
             MethodState method,
             NodeId objectId,
             NodeId certificateGroupId,
-            ref NodeId[] certificateTypeIds,
-            ref byte[][] certificates)
+            ref ArrayOf<NodeId> certificateTypeIds,
+            ref ArrayOf<ByteString> certificates)
         {
             HasApplicationSecureAdminAccess(context);
 
@@ -1232,9 +1175,33 @@ namespace Technosoftware.UaServer
                     StatusCodes.BadInvalidArgument,
                     "Certificate group invalid.");
 
-            certificateTypeIds = certificateGroup.CertificateTypes;
-            certificates = [.. certificateGroup.ApplicationCertificates
-                .Select(s => s.Certificate?.RawData)];
+            // The configured identifier no longer caches the certificate it
+            // resolved to, so each slot is looked up in the manager's registry
+            // and the two arrays are built together - they are returned as
+            // parallel lists and the group's certificate types are not
+            // guaranteed to line up with its configured identifiers.
+            var registry = m_configuration.CertificateManager as ICertificateRegistry;
+            var occupiedTypes = new List<NodeId>();
+            var occupiedCertificates = new List<ByteString>();
+
+            foreach (CertificateIdentifier applicationCertificate in
+                certificateGroup.ApplicationCertificates)
+            {
+                using CertificateEntry entry = registry?
+                    .AcquireApplicationCertificateByType(applicationCertificate.CertificateType);
+                Certificate certificate = entry?.Certificate;
+
+                if (certificate == null)
+                {
+                    continue;
+                }
+
+                occupiedTypes.Add(applicationCertificate.CertificateType);
+                occupiedCertificates.Add(certificate.RawData.ToByteString());
+            }
+
+            certificateTypeIds = occupiedTypes.ToArrayOf();
+            certificates = occupiedCertificates.ToArrayOf();
 
             return ServiceResult.Good;
         }
@@ -1244,7 +1211,7 @@ namespace Technosoftware.UaServer
             NodeId certificateTypeId)
         {
             // verify typeid must be set
-            if (NodeId.IsNull(certificateTypeId))
+            if (certificateTypeId.IsNull)
             {
                 throw new ServiceResultException(
                     StatusCodes.BadInvalidArgument,
@@ -1252,7 +1219,7 @@ namespace Technosoftware.UaServer
             }
 
             // verify requested certificate group
-            if (NodeId.IsNull(certificateGroupId))
+            if (certificateGroupId.IsNull)
             {
                 certificateGroupId = ObjectIds
                     .ServerConfiguration_CertificateGroups_DefaultApplicationGroup;
@@ -1370,14 +1337,109 @@ namespace Technosoftware.UaServer
                 }
             }
         }
+
+        /// <summary>
+        /// Validates a new application certificate against the configured trust
+        /// and issuer stores of its certificate group.
+        /// </summary>
+        /// <remarks>
+        /// OPC 10000-12 7.10.5: suppressible errors are ignored, every other error
+        /// fails. Since the 2.0 stack, a missing issuer (BadCertificateChainIncomplete)
+        /// is not suppressible, so a certificate whose CA is not in the group's stores
+        /// is rejected.
+        /// </remarks>
+        private static async Task ValidateCertificateAgainstGroupTrustListAsync(
+            ServerCertificateGroup certificateGroup,
+            Certificate newCertificate,
+            SecurityConfiguration securityConfiguration,
+            ITelemetryContext telemetry,
+            CancellationToken ct)
+        {
+            ArgumentNullException.ThrowIfNull(certificateGroup);
+            ArgumentNullException.ThrowIfNull(certificateGroup.TrustedStore);
+            ArgumentNullException.ThrowIfNull(newCertificate);
+            ArgumentNullException.ThrowIfNull(securityConfiguration);
+            ArgumentNullException.ThrowIfNull(telemetry);
+
+            var trustList = new TrustListIdentifier(certificateGroup.BrowseName);
+            using CertificateManager validator = CertificateManagerFactory.Create(
+                securityConfiguration,
+                telemetry,
+                managerOptions => managerOptions.AddTrustList(
+                    trustList.Name,
+                    certificateGroup.TrustedStore.StorePath,
+                    certificateGroup.IssuerStore?.StorePath));
+
+            using var validationChain = new CertificateCollection { newCertificate };
+
+            var options = new Opc.Ua.Security.Certificates.CertificateValidationOptions
+            {
+                AllowCertificateDownload = false,
+                UrlRetrievalTimeout = TimeSpan.FromMilliseconds(1),
+                AcceptError = static (_, _) => true
+            };
+
+            Opc.Ua.CertificateValidationResult validationResult = await validator
+                .ValidateAsync(validationChain, trustList: trustList, options: options, ct)
+                .ConfigureAwait(false);
+
+            validationResult.ThrowIfInvalid();
+        }
+
+        /// <summary>
+        /// Verifies the integrity of a pushed certificate against the issuer
+        /// chain that was pushed with it.
+        /// </summary>
+        /// <remarks>
+        /// The chain is validated as a whole rather than by building a private
+        /// trust list from the issuers, which is what the 1.5 code did with
+        /// <c>CertificateValidator.Update</c>. Certificate download is switched
+        /// off so a pushed certificate cannot make the server fetch a URL, and
+        /// BadCertificateUntrusted is accepted, since at this point the
+        /// certificate is by definition not yet trusted - every other error,
+        /// including signature integrity and key size, still fails.
+        /// </remarks>
+        internal static async Task ValidatePushCertificateAndIssuerChainAsync(
+            Certificate newCertificate,
+            CertificateCollection issuerCertificates,
+            SecurityConfiguration securityConfiguration,
+            ITelemetryContext telemetry,
+            CancellationToken ct)
+        {
+            ArgumentNullException.ThrowIfNull(newCertificate);
+            ArgumentNullException.ThrowIfNull(issuerCertificates);
+            ArgumentNullException.ThrowIfNull(securityConfiguration);
+            ArgumentNullException.ThrowIfNull(telemetry);
+
+            using CertificateCollection validationChain = issuerCertificates.AddRef();
+            validationChain.Insert(0, newCertificate);
+
+            using CertificateManager validator = CertificateManagerFactory.Create(
+                securityConfiguration,
+                telemetry);
+
+            var options = new Opc.Ua.Security.Certificates.CertificateValidationOptions
+            {
+                AllowCertificateDownload = false,
+                UrlRetrievalTimeout = TimeSpan.FromMilliseconds(1),
+                AcceptError = static (_, serviceResult) =>
+                    serviceResult.StatusCode == StatusCodes.BadCertificateUntrusted
+            };
+
+            Opc.Ua.CertificateValidationResult validationResult = await validator
+                .ValidateAsync(validationChain, trustList: null, options: options, ct)
+                .ConfigureAwait(false);
+
+            validationResult.ThrowIfInvalid();
+        }
         #endregion Private Methods
 
         #region Private Fields
         private class UpdateCertificateData
         {
             public NodeId SessionId { get; set; }
-            public X509Certificate2 CertificateWithPrivateKey { get; set; }
-            public X509Certificate2Collection IssuerCollection { get; set; }
+            public Certificate CertificateWithPrivateKey { get; set; }
+            public CertificateCollection IssuerCollection { get; set; }
         }
 
         private class ServerCertificateGroup
@@ -1386,14 +1448,15 @@ namespace Technosoftware.UaServer
             public NodeId NodeId { get; set; }
             public CertificateGroupState Node { get; set; }
             public NodeId[] CertificateTypes { get; set; }
-            public CertificateIdentifierCollection ApplicationCertificates { get; set; }
+            public List<CertificateIdentifier> ApplicationCertificates { get; set; }
             public CertificateStoreIdentifier IssuerStore { get; set; }
             public CertificateStoreIdentifier TrustedStore { get; set; }
             public UpdateCertificateData UpdateCertificate { get; set; }
-            public X509Certificate2 TemporaryApplicationCertificate { get; set; }
+            public Certificate TemporaryApplicationCertificate { get; set; }
         }
 
         private ServerConfigurationState m_serverConfigurationNode;
+        private static readonly ICertificateFactory s_certificateFactory = DefaultCertificateFactory.Instance;
         private readonly ApplicationConfiguration m_configuration;
         private readonly List<ServerCertificateGroup> m_certificateGroups;
         private readonly CertificateStoreIdentifier m_rejectedStore;

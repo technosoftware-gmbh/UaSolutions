@@ -15,32 +15,23 @@
 
 #region Using Directives
 using System;
-using System.Collections.Generic;
 using Opc.Ua;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
 {
     /// <summary>
-    /// Presents a condition to one client's select clauses with <c>Retain</c> forced to
-    /// <c>false</c>.
+    /// Wraps an event so that its Retain field reads as false, for the trailing event
+    /// a filtered retain monitored item sends when a condition leaves its filter.
     /// </summary>
-    /// <remarks>
-    /// OPC UA Part 9, 5.5.2 requires the trailing event a condition produces on its way out
-    /// of a client's where clause to carry a client specific <c>Retain = false</c>, whatever
-    /// the server itself retains. The filter target behind that event is shared by every
-    /// monitored item the condition is reported to, so the override cannot be written into
-    /// it; this wrapper applies it while the fields for a single item are read and leaves
-    /// the shared target untouched.
-    /// </remarks>
     internal sealed class FilteredRetainTarget : IFilterTarget
     {
         private readonly IFilterTarget m_target;
 
         /// <summary>
-        /// Wraps <paramref name="target"/>.
+        /// Creates the wrapper for the event.
         /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="target"/> is <c>null</c>.</exception>
+        /// <param name="target">The event to wrap.</param>
         public FilteredRetainTarget(IFilterTarget target)
         {
             m_target = target ?? throw new ArgumentNullException(nameof(target));
@@ -53,14 +44,14 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public object GetAttributeValue(
+        public Variant GetAttributeValue(
             IFilterContext context,
             NodeId typeDefinitionId,
-            IList<QualifiedName> relativePath,
+            ArrayOf<QualifiedName> relativePath,
             uint attributeId,
             NumericRange indexRange)
         {
-            object value = m_target.GetAttributeValue(
+            Variant value = m_target.GetAttributeValue(
                 context,
                 typeDefinitionId,
                 relativePath,
@@ -69,15 +60,14 @@ namespace Technosoftware.UaServer
 
             // only a Retain the target actually resolves is overridden; a clause the type
             // check or the browse path rejects stays null so the field list keeps its shape.
-            if (value is bool &&
+            if (value.TryGetValue(out bool _) &&
                 attributeId == Attributes.Value &&
-                relativePath != null &&
                 relativePath.Count == 1 &&
-                relativePath[0] != null &&
+                !relativePath[0].IsNull &&
                 relativePath[0].NamespaceIndex == 0 &&
                 relativePath[0].Name == BrowseNames.Retain)
             {
-                return false;
+                return new Variant(false);
             }
 
             return value;

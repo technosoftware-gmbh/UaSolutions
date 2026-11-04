@@ -43,12 +43,12 @@ namespace Technosoftware.UaClient.Tests
                 NodeId.Parse("ns=2;s=TestNode1"),
                 NodeId.Parse("ns=2;s=TestNode2")
             };
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(123), StatusCodes.Good, DateTime.UtcNow),
                 new DataValue(new Variant(456), StatusCodes.Good, DateTime.UtcNow)
             };
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -65,8 +65,8 @@ namespace Technosoftware.UaClient.Tests
             ResultSet<DataValue> result = await sut.FetchValuesAsync(null, nodeIds).ConfigureAwait(false);
 
             // Assert
-            Assert.That(result.Results, Is.EquivalentTo(dataValues));
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Results, Is.EqualTo(dataValues));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
         }
 
         [Test]
@@ -78,7 +78,7 @@ namespace Technosoftware.UaClient.Tests
 
             var nodeId = NodeId.Parse("ns=2;s=TestNode");
             var dataValue = new DataValue(new Variant(123), StatusCodes.Good, DateTime.UtcNow);
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -124,7 +124,7 @@ namespace Technosoftware.UaClient.Tests
             var sut = new NodeCacheContext(session);
             var nodeId = NodeId.Parse("ns=2;s=TestNode");
             var dataValue = new DataValue(new Variant(123), StatusCodes.Bad, DateTime.UtcNow);
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -154,12 +154,12 @@ namespace Technosoftware.UaClient.Tests
             var nodeIds = new List<NodeId> {
                 NodeId.Parse("ns=2;s=TestNode1"),
                 NodeId.Parse("ns=2;s=TestNode2") };
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(123), StatusCodes.Bad, DateTime.UtcNow),
                 new DataValue(new Variant(456), StatusCodes.Good, DateTime.UtcNow)
             };
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -176,7 +176,7 @@ namespace Technosoftware.UaClient.Tests
             ResultSet<DataValue> result = await sut.FetchValuesAsync(null, nodeIds).ConfigureAwait(false);
 
             // Assert
-            Assert.That(result.Results, Is.EquivalentTo(dataValues));
+            Assert.That(result.Results, Is.EqualTo(dataValues));
             Assert.That(result.Errors[0].StatusCode, Is.EqualTo(StatusCodes.Bad));
             Assert.That(result.Errors[1].StatusCode, Is.EqualTo(StatusCodes.Good));
         }
@@ -235,7 +235,7 @@ namespace Technosoftware.UaClient.Tests
             var nodeId = NodeId.Parse("ns=2;s=TestNode");
             var dataValue = new DataValue(new Variant(123), StatusCodes.Good, DateTime.UtcNow);
             var diagnosticInfo = new DiagnosticInfo();
-            var diagnosticInfos = new DiagnosticInfoCollection { diagnosticInfo };
+            var diagnosticInfos = new List<DiagnosticInfo> { diagnosticInfo };
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -269,13 +269,13 @@ namespace Technosoftware.UaClient.Tests
                 NodeId.Parse("ns=2;s=TestNode1"),
                 NodeId.Parse("ns=2;s=TestNode2")
             };
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(123), StatusCodes.Good, DateTime.UtcNow),
                 new DataValue(new Variant(456), StatusCodes.Good, DateTime.UtcNow)
             };
             var diagnosticInfo = new DiagnosticInfo();
-            var diagnosticInfos = new DiagnosticInfoCollection { diagnosticInfo, diagnosticInfo };
+            var diagnosticInfos = new List<DiagnosticInfo> { diagnosticInfo, diagnosticInfo };
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -292,8 +292,8 @@ namespace Technosoftware.UaClient.Tests
             ResultSet<DataValue> result = await sut.FetchValuesAsync(null, nodeIds).ConfigureAwait(false);
 
             // Assert
-            Assert.That(result.Results, Is.EquivalentTo(dataValues));
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Results, Is.EqualTo(dataValues));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
             Assert.That(diagnosticInfos, Contains.Item(diagnosticInfo));
 
             session.Channel.Verify();
@@ -318,9 +318,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType1"),
-                    Description = "TestDescription1",
-                    DisplayName = "TestDisplayName1",
-                    BrowseName = "TestBrowseName1",
+                    Description = new LocalizedText("TestDescription1"),
+                    DisplayName = new LocalizedText("TestDisplayName1"),
+                    BrowseName = new QualifiedName("TestBrowseName1"),
                     UserAccessLevel = 1
                 },
                 new VariableNode
@@ -329,9 +329,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType2"),
-                    Description = "TestDescription2",
-                    DisplayName = "TestDisplayName2",
-                    BrowseName = "TestBrowseName2",
+                    Description = new LocalizedText("TestDescription2"),
+                    DisplayName = new LocalizedText("TestDisplayName2"),
+                    BrowseName = new QualifiedName("TestBrowseName2"),
                     UserAccessLevel = 1
                 }
             ];
@@ -342,17 +342,17 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
-                    var results = new DataValueCollection(request.NodesToRead
-                        .Select(r =>
+                    var results = new List<DataValue>(request.NodesToRead
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
                             if (r.NodeId == nodeIds[0])
                             {
-                                nodes[0].Read(null, r.AttributeId, value);
+                                nodes[0].Read(null, r.AttributeId, ref value);
                             }
                             else
                             {
-                                nodes[1].Read(null, r.AttributeId, value);
+                                nodes[1].Read(null, r.AttributeId, ref value);
                             }
                             return value;
                         }));
@@ -371,7 +371,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(result.Results.Count, Is.EqualTo(2));
             Assert.That(Utils.IsEqual(nodes[0], result.Results[0]), Is.True);
             Assert.That(Utils.IsEqual(nodes[1], result.Results[1]), Is.True);
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
         }
 
         [Test]
@@ -393,9 +393,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType1"),
-                    Description = "TestDescription1",
-                    DisplayName = "TestDisplayName1",
-                    BrowseName = "TestBrowseName1",
+                    Description = new LocalizedText("TestDescription1"),
+                    DisplayName = new LocalizedText("TestDisplayName1"),
+                    BrowseName = new QualifiedName("TestBrowseName1"),
                     UserAccessLevel = 1
                 },
                 new VariableNode
@@ -404,9 +404,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType2"),
-                    Description = "TestDescription2",
-                    DisplayName = "TestDisplayName2",
-                    BrowseName = "TestBrowseName2",
+                    Description = new LocalizedText("TestDescription2"),
+                    DisplayName = new LocalizedText("TestDisplayName2"),
+                    BrowseName = new QualifiedName("TestBrowseName2"),
                     UserAccessLevel = 1
                 }
             ];
@@ -417,25 +417,25 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
-                    var results = new DataValueCollection(request.NodesToRead
-                        .Select(r =>
+                    var results = new List<DataValue>(request.NodesToRead
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
                             if (r.AttributeId == Attributes.MinimumSamplingInterval)
                             {
-                                return new DataValue(StatusCodes.BadNotReadable);
+                                return DataValue.FromStatusCode(StatusCodes.BadNotReadable);
                             }
                             if (r.AttributeId == Attributes.Description)
                             {
-                                return new DataValue(StatusCodes.BadAttributeIdInvalid);
+                                return DataValue.FromStatusCode(StatusCodes.BadAttributeIdInvalid);
                             }
                             if (r.NodeId == nodeIds[0])
                             {
-                                nodes[0].Read(null, r.AttributeId, value);
+                                nodes[0].Read(null, r.AttributeId, ref value);
                             }
                             else
                             {
-                                nodes[1].Read(null, r.AttributeId, value);
+                                nodes[1].Read(null, r.AttributeId, ref value);
                             }
                             return value;
                         }));
@@ -454,7 +454,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(result.Results.Count, Is.EqualTo(2));
             Assert.That(Utils.IsEqual(nodes[0], result.Results[0]), Is.False);
             Assert.That(Utils.IsEqual(nodes[1], result.Results[1]), Is.False);
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
         }
 
         [Test]
@@ -470,9 +470,9 @@ namespace Technosoftware.UaClient.Tests
                 NodeClass = NodeClass.Variable,
                 AccessLevel = 1,
                 DataType = NodeId.Parse("ns=2;s=TestDataType"),
-                Description = "TestDescription",
-                DisplayName = "TestDisplayName",
-                BrowseName = "TestBrowseName",
+                Description = new LocalizedText("TestDescription"),
+                DisplayName = new LocalizedText("TestDisplayName"),
+                BrowseName = new QualifiedName("TestBrowseName"),
                 UserAccessLevel = 1
             };
 
@@ -482,11 +482,11 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
-                    var results = new DataValueCollection(request.NodesToRead
-                        .Select(r =>
+                    var results = new List<DataValue>(request.NodesToRead
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
-                            node.Read(null, r.AttributeId, value);
+                            node.Read(null, r.AttributeId, ref value);
                             return value;
                         }));
                     return new ValueTask<IServiceResponse>(new ReadResponse
@@ -535,12 +535,12 @@ namespace Technosoftware.UaClient.Tests
                 NodeClass = NodeClass.Variable,
                 AccessLevel = 1,
                 DataType = NodeId.Parse("ns=2;s=TestDataType"),
-                Description = "TestDescription",
-                DisplayName = "TestDisplayName",
-                BrowseName = "TestBrowseName",
+                Description = new LocalizedText("TestDescription"),
+                DisplayName = new LocalizedText("TestDisplayName"),
+                BrowseName = new QualifiedName("TestBrowseName"),
                 UserAccessLevel = 1
             };
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -550,8 +550,8 @@ namespace Technosoftware.UaClient.Tests
                     new ValueTask<IServiceResponse>(new ReadResponse
                     {
                         Results = [.. request.NodesToRead
-                                .Select(r => new DataValue(StatusCodes.BadAlreadyExists))],
-                        DiagnosticInfos = [.. request.NodesToRead.Select(_ => new DiagnosticInfo())]
+                                .ToArray().Select(r => DataValue.FromStatusCode(StatusCodes.BadAlreadyExists))],
+                        DiagnosticInfos = [.. request.NodesToRead.ToArray().Select(_ => new DiagnosticInfo())]
                     }))
                 .Verifiable(Times.Once);
 
@@ -582,9 +582,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType1"),
-                    Description = "TestDescription1",
-                    DisplayName = "TestDisplayName1",
-                    BrowseName = "TestBrowseName1",
+                    Description = new LocalizedText("TestDescription1"),
+                    DisplayName = new LocalizedText("TestDisplayName1"),
+                    BrowseName = new QualifiedName("TestBrowseName1"),
                     UserAccessLevel = 1
                 },
                 new VariableNode
@@ -593,9 +593,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType2"),
-                    Description = "TestDescription2",
-                    DisplayName = "TestDisplayName2",
-                    BrowseName = "TestBrowseName2",
+                    Description = new LocalizedText("TestDescription2"),
+                    DisplayName = new LocalizedText("TestDisplayName2"),
+                    BrowseName = new QualifiedName("TestBrowseName2"),
                     UserAccessLevel = 1
                 }
             ];
@@ -606,16 +606,16 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
-                    var results = new DataValueCollection(request.NodesToRead
-                        .Select(r =>
+                    var results = new List<DataValue>(request.NodesToRead
+                        .ToArray().Select(r =>
                         {
                             if (r.NodeId == nodeIds[0])
                             {
                                 var value = new DataValue();
-                                nodes[0].Read(null, r.AttributeId, value);
+                                nodes[0].Read(null, r.AttributeId, ref value);
                                 return value;
                             }
-                            return new DataValue(StatusCodes.BadUnexpectedError);
+                            return DataValue.FromStatusCode(StatusCodes.BadUnexpectedError);
                         }));
                     return new ValueTask<IServiceResponse>(new ReadResponse
                     {
@@ -656,9 +656,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType1"),
-                    Description = "TestDescription1",
-                    DisplayName = "TestDisplayName1",
-                    BrowseName = "TestBrowseName1",
+                    Description = new LocalizedText("TestDescription1"),
+                    DisplayName = new LocalizedText("TestDisplayName1"),
+                    BrowseName = new QualifiedName("TestBrowseName1"),
                     UserAccessLevel = 1
                 },
                 new VariableNode
@@ -667,9 +667,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType2"),
-                    Description = "TestDescription2",
-                    DisplayName = "TestDisplayName2",
-                    BrowseName = "TestBrowseName2",
+                    Description = new LocalizedText("TestDescription2"),
+                    DisplayName = new LocalizedText("TestDisplayName2"),
+                    BrowseName = new QualifiedName("TestBrowseName2"),
                     UserAccessLevel = 1
                 }
             ];
@@ -680,8 +680,8 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
-                    var results = new DataValueCollection(request.NodesToRead
-                        .Select(r =>
+                    var results = new List<DataValue>(request.NodesToRead
+                        .ToArray().Select(r =>
                         {
                             if (r.AttributeId == Attributes.NodeClass)
                             {
@@ -690,11 +690,11 @@ namespace Technosoftware.UaClient.Tests
                             var value = new DataValue();
                             if (r.NodeId == nodeIds[0])
                             {
-                                nodes[0].Read(null, r.AttributeId, value);
+                                nodes[0].Read(null, r.AttributeId, ref value);
                             }
                             else
                             {
-                                nodes[1].Read(null, r.AttributeId, value);
+                                nodes[1].Read(null, r.AttributeId, ref value);
                             }
                             return value;
                         }));
@@ -779,9 +779,9 @@ namespace Technosoftware.UaClient.Tests
                 NodeClass = NodeClass.Variable,
                 AccessLevel = 1,
                 DataType = NodeId.Parse("ns=2;s=TestDataType"),
-                Description = "TestDescription",
-                DisplayName = "TestDisplayName",
-                BrowseName = "TestBrowseName",
+                Description = new LocalizedText("TestDescription"),
+                DisplayName = new LocalizedText("TestDisplayName"),
+                BrowseName = new QualifiedName("TestBrowseName"),
                 UserAccessLevel = 1
             };
 
@@ -791,11 +791,11 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
-                    var results = new DataValueCollection(request.NodesToRead
-                        .Select(r =>
+                    var results = new List<DataValue>(request.NodesToRead
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
-                            node.Read(null, r.AttributeId, value);
+                            node.Read(null, r.AttributeId, ref value);
                             return value;
                         }));
                     return new ValueTask<IServiceResponse>(new ReadResponse
@@ -834,9 +834,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType1"),
-                    Description = "TestDescription1",
-                    DisplayName = "TestDisplayName1",
-                    BrowseName = "TestBrowseName1",
+                    Description = new LocalizedText("TestDescription1"),
+                    DisplayName = new LocalizedText("TestDisplayName1"),
+                    BrowseName = new QualifiedName("TestBrowseName1"),
                     UserAccessLevel = 1
                 },
                 new VariableNode
@@ -845,9 +845,9 @@ namespace Technosoftware.UaClient.Tests
                     NodeClass = NodeClass.Variable,
                     AccessLevel = 1,
                     DataType = NodeId.Parse("ns=2;s=TestDataType2"),
-                    Description = "TestDescription2",
-                    DisplayName = "TestDisplayName2",
-                    BrowseName = "TestBrowseName2",
+                    Description = new LocalizedText("TestDescription2"),
+                    DisplayName = new LocalizedText("TestDisplayName2"),
+                    BrowseName = new QualifiedName("TestBrowseName2"),
                     UserAccessLevel = 1
                 }
             ];
@@ -858,17 +858,17 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns<ReadRequest, CancellationToken>((request, ct) =>
                 {
-                    var results = new DataValueCollection(request.NodesToRead
-                        .Select(r =>
+                    var results = new List<DataValue>(request.NodesToRead
+                        .ToArray().Select(r =>
                         {
                             var value = new DataValue();
                             if (r.NodeId == nodeIds[0])
                             {
-                                nodes[0].Read(null, r.AttributeId, value);
+                                nodes[0].Read(null, r.AttributeId, ref value);
                             }
                             else
                             {
-                                nodes[1].Read(null, r.AttributeId, value);
+                                nodes[1].Read(null, r.AttributeId, ref value);
                             }
                             return value;
                         }));
@@ -888,7 +888,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.That(Utils.IsEqual(nodes[0], result.Results[0]), Is.True);
             Assert.That(Utils.IsEqual(nodes[1], result.Results[1]), Is.True);
             Assert.That(result.Errors.Count, Is.EqualTo(2));
-            Assert.That(result.Errors, Is.All.EqualTo(ServiceResult.Good));
+            Assert.That(result.Errors.ToList(), Is.All.EqualTo(ServiceResult.Good));
 
             session.Channel.Verify();
         }
@@ -900,23 +900,23 @@ namespace Technosoftware.UaClient.Tests
             var session = SessionMock.Create();
             var sut = new NodeCacheContext(session);
             var nodeId = NodeId.Parse("ns=2;s=TestNode");
-            var references = new ReferenceDescriptionCollection
-            {
+            ArrayOf<ReferenceDescription> references =
+            [
                 new ReferenceDescription
                 {
                     NodeId = ExpandedNodeId.Parse("ns=2;s=TestNode1"),
-                    BrowseName = "TestBrowseName1",
-                    DisplayName = "TestDisplayName1",
+                    BrowseName = new QualifiedName("TestBrowseName1"),
+                    DisplayName = new LocalizedText("TestDisplayName1"),
                     NodeClass = NodeClass.Variable
                 },
                 new ReferenceDescription
                 {
                     NodeId = ExpandedNodeId.Parse("ns=2;s=TestNode2"),
-                    BrowseName = "TestBrowseName2",
-                    DisplayName = "TestDisplayName2",
+                    BrowseName = new QualifiedName("TestBrowseName2"),
+                    DisplayName = new LocalizedText("TestDisplayName2"),
                     NodeClass = NodeClass.Variable
                 }
-            };
+            ];
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -936,10 +936,10 @@ namespace Technosoftware.UaClient.Tests
                 .Verifiable(Times.Once);
 
             // Act
-            ReferenceDescriptionCollection result = await sut.FetchReferencesAsync(null, nodeId).ConfigureAwait(false);
+            ArrayOf<ReferenceDescription> result = await sut.FetchReferencesAsync(null, nodeId).ConfigureAwait(false);
 
             // Assert
-            Assert.That(result, Is.EquivalentTo(references));
+            Assert.That(result, Is.EqualTo(references));
 
             session.Channel.Verify();
         }
@@ -953,7 +953,7 @@ namespace Technosoftware.UaClient.Tests
             var nodeIds = new List<NodeId>();
 
             // Act
-            ResultSet<ReferenceDescriptionCollection> result =
+            ResultSet<ArrayOf<ReferenceDescription>> result =
                 await sut.FetchReferencesAsync(null, nodeIds).ConfigureAwait(false);
 
             // Assert
@@ -972,23 +972,23 @@ namespace Technosoftware.UaClient.Tests
                 NodeId.Parse("ns=2;s=TestNode1"),
                 NodeId.Parse("ns=2;s=TestNode2")
             };
-            var references = new ReferenceDescriptionCollection
-            {
+            ArrayOf<ReferenceDescription> references =
+            [
                 new ReferenceDescription
                 {
                     NodeId = ExpandedNodeId.Parse("ns=2;s=TestNode1"),
-                    BrowseName = "TestBrowseName1",
-                    DisplayName = "TestDisplayName1",
+                    BrowseName = new QualifiedName("TestBrowseName1"),
+                    DisplayName = new LocalizedText("TestDisplayName1"),
                     NodeClass = NodeClass.Variable
                 },
                 new ReferenceDescription
                 {
                     NodeId = ExpandedNodeId.Parse("ns=2;s=TestNode2"),
-                    BrowseName = "TestBrowseName2",
-                    DisplayName = "TestDisplayName2",
+                    BrowseName = new QualifiedName("TestBrowseName2"),
+                    DisplayName = new LocalizedText("TestDisplayName2"),
                     NodeClass = NodeClass.Variable
                 }
-            };
+            ];
 
             session.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -1014,7 +1014,7 @@ namespace Technosoftware.UaClient.Tests
                 .Verifiable(Times.Once);
 
             // Act
-            ResultSet<ReferenceDescriptionCollection> result = await sut.FetchReferencesAsync(null, nodeIds,
+            ResultSet<ArrayOf<ReferenceDescription>> result = await sut.FetchReferencesAsync(null, nodeIds,
                 CancellationToken.None).ConfigureAwait(false);
 
             // Assert
@@ -1060,8 +1060,8 @@ namespace Technosoftware.UaClient.Tests
             var reference = new ReferenceDescription
             {
                 NodeId = ExpandedNodeId.Parse("ns=2;s=TestNode1"),
-                BrowseName = "TestBrowseName1",
-                DisplayName = "TestDisplayName1",
+                BrowseName = new QualifiedName("TestBrowseName1"),
+                DisplayName = new LocalizedText("TestDisplayName1"),
                 NodeClass = NodeClass.Variable
             };
 
@@ -1083,7 +1083,7 @@ namespace Technosoftware.UaClient.Tests
                 .Verifiable(Times.Once);
 
             // Act
-            ReferenceDescriptionCollection result = await sut.FetchReferencesAsync(null, nodeId).ConfigureAwait(false);
+            ArrayOf<ReferenceDescription> result = await sut.FetchReferencesAsync(null, nodeId).ConfigureAwait(false);
 
             // Assert
             Assert.That(result.Count, Is.EqualTo(1));
@@ -1102,8 +1102,8 @@ namespace Technosoftware.UaClient.Tests
             var reference = new ReferenceDescription
             {
                 NodeId = ExpandedNodeId.Parse("ns=2;s=TestNode1"),
-                BrowseName = "TestBrowseName1",
-                DisplayName = "TestDisplayName1",
+                BrowseName = new QualifiedName("TestBrowseName1"),
+                DisplayName = new LocalizedText("TestDisplayName1"),
                 NodeClass = NodeClass.Variable
             };
 

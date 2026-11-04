@@ -280,23 +280,18 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         public void Acknowledge(
             UaServerOperationContext context,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
-            out StatusCodeCollection acknowledgeResults,
-            out DiagnosticInfoCollection acknowledgeDiagnosticInfos)
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
+            out List<StatusCode> acknowledgeResults,
+            out List<DiagnosticInfo> acknowledgeDiagnosticInfos)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (subscriptionAcknowledgements == null)
-            {
-                throw new ArgumentNullException(nameof(subscriptionAcknowledgements));
-            }
-
             bool diagnosticsExist = false;
-            acknowledgeResults = new StatusCodeCollection(subscriptionAcknowledgements.Count);
-            acknowledgeDiagnosticInfos = new DiagnosticInfoCollection(
+            acknowledgeResults = new List<StatusCode>(subscriptionAcknowledgements.Count);
+            acknowledgeDiagnosticInfos = new List<DiagnosticInfo>(
                 subscriptionAcknowledgements.Count);
 
             for (int ii = 0; ii < subscriptionAcknowledgements.Count; ii++)
@@ -630,9 +625,9 @@ namespace Technosoftware.UaServer
 
             public void Dispose()
             {
-                Utils.SilentDispose(m_cancellationTokenRegistration);
-                Utils.SilentDispose(m_cancellationTokenSource);
-                Utils.SilentDispose(m_cancellationTokenRegistration2);
+                m_cancellationTokenRegistration.Dispose();
+                m_cancellationTokenSource?.Dispose();
+                m_cancellationTokenRegistration2.Dispose();
             }
 
             public readonly string SecureChannelId;

@@ -25,7 +25,7 @@ namespace Technosoftware.UaClient.Tests
     public static class Extensions
     {
         public static bool HasArgsOfType(
-            this CallMethodRequestCollection requests,
+            this ArrayOf<CallMethodRequest> requests,
             params Type[] argTypes)
         {
             if (requests.Count != 1 || requests[0].InputArguments.Count != argTypes.Length)
@@ -34,7 +34,7 @@ namespace Technosoftware.UaClient.Tests
             }
             for (int i = 0; i < argTypes.Length; i++)
             {
-                if (requests[0].InputArguments[i].Value.GetType() != argTypes[i])
+                if (requests[0].InputArguments[i].AsBoxedObject(Variant.BoxingBehavior.Legacy).GetType() != argTypes[i])
                 {
                     return false;
                 }
@@ -57,8 +57,8 @@ namespace Technosoftware.UaClient.Tests
                     {
                         StatusCode = result,
                         OutputArguments = outputArguments == null ?
-                            null :
-                            [.. outputArguments.Select(o => new Variant(o))]
+                            default :
+                            [.. outputArguments.Select(VariantHelper.CastFromWithReflectionFallback)]
                     }
                 ]
             };

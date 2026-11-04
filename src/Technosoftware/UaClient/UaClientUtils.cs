@@ -78,8 +78,8 @@ namespace Technosoftware.UaClient
                     telemetry,
                     ct: ct).ConfigureAwait(false))
             {
-                ApplicationDescriptionCollection servers =
-                    await client.FindServersAsync(null, ct).ConfigureAwait(false);
+                ArrayOf<ApplicationDescription> servers =
+                    await client.FindServersAsync(default, ct).ConfigureAwait(false);
 
                 // populate the drop down list with the discovery URLs for the available servers.
                 for (int ii = 0; ii < servers.Count; ii++)
@@ -158,8 +158,8 @@ namespace Technosoftware.UaClient
                 ct: ct).ConfigureAwait(false);
             var url = new Uri(client.Endpoint?.EndpointUrl ??
                 throw ServiceResultException.Unexpected("Endpoint missing"));
-            EndpointDescriptionCollection endpoints =
-                await client.GetEndpointsAsync(null, ct).ConfigureAwait(false);
+            ArrayOf<EndpointDescription> endpoints =
+                await client.GetEndpointsAsync(default, ct).ConfigureAwait(false);
             return SelectEndpoint(
                 application,
                 url,
@@ -226,8 +226,8 @@ namespace Technosoftware.UaClient
             // Connect to the server's discovery endpoint and find the available configuration.
             var url = new Uri(client.Endpoint?.EndpointUrl ??
                 throw ServiceResultException.Unexpected("Endpoint missing"));
-            EndpointDescriptionCollection endpoints =
-                await client.GetEndpointsAsync(null, ct).ConfigureAwait(false);
+            ArrayOf<EndpointDescription> endpoints =
+                await client.GetEndpointsAsync(default, ct).ConfigureAwait(false);
             EndpointDescription? selectedEndpoint = SelectEndpoint(
                 application,
                 url,
@@ -253,12 +253,12 @@ namespace Technosoftware.UaClient
 
         /// <summary>
         /// Select the best supported endpoint from an
-        /// EndpointDescriptionCollection, with or without security.
+        /// <see cref="ArrayOf{T}"/> of <see cref="EndpointDescription"/>, with or without security.
         /// </summary>
         public static EndpointDescription? SelectEndpoint(
             ApplicationConfiguration configuration,
             Uri url,
-            EndpointDescriptionCollection endpoints,
+            ArrayOf<EndpointDescription> endpoints,
             bool useSecurity,
             ITelemetryContext telemetry)
         {
@@ -286,7 +286,7 @@ namespace Technosoftware.UaClient
                             // skip unsupported security policies
                             if (!configuration.SecurityConfiguration.SupportedSecurityPolicies
                                     .Contains(
-                                        endpoint.SecurityPolicyUri))
+                                        endpoint.SecurityPolicyUri!))
                             {
                                 continue;
                             }
@@ -295,7 +295,7 @@ namespace Technosoftware.UaClient
                         {
                             // skip unsupported security policies, for backward compatibility only
                             // may contain policies for which no certificate is available
-                            if (SecurityPolicies.GetDisplayName(endpoint.SecurityPolicyUri) == null)
+                            if (SecurityPolicies.Default.GetDisplayName(endpoint.SecurityPolicyUri!) == null)
                             {
                                 continue;
                             }
@@ -314,11 +314,11 @@ namespace Technosoftware.UaClient
                     //Select endpoint if it has a higher calculated security level, than the previously selected one
                     if (SecuredApplication.CalculateSecurityLevel(
                             endpoint.SecurityMode,
-                            endpoint.SecurityPolicyUri,
+                            endpoint.SecurityPolicyUri!,
                             logger) >
                         SecuredApplication.CalculateSecurityLevel(
                             selectedEndpoint.SecurityMode,
-                            selectedEndpoint.SecurityPolicyUri,
+                            selectedEndpoint.SecurityPolicyUri!,
                             logger))
                     {
                         selectedEndpoint = endpoint;
@@ -329,8 +329,16 @@ namespace Technosoftware.UaClient
             // pick the first available endpoint by default.
             if (selectedEndpoint == null && endpoints.Count > 0)
             {
-                selectedEndpoint = endpoints.FirstOrDefault(e =>
-                    e.EndpointUrl?.StartsWith(url.Scheme, StringComparison.Ordinal) == true);
+                foreach (EndpointDescription endpoint in endpoints)
+                {
+                    if (endpoint.EndpointUrl?.StartsWith(
+                        url.Scheme,
+                        StringComparison.Ordinal) == true)
+                    {
+                        selectedEndpoint = endpoint;
+                        break;
+                    }
+                }
             }
 
             // return the selected endpoint.

@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using Opc.Ua;
 using Technosoftware.UaServer;
 #endregion Using Directives
@@ -79,7 +80,7 @@ namespace SampleCompany.NodeManagers.TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            DataValueCollection values)
+            IList<DataValue> values)
         {
             m_request = request;
 
@@ -105,7 +106,7 @@ namespace SampleCompany.NodeManagers.TestData
                     m_request.IsReadModified,
                     out m_position);
 
-                if (value != null)
+                if (!value.IsNull)
                 {
                     AddValue(timestampsToReturn, indexRange, dataEncoding, values, value);
                 }
@@ -126,7 +127,7 @@ namespace SampleCompany.NodeManagers.TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            DataValueCollection values)
+            IList<DataValue> values)
         {
             while (true)
             {
@@ -143,7 +144,7 @@ namespace SampleCompany.NodeManagers.TestData
                     ref m_position);
 
                 // no more data.
-                if (value == null)
+                if (value.IsNull)
                 {
                     return true;
                 }
@@ -171,11 +172,11 @@ namespace SampleCompany.NodeManagers.TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            DataValueCollection values,
+            IList<DataValue> values,
             DataValue value)
         {
             // ignore invalid case.
-            if (value == null)
+            if (value.IsNull)
             {
                 return;
             }
@@ -183,44 +184,42 @@ namespace SampleCompany.NodeManagers.TestData
             // save the last timestamp returned.
             m_lastTime = value.ServerTimestamp;
 
+            // DataValue is immutable in 2.0, so each step returns a new value
+            // rather than mutating the one it was handed.
+
             // check if the index range or data encoding can be applied.
             if (StatusCode.IsGood(value.StatusCode))
             {
-                object valueToReturn = value.Value;
+                Variant valueToReturn = value.WrappedValue;
 
                 // apply the index range.
-                if (indexRange != NumericRange.Empty)
+                if (indexRange != NumericRange.Null)
                 {
                     StatusCode error = indexRange.ApplyRange(ref valueToReturn);
 
-                    if (StatusCode.IsBad(error))
-                    {
-                        value.Value = null;
-                        value.StatusCode = error;
-                    }
-                    else
-                    {
-                        value.Value = valueToReturn;
-                    }
+                    value = StatusCode.IsBad(error)
+                        ? value.WithWrappedValue(Variant.Null).WithStatus(error)
+                        : value.WithWrappedValue(valueToReturn);
                 }
 
                 // apply the data encoding.
-                if (!QualifiedName.IsNull(dataEncoding))
+                if (!dataEncoding.IsNull)
                 {
-                    value.Value = null;
-                    value.StatusCode = StatusCodes.BadDataEncodingUnsupported;
+                    value = value
+                        .WithWrappedValue(Variant.Null)
+                        .WithStatus(StatusCodes.BadDataEncodingUnsupported);
                 }
             }
 
             // apply the timestamps filter.
             if (timestampsToReturn is TimestampsToReturn.Neither or TimestampsToReturn.Server)
             {
-                value.SourceTimestamp = DateTime.MinValue;
+                value = value.WithSourceTimestamp(DateTime.MinValue);
             }
 
             if (timestampsToReturn is TimestampsToReturn.Neither or TimestampsToReturn.Source)
             {
-                value.ServerTimestamp = DateTime.MinValue;
+                value = value.WithServerTimestamp(DateTime.MinValue);
             }
 
             // add result.
@@ -229,10 +228,10 @@ namespace SampleCompany.NodeManagers.TestData
 
         private readonly IHistoryDataSource m_source;
         private ReadRawModifiedDetails m_request;
-        private DateTime m_startTime;
-        private DateTime m_endTime;
+        private DateTimeUtc m_startTime;
+        private DateTimeUtc m_endTime;
         private bool m_isForward;
         private int m_position;
-        private DateTime m_lastTime;
+        private DateTimeUtc m_lastTime;
     }
 }

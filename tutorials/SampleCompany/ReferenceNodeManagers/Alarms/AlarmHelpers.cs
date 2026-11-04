@@ -38,7 +38,7 @@ namespace SampleCompany.NodeManagers.Alarms
             var folder = new FolderState(parent)
             {
                 SymbolicName = name,
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = ObjectTypeIds.FolderType,
                 NodeId = new NodeId(path, nameSpaceIndex),
                 BrowseName = new QualifiedName(path, nameSpaceIndex),
@@ -84,7 +84,7 @@ namespace SampleCompany.NodeManagers.Alarms
             var variable = new BaseDataVariableState(parent)
             {
                 SymbolicName = name,
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
                 NodeId = new NodeId(path, nameSpaceIndex),
                 BrowseName = new QualifiedName(name, nameSpaceIndex),
@@ -154,26 +154,33 @@ namespace SampleCompany.NodeManagers.Alarms
         /// <summary>
         /// Add the input parameter description for a Start method.
         /// </summary>
-        public static void AddStartInputParameters(MethodState startMethod, ushort namespaceIndex)
+        public static void AddStartInputParameters(
+            ISystemContext context,
+            MethodState startMethod,
+            ushort namespaceIndex)
         {
-            // set input arguments
-            startMethod.InputArguments = new PropertyState<Argument[]>(startMethod)
-            {
-                NodeId = new NodeId(startMethod.BrowseName.Name + "InArgs", namespaceIndex),
-                BrowseName = BrowseNames.InputArguments
-            };
-            startMethod.InputArguments.DisplayName = startMethod.InputArguments.BrowseName.Name;
-            startMethod.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
-            startMethod.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
-            startMethod.InputArguments.DataType = DataTypeIds.Argument;
-            startMethod.InputArguments.ValueRank = ValueRanks.OneDimension;
+            // set input arguments. PropertyState<T> is abstract in 2.0, so the
+            // concrete instance comes from the method state's own factory; the
+            // NodeId is assigned here, hence assignInstanceNodeIds false.
+            PropertyState<ArrayOf<Argument>> inputArguments = startMethod
+                .CreateOrReplaceInputArguments(context, null, false);
 
-            startMethod.InputArguments.Value =
+            inputArguments.NodeId = new NodeId(
+                startMethod.BrowseName.Name + "InArgs",
+                namespaceIndex);
+            inputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
+            inputArguments.DisplayName = new LocalizedText(inputArguments.BrowseName.Name);
+            inputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
+            inputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+            inputArguments.DataType = DataTypeIds.Argument;
+            inputArguments.ValueRank = ValueRanks.OneDimension;
+
+            inputArguments.Value =
             [
                 new Argument
                 {
                     Name = "UInt32 value",
-                    Description = "Runtime of Alarms in seconds.",
+                    Description = new LocalizedText("Runtime of Alarms in seconds."),
                     DataType = DataTypeIds.UInt32,
                     ValueRank = ValueRanks.Scalar
                 }

@@ -221,7 +221,7 @@ namespace Technosoftware.UaClient
 
                     if (variableNode?.ArrayDimensions != null && variableNode.ArrayDimensions.Count > 0)
                     {
-                        state.ArrayDimensions = new ReadOnlyList<uint>(variableNode.ArrayDimensions);
+                        state.ArrayDimensions = [.. variableNode.ArrayDimensions];
                     }
 
                     if (node is ILocalNode localNode)
@@ -257,7 +257,7 @@ namespace Technosoftware.UaClient
                     }
 
                     // Always export MethodDeclarationId (important type system metadata)
-                    if (node.TypeDefinitionId != null && !NodeId.IsNull(node.TypeDefinitionId))
+                    if (!node.TypeDefinitionId.IsNull && !node.TypeDefinitionId.IsNull)
                     {
                         state.MethodDeclarationId = ExpandedNodeId.ToNodeId(node.TypeDefinitionId, context.NamespaceUris);
                     }
@@ -324,7 +324,7 @@ namespace Technosoftware.UaClient
 
                     if (variableTypeNode?.ArrayDimensions != null && variableTypeNode.ArrayDimensions.Count > 0)
                     {
-                        state.ArrayDimensions = new ReadOnlyList<uint>(variableTypeNode.ArrayDimensions);
+                        state.ArrayDimensions = [.. variableTypeNode.ArrayDimensions];
                     }
 
                     if (node is ILocalNode localNode)

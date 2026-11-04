@@ -24,7 +24,7 @@ using Technosoftware.UaServer;
 
 namespace SampleCompany.NodeManagers.MemoryBuffer
 {
-    public partial class MemoryBufferState
+    public partial class MemoryBufferState : IDisposable
     {
         /// <summary>
         /// Initializes the buffer from the configuration.
@@ -89,15 +89,30 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         /// </summary>
         public int MaximumScanRate { get; private set; }
 
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
+        /// <summary>
+        /// Cleans up when the object is disposed.
+        /// </summary>
+        /// <remarks>
+        /// NodeState is no longer IDisposable in 2.0, so this class owns the
+        /// pattern itself. The node manager still releases predefined nodes
+        /// with (node as IDisposable)?.Dispose(), so disposal is unchanged.
+        /// </remarks>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// An overrideable version of the Dispose.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_scanTimer);
+                m_scanTimer?.Dispose();
                 m_scanTimer = null;
             }
-            base.Dispose(disposing);
         }
 
         /// <summary>
@@ -188,21 +203,21 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             if (node is not MemoryTagState tag)
             {
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            if (NumericRange.Empty != indexRange)
+            if (NumericRange.Null != indexRange)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
 
-            if (!QualifiedName.IsNull(dataEncoding))
+            if (!dataEncoding.IsNull)
             {
                 return StatusCodes.BadDataEncodingUnsupported;
             }
@@ -221,7 +236,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                     return StatusCodes.BadOutOfService;
                 }
 
-                value = GetValueAtOffset(offset).Value;
+                value = GetValueAtOffset(offset);
             }
 
             statusCode = StatusCodes.Good;
@@ -239,21 +254,21 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             if (node is not MemoryTagState tag)
             {
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            if (NumericRange.Empty != indexRange)
+            if (NumericRange.Null != indexRange)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
 
-            if (!QualifiedName.IsNull(dataEncoding))
+            if (!dataEncoding.IsNull)
             {
                 return StatusCodes.BadDataEncodingUnsupported;
             }
@@ -289,26 +304,25 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 {
                     case BuiltInType.UInt32:
                     {
-                        uint? valueToWrite = value as uint?;
-
-                        if (valueToWrite == null)
+                        // The written value arrives as a Variant in 2.0, so
+                        // the type check is a TryGetValue rather than an "as"
+                        // against a nullable box.
+                        if (!value.TryGetValue(out uint uintToWrite))
                         {
                             return StatusCodes.BadTypeMismatch;
                         }
 
-                        bytes = BitConverter.GetBytes(valueToWrite.Value);
+                        bytes = BitConverter.GetBytes(uintToWrite);
                         break;
                     }
                     case BuiltInType.Double:
                     {
-                        double? valueToWrite = value as double?;
-
-                        if (valueToWrite == null)
+                        if (!value.TryGetValue(out double doubleToWrite))
                         {
                             return StatusCodes.BadTypeMismatch;
                         }
 
-                        bytes = BitConverter.GetBytes(valueToWrite.Value);
+                        bytes = BitConverter.GetBytes(doubleToWrite);
                         break;
                     }
                     case >= BuiltInType.Null and <= BuiltInType.Enumeration:
@@ -487,7 +501,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             if (m_monitoringTable == null)
             {
                 m_monitoringTable = new MemoryBufferMonitoredItem[elementCount][];
-                Utils.SilentDispose(m_scanTimer);
+                m_scanTimer?.Dispose();
                 m_scanTimer = new Timer(DoScan, null, 100, 100);
             }
 
@@ -622,13 +636,11 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
 
                     if (monitoredItems != null)
                     {
-                        var value = new DataValue
-                        {
-                            WrappedValue = GetValueAtOffset(offset),
-                            StatusCode = StatusCodes.Good,
-                            ServerTimestamp = DateTime.UtcNow,
-                            SourceTimestamp = m_lastScanTime
-                        };
+                        var value = new DataValue(
+                            GetValueAtOffset(offset),
+                            StatusCodes.Good,
+                            m_lastScanTime,
+                            DateTime.UtcNow);
 
                         for (int ii = 0; ii < monitoredItems.Length; ii++)
                         {

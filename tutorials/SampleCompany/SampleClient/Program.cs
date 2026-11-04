@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using SampleCompany.Common;
 using Technosoftware.UaClient;
 using Technosoftware.UaConfiguration;
@@ -345,7 +346,6 @@ namespace SampleCompany.SampleClient
                 // override logfile
                 if (logFile != null)
                 {
-#pragma warning disable CS0618 // Type or member is obsolete
                     string logFilePath = config.TraceConfiguration.OutputFilePath;
                     string filename = Path.GetFileNameWithoutExtension(logFilePath);
                     config.TraceConfiguration.OutputFilePath = logFilePath.Replace(
@@ -354,8 +354,8 @@ namespace SampleCompany.SampleClient
                         StringComparison.Ordinal
                     );
                     config.TraceConfiguration.DeleteOnLoad = true;
-                    config.TraceConfiguration.ApplySettings();
-#pragma warning restore CS0618 // Type or member is obsolete
+                    // the trace configuration is applied by the logging setup below;
+                    // TraceConfiguration.ApplySettings was removed in 2.0.
                 }
 
                 // setup the logging
@@ -392,7 +392,7 @@ namespace SampleCompany.SampleClient
                     Console.WriteLine($"Create reverse connection endpoint at {reverseConnectUrlString}.");
                     reverseConnectManager = new ReverseConnectManager(telemetry);
                     reverseConnectManager.AddEndpoint(new Uri(reverseConnectUrlString));
-                    reverseConnectManager.StartService(config);
+                    await reverseConnectManager.StartServiceAsync(config).ConfigureAwait(false);
                 }
 
                 // wait for timeout or Ctrl-C
@@ -432,7 +432,7 @@ namespace SampleCompany.SampleClient
                         userIdentity = UserIdentity.CreateAsync(
                             userCertificateIdentifier,
                             new CertificatePasswordProvider(userCertificatePassword),
-                            telemetry,
+                            config.CertificateManager?.CertificateProvider,
                             ct
                         ).GetAwaiter().GetResult();
 
@@ -507,22 +507,22 @@ namespace SampleCompany.SampleClient
 
                         if (browseall || fetchall || jsonvalues || managedbrowseall)
                         {
-                            NodeIdCollection variableIds = null;
-                            NodeIdCollection variableIdsManagedBrowse = null;
-                            ReferenceDescriptionCollection referenceDescriptions = null;
-                            ReferenceDescriptionCollection referenceDescriptionsFromManagedBrowse
-                                = null;
+                            ArrayOf<NodeId> variableIds = default;
+                            ArrayOf<NodeId> variableIdsManagedBrowse = default;
+                            ArrayOf<ReferenceDescription> referenceDescriptions = default;
+                            ArrayOf<ReferenceDescription> referenceDescriptionsFromManagedBrowse
+                                = default;
 
                             if (browseall)
                             {
                                 Console.WriteLine("Browse the full address space.");
                                 referenceDescriptions = await samples
-                                    .BrowseFullAddressSpaceAsync(uaClient, Objects.RootFolder, ct: ct)
+                                    .BrowseFullAddressSpaceAsync(uaClient, new NodeId(Objects.RootFolder), ct: ct)
                                     .ConfigureAwait(false);
                                 variableIds =
                                 [
                                     .. referenceDescriptions
-                                        .Where(r =>
+                                        .ToArray().Where(r =>
                                             r.NodeClass == NodeClass.Variable &&
                                             r.TypeDefinition.NamespaceIndex != 0
                                         )
@@ -538,13 +538,13 @@ namespace SampleCompany.SampleClient
                                 referenceDescriptionsFromManagedBrowse = await samples
                                     .ManagedBrowseFullAddressSpaceAsync(
                                         uaClient,
-                                        Objects.RootFolder,
+                                        new NodeId(Objects.RootFolder),
                                         ct: ct)
                                     .ConfigureAwait(false);
                                 variableIdsManagedBrowse =
                                 [
                                     .. referenceDescriptionsFromManagedBrowse
-                                        .Where(r =>
+                                        .ToArray().Where(r =>
                                             r.NodeClass == NodeClass.Variable &&
                                             r.TypeDefinition.NamespaceIndex != 0
                                         )
@@ -567,7 +567,7 @@ namespace SampleCompany.SampleClient
                                 allNodes = await samples
                                     .FetchAllNodesNodeCacheAsync(
                                         uaClient,
-                                        Objects.RootFolder,
+                                        new NodeId(Objects.RootFolder),
                                         true,
                                         true,
                                         false,
@@ -587,11 +587,11 @@ namespace SampleCompany.SampleClient
                                 ];
                             }
 
-                            if (jsonvalues && variableIds != null)
+                            if (jsonvalues && !variableIds.IsEmpty)
                             {
                                 (
-                                    IReadOnlyList<DataValue> allValues,
-                                    IReadOnlyList<ServiceResult> results
+                                    ArrayOf<DataValue> allValues,
+                                    ArrayOf<ServiceResult> results
                                 ) = await samples
                                     .ReadAllValuesAsync(uaClient, variableIds, ct)
                                     .ConfigureAwait(false);
@@ -601,7 +601,7 @@ namespace SampleCompany.SampleClient
                             {
                                 // subscribe to 1000 random variables
                                 const int maxVariables = 1000;
-                                var variables = new NodeCollection();
+                                var variables = new List<Node>();
 
                                 if (fetchall)
                                 {
@@ -619,7 +619,7 @@ namespace SampleCompany.SampleClient
                                 else if (browseall)
                                 {
                                     var variableReferences = referenceDescriptions
-                                        .Where(r => r.NodeClass == NodeClass.Variable &&
+                                        .ToArray().Where(r => r.NodeClass == NodeClass.Variable &&
                                             r.NodeId.NamespaceIndex > 1)
                                         .Select(r => r.NodeId)
                                         .OrderBy(o => UnsecureRandom.Shared.Next())
@@ -786,7 +786,7 @@ namespace SampleCompany.SampleClient
             }
             finally
             {
-                Utils.SilentDispose(reverseConnectManager);
+                reverseConnectManager?.Dispose();
             }
         }
 
@@ -806,7 +806,7 @@ namespace SampleCompany.SampleClient
         {
             CertificateIdentifier userCertificateIdentifier = null;
 
-            X509Certificate2Collection userCertificatesWithMatchingThumbprint =
+            CertificateCollection userCertificatesWithMatchingThumbprint =
                 await trustedUserCertificates.GetCertificatesAsync(telemetry, ct).ConfigureAwait(false);
             // get user certificate with matching thumbprint
             userCertificatesWithMatchingThumbprint =
@@ -815,9 +815,11 @@ namespace SampleCompany.SampleClient
             // create Certificate Identifier
             if (userCertificatesWithMatchingThumbprint.Count == 1)
             {
-                userCertificateIdentifier = new CertificateIdentifier(
-                    userCertificatesWithMatchingThumbprint[0])
+                // A CertificateIdentifier no longer wraps a certificate; it
+                // names the store and the thumbprint to resolve it by.
+                userCertificateIdentifier = new CertificateIdentifier
                 {
+                    Thumbprint = userCertificatesWithMatchingThumbprint[0].Thumbprint,
                     StorePath = trustedUserCertificates.StorePath,
                     StoreType = trustedUserCertificates.StoreType
                 };

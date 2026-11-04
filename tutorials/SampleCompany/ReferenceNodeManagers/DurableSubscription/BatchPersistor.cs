@@ -23,7 +23,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Opc.Ua;
 #endregion Using Directives
 
@@ -32,22 +31,18 @@ namespace SampleCompany.NodeManagers.DurableSubscription
     /// <inheritdoc/>
     public class BatchPersistor : IBatchPersistor
     {
-        private static readonly JsonSerializerSettings s_settings = new()
-        {
-            TypeNameHandling = TypeNameHandling.All
-        };
-
         private static readonly string s_storage_path = Path.Combine(
             Environment.CurrentDirectory,
             "Durable Subscriptions",
             "Batches");
 
-        private const string kBaseFilename = "_batch.txt";
+        private const string kBaseFilename = "_batch.bin";
 
-        public BatchPersistor(ITelemetryContext telemetry)
+        public BatchPersistor(ITelemetryContext telemetry, IServiceMessageContext messageContext = null)
         {
             m_logger = telemetry.CreateLogger<DurableDataChangeMonitoredItemQueue>();
             m_telemetry = telemetry;
+            m_messageContext = messageContext;
         }
 
         /// <inheritdoc/>
@@ -97,41 +92,45 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             string filePath = Path.Combine(
                 s_storage_path,
                 $"{batch.MonitoredItemId}_{batch.Id}{kBaseFilename}");
-            object result = null;
             try
             {
                 if (File.Exists(filePath))
                 {
-                    string json = File.ReadAllText(filePath);
                     using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
-                    result = JsonConvert.DeserializeObject(json, batch.GetType(), s_settings);
+                    IServiceMessageContext context = m_messageContext ?? AmbientMessageContext.CurrentContext;
+
+                    using (FileStream stream = File.OpenRead(filePath))
+                    using (var decoder = new BinaryDecoder(stream, context, true))
+                    {
+                        DurableMonitoredItemQueueFactory.ReadMappingTables(decoder);
+
+                        lock (batch)
+                        {
+                            if (batch is DataChangeBatch dataChangeBatch)
+                            {
+                                DataChangeBatch restored = DurableMonitoredItemQueueFactory.DecodeDataChangeBatch(decoder);
+                                dataChangeBatch.Restore(restored.Values);
+                            }
+                            else if (batch is EventBatch eventBatch)
+                            {
+                                EventBatch restored = DurableMonitoredItemQueueFactory.DecodeEventBatch(decoder);
+                                eventBatch.Restore(restored.Events);
+                            }
+                            m_batchesToRestore.TryRemove(batch.Id, out _);
+                        }
+                    }
 
                     File.Delete(filePath);
+                    return;
                 }
             }
             catch (Exception ex)
             {
                 m_logger.LogError(ex, "Failed to restore batch");
-
-                batch.RestoreInProgress = false;
-                m_batchesToRestore.TryRemove(batch.Id, out _);
-
-                return;
             }
-            lock (batch)
-            {
-                if (batch is DataChangeBatch dataChangeBatch)
-                {
-                    var newBatch = result as DataChangeBatch;
-                    dataChangeBatch.Restore(newBatch.Values);
-                }
-                else if (batch is EventBatch eventBatch)
-                {
-                    var newBatch = result as EventBatch;
-                    eventBatch.Restore(newBatch.Events);
-                }
-                m_batchesToRestore.TryRemove(batch.Id, out _);
-            }
+
+            batch.RestoreInProgress = false;
+            m_batchesToRestore.TryRemove(batch.Id, out _);
         }
 
         /// <inheritdoc/>
@@ -141,9 +140,6 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             batch.CancelBatchPersist = cancellationTokenSource;
             try
             {
-                using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
-                string result = JsonConvert.SerializeObject(batch, s_settings);
-
                 if (!Directory.Exists(s_storage_path))
                 {
                     Directory.CreateDirectory(s_storage_path);
@@ -153,7 +149,23 @@ namespace SampleCompany.NodeManagers.DurableSubscription
                     s_storage_path,
                     $"{batch.MonitoredItemId}_{batch.Id}{kBaseFilename}");
 
-                File.WriteAllText(filePath, result);
+                using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
+                IServiceMessageContext context = m_messageContext ?? AmbientMessageContext.CurrentContext;
+
+                using (FileStream stream = File.Create(filePath))
+                using (var encoder = new BinaryEncoder(stream, context, true))
+                {
+                    DurableMonitoredItemQueueFactory.WriteMappingTables(encoder, context);
+
+                    if (batch is DataChangeBatch dataChangeBatch)
+                    {
+                        DurableMonitoredItemQueueFactory.EncodeDataChangeBatch(encoder, dataChangeBatch);
+                    }
+                    else if (batch is EventBatch eventBatch)
+                    {
+                        DurableMonitoredItemQueueFactory.EncodeEventBatch(encoder, eventBatch);
+                    }
+                }
 
                 if (cancellationTokenSource.IsCancellationRequested)
                 {
@@ -219,22 +231,9 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         {
             try
             {
-                if (Directory.Exists(s_storage_path))
-                {
-                    var directory = new DirectoryInfo(s_storage_path);
-                    var regex = new Regex(
-                        $"{batchToRemove.MonitoredItemId}_.{batchToRemove.Id}._{kBaseFilename}$",
-                        RegexOptions.Compiled);
-
-                    foreach (FileInfo file in directory.GetFiles())
-                    {
-                        if (!regex.IsMatch(file.Name))
-                        {
-                            file.Delete();
-                            return;
-                        }
-                    }
-                }
+                File.Delete(Path.Combine(
+                    s_storage_path,
+                    $"{batchToRemove.MonitoredItemId}_{batchToRemove.Id}{kBaseFilename}"));
             }
             catch (Exception ex)
             {
@@ -246,5 +245,6 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         private readonly ConcurrentDictionary<Guid, BatchBase> m_batchesToPersist = new();
         private readonly ILogger m_logger;
         private readonly ITelemetryContext m_telemetry;
+        private readonly IServiceMessageContext m_messageContext;
     }
 }

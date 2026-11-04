@@ -57,13 +57,11 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected override DataValue ComputeValue(TimeSlice slice)
         {
-            uint? id = AggregateId.Identifier as uint?;
-
-            if (id == null)
+            if (!AggregateId.TryGetValue(out uint id))
             {
                 return base.ComputeValue(slice);
             }
-            switch (id.Value)
+            switch (id)
             {
                 case Objects.AggregateFunction_Count:
                     return ComputeCount(slice);
@@ -106,18 +104,16 @@ namespace Technosoftware.UaServer
             }
 
             // set the timestamp and status.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(count, TypeInfo.Scalars.Int32),
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
-            value.StatusCode = GetValueBasedStatusCode(slice, values, value.StatusCode);
+            var value = new DataValue()
+                .WithWrappedValue(Variant.From(count))
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
+            value = value.WithStatus(GetValueBasedStatusCode(slice, values, value.StatusCode));
 
             if (!StatusCode.IsBad(value.StatusCode))
             {
                 // set aggregate bits fon non Bad values
-                value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+                value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
             }
             // return result.
             return value;
@@ -146,13 +142,11 @@ namespace Technosoftware.UaServer
             }
 
             // set the timestamp and status.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(count, TypeInfo.Scalars.Int32),
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            var value = new DataValue()
+                .WithWrappedValue(Variant.From(count))
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;
@@ -198,14 +192,12 @@ namespace Technosoftware.UaServer
             }
 
             // set the timestamp and status.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(duration, TypeInfo.Scalars.Double),
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
-            value.StatusCode = GetTimeBasedStatusCode(regions, value.StatusCode);
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            var value = new DataValue()
+                .WithWrappedValue(Variant.From(duration))
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
+            value = value.WithStatus(GetTimeBasedStatusCode(regions, value.StatusCode));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;
@@ -228,7 +220,7 @@ namespace Technosoftware.UaServer
             // The first non-bad value is a transition when no previous non-bad value exists.
             LinkedListNode<DataValue> previousValue = slice.NonBadEarlyBound;
             bool hasLastValue = previousValue != null;
-            object lastValue = previousValue?.Value.Value;
+            Variant lastValue = hasLastValue ? previousValue.Value.WrappedValue : default;
 
             // count the transitions.
             int count = 0;
@@ -240,9 +232,9 @@ namespace Technosoftware.UaServer
                     continue;
                 }
 
-                object nextValue = values[ii].Value;
+                Variant nextValue = values[ii].WrappedValue;
 
-                if (!hasLastValue || !Utils.IsEqual(lastValue, nextValue))
+                if (!hasLastValue || lastValue != nextValue)
                 {
                     count++;
                 }
@@ -252,14 +244,12 @@ namespace Technosoftware.UaServer
             }
 
             // set the timestamp and status.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(count, TypeInfo.Scalars.Int32),
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
-            value.StatusCode = GetValueBasedStatusCode(slice, values, value.StatusCode);
+            var value = new DataValue()
+                .WithWrappedValue(Variant.From(count))
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(GetValueBasedStatusCode(slice, values, value.StatusCode));
 
             // return result.
             return value;

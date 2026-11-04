@@ -149,9 +149,9 @@ namespace Technosoftware.UaClient
             FilterResult = null;
             Error = error;
 
-            if (request.RequestedParameters.Filter != null)
+            if (request.RequestedParameters.Filter.TryGetValue(out MonitoringFilter? filter))
             {
-                Filter = Utils.Clone(request.RequestedParameters.Filter.Body) as MonitoringFilter;
+                Filter = CoreUtils.Clone(filter);
             }
 
             if (ServiceResult.IsGood(error))
@@ -160,9 +160,9 @@ namespace Technosoftware.UaClient
                 SamplingInterval = result.RevisedSamplingInterval;
                 QueueSize = result.RevisedQueueSize;
 
-                if (result.FilterResult != null)
+                if (result.FilterResult.TryGetValue(out MonitoringFilterResult? filterResult))
                 {
-                    FilterResult = Utils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
+                    FilterResult = CoreUtils.Clone(filterResult);
                 }
             }
 
@@ -195,7 +195,7 @@ namespace Technosoftware.UaClient
 
             if (monitoredItem.Filter != null)
             {
-                Filter = Utils.Clone(monitoredItem.Filter);
+                Filter = CoreUtils.Clone(monitoredItem.Filter);
             }
         }
 
@@ -229,18 +229,18 @@ namespace Technosoftware.UaClient
                 Filter = null;
                 FilterResult = null;
 
-                if (request.RequestedParameters.Filter != null)
+                if (request.RequestedParameters.Filter.TryGetValue(
+                    out MonitoringFilter? modifiedFilter))
                 {
-                    Filter = Utils.Clone(
-                        request.RequestedParameters.Filter.Body) as MonitoringFilter;
+                    Filter = CoreUtils.Clone(modifiedFilter);
                 }
 
                 SamplingInterval = result.RevisedSamplingInterval;
                 QueueSize = result.RevisedQueueSize;
 
-                if (result.FilterResult != null)
+                if (result.FilterResult.TryGetValue(out MonitoringFilterResult? modifiedFilterResult))
                 {
-                    FilterResult = Utils.Clone(result.FilterResult.Body) as MonitoringFilterResult;
+                    FilterResult = CoreUtils.Clone(modifiedFilterResult);
                 }
             }
         }

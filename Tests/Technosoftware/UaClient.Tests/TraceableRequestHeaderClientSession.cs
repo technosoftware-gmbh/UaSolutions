@@ -15,9 +15,11 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient
@@ -32,9 +34,9 @@ namespace Technosoftware.UaClient
             ITransportChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
-            X509Certificate2 clientCertificate,
-            EndpointDescriptionCollection availableEndpoints = null,
-            StringCollection discoveryProfileUris = null)
+            Certificate clientCertificate,
+            ArrayOf<EndpointDescription> availableEndpoints = default,
+            List<string> discoveryProfileUris = null)
             : base(
                 channel,
                 configuration,
@@ -67,10 +69,10 @@ namespace Technosoftware.UaClient
             Span<byte> traceId = stackalloc byte[16];
             context.SpanId.CopyTo(spanId);
             context.TraceId.CopyTo(traceId);
-            var spanContextParameter = new KeyValuePair
+            var spanContextParameter = new Opc.Ua.KeyValuePair
             {
-                Key = "SpanContext",
-                Value = new Variant(new SpanContextDataType
+                Key = new QualifiedName("SpanContext"),
+                Value = Variant.FromStructure(new SpanContextDataType
                 {
                     SpanId = BitConverter.ToUInt64(spanId),
 #if NETFRAMEWORK
@@ -80,8 +82,11 @@ namespace Technosoftware.UaClient
 #endif
                 })
             };
-            traceData = new AdditionalParametersType();
-            traceData.Parameters.Add(spanContextParameter);
+            // Parameters is an immutable ArrayOf in 2.0.
+            traceData = new AdditionalParametersType
+            {
+                Parameters = [spanContextParameter]
+            };
         }
 
         ///<inheritdoc/>
@@ -95,15 +100,18 @@ namespace Technosoftware.UaClient
                     Activity.Current.Context,
                     out AdditionalParametersType traceData);
 
-                if (request.RequestHeader.AdditionalHeader == null)
+                if (request.RequestHeader.AdditionalHeader.IsNull)
                 {
                     request.RequestHeader.AdditionalHeader = new ExtensionObject(traceData);
                 }
                 else if (request.RequestHeader.AdditionalHeader
-                    .Body is AdditionalParametersType existingParameters)
+                    .TryGetValue(out AdditionalParametersType existingParameters))
                 {
                     // Merge the trace data into the existing parameters.
-                    existingParameters.Parameters.AddRange(traceData.Parameters);
+                    existingParameters.Parameters = [
+                        .. existingParameters.Parameters.ToArray(),
+                        .. traceData.Parameters.ToArray()
+                    ];
                 }
             }
         }

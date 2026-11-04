@@ -2,14 +2,14 @@
   <PropertyGroup>
     <Product>OPC UA Solutions .NET</Product>
     <RepositoryUrl>https://github.com/technosoftware-gmbh/UaSolutions</RepositoryUrl>
-    <!-- Versioning is MinVer, driven by git tags (e.g. `git tag 6.0.1`). The same
+    <!-- Versioning is MinVer, driven by git tags (e.g. `git tag 7.0.0`). The same
          mechanism is used in the UaSolutionsNet repository. Do not set
          VersionPrefix/VersionSuffix here: a hardcoded prefix plus a date-stamped
          suffix shadows MinVer and makes the version non-reproducible. -->
-    <MinVerMinimumMajorMinor>6.2</MinVerMinimumMajorMinor>
+    <MinVerMinimumMajorMinor>7.0</MinVerMinimumMajorMinor>
     <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
     <Copyright>Copyright © 2026 Technosoftware GmbH</Copyright>
-    <PackagePrefix>Technosoftware.UaSolutions</PackagePrefix>
+    <PackagePrefix>Technosoftware</PackagePrefix>
     <AssemblyPrefix>Technosoftware</AssemblyPrefix>
     <Company>Technosoftware GmbH</Company>
     <Authors>Technosoftware GmbH</Authors>
@@ -41,6 +41,7 @@
     <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" />
     <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" />
   </ItemGroup>
+
   <PropertyGroup>
     <NoWarn>$(NoWarn);NU1510</NoWarn>
     <PackageIcon>images/TechnosoftwareGmbH.png</PackageIcon>

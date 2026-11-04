@@ -57,13 +57,11 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected override DataValue ComputeValue(TimeSlice slice)
         {
-            uint? id = AggregateId.Identifier as uint?;
-
-            if (id == null)
+            if (!AggregateId.TryGetValue(out uint id))
             {
                 return base.ComputeValue(slice);
             }
-            switch (id.Value)
+            switch (id)
             {
                 case Objects.AggregateFunction_Minimum:
                     return ComputeMinMax(slice, 1, false);
@@ -114,8 +112,8 @@ namespace Technosoftware.UaServer
             DateTime minimumGoodTimestamp = DateTime.MinValue;
             DateTime maximumGoodTimestamp = DateTime.MinValue;
 
-            TypeInfo minimumOriginalType = null;
-            TypeInfo maximumOriginalType = null;
+            TypeInfo minimumOriginalType = default;
+            TypeInfo maximumOriginalType = default;
 
             bool badValuesExist = false;
             bool duplicatesMinimumsExist = false;
@@ -124,7 +122,7 @@ namespace Technosoftware.UaServer
 
             for (int ii = 0; ii < values.Count; ii++)
             {
-                DateTime currentTime = values[ii].SourceTimestamp;
+                DateTime currentTime = (DateTime)values[ii].SourceTimestamp;
                 StatusCode currentStatus = values[ii].StatusCode;
 
                 // ignore bad values.
@@ -209,7 +207,7 @@ namespace Technosoftware.UaServer
             }
 
             // determine the calculated value to return.
-            object processedValue = null;
+            Variant processedValue = default;
             TypeInfo processedType = default;
             DateTime processedTimestamp = DateTime.MinValue;
             bool duplicatesExist = false;
@@ -241,45 +239,38 @@ namespace Technosoftware.UaServer
             // set calculated if not returning actual time and value is not at the start time.
             if (!returnActualTime && processedTimestamp != GetTimestamp(slice))
             {
-                statusCode = statusCode.SetAggregateBits(AggregateBits.Calculated);
+                statusCode = statusCode.WithAggregateBits(AggregateBits.Calculated);
             }
 
             // set the multiple values flags.
             if (duplicatesExist)
             {
-                statusCode = statusCode.SetAggregateBits(
+                statusCode = statusCode.WithAggregateBits(
                     statusCode.AggregateBits | AggregateBits.MultipleValues);
             }
 
             // convert back to original datatype.
-            if (processedType != null && processedType.BuiltInType != BuiltInType.Double)
-            {
-                processedValue = TypeInfo.Cast(
-                    processedValue,
-                    TypeInfo.Scalars.Double,
-                    processedType.BuiltInType);
-            }
-            else
+            if (processedType.IsUnknown ||
+                processedType.BuiltInType == BuiltInType.Double)
             {
                 processedType = TypeInfo.Scalars.Double;
             }
+            processedValue = processedValue.ConvertTo(processedType.BuiltInType);
 
             // create processed value.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(processedValue, processedType),
-                StatusCode = statusCode
-            };
+            var value = new DataValue()
+                .WithWrappedValue(processedValue)
+                .WithStatus(statusCode);
 
             if (returnActualTime)
             {
-                value.SourceTimestamp = processedTimestamp;
-                value.ServerTimestamp = processedTimestamp;
+                value = value.WithSourceTimestamp(processedTimestamp);
+                value = value.WithServerTimestamp(processedTimestamp);
             }
             else
             {
-                value.SourceTimestamp = GetTimestamp(slice);
-                value.ServerTimestamp = GetTimestamp(slice);
+                value = value.WithSourceTimestamp(GetTimestamp(slice));
+                value = value.WithServerTimestamp(GetTimestamp(slice));
             }
 
             return value;
@@ -317,7 +308,7 @@ namespace Technosoftware.UaServer
 
             for (int ii = 0; ii < values.Count; ii++)
             {
-                DateTime currentTime = values[ii].SourceTimestamp;
+                DateTime currentTime = (DateTime)values[ii].SourceTimestamp;
                 StatusCode currentStatus = values[ii].StatusCode;
 
                 // ignore bad values (as determined by the TreatUncertainAsBad parameter).
@@ -383,14 +374,13 @@ namespace Technosoftware.UaServer
                 // check if interval is partial and set the flag accordingly
                 if (slice.Partial)
                 {
-                    noDataValue.StatusCode = noDataValue.StatusCode
-                        .SetAggregateBits(AggregateBits.Partial);
+                    noDataValue = noDataValue.WithStatus(noDataValue.StatusCode .WithAggregateBits(AggregateBits.Partial));
                 }
                 return noDataValue;
             }
 
             // determine the calculated value to return.
-            object processedValue = null;
+            Variant processedValue = default;
             TypeInfo processedType = default;
             DateTime processedTimestamp = DateTime.MinValue;
             StatusCode processedStatusCode = StatusCodes.Good;
@@ -426,41 +416,34 @@ namespace Technosoftware.UaServer
                 processedTimestamp != GetTimestamp(slice) &&
                 (statusCode.AggregateBits & AggregateBits.Interpolated) == 0)
             {
-                statusCode = statusCode.SetAggregateBits(
+                statusCode = statusCode.WithAggregateBits(
                     statusCode.AggregateBits | AggregateBits.Calculated);
             }
 
             // set the multiple values flags.
             if (duplicatesExist)
             {
-                statusCode = statusCode.SetAggregateBits(
+                statusCode = statusCode.WithAggregateBits(
                     statusCode.AggregateBits | AggregateBits.MultipleValues);
             }
 
             // convert back to original datatype.
-            if (processedType != null && processedType.BuiltInType != BuiltInType.Double)
-            {
-                processedValue = TypeInfo.Cast(
-                    processedValue,
-                    TypeInfo.Scalars.Double,
-                    processedType.BuiltInType);
-            }
-            else
+            if (processedType.IsUnknown ||
+                processedType.BuiltInType == BuiltInType.Double)
             {
                 processedType = TypeInfo.Scalars.Double;
             }
+            processedValue = processedValue.ConvertTo(processedType.BuiltInType);
 
             // create processed value.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(processedValue, processedType),
-                StatusCode = GetTimeBasedStatusCode(slice, values, statusCode)
-            };
+            var value = new DataValue()
+                .WithWrappedValue(processedValue)
+                .WithStatus(GetTimeBasedStatusCode(slice, values, statusCode));
 
             // zero value if status is bad.
             if (StatusCode.IsBad(value.StatusCode))
             {
-                value.WrappedValue = Variant.Null;
+                value = value.WithWrappedValue(Variant.Null);
             }
 
             if (returnActualTime)
@@ -471,24 +454,22 @@ namespace Technosoftware.UaServer
                     if (processedTimestamp == slice.StartTime)
                     {
                         processedTimestamp = processedTimestamp.AddMilliseconds(+1);
-                        value.StatusCode = value.StatusCode.SetAggregateBits(
-                            value.StatusCode.AggregateBits | AggregateBits.Interpolated);
+                        value = value.WithStatus(value.StatusCode.WithAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Interpolated));
                     }
                 }
                 else if (processedTimestamp == slice.EndTime)
                 {
                     processedTimestamp = processedTimestamp.AddMilliseconds(-1);
-                    value.StatusCode = value.StatusCode.SetAggregateBits(
-                        value.StatusCode.AggregateBits | AggregateBits.Interpolated);
+                    value = value.WithStatus(value.StatusCode.WithAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Interpolated));
                 }
 
-                value.SourceTimestamp = processedTimestamp;
-                value.ServerTimestamp = processedTimestamp;
+                value = value.WithSourceTimestamp(processedTimestamp);
+                value = value.WithServerTimestamp(processedTimestamp);
             }
             else
             {
-                value.SourceTimestamp = GetTimestamp(slice);
-                value.ServerTimestamp = GetTimestamp(slice);
+                value = value.WithSourceTimestamp(GetTimestamp(slice));
+                value = value.WithServerTimestamp(GetTimestamp(slice));
             }
 
             return value;

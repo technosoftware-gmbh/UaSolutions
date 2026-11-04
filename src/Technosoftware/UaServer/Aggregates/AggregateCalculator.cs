@@ -83,7 +83,7 @@ namespace Technosoftware.UaServer
         public bool QueueRawValue(DataValue value)
         {
             // ignore bad data.
-            if (value == null)
+            if (value.IsNull)
             {
                 return false;
             }
@@ -98,11 +98,11 @@ namespace Technosoftware.UaServer
             // check for start of data.
             if (m_startOfData == DateTime.MinValue)
             {
-                m_startOfData = value.SourceTimestamp;
+                m_startOfData = (DateTime)value.SourceTimestamp;
             }
 
             // update end of data.
-            m_endOfData = value.SourceTimestamp;
+            m_endOfData = (DateTime)value.SourceTimestamp;
 
             // ensure values are being queued in the right order.
             if (TimeFlowsBackward)
@@ -140,7 +140,7 @@ namespace Technosoftware.UaServer
             // check if all done.
             if (Complete)
             {
-                return null;
+                return default;
             }
 
             // update the slice.
@@ -156,7 +156,7 @@ namespace Technosoftware.UaServer
             // check if a value can be produced.
             if (!CurrentSlice.Complete && !returnPartial)
             {
-                return null;
+                return default;
             }
 
             // check if the slice extends beyond the range of available data.
@@ -179,8 +179,7 @@ namespace Technosoftware.UaServer
             {
                 if (m_startOfData > earlyTime && m_startOfData < lateTime)
                 {
-                    value.StatusCode = value.StatusCode.SetAggregateBits(
-                        value.StatusCode.AggregateBits | AggregateBits.Partial);
+                    value = value.WithStatus(value.StatusCode.WithAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
                 }
 
                 if (!UsingExtrapolation &&
@@ -188,15 +187,14 @@ namespace Technosoftware.UaServer
                     m_endOfData >= earlyTime &&
                     m_endOfData < lateTime)
                 {
-                    value.StatusCode = value.StatusCode.SetAggregateBits(
-                        value.StatusCode.AggregateBits | AggregateBits.Partial);
+                    value = value.WithStatus(value.StatusCode.WithAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
                 }
             }
 
             // force value to null if status code is bad.
             if (StatusCode.IsBad(value.StatusCode))
             {
-                value.WrappedValue = Variant.Null;
+                value = value.WithWrappedValue(Variant.Null);
             }
 
             // delete unneeded data.
@@ -245,8 +243,7 @@ namespace Technosoftware.UaServer
                     m_endOfData >= earlyTime &&
                     m_endOfData < lateTime)
                 {
-                    value.StatusCode = value.StatusCode.SetAggregateBits(
-                        value.StatusCode.AggregateBits | AggregateBits.Partial);
+                    value = value.WithStatus(value.StatusCode.WithAggregateBits( value.StatusCode.AggregateBits | AggregateBits.Partial));
                 }
             }
             else
@@ -340,12 +337,12 @@ namespace Technosoftware.UaServer
         /// <returns>Less than 0 if value1 is earlier than value2; 0 if they are equal; Greater than zero otherwise.</returns>
         protected int CompareTimestamps(DataValue value1, DataValue value2)
         {
-            if (value1 == null)
+            if (value1.IsNull)
             {
-                return value2 == null ? 0 : -1;
+                return value2.IsNull ? 0 : -1;
             }
 
-            if (value2 == null)
+            if (value2.IsNull)
             {
                 return +1;
             }
@@ -384,7 +381,7 @@ namespace Technosoftware.UaServer
         {
             if (value2 == null)
             {
-                return value1 == null ? 0 : +1;
+                return value1.IsNull ? 0 : +1;
             }
 
             return CompareTimestamps(value1, value2.Value);
@@ -421,17 +418,23 @@ namespace Technosoftware.UaServer
         /// <returns>Less than 0 if value1 is earlier than value2; 0 if they are equal; Greater than zero otherwise.</returns>
         protected int CompareTimestamps(DateTime value1, LinkedListNode<DataValue> value2)
         {
-            if (value2 == null || value2.Value == null)
+            if (value2 == null || value2.Value.IsNull)
             {
                 return +1;
             }
 
+            // The timestamps are DateTimeUtc in 2.0. Comparing a DateTime
+            // against one binds DateTime.CompareTo(object), which boxes and
+            // throws at run time, so the comparison is made in DateTimeUtc -
+            // DateTime converts to it implicitly and without loss.
+            DateTimeUtc timestamp = value1;
+
             if (UseServerTimestamp)
             {
-                return value1.CompareTo(value2.Value.ServerTimestamp);
+                return timestamp.CompareTo(value2.Value.ServerTimestamp);
             }
 
-            return value1.CompareTo(value2.Value.SourceTimestamp);
+            return timestamp.CompareTo(value2.Value.SourceTimestamp);
         }
 
         /// <summary>
@@ -441,7 +444,7 @@ namespace Technosoftware.UaServer
         /// <returns>True if the value is good.</returns>
         protected bool IsGood(DataValue value)
         {
-            if (value == null)
+            if (value.IsNull)
             {
                 return false;
             }
@@ -834,8 +837,7 @@ namespace Technosoftware.UaServer
 
                     if (!ReferenceEquals(slice.EarlyBound.Next, slice.LateBound))
                     {
-                        dataValue.StatusCode = dataValue.StatusCode
-                            .SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        dataValue = dataValue.WithStatus(dataValue.StatusCode .WithCodeBits(StatusCodes.UncertainDataSubNormal));
                     }
 
                     return dataValue;
@@ -852,8 +854,7 @@ namespace Technosoftware.UaServer
                             timestamp,
                             slice.SecondEarlyBound.Value,
                             slice.EarlyBound.Value);
-                        dataValue.StatusCode = dataValue.StatusCode
-                            .SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        dataValue = dataValue.WithStatus(dataValue.StatusCode .WithCodeBits(StatusCodes.UncertainDataSubNormal));
                         return dataValue;
                     }
 
@@ -871,8 +872,7 @@ namespace Technosoftware.UaServer
                     CompareTimestamps(timestamp, slice.EarlyBound.Next) > 0)
                 {
                     UsingExtrapolation = true;
-                    dataValue.StatusCode = dataValue.StatusCode
-                        .SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                    dataValue = dataValue.WithStatus(dataValue.StatusCode .WithCodeBits(StatusCodes.UncertainDataSubNormal));
                 }
 
                 return dataValue;
@@ -893,28 +893,25 @@ namespace Technosoftware.UaServer
                 return new DataValue(Variant.Null, StatusCodes.BadNoData, timestamp, timestamp);
             }
 
-            var dataValue = new DataValue
-            {
-                WrappedValue = earlyBound.WrappedValue,
-                SourceTimestamp = timestamp,
-                ServerTimestamp = timestamp,
-                StatusCode = StatusCodes.Good
-            };
+            var dataValue = new DataValue()
+                .WithWrappedValue(earlyBound.WrappedValue)
+                .WithSourceTimestamp(timestamp)
+                .WithServerTimestamp(timestamp)
+                .WithStatus(StatusCodes.Good);
 
             // update status code.
             if (StatusCode.IsBad(earlyBound.StatusCode))
             {
-                dataValue.StatusCode = StatusCodes.BadNoData;
+                dataValue = dataValue.WithStatus(StatusCodes.BadNoData);
             }
 
             // update status code.
             if (StatusCode.IsNotGood(earlyBound.StatusCode))
             {
-                dataValue.StatusCode = StatusCodes.UncertainDataSubNormal;
+                dataValue = dataValue.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            dataValue.StatusCode = dataValue.StatusCode
-                .SetAggregateBits(AggregateBits.Interpolated);
+            dataValue = dataValue.WithStatus(dataValue.StatusCode .WithAggregateBits(AggregateBits.Interpolated));
             return dataValue;
         }
 
@@ -941,8 +938,7 @@ namespace Technosoftware.UaServer
 
                     if (StatusCode.IsNotBad(dataValue2.StatusCode))
                     {
-                        dataValue2.StatusCode = dataValue2.StatusCode
-                            .SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        dataValue2 = dataValue2.WithStatus(dataValue2.StatusCode .WithCodeBits(StatusCodes.UncertainDataSubNormal));
                     }
 
                     return dataValue2;
@@ -961,23 +957,20 @@ namespace Technosoftware.UaServer
                     earlyValue;
 
                 // convert back to original type.
-                var dataValue = new DataValue
-                {
-                    WrappedValue = CastToOriginalType(calculatedValue, earlyBound),
-                    SourceTimestamp = timestamp,
-                    ServerTimestamp = timestamp,
-                    StatusCode = StatusCodes.Good
-                };
+                var dataValue = new DataValue()
+                    .WithWrappedValue(CastToOriginalType(calculatedValue, earlyBound))
+                    .WithSourceTimestamp(timestamp)
+                    .WithServerTimestamp(timestamp)
+                    .WithStatus(StatusCodes.Good);
 
                 // update status code.
                 if (StatusCode.IsNotGood(earlyBound.StatusCode) ||
                     StatusCode.IsNotGood(lateBound.StatusCode))
                 {
-                    dataValue.StatusCode = StatusCodes.UncertainDataSubNormal;
+                    dataValue = dataValue.WithStatus(StatusCodes.UncertainDataSubNormal);
                 }
 
-                dataValue.StatusCode = dataValue.StatusCode
-                    .SetAggregateBits(AggregateBits.Interpolated);
+                dataValue = dataValue.WithStatus(dataValue.StatusCode .WithAggregateBits(AggregateBits.Interpolated));
 
                 return dataValue;
             }
@@ -997,10 +990,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected static double CastToDouble(DataValue value)
         {
-            return (double)TypeInfo.Cast(
-                value.Value,
-                value.WrappedValue.TypeInfo,
-                BuiltInType.Double);
+            return value.WrappedValue.ConvertToDouble().GetDouble();
         }
 
         /// <summary>
@@ -1008,11 +998,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected static Variant CastToOriginalType(double value, DataValue original)
         {
-            object castValue = TypeInfo.Cast(
-                value,
-                TypeInfo.Scalars.Double,
-                original.WrappedValue.TypeInfo.BuiltInType);
-            return new Variant(castValue, original.WrappedValue.TypeInfo);
+            return Variant.From(value).ConvertTo(original.WrappedValue.TypeInfo.BuiltInType);
         }
 
         /// <summary>
@@ -1031,7 +1017,12 @@ namespace Technosoftware.UaServer
                 // check for an exact match.
                 if (CompareTimestamps(timestamp, ii) == 0)
                 {
-                    return new DataValue(ii.Value);
+                    // DataValue had a copy constructor in 1.5. It is a struct
+                    // in 2.0 and new DataValue(dataValue) binds
+                    // DataValue(Variant) instead, wrapping the whole DataValue
+                    // inside a Variant - the same source text, a different
+                    // meaning, and no diagnostic.
+                    return ii.Value.Copy();
                 }
 
                 // looking for an end bound.
@@ -1088,8 +1079,8 @@ namespace Technosoftware.UaServer
             // need to make it uncertain if interpolation was required but not used.
             if (StatusCode.IsGood(value.StatusCode) && revertToStepped)
             {
-                value.StatusCode = StatusCodes.UncertainDataSubNormal;
-                value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Interpolated);
+                value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
+                value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Interpolated));
             }
 
             return value;
@@ -1112,7 +1103,7 @@ namespace Technosoftware.UaServer
             // add the start point.
             DataValue startBound = GetSimpleBound(slice.StartTime, slice);
 
-            if (startBound != null)
+            if (!startBound.IsNull)
             {
                 values.Add(startBound);
             }
@@ -1134,7 +1125,7 @@ namespace Technosoftware.UaServer
             // add the end point.
             DataValue endBound = GetSimpleBound(slice.EndTime, slice);
 
-            if (endBound != null)
+            if (!endBound.IsNull)
             {
                 values.Add(endBound);
             }
@@ -1204,7 +1195,7 @@ namespace Technosoftware.UaServer
             // add the start point.
             DataValue startBound = Interpolate(slice.StartTime, slice);
 
-            if (startBound != null)
+            if (!startBound.IsNull)
             {
                 values.Add(startBound);
             }
@@ -1226,7 +1217,7 @@ namespace Technosoftware.UaServer
             // add the end point.
             DataValue endBound = Interpolate(slice.EndTime, slice);
 
-            if (endBound != null)
+            if (!endBound.IsNull)
             {
                 values.Add(endBound);
             }
@@ -1290,7 +1281,7 @@ namespace Technosoftware.UaServer
             for (int ii = 0; ii < values.Count; ii++)
             {
                 double currentValue = 0;
-                DateTime currentTime = values[ii].SourceTimestamp;
+                DateTime currentTime = (DateTime)values[ii].SourceTimestamp;
                 StatusCode currentStatus = values[ii].StatusCode;
 
                 // convert to doubles to facilitate numeric calculations.
@@ -1445,7 +1436,7 @@ namespace Technosoftware.UaServer
             if (totalCount == 0 || goodCount / totalCount * 100 >= Configuration.PercentDataGood)
             {
                 // good if the good count is greater than or equal to the configured threshold.
-                statusCode = statusCode.SetCodeBits(StatusCodes.Good);
+                statusCode = statusCode.WithCodeBits(StatusCodes.Good);
             }
             else if (badCount / totalCount * 100 >= Configuration.PercentDataBad)
             {
@@ -1455,7 +1446,7 @@ namespace Technosoftware.UaServer
             else
             {
                 // uncertain if did not meet the Good or Bad requirements
-                statusCode = statusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                statusCode = statusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal);
             }
 
             return statusCode;
@@ -1519,7 +1510,7 @@ namespace Technosoftware.UaServer
                 goodDuration / totalDuration * 100 >= Configuration.PercentDataGood)
             {
                 // good if the good duration is greater than or equal to the configured threshold.
-                statusCode = statusCode.SetCodeBits(StatusCodes.Good);
+                statusCode = statusCode.WithCodeBits(StatusCodes.Good);
             }
             else if (badDuration / totalDuration * 100 >= Configuration.PercentDataBad)
             {
@@ -1529,7 +1520,7 @@ namespace Technosoftware.UaServer
             else
             {
                 // uncertain if did not meet the Good or Bad requirements
-                statusCode = statusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                statusCode = statusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal);
             }
 
             // always calculated.

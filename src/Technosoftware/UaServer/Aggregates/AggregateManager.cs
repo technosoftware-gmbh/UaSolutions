@@ -68,7 +68,7 @@ namespace Technosoftware.UaServer
         /// <returns>True if the aggregate is supported.</returns>
         public bool IsSupported(NodeId aggregateId)
         {
-            if (NodeId.IsNull(aggregateId))
+            if (aggregateId.IsNull)
             {
                 return false;
             }
@@ -152,7 +152,7 @@ namespace Technosoftware.UaServer
             bool stepped,
             AggregateConfiguration configuration)
         {
-            if (NodeId.IsNull(aggregateId))
+            if (aggregateId.IsNull)
             {
                 return null;
             }
@@ -170,7 +170,7 @@ namespace Technosoftware.UaServer
             if (configuration.UseServerCapabilitiesDefaults)
             {
                 // ensure the configuration is initialized
-                configuration = GetDefaultConfiguration(null);
+                configuration = GetDefaultConfiguration(default);
             }
 
             return factory(

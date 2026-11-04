@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Xml;
@@ -28,8 +29,8 @@ namespace Technosoftware.UaConfiguration
     /// <summary>
     /// An application that is managed by the configuration tool.
     /// </summary>
-    [DataContract(Namespace = Namespaces.OpcUaConfig)]
-    public class ManagedApplication 
+    [DataType(Namespace = Namespaces.OpcUaConfig)]
+    public partial class ManagedApplication 
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagedApplication"/> class.
@@ -99,7 +100,7 @@ namespace Technosoftware.UaConfiguration
         /// Gets or sets the display name.
         /// </summary>
         /// <value>The display name.</value>
-        [DataMember(IsRequired = false, EmitDefaultValue = false, Order = 0)]  
+        [DataTypeField(Order = 0)]  
         public string DisplayName
         {
             get { return m_displayName; }
@@ -110,7 +111,7 @@ namespace Technosoftware.UaConfiguration
         /// Gets or sets the executable path.
         /// </summary>
         /// <value>The executable path.</value>
-        [DataMember(IsRequired = false, EmitDefaultValue = false, Order = 1)]  
+        [DataTypeField(Order = 1)]  
         public string ExecutablePath
         {
             get { return m_executablePath; }
@@ -121,7 +122,7 @@ namespace Technosoftware.UaConfiguration
         /// Gets or sets the configuration path.
         /// </summary>
         /// <value>The configuration path.</value>
-        [DataMember(IsRequired = false, EmitDefaultValue = false, Order = 2)]  
+        [DataTypeField(Order = 2)]  
         public string ConfigurationPath
         {
             get { return m_configurationPath; }
@@ -132,7 +133,7 @@ namespace Technosoftware.UaConfiguration
         /// Gets or sets the certificate.
         /// </summary>
         /// <value>The certificate.</value>
-        [DataMember(IsRequired = false, EmitDefaultValue = false, Order = 3)]
+        [DataTypeField(Order = 3)]
         public CertificateIdentifier Certificate
         {
             get { return m_certificate; }
@@ -143,7 +144,7 @@ namespace Technosoftware.UaConfiguration
         /// Gets or sets the trust list.
         /// </summary>
         /// <value>The trust list.</value>
-        [DataMember(IsRequired = false, EmitDefaultValue = false, Order = 4)]
+        [DataTypeField(Order = 4)]
         public CertificateStoreIdentifier TrustList
         {
             get { return m_trustList; }
@@ -154,8 +155,8 @@ namespace Technosoftware.UaConfiguration
         /// Gets or sets the trust list.
         /// </summary>
         /// <value>The trust list.</value>
-        [DataMember(IsRequired = false, EmitDefaultValue = false, Order = 5)]
-        public StringCollection BaseAddresses
+        [DataTypeField(Order = 5)]
+        public List<string> BaseAddresses
         {
             get { return m_baseAddresses; }
             set { m_baseAddresses = value; }
@@ -414,7 +415,7 @@ namespace Technosoftware.UaConfiguration
         private string m_configurationPath;
         private CertificateIdentifier m_certificate;
         private CertificateStoreIdentifier m_trustList;
-        private StringCollection m_baseAddresses;
+        private List<string> m_baseAddresses;
         private readonly ILogger m_logger;
         private readonly ITelemetryContext m_telemetry;
         #endregion 

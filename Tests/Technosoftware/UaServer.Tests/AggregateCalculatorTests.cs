@@ -14,13 +14,12 @@
 #endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
+using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System;
 using NUnit.Framework;
-using Technosoftware.Tests;
 using Opc.Ua;
-using Technosoftware.UaServer;
+using Technosoftware.Tests;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer.Tests
@@ -73,13 +72,13 @@ namespace Technosoftware.UaServer.Tests
 
             for (int i = 0; i < values.Length; i++)
             {
-                dataValues.Add(new DataValue
-                {
-                    Value = values[i],
-                    SourceTimestamp = startTime.AddMilliseconds(i * intervalMs),
-                    ServerTimestamp = startTime.AddMilliseconds(i * intervalMs),
-                    StatusCode = StatusCodes.Good
-                });
+                // DataValue is immutable in 2.0, so it is built in one go
+                // rather than through an object initialiser.
+                dataValues.Add(new DataValue(
+                    new Variant(values[i]),
+                    StatusCodes.Good,
+                    startTime.AddMilliseconds(i * intervalMs),
+                    startTime.AddMilliseconds(i * intervalMs)));
             }
 
             return dataValues;
@@ -118,18 +117,23 @@ namespace Technosoftware.UaServer.Tests
             {
                 // Use returnPartial=true to get results even without a late bound
                 DataValue result = calculator.GetProcessedValue(true);
-                if (result != null)
+
+                // DataValue is a struct in 2.0, so "no more values" is the
+                // default value rather than null. Comparing against null lifts
+                // to DataValue? and is always true, which spun this loop until
+                // the test host ran out of memory.
+                if (result == default)
                 {
-                    results.Add(result);
+                    hasData = false;
                 }
                 else
                 {
-                    hasData = false;
+                    results.Add(result);
                 }
             }
 
             // Return the first result (we're testing single interval calculations)
-            return results.Count > 0 ? results[0] : null;
+            return results.Count > 0 ? results[0] : default;
         }
 
         /// <summary>
@@ -158,9 +162,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double stdDev = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double stdDev = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
 
             // Expected: sqrt(((10-30)^2 + (20-30)^2 + (30-30)^2 + (40-30)^2 + (50-30)^2) / 5)
             // = sqrt((400 + 100 + 0 + 100 + 400) / 5) = sqrt(200) ≈ 14.142135
@@ -191,9 +195,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double stdDev = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double stdDev = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
             Assert.That(stdDev, Is.EqualTo(0.0),
                 "Standard deviation of single value should be 0");
         }
@@ -220,9 +224,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double stdDev = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double stdDev = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
             Assert.That(stdDev, Is.EqualTo(0.0),
                 "Standard deviation of identical values should be 0");
         }
@@ -250,9 +254,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double stdDev = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double stdDev = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
 
             // Expected: sqrt(((10-30)^2 + (20-30)^2 + (30-30)^2 + (40-30)^2 + (50-30)^2) / (5-1))
             // = sqrt(1000 / 4) = sqrt(250) ≈ 15.811388
@@ -283,9 +287,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double stdDev = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double stdDev = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
             Assert.That(stdDev, Is.EqualTo(0.0),
                 "Sample standard deviation with single value should be 0");
         }
@@ -312,9 +316,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double stdDev = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double stdDev = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
 
             // Expected: sqrt(((10-15)^2 + (20-15)^2) / (2-1)) = sqrt(50) ≈ 7.0710678
             Assert.That(stdDev, Is.EqualTo(7.0710678).Within(0.0001),
@@ -347,9 +351,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double variance = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double variance = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
 
             // Expected: ((10-30)^2 + (20-30)^2 + (30-30)^2 + (40-30)^2 + (50-30)^2) / 5
             // = (400 + 100 + 0 + 100 + 400) / 5 = 200
@@ -380,9 +384,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double variance = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double variance = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
             Assert.That(variance, Is.EqualTo(0.0),
                 "Variance of single value should be 0");
         }
@@ -409,9 +413,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double variance = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double variance = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
             Assert.That(variance, Is.EqualTo(0.0),
                 "Variance of identical values should be 0");
         }
@@ -439,9 +443,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double variance = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double variance = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
 
             // Expected: ((10-30)^2 + (20-30)^2 + (30-30)^2 + (40-30)^2 + (50-30)^2) / (5-1)
             // = 1000 / 4 = 250
@@ -472,9 +476,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double variance = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double variance = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
             Assert.That(variance, Is.EqualTo(0.0),
                 "Sample variance with single value should be 0");
         }
@@ -501,9 +505,9 @@ namespace Technosoftware.UaServer.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Value, Is.Not.Null);
+            Assert.That(result.BoxedValue(), Is.Not.Null);
 
-            double variance = Convert.ToDouble(result.Value, CultureInfo.InvariantCulture);
+            double variance = Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture);
 
             // Expected: ((10-15)^2 + (20-15)^2) / (2-1) = 50
             Assert.That(variance, Is.EqualTo(50.0).Within(0.0001),
@@ -541,8 +545,8 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(varianceResult, Is.Not.Null);
             Assert.That(stdDevResult, Is.Not.Null);
 
-            double variance = Convert.ToDouble(varianceResult.Value, CultureInfo.InvariantCulture);
-            double stdDev = Convert.ToDouble(stdDevResult.Value, CultureInfo.InvariantCulture);
+            double variance = Convert.ToDouble(varianceResult.BoxedValue(), CultureInfo.InvariantCulture);
+            double stdDev = Convert.ToDouble(stdDevResult.BoxedValue(), CultureInfo.InvariantCulture);
 
             Assert.That(stdDev, Is.EqualTo(Math.Sqrt(variance)).Within(0.0001),
                 "Sample standard deviation should be the square root of sample variance");
@@ -579,8 +583,8 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(varianceResult, Is.Not.Null);
             Assert.That(stdDevResult, Is.Not.Null);
 
-            double variance = Convert.ToDouble(varianceResult.Value, CultureInfo.InvariantCulture);
-            double stdDev = Convert.ToDouble(stdDevResult.Value, CultureInfo.InvariantCulture);
+            double variance = Convert.ToDouble(varianceResult.BoxedValue(), CultureInfo.InvariantCulture);
+            double stdDev = Convert.ToDouble(stdDevResult.BoxedValue(), CultureInfo.InvariantCulture);
 
             Assert.That(stdDev, Is.EqualTo(Math.Sqrt(variance)).Within(0.0001),
                 "Population standard deviation should be the square root of population variance");
@@ -617,8 +621,8 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(sampleVarianceResult, Is.Not.Null);
             Assert.That(populationVarianceResult, Is.Not.Null);
 
-            double sampleVariance = Convert.ToDouble(sampleVarianceResult.Value, CultureInfo.InvariantCulture);
-            double populationVariance = Convert.ToDouble(populationVarianceResult.Value, CultureInfo.InvariantCulture);
+            double sampleVariance = Convert.ToDouble(sampleVarianceResult.BoxedValue(), CultureInfo.InvariantCulture);
+            double populationVariance = Convert.ToDouble(populationVarianceResult.BoxedValue(), CultureInfo.InvariantCulture);
 
             Assert.That(sampleVariance, Is.GreaterThanOrEqualTo(populationVariance),
                 "Sample variance should be greater than or equal to population variance");
@@ -642,7 +646,7 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(result, Is.Not.Null);
             Assert.That(result.WrappedValue.IsNull, Is.False);
             Assert.That(
-                Convert.ToDouble(result.Value, CultureInfo.InvariantCulture),
+                Convert.ToDouble(result.BoxedValue(), CultureInfo.InvariantCulture),
                 Is.EqualTo(10.0).Within(0.0001));
         }
     }

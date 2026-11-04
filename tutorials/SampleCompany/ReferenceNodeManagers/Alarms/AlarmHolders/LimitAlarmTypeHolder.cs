@@ -65,17 +65,21 @@ namespace SampleCompany.NodeManagers.Alarms
 
             LimitAlarmState alarm = GetAlarm();
 
-            alarm.HighLimit ??= new PropertyState<double>(alarm);
-            alarm.HighHighLimit ??= new PropertyState<double>(alarm);
-            alarm.LowLimit ??= new PropertyState<double>(alarm);
-            alarm.LowLowLimit ??= new PropertyState<double>(alarm);
+            // PropertyState<T> is abstract in 2.0 - the concrete instance
+            // carries a variant builder for T - so the optional properties come
+            // from the state class's own factory. CreateOrReplace only creates
+            // when the child is absent, which is what the ??= expressed.
+            _ = alarm.CreateOrReplaceHighLimit(SystemContext, null, false);
+            _ = alarm.CreateOrReplaceHighHighLimit(SystemContext, null, false);
+            _ = alarm.CreateOrReplaceLowLimit(SystemContext, null, false);
+            _ = alarm.CreateOrReplaceLowLowLimit(SystemContext, null, false);
 
             if (Optional)
             {
-                alarm.BaseHighLimit = new PropertyState<double>(alarm);
-                alarm.BaseHighHighLimit = new PropertyState<double>(alarm);
-                alarm.BaseLowLimit = new PropertyState<double>(alarm);
-                alarm.BaseLowLowLimit = new PropertyState<double>(alarm);
+                _ = alarm.CreateOrReplaceBaseHighLimit(SystemContext, null, false);
+                _ = alarm.CreateOrReplaceBaseHighHighLimit(SystemContext, null, false);
+                _ = alarm.CreateOrReplaceBaseLowLimit(SystemContext, null, false);
+                _ = alarm.CreateOrReplaceBaseLowLowLimit(SystemContext, null, false);
             }
 
             // Call the base class to set parameters

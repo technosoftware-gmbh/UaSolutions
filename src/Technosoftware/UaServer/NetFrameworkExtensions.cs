@@ -18,7 +18,9 @@
 #region Using Directives
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -29,6 +31,41 @@ namespace Technosoftware.UaServer
     /// </summary>
     internal static class NetFrameworkExtensions
     {
+        extension(ArgumentNullException)
+        {
+            /// <summary>
+            /// Throws if <paramref name="argument"/> is null.
+            /// .NET Framework has no CallerArgumentExpression, so the parameter name is not reported.
+            /// </summary>
+            public static void ThrowIfNull(object argument)
+            {
+                if (argument is null)
+                {
+                    throw new ArgumentNullException(nameof(argument));
+                }
+            }
+        }
+
+        extension(ValueTask)
+        {
+            /// <summary>
+            /// Creates a <see cref="ValueTask{TResult}"/> that has completed with the result.
+            /// </summary>
+            public static ValueTask<TResult> FromResult<TResult>(TResult result)
+            {
+                return new ValueTask<TResult>(result);
+            }
+        }
+
+        /// <summary>
+        /// Writes the bytes to the stream.
+        /// </summary>
+        public static void Write(this Stream stream, ReadOnlySpan<byte> buffer)
+        {
+            byte[] bytes = buffer.ToArray();
+            stream.Write(bytes, 0, bytes.Length);
+        }
+
         extension(Enum)
         {
             /// <summary>

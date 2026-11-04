@@ -99,8 +99,8 @@ namespace Technosoftware.UaServer
                     }
                 }
 
-                Utils.SilentDispose(m_samplingTask);
-                Utils.SilentDispose(m_shutdownEvent);
+                m_samplingTask?.Dispose();
+                m_shutdownEvent?.Dispose();
             }
         }
 
@@ -451,8 +451,8 @@ namespace Technosoftware.UaServer
                 // read values for all enabled items.
                 if (state is List<IUaSampledDataChangeMonitoredItem> items && items.Count > 0)
                 {
-                    var itemsToRead = new ReadValueIdCollection(items.Count);
-                    var values = new DataValueCollection(items.Count);
+                    var itemsToRead = new List<ReadValueId>(items.Count);
+                    var values = new List<DataValue>(items.Count);
                     var errors = new List<ServiceResult>(items.Count);
 
                     // allocate space for results.
@@ -462,7 +462,7 @@ namespace Technosoftware.UaServer
                         readValueId.Processed = false;
                         itemsToRead.Add(readValueId);
 
-                        values.Add(null);
+                        values.Add(default);
                         errors.Add(null);
                     }
 
@@ -481,14 +481,14 @@ namespace Technosoftware.UaServer
                     }
 
                     // read values.
-                    m_nodeManager.Read(context, 0, itemsToRead, values, errors);
+                    m_nodeManager.Read(context, 0, itemsToRead.ToArrayOf(), values, errors);
 
                     // update monitored items.
                     for (int ii = 0; ii < items.Count; ii++)
                     {
-                        if (values[ii] == null)
+                        if (values[ii].IsNull)
                         {
-                            values[ii] = new DataValue(
+                            values[ii] = DataValue.FromStatusCode(
                                 StatusCodes.BadInternalError,
                                 DateTime.UtcNow);
                         }

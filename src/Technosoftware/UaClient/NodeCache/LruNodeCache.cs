@@ -62,8 +62,8 @@ namespace Technosoftware.UaClient
                     .WithExpireAfterAccess(cacheExpiry.Value);
             BitFaster.Caching.Lru.Builder.AtomicAsyncConcurrentLruBuilder<
                 NodeId,
-                List<ReferenceDescription>
-            > refsBuilder = new ConcurrentLruBuilder<NodeId, List<ReferenceDescription>>()
+                ArrayOf<ReferenceDescription>
+            > refsBuilder = new ConcurrentLruBuilder<NodeId, ArrayOf<ReferenceDescription>>()
                 .WithAtomicGetOrAdd()
                 .AsAsyncCache()
                 .WithCapacity(capacity)
@@ -157,7 +157,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public ValueTask<DataValue> GetValueAsync(NodeId nodeId, CancellationToken ct)
         {
-            return m_values.TryGet(nodeId, out DataValue? dataValue)
+            return m_values.TryGet(nodeId, out DataValue dataValue)
                 ? ValueTask.FromResult(dataValue)
                 : FindAsyncCore(nodeId, ct);
             ValueTask<DataValue> FindAsyncCore(NodeId nodeId, CancellationToken ct)
@@ -177,27 +177,27 @@ namespace Technosoftware.UaClient
             CancellationToken ct)
         {
             int count = nodeIds.Count;
-            var result = new List<DataValue?>(nodeIds.Count);
+            var result = new List<DataValue>(nodeIds.Count);
             if (count != 0)
             {
                 var notFound = new List<NodeId>();
                 foreach (NodeId nodeId in nodeIds)
                 {
-                    if (m_values.TryGet(nodeId, out DataValue? dataValue))
+                    if (m_values.TryGet(nodeId, out DataValue dataValue))
                     {
                         result.Add(dataValue);
                         continue;
                     }
                     notFound.Add(nodeId);
-                    result.Add(null);
+                    result.Add(default);
                 }
                 if (notFound.Count != 0)
                 {
                     return FetchRemainingAsync(notFound, result, ct);
                 }
             }
-            Debug.Assert(!result.Any(r => r == null)); // None now should be null
-            return ValueTask.FromResult<IReadOnlyList<DataValue>>(result!);
+            Debug.Assert(!result.Any(r => r.IsNull)); // None now should be null
+            return ValueTask.FromResult<IReadOnlyList<DataValue>>(result);
         }
 
         /// <inheritdoc/>
@@ -210,7 +210,7 @@ namespace Technosoftware.UaClient
         {
             return
                 (!includeSubtypes || IsTypeHierarchyLoaded([referenceTypeId])) &&
-                m_refs.TryGet(nodeId, out List<ReferenceDescription>? references)
+                m_refs.TryGet(nodeId, out ArrayOf<ReferenceDescription> references)
                 ? GetNodesAsync(
                     FilterNodes(references, isInverse, referenceTypeId, includeSubtypes),
                     ct)
@@ -227,7 +227,7 @@ namespace Technosoftware.UaClient
                 {
                     await LoadTypeHierarchyAsync([referenceTypeId], ct).ConfigureAwait(false);
                 }
-                List<ReferenceDescription> references = await GetOrAddReferencesAsync(nodeId, ct)
+                ArrayOf<ReferenceDescription> references = await GetOrAddReferencesAsync(nodeId, ct)
                     .ConfigureAwait(false);
                 return await GetNodesAsync(
                     FilterNodes(references, isInverse, referenceTypeId, includeSubtypes),
@@ -236,22 +236,32 @@ namespace Technosoftware.UaClient
             }
 
             List<NodeId> FilterNodes(
-                IEnumerable<ReferenceDescription> references,
+                ArrayOf<ReferenceDescription> references,
                 bool isInverse,
                 NodeId refTypeId,
                 bool includeSubtypes)
             {
-                return
-                [
-                    .. references
-                        .Where(r =>
-                            r.IsForward == !isInverse &&
-                            (
-                                r.ReferenceTypeId == refTypeId ||
-                                (includeSubtypes && IsTypeOf(r.ReferenceTypeId, refTypeId))))
-                        .Select(r => ToNodeId(r.NodeId))
-                        .Where(n => !NodeId.IsNull(n))
-                ];
+                var nodeIds = new List<NodeId>(references.Count);
+
+                foreach (ReferenceDescription reference in references)
+                {
+                    if (reference.IsForward != !isInverse ||
+                        (reference.ReferenceTypeId != refTypeId &&
+                            (!includeSubtypes ||
+                                !IsTypeOf(reference.ReferenceTypeId, refTypeId))))
+                    {
+                        continue;
+                    }
+
+                    NodeId nodeId = ToNodeId(reference.NodeId);
+
+                    if (!nodeId.IsNull)
+                    {
+                        nodeIds.Add(nodeId);
+                    }
+                }
+
+                return nodeIds;
             }
         }
 
@@ -277,11 +287,11 @@ namespace Technosoftware.UaClient
             }
             foreach (NodeId nodeId in nodeIds)
             {
-                if (NodeId.IsNull(nodeId))
+                if (nodeId.IsNull)
                 {
                     continue;
                 }
-                if (m_refs.TryGet(nodeId, out List<ReferenceDescription>? references))
+                if (m_refs.TryGet(nodeId, out ArrayOf<ReferenceDescription> references))
                 {
                     targetIds.AddRange(
                         FilterNodes(references, isInverse, referenceTypeIds, includeSubtypes));
@@ -315,7 +325,7 @@ namespace Technosoftware.UaClient
                 }
                 foreach (NodeId nodeId in nodeIds)
                 {
-                    List<ReferenceDescription> references = await GetOrAddReferencesAsync(
+                    ArrayOf<ReferenceDescription> references = await GetOrAddReferencesAsync(
                         nodeId,
                         ct)
                         .ConfigureAwait(false);
@@ -325,22 +335,33 @@ namespace Technosoftware.UaClient
                 return await GetNodesAsync(targetIds, ct).ConfigureAwait(false);
             }
             List<NodeId> FilterNodes(
-                IEnumerable<ReferenceDescription> references,
+                ArrayOf<ReferenceDescription> references,
                 bool isInverse,
                 IReadOnlyList<NodeId> referenceTypeIds,
                 bool includeSubtypes)
             {
-                return
-                [
-                    .. references
-                        .Where(r =>
-                            r.IsForward == !isInverse &&
-                            referenceTypeIds.Any(refTypeId =>
-                                r.ReferenceTypeId == refTypeId ||
-                                (includeSubtypes && IsTypeOf(r.ReferenceTypeId, refTypeId))))
-                        .Select(r => ToNodeId(r.NodeId))
-                        .Where(n => !NodeId.IsNull(n))
-                ];
+                var nodeIds = new List<NodeId>(references.Count);
+
+                foreach (ReferenceDescription reference in references)
+                {
+                    if (reference.IsForward != !isInverse ||
+                        !referenceTypeIds.Any(refTypeId =>
+                            reference.ReferenceTypeId == refTypeId ||
+                            (includeSubtypes &&
+                                IsTypeOf(reference.ReferenceTypeId, refTypeId))))
+                    {
+                        continue;
+                    }
+
+                    NodeId nodeId = ToNodeId(reference.NodeId);
+
+                    if (!nodeId.IsNull)
+                    {
+                        nodeIds.Add(nodeId);
+                    }
+                }
+
+                return nodeIds;
             }
         }
 
@@ -374,26 +395,26 @@ namespace Technosoftware.UaClient
             {
                 return true;
             }
-            if (!m_refs.TryGet(subTypeId, out List<ReferenceDescription>? references))
+            if (!m_refs.TryGet(subTypeId, out ArrayOf<ReferenceDescription> references))
             {
                 // block - we can throw here but user should load
                 references = GetOrAddReferencesAsync(subTypeId, default).AsTask().GetAwaiter()
                     .GetResult();
             }
             subTypeId = GetSuperTypeFromReferences(references);
-            return !NodeId.IsNull(subTypeId) && IsTypeOf(subTypeId, superTypeId);
+            return !subTypeId.IsNull && IsTypeOf(subTypeId, superTypeId);
         }
 
         /// <inheritdoc/>
         public ValueTask<NodeId> GetSuperTypeAsync(NodeId typeId, CancellationToken ct)
         {
-            return m_refs.TryGet(typeId, out List<ReferenceDescription>? references)
+            return m_refs.TryGet(typeId, out ArrayOf<ReferenceDescription> references)
                 ? ValueTask.FromResult(GetSuperTypeFromReferences(references))
                 : FindSuperTypeAsyncCore(typeId, ct);
 
             async ValueTask<NodeId> FindSuperTypeAsyncCore(NodeId typeId, CancellationToken ct)
             {
-                List<ReferenceDescription> references = await GetOrAddReferencesAsync(typeId, ct)
+                ArrayOf<ReferenceDescription> references = await GetOrAddReferencesAsync(typeId, ct)
                     .ConfigureAwait(false);
                 return GetSuperTypeFromReferences(references);
             }
@@ -405,11 +426,11 @@ namespace Technosoftware.UaClient
             CancellationToken ct)
         {
             NodeId typeId = datatypeId;
-            while (!NodeId.IsNull(typeId))
+            while (!typeId.IsNull)
             {
-                if (typeId.NamespaceIndex == 0 && typeId.IdType == IdType.Numeric)
+                if (typeId.NamespaceIndex == 0 && typeId.TryGetValue(out uint numericId))
                 {
-                    var id = (BuiltInType)(int)(uint)typeId.Identifier;
+                    var id = (BuiltInType)(int)numericId;
                     if (id is > BuiltInType.Null and <= BuiltInType.Enumeration and not BuiltInType.DiagnosticInfo)
                     {
                         return id;
@@ -423,7 +444,7 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public async ValueTask<INode?> GetNodeWithBrowsePathAsync(
             NodeId nodeId,
-            QualifiedNameCollection browsePath,
+            List<QualifiedName> browsePath,
             CancellationToken ct)
         {
             INode? found = null;
@@ -432,7 +453,7 @@ namespace Technosoftware.UaClient
                 found = null;
                 while (true)
                 {
-                    if (NodeId.IsNull(nodeId))
+                    if (nodeId.IsNull)
                     {
                         // Nothing can be found since there is no
                         return null;
@@ -454,7 +475,7 @@ namespace Technosoftware.UaClient
                         if (target.BrowseName == browseName)
                         {
                             nodeId = ToNodeId(target.NodeId);
-                            if (!NodeId.IsNull(nodeId))
+                            if (!nodeId.IsNull)
                             {
                                 found = target;
                             }
@@ -485,23 +506,22 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Get or add references to cache
         /// </summary>
-        private ValueTask<List<ReferenceDescription>> GetOrAddReferencesAsync(
+        private ValueTask<ArrayOf<ReferenceDescription>> GetOrAddReferencesAsync(
             NodeId nodeId,
             CancellationToken ct)
         {
-            Debug.Assert(!NodeId.IsNull(nodeId));
+            Debug.Assert(!nodeId.IsNull);
             return m_refs.GetOrAddAsync(
                 nodeId,
                 async (nodeId, context) =>
                 {
-                    ReferenceDescriptionCollection references =
+                    ArrayOf<ReferenceDescription> references =
                         await context.ctx.FetchReferencesAsync(null, nodeId, context.ct)
-                            .ConfigureAwait(false) ??
-                        [];
+                            .ConfigureAwait(false);
                     foreach (ReferenceDescription? reference in references)
                     {
                         // transform absolute identifiers.
-                        if (reference.NodeId?.IsAbsolute == true)
+                        if (reference.NodeId.IsAbsolute == true)
                         {
                             reference.NodeId = ExpandedNodeId.ToNodeId(
                                 reference.NodeId,
@@ -524,9 +544,9 @@ namespace Technosoftware.UaClient
             Debug.Assert(result.Count(r => r == null) == remainingIds.Count);
 
             // fetch nodes and references from server.
-            var localIds = new NodeIdCollection(remainingIds);
-            (IReadOnlyList<Node>? nodes, IReadOnlyList<ServiceResult>? readErrors) =
-                await m_context.FetchNodesAsync(null, localIds, ct: ct)
+            var localIds = new List<NodeId>(remainingIds);
+            (ArrayOf<Node> nodes, ArrayOf<ServiceResult> readErrors) =
+                await m_context.FetchNodesAsync(null, localIds.ToArrayOf(), ct: ct)
                     .ConfigureAwait(false);
 
             Debug.Assert(nodes.Count == localIds.Count);
@@ -554,14 +574,14 @@ namespace Technosoftware.UaClient
         /// </summary>
         private async ValueTask<IReadOnlyList<DataValue>> FetchRemainingAsync(
             List<NodeId> remainingIds,
-            List<DataValue?> result,
+            List<DataValue> result,
             CancellationToken ct)
         {
-            Debug.Assert(result.Count(r => r == null) == remainingIds.Count);
+            Debug.Assert(result.Count(r => r.IsNull) == remainingIds.Count);
 
             // fetch nodes and references from server.
-            (IReadOnlyList<DataValue>? values, IReadOnlyList<ServiceResult>? readErrors) =
-                await m_context.FetchValuesAsync(null, remainingIds, ct: ct)
+            (ArrayOf<DataValue> values, ArrayOf<ServiceResult> readErrors) =
+                await m_context.FetchValuesAsync(null, remainingIds.ToArrayOf(), ct: ct)
                 .ConfigureAwait(false);
 
             Debug.Assert(values.Count == remainingIds.Count);
@@ -569,25 +589,24 @@ namespace Technosoftware.UaClient
             int resultMissingIndex = 0;
             for (int index = 0; index < remainingIds.Count; index++)
             {
-                if (ServiceResult.IsBad(readErrors[index]))
-                {
-                    values[index].StatusCode = readErrors[index].StatusCode;
-                }
+                DataValue value = ServiceResult.IsBad(readErrors[index])
+                    ? values[index].WithStatus(readErrors[index].StatusCode)
+                    : values[index];
 
-                if (StatusCode.IsGood(values[index].StatusCode))
+                if (StatusCode.IsGood(value.StatusCode))
                 {
                     // Add to cache
-                    m_values.AddOrUpdate(remainingIds[index], values[index]);
+                    m_values.AddOrUpdate(remainingIds[index], value);
                 }
-                while (result[resultMissingIndex] != null)
+                while (!result[resultMissingIndex].IsNull)
                 {
                     resultMissingIndex++;
                     Debug.Assert(resultMissingIndex < result.Count);
                 }
-                result[resultMissingIndex] = values[index];
+                result[resultMissingIndex] = value;
             }
-            Debug.Assert(!result.Any(r => r == null)); // None now should be null
-            return result!;
+            Debug.Assert(!result.Any(r => r.IsNull)); // None now should be null
+            return result;
         }
 
         /// <summary>
@@ -595,10 +614,10 @@ namespace Technosoftware.UaClient
         /// </summary>
         private bool IsTypeHierarchyLoaded(IEnumerable<NodeId> typeIds)
         {
-            var types = new Queue<NodeId>(typeIds.Where(nodeId => !NodeId.IsNull(nodeId)));
-            while (types.TryDequeue(out NodeId? typeId))
+            var types = new Queue<NodeId>(typeIds.Where(nodeId => !nodeId.IsNull));
+            while (types.TryDequeue(out NodeId typeId))
             {
-                if (!m_refs.TryGet(typeId, out List<ReferenceDescription>? references))
+                if (!m_refs.TryGet(typeId, out ArrayOf<ReferenceDescription> references))
                 {
                     return false;
                 }
@@ -618,13 +637,18 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Get supertype from references
         /// </summary>
-        private NodeId GetSuperTypeFromReferences(List<ReferenceDescription> references)
+        private NodeId GetSuperTypeFromReferences(ArrayOf<ReferenceDescription> references)
         {
-            return references
-                .Where(r => !r.IsForward && r.ReferenceTypeId == ReferenceTypeIds.HasSubtype)
-                .Select(r => ExpandedNodeId.ToNodeId(r.NodeId, NamespaceUris))
-                .DefaultIfEmpty(NodeId.Null)
-                .First();
+            foreach (ReferenceDescription reference in references)
+            {
+                if (!reference.IsForward &&
+                    reference.ReferenceTypeId == ReferenceTypeIds.HasSubtype)
+                {
+                    return ExpandedNodeId.ToNodeId(reference.NodeId, NamespaceUris);
+                }
+            }
+
+            return NodeId.Null;
         }
 
         /// <summary>
@@ -649,9 +673,9 @@ namespace Technosoftware.UaClient
             public static Comparers Instance { get; } = new Comparers();
 
             /// <inheritdoc/>
-            public bool Equals(ExpandedNodeId? x, ExpandedNodeId? y)
+            public bool Equals(ExpandedNodeId x, ExpandedNodeId y)
             {
-                return ReferenceEquals(x, y) || x == y;
+                return x == y;
             }
 
             /// <inheritdoc/>
@@ -661,20 +685,20 @@ namespace Technosoftware.UaClient
             }
 
             /// <inheritdoc/>
-            public bool Equals(NodeId? x, NodeId? y)
+            public bool Equals(NodeId x, NodeId y)
             {
-                return ReferenceEquals(x, y) || x == y;
+                return x == y;
             }
 
             /// <inheritdoc/>
             public int GetHashCode(NodeId obj)
             {
-                return (obj?.GetHashCode()) ?? 0;
+                return obj.GetHashCode();
             }
         }
 
         private readonly IAsyncCache<NodeId, INode> m_nodes;
-        private readonly IAsyncCache<NodeId, List<ReferenceDescription>> m_refs;
+        private readonly IAsyncCache<NodeId, ArrayOf<ReferenceDescription>> m_refs;
         private readonly IAsyncCache<NodeId, DataValue> m_values;
         private readonly IUaNodeCacheContext m_context;
     }

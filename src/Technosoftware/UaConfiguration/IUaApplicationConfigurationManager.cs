@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -210,13 +211,25 @@ namespace Technosoftware.UaConfiguration
         IUaApplicationConfigurationServerOptions SetMaxNotificationsPerPublish(
             int maxNotificationsPerPublish);
 
-        /// <inheritdoc cref="ServerConfiguration.MinMetadataSamplingInterval"/>
-        IUaApplicationConfigurationServerOptions SetMinMetadataSamplingInterval(
-            int minMetadataSamplingInterval);
+        /// <summary>
+        /// Sets the smallest sampling interval the server supports, in milliseconds.
+        /// </summary>
+        /// <remarks>
+        /// This replaces SetMinMetadataSamplingInterval, but it is a different setting
+        /// rather than a rename. MinMetadataSamplingInterval was never read by the stack,
+        /// so whatever was configured had no effect. MinSupportedSamplingInterval is
+        /// applied: it is published as Server.ServerCapabilities.MinSupportedSampleRate
+        /// and acts as a server-wide lower bound when a monitored item's sampling interval
+        /// is revised. Do not carry the old value across without deciding you want that
+        /// floor - clients will see a different revisedSamplingInterval if you do.
+        /// </remarks>
+        /// <inheritdoc cref="ServerConfiguration.MinSupportedSamplingInterval"/>
+        IUaApplicationConfigurationServerOptions SetMinSupportedSamplingInterval(
+            double minSupportedSamplingInterval);
 
         /// <inheritdoc cref="ServerConfiguration.AvailableSamplingRates"/>
         IUaApplicationConfigurationServerOptions SetAvailableSamplingRates(
-            SamplingRateGroupCollection availableSampleRates);
+            List<SamplingRateGroup> availableSampleRates);
 
         /// <inheritdoc cref="ServerConfiguration.RegistrationEndpoint"/>
         IUaApplicationConfigurationServerOptions SetRegistrationEndpoint(
@@ -260,7 +273,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc cref="ServerConfiguration.SupportedPrivateKeyFormats"/>
         IUaApplicationConfigurationServerOptions SetSupportedPrivateKeyFormats(
-            StringCollection supportedPrivateKeyFormats);
+            List<string> supportedPrivateKeyFormats);
 
         /// <inheritdoc cref="ServerConfiguration.MaxTrustListSize"/>
         IUaApplicationConfigurationServerOptions SetMaxTrustListSize(int maxTrustListSize);
@@ -448,7 +461,7 @@ namespace Technosoftware.UaConfiguration
         /// <param name="appRoot">The path to the app cert store, if different than the pki root.</param>
         /// <param name="rejectedRoot">The path to the rejected certificate store.</param>
         [Obsolete(
-            "Use AddSecurityConfiguration(CertificateIdentifierCollection certIdList, string pkiRoot = null, string rejectedRoot = null) instead."
+            "Use AddSecurityConfiguration(List<CertificateIdentifier> certIdList, string pkiRoot = null, string rejectedRoot = null) instead."
         )]
         IUaApplicationConfigurationSecurityOptions AddSecurityConfiguration(
             string subjectName,
@@ -468,7 +481,7 @@ namespace Technosoftware.UaConfiguration
         /// <param name="pkiRoot">The path to the pki root. By default all cert stores use the pki root.</param>
         /// <param name="rejectedRoot">The path to the rejected certificate store.</param>
         IUaApplicationConfigurationSecurityOptions AddSecurityConfiguration(
-            CertificateIdentifierCollection certIdList,
+            List<CertificateIdentifier> certIdList,
             string pkiRoot = null,
             string rejectedRoot = null);
 
@@ -531,7 +544,7 @@ namespace Technosoftware.UaConfiguration
         /// </remarks>
         /// <param name="certIdList">A list of Certificate identifiers</param>
         IUaApplicationConfigurationSecurityOptions SetApplicationCertificates(
-            CertificateIdentifierCollection certIdList);
+            List<CertificateIdentifier> certIdList);
 
         /// <summary>
         /// The number of rejected certificates to keep in the store.
@@ -629,7 +642,8 @@ namespace Technosoftware.UaConfiguration
         /// <param name="value">The object to add and encode.</param>
         IUaApplicationConfigurationExtension AddExtension<T>(
             XmlQualifiedName elementName,
-            object value);
+            T value)
+            where T : IEncodeable;
     }
 
     /// <summary>
@@ -653,15 +667,12 @@ namespace Technosoftware.UaConfiguration
     public interface IUaApplicationConfigurationTraceConfiguration : IUaApplicationConfigurationCreate
     {
         /// <inheritdoc cref="TraceConfiguration.OutputFilePath"/>
-        [Obsolete("Use ITelemetryContext and ILogger-based diagnostics instead.")]
         IUaApplicationConfigurationTraceConfiguration SetOutputFilePath(string outputFilePath);
 
         /// <inheritdoc cref="TraceConfiguration.DeleteOnLoad"/>
-        [Obsolete("Use ITelemetryContext and ILogger-based diagnostics instead.")]
         IUaApplicationConfigurationTraceConfiguration SetDeleteOnLoad(bool deleteOnLoad);
 
         /// <inheritdoc cref="TraceConfiguration.TraceMasks"/>
-        [Obsolete("Use ITelemetryContext and ILogger-based diagnostics instead.")]
         IUaApplicationConfigurationTraceConfiguration SetTraceMasks(int traceMasks);
     }
 

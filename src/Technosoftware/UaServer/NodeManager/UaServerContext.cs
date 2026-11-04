@@ -132,7 +132,7 @@ namespace Technosoftware.UaServer
             {
                 copy.SessionId = default;
                 copy.UserIdentity = null;
-                copy.PreferredLocales = null;
+                copy.PreferredLocales = default;
             }
 
             return copy;

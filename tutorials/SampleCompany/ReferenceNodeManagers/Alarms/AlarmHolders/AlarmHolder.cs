@@ -53,7 +53,7 @@ namespace SampleCompany.NodeManagers.Alarms
             }
 
             m_alarmRootName = m_alarmTypeName + extraName;
-            m_mapName = (string)m_parent.NodeId.Identifier + "." + m_alarmRootName;
+            m_mapName = m_parent.NodeId.IdentifierAsString + "." + m_alarmRootName;
 
             InitializeInternal(m_alarm);
         }
@@ -70,7 +70,7 @@ namespace SampleCompany.NodeManagers.Alarms
             return hasBranches;
         }
 
-        public BaseEventState GetBranch(byte[] eventId)
+        public BaseEventState GetBranch(ByteString eventId)
         {
             BaseEventState state = null;
 
@@ -104,10 +104,10 @@ namespace SampleCompany.NodeManagers.Alarms
         {
         }
 
-        private void InitializeInternal(BaseEventState alarm, NodeId branchId = null)
+        private void InitializeInternal(BaseEventState alarm, NodeId branchId = default)
         {
             string alarmName = AlarmName;
-            string alarmNodeId = (string)m_parent.NodeId.Identifier + "." + AlarmName;
+            string alarmNodeId = m_parent.NodeId.IdentifierAsString + "." + AlarmName;
 
             alarm.SymbolicName = alarmName;
             var createQualifiedName = new QualifiedName(alarmName, NamespaceIndex);
@@ -125,7 +125,7 @@ namespace SampleCompany.NodeManagers.Alarms
 
             if (!isBranch)
             {
-                m_trigger.AddReference(ReferenceTypes.HasCondition, false, m_alarm.NodeId);
+                m_trigger.AddReference(new NodeId(ReferenceTypes.HasCondition), false, m_alarm.NodeId);
                 m_parent.AddChild(alarm);
             }
         }
@@ -133,7 +133,7 @@ namespace SampleCompany.NodeManagers.Alarms
         private static bool IsBranch(NodeId branchId)
         {
             bool isBranch = false;
-            if (branchId != null && !branchId.IsNullNodeId)
+            if (!branchId.IsNull)
             {
                 isBranch = true;
             }
@@ -185,7 +185,7 @@ namespace SampleCompany.NodeManagers.Alarms
                 "{Caller}: {MapName} EventId {EventIdHex} {Message}",
                 caller,
                 m_mapName,
-                Utils.ToHexString(m_alarm.EventId.Value),
+                m_alarm.EventId.Value.ToHexString(),
                 message);
         }
 
@@ -227,9 +227,9 @@ namespace SampleCompany.NodeManagers.Alarms
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             if (Trigger.Value != value)
             {

@@ -51,7 +51,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             object targetHandle,
             BrowseResultMask resultMask,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributesCache,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributesCache,
             bool permissionsOnly);
     }
 
@@ -65,7 +65,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         ValueTask CallAsync(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors,
             CancellationToken cancellationToken = default);
@@ -100,7 +100,7 @@ namespace Technosoftware.UaServer
         ValueTask ReadAsync(
             UaServerOperationContext context,
             double maxAge,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors,
             CancellationToken cancellationToken = default);
@@ -120,7 +120,7 @@ namespace Technosoftware.UaServer
         /// </remarks>
         ValueTask WriteAsync(
             UaServerOperationContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors,
             CancellationToken cancellationToken = default);
     }
@@ -138,7 +138,7 @@ namespace Technosoftware.UaServer
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             CancellationToken cancellationToken = default);
@@ -155,7 +155,7 @@ namespace Technosoftware.UaServer
         ValueTask HistoryUpdateAsync(
             UaServerOperationContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             CancellationToken cancellationToken = default);
@@ -301,7 +301,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors,
             CancellationToken cancellationToken = default);
@@ -320,7 +320,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors,
             IList<IUaMonitoredItem> monitoredItems,
@@ -348,7 +348,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The namespace table of the NodeManager.
         /// </summary>
-        StringCollection NamespacesUris { get; }
+        List<string> NamespacesUris { get; }
     }
 
     /// <summary>
@@ -486,7 +486,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             object targetHandle,
             BrowseResultMask resultMask,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributesCache,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributesCache,
             bool permissionsOnly,
             CancellationToken cancellationToken = default);
 
@@ -611,7 +611,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The ArrayDimensions for the Value attribute for Variable or VariableType nodes.
         /// </summary>
-        public IList<uint> ArrayDimensions { get; set; }
+        public ArrayOf<uint> ArrayDimensions { get; set; }
 
         /// <summary>
         /// Specifies the AccessRestrictions that apply to a Node.
@@ -628,24 +628,24 @@ namespace Technosoftware.UaServer
         /// The RolePermissions for the Node.
         /// Specifies the Permissions that apply to a Node for all Roles which have access to the Node.
         /// </summary>
-        public RolePermissionTypeCollection RolePermissions { get; set; }
+        public ArrayOf<RolePermissionType> RolePermissions { get; set; }
 
         /// <summary>
         /// The DefaultRolePermissions of the Node's name-space meta-data
         /// The value reflects the DefaultRolePermissions Property from the NamespaceMetadata Object associated with the Node.
         /// </summary>
-        public RolePermissionTypeCollection DefaultRolePermissions { get; set; }
+        public ArrayOf<RolePermissionType> DefaultRolePermissions { get; set; }
 
         /// <summary>
         /// The UserRolePermissions of the Node.
         /// Specifies the Permissions that apply to a Node for all Roles granted to current Session.
         /// </summary>
-        public RolePermissionTypeCollection UserRolePermissions { get; set; }
+        public ArrayOf<RolePermissionType> UserRolePermissions { get; set; }
 
         /// <summary>
         /// The DefaultUserRolePermissions of the Node.
         /// The value reflects the DefaultUserRolePermissions Property from the NamespaceMetadata Object associated with the Node.
         /// </summary>
-        public RolePermissionTypeCollection DefaultUserRolePermissions { get; set; }
+        public ArrayOf<RolePermissionType> DefaultUserRolePermissions { get; set; }
     }
 }

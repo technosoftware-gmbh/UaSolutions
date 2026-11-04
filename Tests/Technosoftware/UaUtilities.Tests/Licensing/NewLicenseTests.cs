@@ -234,7 +234,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Client</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -260,7 +260,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGIAkIBTHoExbDfTnmBmt6L6TtSH++OHPB9e4q8L3vDih1p9vGsMuti02LorFuyXJy1hPW4Ej7gONHprGf7Go++BgUHZ5UCQgDf1nS9AaK65D2UjoLTD6L3RaUNwP86Z66t/2sLJNywE2x+2QMHVyoeBEGqPX7GluDsp/rkmuIJiYXqmWg5YEbSWg==</Signature>
+  <Signature>MIGIAkIBeL66WScWrcfCyy3T/5OkDYhCHTkzkwlbW/iZkUtQ7tsggpGEOXR6WTpH5H8lAXdb5lIei15HPUils9h2bbOFIWkCQgCgzi9jHz9OY4PQdP48B/sBoHXRlv6ZzekmH6AvcqtoEpLh1x9pMC0jgWPTjjd9i7asn3OTkY89lwC+TJElkOR1kA==</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
 
@@ -361,7 +361,7 @@ namespace Technosoftware.UaUtilities.Tests
         }
 
         [Test]
-        public void ServicePatchandandValidSupportContractCheck()
+        public void LowerMajorLicenseIsNotCarriedOverBySupportContract()
         {
             LicenseHandler.SimulateServicePatch = true;
             const string licenseData =
@@ -399,11 +399,14 @@ namespace Technosoftware.UaUtilities.Tests
   <Signature>MIGIAkIBDt3b8UyXFGchPQ3PbO0wh2eZn/nymNJBPWCzz937RgD3FOoqYEJ2lmetE9LBzrUdzwU23oAsumTtN6nX3W+aQykCQgEF2Og/PP5yw9WnDWz6289d2UkZwXvJ78yDTL4bTijg/B9R6FkiGfrU+b2G7m9hnncAecKiyU624yoLUFxw8+yCEg==</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
-            Assert.IsTrue(licensed);
-            Assert.IsTrue(LicenseHandler.Instance.IsVersionSupported());
-            Assert.IsFalse(LicenseHandler.Instance.IsEvaluation);
-            Assert.IsFalse(LicenseHandler.Instance.IsExpired);
-            Assert.IsTrue(LicenseHandler.Instance.LicensedType == ProductType.ClientAndServer);
+
+            // The license names version 5 and its support contract runs to 2029. Before the
+            // version 7 licensing change that combination licensed the current version, and
+            // this asserted so. A support contract no longer carries a license across a
+            // major version: customers holding one when the new major is released are
+            // issued a new license for it instead, so the run-time answer is no.
+            Assert.IsFalse(licensed);
+            Assert.IsFalse(LicenseHandler.Instance.IsVersionSupported());
         }
         #endregion Test Methods (Support Contract Check)
 
@@ -421,7 +424,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Client</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -447,7 +450,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGIAkIA0+0xNQsqUlhP++GGZRzW7UDaEoZ7LYdpwyrV/EB0GzAXmINDqkqtAd/6bw0sk3lJOFkMAr3aAaDIIE4fgfVRUKkCQgDehgUfl5o5EheSVNJAO3cU4tJEOppaNtlqH+jh7G7Rbj2Xa6e3lensFBVMBjpNTc6fA21awpaAm5wsX2VCUNHlhQ==</Signature>
+  <Signature>MIGIAkIBa4JQTvMdcAwffvPVTqxwtVOhBs6qo5WkSbwLP9MBJEiFoaFslrd9iQGBlEzc7C8GMTZXfnUvQnTE/mD3vRpsr98CQgGyqEL1plY+DKbTXBvRWfe5idP0WKXh8lhPKiXWiQgLvsmfo7I+iqNXPtclzBbm5R7IhFwsKm23nBxHCNDo0YH9OQ==</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
 
@@ -486,7 +489,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Server</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -512,7 +515,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGIAkIBH4lafSLopWaUS9VYzEuEjTwWnvdvuaR3gR+mQks1DY7XPuoXVyfAKymsfW8ZDMzYAaxP7CIKvmQUPjAdnCMnoIICQgCP+rXa3rjAocGJ7dxfwIF2Uy/kcgqY4nULkDaoo6KsqD0Fj59b+IDc3bvpoOZhhLJPSbshOka653KhCD1ZP27SFQ==</Signature>
+  <Signature>MIGIAkIA+ATcM6licqOP/SzQk5XWJE4wbBv0qdsrenrPi9j900mggruNAQoL+BmvLSni9vGSjjRtdn5cay2sjkjZmaooTKACQgF+T/77WKYTo9uS65hPVsfaZyBjy1tdiAknerBIwKR7Y5/jBf/lNNVvXP61PMjKDAqNYY+1JqJRX8uIAmsA7QBeeA==</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Server, licenseData);
 
@@ -540,7 +543,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>ClientAndServer</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -566,7 +569,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGIAkIBfOtM8zWTTXkjXsRu/kBUgexTvMmS40lvb5fQRkfiddJnLab1M9Im7+ck3kr1H9KUZ5pRCy+nNSV7EP7hWQAiTe4CQgELo1oVe/T8fWJwxLL9Oa+fYVMzRgDCsf3nlJrdfEKcJc/HkAonw65u24AF2p/+z08Rrz+EuHea9Av0lr5PtN6/kA==</Signature>
+  <Signature>MIGGAkEzzCZCKI3ZPqtGZXsRqWv0YwKbaquqoPPrLuAoLJr592IZFZQGzfdAb/JoHKmAosyeBuHuOqt9AGVrBmtrEzVsAwJBYsXg7q3zZADKLM0yrAcwrhkZD+Hu7M6snZFoorYGyQLREDKA1ZEZ0TjL2p44hnNMnx5/JiVZ9WmDqz3223Zy3po=</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.ClientAndServer, licenseData);
 
@@ -595,7 +598,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Client</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -621,7 +624,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGHAkFm9C9poW+zHCiVAMdCpfhYgKGrHL2wR+9c7sluaBQYKIcC5hYlyj3t+Wl/1WQJwNmnfbOfKiQCg7JIsSWGz1LEaAJCAR6i2kVrQAtkpoE6pN0hjSCRkIIiiB2LbI/tosF5qgL7cdLS/WxLPbOehxdiIqcw7fjh+rNSZ/4cWpZ3xxn8D4RE</Signature>
+  <Signature>MIGIAkIBN3sviBPz4lED1OZ9LDQNCz2VFtjr2xOiUdkKRnII/U+GiUf8rbFU/9dyb2nlr80LzHgvDPP1Rpdr+icye+fRdjkCQgExKfUxL3Y/xNCxulApTcPYbv5LnBNwCD9JLsGW25PlISRyS/DzIN/9P+eG1CwAf37i25soJGJOufX56q663PcEhw==</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
 
@@ -650,7 +653,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Client</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -676,7 +679,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGIAkIBB5g40JMCOm3Kf5FrVKnq+OlrJ2/h3DE1SzPuZO8c/9E3kZKsZ1Y64Crv1a3F6VTDsXG+maggq9cstBHxpNncDtgCQgDruV/4HAPmLZdeEVLbveVU2yw9T948Xhg613A2B/OemvIwghvnYQBTF63GZxlfx2fudkqtX8lvE4atvdQQ0qEbAQ==</Signature>
+  <Signature>MIGHAkIB4doYblP2Zkllyn/KoCgN1i2lDF9S4FtxBFxfOK7XVQlxTOoNZn3YHvEvRtlG8iLa5YW380XProOh0JFvTPZ04mgCQTmH7B8s2SEwsCbgRsbvNiJpHMZ9FfSLLiJdOvmrdz3Xxbr9hY5EQ8vswU46NfK9EqpcYGXWEwAqoqtgZZR7vd0r</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
 
@@ -708,7 +711,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Client</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -734,7 +737,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGIAkIB1UDkCD2k9aTztDqzY3MqdTkMC3xLDiAaRD8H7UbNUUHoTsP9axekAVnlWb5vZTMrUQWYOHiVdFb5gJb1anrocUsCQgCDXVJZaumtpJ/djUSm2lf7R3AnwB9dQS3m+TKlWi696MpUNPShFDvaxNWi3frFza+wUVlYZPRfJnB9JS/UgPYHcQ==</Signature>
+  <Signature>MIGIAkIBKaplMUxg5sJWVhLgLfVnLDQfTfchbZv5kMeLexJrbQmZJshR9Ocx1/+JzvMJz8YpM+q9Cx1dfuIk3rhAs4uD+E0CQgFGOTnZSjWUtPZv1Oa58mpaENCRKUNi3uokUmiKnrd7QJHRMtDvRP1P7pDN4k/Ga0sWS1DP1v8RM4OnmOZHvIui9Q==</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
 
@@ -766,7 +769,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Client</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -792,7 +795,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGHAkIAlXlqLNdKHxeUiDV1rVvbSJeTJbs7/bcO4FJ1UakbWkmCZ0dvV4ShWBe6kQFJYFSvnZWz8YP1HRxAIp2XDn9suyYCQRxOs3ws9ZxM4hfMuB996H5b7NVXG6XHyItmU0kD9GrlzksICrXsk1/p3Z+cCf/UaLwzaE3L2Wy0BOCXYhh/ANre</Signature>
+  <Signature>MIGGAkEOasZ6UkuLqLy7mUfiWSlRRgYm/F5pv6lCnygGrmwPPyiah2ef4Vda4ICiRhOtY7dE2MlAYZjhyuvXtvzk06iU0wJBVpbAhiLnXJRFpUS10Khk7halodHlcPGqSp+jlJdTdBxVE+tgF0j9cmJf5nRwakPAAzbCTGZ5cTwW92yMyb6nEso=</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Client, licenseData);
 
@@ -826,7 +829,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Server</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -852,7 +855,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGIAkIAjcR0p1HMNqrh1Uq23713tQc+el+QLPFkF7e56OtNH72kOIM0tcer+UKVIit+uRhXjbRizYXm4oxMBw8fg+2WDj8CQgF1NMbuEhcC8/EaNsqojF6Gi9h5jSiwPW/T8m4E7ZHnY3WsV9EBfEEaQ/HX2PkMVyrYhWMSF+hxE0hwECTw6foqiA==</Signature>
+  <Signature>MIGHAkIBtfE8yR4a8lOqep8EmaHkwz17GfeMcNLxsomFE3KV2NxORLXJMXbLtb2tvM7pZCO5+Ksut6lmQ1NLvRja09qLRhwCQVsm6H37Ri95CJHHQaSiccmZLL8IFGMzPY1XUvC52RCp3b2zl9JsW33GuWz4VBGc5RIDGiiZpkutrI6bn/IqTS+T</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Server, licenseData);
 
@@ -883,7 +886,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Server</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -909,7 +912,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGHAkEE+B04hgizBmdAOukjCaDWTGHsFD+hMe/wXXA47Ahxd3AU701iK+BSZ9HcINIoQvOZBnScBcQCcJnFJBiSKatTKAJCAPwAF3ZfvxQ4EgBdSPKlZf08Sazib+CrMLop3OKBBnLQEAgqnuxz6LWUbm88wf+w4weS7Whvy0fd+jzTxmKHDnGV</Signature>
+  <Signature>MIGHAkF413j5wWhPnY/ujGB7B2hTF9nPJKskq+t+Mv2S0B4o2g9lSaxv7FIAWpA+4tdlyVw/UoS9Uv7GImEzBd92mLHfDQJCAPZrgBxk4cw+Q+mixVcJSFGQ3fK2NAY0G4Da7MIHd8K0Q+7x5O/hhfqmd1i7wAAVlYwsKgU7S5z3OOamv1vuq4J0</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Server, licenseData);
 
@@ -941,7 +944,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Server</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -967,7 +970,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGIAkIByPAbI58wIiGO3vbS4aEk/2Lplq38w6Ie8lpEvznNcHsDYmgMo36xzK+xdvYrrJpNWXASb0zgDufdCk2ak3zhC+ICQgGcocSWJxvEN+NmWpyg8Rwsq730Ed6pbTDu0AX14GybX0N3JGXAzyvQT9ouhgKYnAGk7Ioxkg5LVDT0cI1yx4IAvw==</Signature>
+  <Signature>MIGIAkIBXDY0pnvv5zRccIlMutZxTMkMNXq9d6flfz/aOaXKTdeWKjGkl6ef7YFWTjeVGCxQXyO5iM7VCBq8FzjOXJt22Y4CQgGqmxYWxvMFuQHeAjhac6o4YbhPA/xifj7fv79CFG/qjdBZa1uvjyx17u977HNDXxqPOZN6LKC6wTxZPjAqHzlvSw==</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Server, licenseData);
 
@@ -999,7 +1002,7 @@ namespace Technosoftware.UaUtilities.Tests
   <Product>
     <Name>OPC UA Solutions</Name>
     <Type>Server</Type>
-    <Version>6.0.0</Version>
+    <Version>7.0.0</Version>
     <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
   </Product>
   <License>
@@ -1025,7 +1028,7 @@ namespace Technosoftware.UaUtilities.Tests
     <Attribute name=""Assembly Identity""></Attribute>
     <Attribute name=""Product Identity"">55ed232b0ff14fb9ace6f836d8867b39718ced5281f95d0d6289e701325efbfc</Attribute>
   </LicenseAttributes>
-  <Signature>MIGHAkF3uTWtwIu22LrVn00xUEoQdzzUnAT7B8xMFjPjOOth3O3evNfPw+xIGbN9TjJitPw2y3Hc+X+iKKNgqJk68AS6GwJCAfs97ykmXQ5U4CEeFCMhI1VKsxAWql22rVUHk546lHgQxHOOQCSXd/ryx/aP+7Xp18XE1ZglUSmzVB2c0XFY6h1Y</Signature>
+  <Signature>MIGHAkIBN3guYpd4TJNXCwG2FkBjSZX6OV4uGBDmeR8kfnbXvMo8nmTfmL6SvHJr2Gcf5nMMGoGL21IOJNxlPjCQKv2+UX4CQTZyvnQo4p9wXJ+aXQ8YIyh96bCITWXSH8PphPOhOiaM7zlfNDg37EkXSlJiBfhcmhC0skK4ML47Y6FndXnh3bBD</Signature>
 </License>";
             bool licensed = LicenseHandler.Instance.Validate(ProductType.Server, licenseData);
 

@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer.Tests
@@ -36,6 +37,9 @@ namespace Technosoftware.UaServer.Tests
     {
         public const double DefaultSessionTimeout = 120000;
         public const uint DefaultMaxResponseMessageSize = 128 * 1024;
+
+        private const string kDefaultClientApplicationUri =
+            "urn:localhost:opcfoundation.org:ServerFixtureClient";
         public const int MinTestPort = 50000;
         public const int MaxTestPort = 65000;
 
@@ -59,14 +63,14 @@ namespace Technosoftware.UaServer.Tests
             uint maxResponseMessageSize = DefaultMaxResponseMessageSize)
         {
             // Find TCP endpoint
-            EndpointDescriptionCollection endpoints = server.GetEndpoints();
+            ArrayOf<EndpointDescription> endpoints = server.GetEndpoints();
             EndpointDescription endpoint =
-                endpoints.FirstOrDefault(e =>
-                    e.TransportProfileUri
-                        .Equals(Profiles.UaTcpTransport, StringComparison.Ordinal) ||
-                    e.TransportProfileUri
-                        .Equals(Profiles.HttpsBinaryTransport, StringComparison.Ordinal)
-                ) ??
+                endpoints.Find(
+                    e => e.TransportProfileUri
+                            .Equals(Profiles.UaTcpTransport, StringComparison.Ordinal) ||
+                        e.TransportProfileUri
+                            .Equals(Profiles.HttpsBinaryTransport, StringComparison.Ordinal),
+                    null) ??
                 throw new NotSupportedException("Unsupported transport profile.");
 
             // fake profiles
@@ -81,40 +85,115 @@ namespace Technosoftware.UaServer.Tests
                 endpoint.SecurityPolicyUri = SecurityPolicies.None;
             }
 
-            // set security context
-            var secureChannelContext
-                = new SecureChannelContext(sessionName, endpoint, RequestEncoding.Binary);
-            var requestHeader = new RequestHeader();
+            // 2.0 verifies the client signature on activation, so a secured
+            // session needs a real client certificate and a real signature -
+            // echoing the server's signature back, which is what this did
+            // before, is now rejected with BadApplicationSignatureInvalid.
+            Certificate clientCertificate = null;
+            try
+            {
+                ByteString clientNonce = default;
+                ByteString clientCertificateData = default;
+                byte[] clientChannelCertificate = null;
+                byte[] serverChannelCertificate = null;
+                byte[] channelThumbprint = null;
 
-            // Create session
-            CreateSessionResponse createSessionResponse = await server.CreateSessionAsync(
-                secureChannelContext,
-                requestHeader,
-                null,
-                null,
-                null,
-                sessionName,
-                null,
-                null,
-                sessionTimeout,
-                maxResponseMessageSize,
-                CancellationToken.None).ConfigureAwait(false);
-            ValidateResponse(createSessionResponse.ResponseHeader);
+                if (useSecurity)
+                {
+                    clientCertificate = CertificateBuilder
+                        .Create("CN=ServerFixtureClient")
+                        .AddExtension(
+                            new X509SubjectAltNameExtension(
+                                kDefaultClientApplicationUri,
+                                [Utils.GetHostName()]))
+                        .SetRSAKeySize(CertificateFactory.DefaultKeySize)
+                        .CreateForRSA();
+                    clientNonce = Nonce.CreateRandomNonceData(32).ToByteString();
+                    clientCertificateData = clientCertificate.RawData.ToByteString();
+                    clientChannelCertificate = clientCertificate.RawData;
+                    channelThumbprint = Nonce.CreateRandomNonceData(32);
 
-            // Activate session
-            requestHeader.AuthenticationToken = createSessionResponse.AuthenticationToken;
-            ActivateSessionResponse activateSessionResponse = await server.ActivateSessionAsync(
-                secureChannelContext,
-                requestHeader,
-                createSessionResponse.ServerSignature,
-                [],
-                [],
-                identityToken != null ? new ExtensionObject(identityToken) : default,
-                null,
-                CancellationToken.None).ConfigureAwait(false);
-            ValidateResponse(activateSessionResponse.ResponseHeader);
+                    if (!endpoint.ServerCertificate.IsEmpty)
+                    {
+                        using CertificateCollection serverCertificateChain =
+                            Utils.ParseCertificateChainBlob(
+                                endpoint.ServerCertificate,
+                                server.MessageContext.Telemetry);
+                        serverChannelCertificate = serverCertificateChain[0].RawData;
+                    }
+                }
 
-            return (requestHeader, secureChannelContext);
+                // set security context
+                var secureChannelContext = new SecureChannelContext(
+                    sessionName,
+                    endpoint,
+                    RequestEncoding.Binary,
+                    clientChannelCertificate,
+                    serverChannelCertificate,
+                    channelThumbprint);
+                var requestHeader = new RequestHeader();
+
+                // Create session
+                CreateSessionResponse createSessionResponse = await server.CreateSessionAsync(
+                    secureChannelContext,
+                    requestHeader,
+                    null,
+                    null,
+                    null,
+                    sessionName,
+                    clientNonce,
+                    clientCertificateData,
+                    sessionTimeout,
+                    maxResponseMessageSize,
+                    RequestLifetime.None).ConfigureAwait(false);
+                ValidateResponse(createSessionResponse.ResponseHeader);
+
+                // The data to sign is built by the security policy in 2.0 rather
+                // than by appending the certificate and nonce here, so a policy
+                // that mixes in the channel thumbprint or the channel
+                // certificates is handled without a change at this call site.
+                SignatureData clientSignature = null;
+
+                if (useSecurity)
+                {
+                    SecurityPolicyInfo securityPolicy = SecurityPolicies.Default.GetInfo(
+                        endpoint.SecurityPolicyUri);
+                    using CertificateCollection serverCertificateChain =
+                        Utils.ParseCertificateChainBlob(
+                            createSessionResponse.ServerCertificate,
+                            server.MessageContext.Telemetry);
+                    byte[] dataToSign = securityPolicy.GetClientSignatureData(
+                        secureChannelContext.ChannelThumbprint.ToArrayOrNull(),
+                        createSessionResponse.ServerNonce.ToArray(),
+                        serverCertificateChain[0].RawData,
+                        secureChannelContext.ServerChannelCertificate.ToArrayOrNull(),
+                        secureChannelContext.ClientChannelCertificate.ToArrayOrNull(),
+                        clientNonce.ToArray());
+                    clientSignature = SecurityPolicies.Default.CreateSignatureData(
+                        securityPolicy,
+                        clientCertificate,
+                        dataToSign);
+                }
+
+                // Activate session
+                requestHeader.AuthenticationToken = createSessionResponse.AuthenticationToken;
+                ActivateSessionResponse activateSessionResponse = await server.ActivateSessionAsync(
+                    secureChannelContext,
+                    requestHeader,
+                    clientSignature,
+                    [],
+                    [],
+                    identityToken != null ? new ExtensionObject(identityToken) : default,
+                    null,
+                    RequestLifetime.None).ConfigureAwait(false);
+                ValidateResponse(activateSessionResponse.ResponseHeader);
+
+                return (requestHeader, secureChannelContext);
+            }
+            finally
+            {
+                clientCertificate?.Dispose();
+            }
         }
 
         /// <summary>
@@ -129,7 +208,8 @@ namespace Technosoftware.UaServer.Tests
             CancellationToken ct)
         {
             // close session
-            CloseSessionResponse response = await server.CloseSessionAsync(secureChannelContext, requestHeader, true, ct).ConfigureAwait(false);
+            using var lifetime = new RequestLifetime(ct);
+            CloseSessionResponse response = await server.CloseSessionAsync(secureChannelContext, requestHeader, true, lifetime).ConfigureAwait(false);
             ValidateResponse(response.ResponseHeader);
         }
 
@@ -170,18 +250,46 @@ namespace Technosoftware.UaServer.Tests
         /// <param name="request">The list of requests passed to the service call.</param>
         /// <exception cref="ArgumentException"></exception>
         /// <exception cref="ServiceResultException"></exception>
-        public static void ValidateResponse(ResponseHeader header, IList response, IList request)
+        public static void ValidateResponse<TRequest, TResponse>(
+            ResponseHeader header,
+            ArrayOf<TResponse> response,
+            ArrayOf<TRequest> request)
+        {
+            ValidateResponse(header, response, request.Count);
+        }
+
+        /// <summary>
+        /// Validate the response of a service call whose request was built as a
+        /// list rather than an ArrayOf.
+        /// </summary>
+        /// <remarks>
+        /// ArrayOf does not implement IReadOnlyList, so a request still under
+        /// construction cannot bind to the overload above; only the element
+        /// count is needed of it either way.
+        /// </remarks>
+        public static void ValidateResponse<TRequest, TResponse>(
+            ResponseHeader header,
+            ArrayOf<TResponse> response,
+            IReadOnlyList<TRequest> request)
+        {
+            ValidateResponse(header, response, request.Count);
+        }
+
+        private static void ValidateResponse<TResponse>(
+            ResponseHeader header,
+            ArrayOf<TResponse> response,
+            int requestCount)
         {
             ValidateResponse(header);
 
-            if (response is DiagnosticInfoCollection)
+            if (response is ArrayOf<DiagnosticInfo>)
             {
                 throw new ArgumentException(
-                    "Must call ValidateDiagnosticInfos() for DiagnosticInfoCollections.",
+                    "Must call ValidateDiagnosticInfos() for ArrayOf<DiagnosticInfo>.",
                     nameof(response));
             }
 
-            if (response == null || response.Count != request.Count)
+            if (response.Count != requestCount)
             {
                 throw ServiceResultException.Unexpected(
                     "The server returned a list without the expected number of elements.");
@@ -192,23 +300,45 @@ namespace Technosoftware.UaServer.Tests
         /// Validate the diagnostic response of a service call.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public static void ValidateDiagnosticInfos(
-            DiagnosticInfoCollection response,
-            IList request,
-            StringCollection stringTable,
+        public static void ValidateDiagnosticInfos<TRequest>(
+            ArrayOf<DiagnosticInfo> response,
+            ArrayOf<TRequest> request,
+            ArrayOf<string> stringTable,
+            ILogger logger)
+        {
+            ValidateDiagnosticInfos(response, request.Count, stringTable, logger);
+        }
+
+        /// <summary>
+        /// Validate the diagnostic response of a service call whose request was
+        /// built as a list rather than an ArrayOf.
+        /// </summary>
+        public static void ValidateDiagnosticInfos<TRequest>(
+            ArrayOf<DiagnosticInfo> response,
+            IReadOnlyList<TRequest> request,
+            ArrayOf<string> stringTable,
+            ILogger logger)
+        {
+            ValidateDiagnosticInfos(response, request.Count, stringTable, logger);
+        }
+
+        private static void ValidateDiagnosticInfos(
+            ArrayOf<DiagnosticInfo> response,
+            int requestCount,
+            ArrayOf<string> stringTable,
             ILogger logger)
         {
             // returning an empty list for diagnostic info arrays is allowed.
-            if (response != null && response.Count != 0)
+            if (response.Count != 0)
             {
-                if (response.Count != request.Count)
+                if (response.Count != requestCount)
                 {
                     throw ServiceResultException.Unexpected(
                         "The server forgot to fill in the DiagnosticInfos array correctly when returning an operation level error.");
                 }
 
                 // now validate the string table
-                if (stringTable != null)
+                if (!stringTable.IsEmpty)
                 {
                     for (int ii = 0; ii < response.Count; ii++)
                     {
@@ -241,11 +371,11 @@ namespace Technosoftware.UaServer.Tests
         /// </summary>
         /// <param name="nodeIdCollection">The node id collection.</param>
         /// <param name="template">The template for the browse description for each node id.</param>
-        public static BrowseDescriptionCollection CreateBrowseDescriptionCollectionFromNodeId(
-            NodeIdCollection nodeIdCollection,
+        public static ArrayOf<BrowseDescription> CreateBrowseDescriptionCollectionFromNodeId(
+            ArrayOf<NodeId> nodeIdCollection,
             BrowseDescription template)
         {
-            var browseDescriptionCollection = new BrowseDescriptionCollection();
+            var browseDescriptionCollection = new List<BrowseDescription>();
             foreach (NodeId nodeId in nodeIdCollection)
             {
                 var browseDescription = (BrowseDescription)template.MemberwiseClone();
@@ -261,13 +391,13 @@ namespace Technosoftware.UaServer.Tests
         /// </summary>
         /// <param name="browseResultCollection">The browse result collection to use.</param>
         /// <returns>The collection of continuation points for the BrowseNext service.</returns>
-        public static ByteStringCollection PrepareBrowseNext(
-            BrowseResultCollection browseResultCollection)
+        public static ArrayOf<ByteString> PrepareBrowseNext(
+            ArrayOf<BrowseResult> browseResultCollection)
         {
-            var continuationPoints = new ByteStringCollection();
+            var continuationPoints = new List<ByteString>();
             foreach (BrowseResult browseResult in browseResultCollection)
             {
-                if (browseResult.ContinuationPoint != null)
+                if (!browseResult.ContinuationPoint.IsEmpty)
                 {
                     continuationPoints.Add(browseResult.ContinuationPoint);
                 }
@@ -281,32 +411,32 @@ namespace Technosoftware.UaServer.Tests
         public static readonly ReadOnlyDictionary<uint, DataValue> AttributesIds = new(
             new SortedDictionary<uint, DataValue>
             {
-                { Attributes.NodeId, null },
-                { Attributes.NodeClass, null },
-                { Attributes.BrowseName, null },
-                { Attributes.DisplayName, null },
-                { Attributes.Description, null },
-                { Attributes.WriteMask, null },
-                { Attributes.UserWriteMask, null },
-                { Attributes.DataType, null },
-                { Attributes.ValueRank, null },
-                { Attributes.ArrayDimensions, null },
-                { Attributes.AccessLevel, null },
-                { Attributes.UserAccessLevel, null },
-                { Attributes.Historizing, null },
-                { Attributes.MinimumSamplingInterval, null },
-                { Attributes.EventNotifier, null },
-                { Attributes.Executable, null },
-                { Attributes.UserExecutable, null },
-                { Attributes.IsAbstract, null },
-                { Attributes.InverseName, null },
-                { Attributes.Symmetric, null },
-                { Attributes.ContainsNoLoops, null },
-                { Attributes.DataTypeDefinition, null },
-                { Attributes.RolePermissions, null },
-                { Attributes.UserRolePermissions, null },
-                { Attributes.AccessRestrictions, null },
-                { Attributes.AccessLevelEx, null }
+                { Attributes.NodeId, default },
+                { Attributes.NodeClass, default },
+                { Attributes.BrowseName, default },
+                { Attributes.DisplayName, default },
+                { Attributes.Description, default },
+                { Attributes.WriteMask, default },
+                { Attributes.UserWriteMask, default },
+                { Attributes.DataType, default },
+                { Attributes.ValueRank, default },
+                { Attributes.ArrayDimensions, default },
+                { Attributes.AccessLevel, default },
+                { Attributes.UserAccessLevel, default },
+                { Attributes.Historizing, default },
+                { Attributes.MinimumSamplingInterval, default },
+                { Attributes.EventNotifier, default },
+                { Attributes.Executable, default },
+                { Attributes.UserExecutable, default },
+                { Attributes.IsAbstract, default },
+                { Attributes.InverseName, default },
+                { Attributes.Symmetric, default },
+                { Attributes.ContainsNoLoops, default },
+                { Attributes.DataTypeDefinition, default },
+                { Attributes.RolePermissions, default },
+                { Attributes.UserRolePermissions, default },
+                { Attributes.AccessRestrictions, default },
+                { Attributes.AccessLevelEx, default }
             });
 
         /// <summary>

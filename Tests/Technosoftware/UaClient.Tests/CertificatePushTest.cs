@@ -59,7 +59,7 @@ namespace Technosoftware.UaClient.Tests
         /// certificate against the server's configured trust stores. An issuer
         /// supplied in the request is ignored, so a certificate signed by a CA the
         /// server does not trust is rejected even when that CA is passed along
-        /// (OPCFoundation/UA-.NETStandard#4678).
+        /// (OPCFoundation/UA-.NETStandard#4678, #4683).
         /// </summary>
         [Test]
         public async Task UpdateCertificateIgnoresSuppliedUntrustedIssuerAsync()
@@ -68,7 +68,7 @@ namespace Technosoftware.UaClient.Tests
                 .ConnectAsync(
                     ServerUrl,
                     SecurityPolicies.Basic256Sha256,
-                    null,
+                    default,
                     new UserIdentity("sysadmin", "demo"u8))
                 .ConfigureAwait(false);
             try
@@ -78,26 +78,25 @@ namespace Technosoftware.UaClient.Tests
                     Assert.Inconclusive("UpdateCertificate requires a SignAndEncrypt session.");
                 }
 
-                using X509Certificate2 serverCertificate = Utils.ParseCertificateBlob(
+                using Certificate serverCertificate = Utils.ParseCertificateBlob(
                     session.ConfiguredEndpoint.Description.ServerCertificate,
                     Telemetry);
                 using RSA serverPublicKey = serverCertificate.GetRSAPublicKey();
                 Assert.NotNull(serverPublicKey, "The Basic256Sha256 endpoint must use an RSA certificate.");
 
                 // a CA that is in none of the server's trust lists.
-                using X509Certificate2 untrustedCa = CertificateFactory
+                using Certificate untrustedCa = DefaultCertificateFactory.Instance
                     .CreateCertificate("CN=Untrusted Push Test CA, O=Technosoftware")
                     .SetCAConstraint(-1)
                     .SetRSAKeySize(CertificateFactory.DefaultKeySize)
                     .CreateForRSA();
 
                 // a certificate for the server's existing key pair, issued by that CA.
-                using X509Certificate2 issuedCertificate = CertificateFactory
-                    .CreateCertificate(
-                        ServerFixture.Config.ApplicationUri,
-                        ServerFixture.Config.ApplicationName,
-                        serverCertificate.Subject,
-                        [Utils.GetHostName(), "localhost"])
+                using Certificate issuedCertificate = DefaultCertificateFactory.Instance
+                    .CreateCertificate(serverCertificate.Subject)
+                    .AddExtension(new X509SubjectAltNameExtension(
+                        [ServerFixture.Config.ApplicationUri],
+                        [Utils.GetHostName(), "localhost"]))
                     .SetIssuer(untrustedCa)
                     .SetRSAPublicKey(serverPublicKey)
                     .CreateForRSA();
@@ -109,12 +108,12 @@ namespace Technosoftware.UaClient.Tests
                     MethodId = MethodIds.ServerConfiguration_UpdateCertificate,
                     InputArguments =
                     [
-                        new Variant(NodeId.Null),
-                        new Variant(ObjectTypeIds.RsaSha256ApplicationCertificateType),
-                        new Variant(issuedCertificate.RawData),
-                        new Variant(new byte[][] { untrustedCa.RawData }),
-                        new Variant(string.Empty),
-                        new Variant(Array.Empty<byte>())
+                        Variant.From(NodeId.Null),
+                        Variant.From(ObjectTypeIds.RsaSha256ApplicationCertificateType),
+                        Variant.From(issuedCertificate.RawData.ToByteString()),
+                        Variant.From(new[] { untrustedCa.RawData.ToByteString() }.ToArrayOf()),
+                        Variant.From(string.Empty),
+                        Variant.From(ByteString.Empty)
                     ]
                 };
 
@@ -123,8 +122,10 @@ namespace Technosoftware.UaClient.Tests
                     .ConfigureAwait(false);
 
                 Assert.AreEqual(1, response.Results.Count);
+                // the 2.0 validator reports the missing issuer itself; it is not
+                // suppressible, so no accept callback can override it.
                 Assert.AreEqual(
-                    (StatusCode)StatusCodes.BadSecurityChecksFailed,
+                    (StatusCode)StatusCodes.BadCertificateChainIncomplete,
                     response.Results[0].StatusCode,
                     "A certificate signed by an untrusted CA must be rejected, " +
                     "even when the CA is supplied as issuer.");

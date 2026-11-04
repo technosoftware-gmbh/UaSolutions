@@ -120,7 +120,9 @@ namespace SampleCompany.ReferenceServer
                 }
 
                 // create the UA server
-                var server = new MyUaServer<NodeManagers.Reference.ReferenceServer>(telemetry)
+                var server = new MyUaServer<NodeManagers.Reference.ReferenceServer>(
+                    telemetry,
+                    serverTelemetry => new NodeManagers.Reference.ReferenceServer(serverTelemetry))
                 {
                     AutoAccept = autoAccept,
                     Password = password
@@ -134,7 +136,6 @@ namespace SampleCompany.ReferenceServer
                 if (shadowConfig)
                 {
                     Console.WriteLine("Using shadow configuration.");
-#pragma warning disable CS0618 // Type or member is obsolete
                     string shadowPath = Directory
                         .GetParent(
                             Path.GetDirectoryName(
@@ -142,7 +143,6 @@ namespace SampleCompany.ReferenceServer
                             )
                         )
                         .FullName;
-#pragma warning restore CS0618 // Type or member is obsolete
                     string shadowFilePath = Path.Combine(
                         shadowPath,
                         Path.GetFileName(server.Configuration.SourceFilePath)

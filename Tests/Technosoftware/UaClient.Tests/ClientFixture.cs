@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -111,14 +112,13 @@ namespace Technosoftware.UaClient.Tests
 
             pkiRoot ??= Path.Combine("%LocalApplicationData%", "OPC", "pki");
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     "CN=" + clientName + ", O=OPC Foundation, DC=localhost",
                     CertificateStoreType.Directory,
                     pkiRoot);
 
             // build the application configuration.
-#pragma warning disable CS0618 // Type or member is obsolete
             Config = await application
                 .CreateApplicationConfigurationManager(
                     "urn:localhost:opcfoundation.org:" + clientName,
@@ -141,7 +141,6 @@ namespace Technosoftware.UaClient.Tests
                 .SetOutputFilePath(Path.Combine(pkiRoot, "Logs", "Opc.Ua.Client.Tests.log.txt"))
                 .CreateAsync()
                 .ConfigureAwait(false);
-#pragma warning restore CS0618 // Type or member is obsolete
 
             // check the application certificate.
             bool haveAppCertificate = await application
@@ -169,7 +168,7 @@ namespace Technosoftware.UaClient.Tests
                 {
                     var reverseConnectUri = new Uri("opc.tcp://localhost:" + testPort);
                     ReverseConnectManager.AddEndpoint(reverseConnectUri);
-                    ReverseConnectManager.StartService(Config);
+                    await ReverseConnectManager.StartServiceAsync(Config).ConfigureAwait(false);
                     ReverseConnectUri = reverseConnectUri.ToString();
                 }
                 catch (ServiceResultException sre)
@@ -254,7 +253,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task<IUaSession> ConnectAsync(
             Uri url,
             string securityProfile,
-            EndpointDescriptionCollection endpoints = null,
+            ArrayOf<EndpointDescription> endpoints = default,
             IUserIdentity userIdentity = null)
         {
             string uri = url.AbsoluteUri;
@@ -320,7 +319,7 @@ namespace Technosoftware.UaClient.Tests
                     Config.ApplicationName,
                     SessionTimeout,
                     userIdentity,
-                    null)
+                    default)
                 .ConfigureAwait(false);
 
             Endpoint = session.ConfiguredEndpoint;
@@ -364,9 +363,13 @@ namespace Technosoftware.UaClient.Tests
         public async Task<ConfiguredEndpoint> GetEndpointAsync(
             Uri url,
             string securityPolicy,
-            EndpointDescriptionCollection endpoints = null)
+            ArrayOf<EndpointDescription> endpoints = default)
         {
-            endpoints ??= await GetEndpointsAsync(url).ConfigureAwait(false);
+            // ArrayOf is a struct, so emptiness stands in for null.
+            if (endpoints.IsEmpty)
+            {
+                endpoints = await GetEndpointsAsync(url).ConfigureAwait(false);
+            }
             EndpointDescription endpointDescription = SelectEndpoint(
                 Config,
                 endpoints,
@@ -386,7 +389,7 @@ namespace Technosoftware.UaClient.Tests
         /// </summary>
         public static EndpointDescription SelectEndpoint(
             ApplicationConfiguration configuration,
-            EndpointDescriptionCollection endpoints,
+            ArrayOf<EndpointDescription> endpoints,
             Uri url,
             string securityPolicy)
         {
@@ -427,7 +430,7 @@ namespace Technosoftware.UaClient.Tests
         /// <summary>
         /// Get endpoints from discovery endpoint.
         /// </summary>
-        public async Task<EndpointDescriptionCollection> GetEndpointsAsync(
+        public async Task<ArrayOf<EndpointDescription>> GetEndpointsAsync(
             Uri url,
             CancellationToken ct = default)
         {
@@ -440,7 +443,7 @@ namespace Technosoftware.UaClient.Tests
                 m_telemetry,
                 ct: ct).ConfigureAwait(false);
             client.ReturnDiagnostics = DiagnosticsMasks.SymbolicIdAndText;
-            EndpointDescriptionCollection result = await client.GetEndpointsAsync(null, ct)
+            ArrayOf<EndpointDescription> result = await client.GetEndpointsAsync(default, ct)
                 .ConfigureAwait(false);
             await client.CloseAsync(ct).ConfigureAwait(false);
             return result;

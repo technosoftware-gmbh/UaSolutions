@@ -15,8 +15,10 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -211,22 +213,18 @@ namespace Technosoftware.UaServer
 
                     if (((int)masks & (int)TrustListMasks.TrustedCertificates) != 0)
                     {
-                        X509Certificate2Collection certificates = await store.EnumerateAsync(cancellationToken)
+                        CertificateCollection certificates = await store.EnumerateAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (X509Certificate2 certificate in certificates)
-                        {
-                            trustList.TrustedCertificates.Add(certificate.RawData);
-                        }
+                        trustList.TrustedCertificates = trustList.TrustedCertificates.AddItems(
+                            certificates.Select(certificate => certificate.RawData.ToByteString()));
                     }
 
                     if (((int)masks & (int)TrustListMasks.TrustedCrls) != 0)
                     {
                         X509CRLCollection crls = await store.EnumerateCRLsAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (X509CRL crl in crls)
-                        {
-                            trustList.TrustedCrls.Add(crl.RawData);
-                        }
+                        trustList.TrustedCrls = trustList.TrustedCrls.AddItems(
+                            crls.Select(crl => crl.RawData.ToByteString()));
                     }
                 }
                 finally
@@ -246,22 +244,18 @@ namespace Technosoftware.UaServer
 
                     if (((int)masks & (int)TrustListMasks.IssuerCertificates) != 0)
                     {
-                        X509Certificate2Collection certificates = await store.EnumerateAsync(cancellationToken)
+                        CertificateCollection certificates = await store.EnumerateAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (X509Certificate2 certificate in certificates)
-                        {
-                            trustList.IssuerCertificates.Add(certificate.RawData);
-                        }
+                        trustList.IssuerCertificates = trustList.IssuerCertificates.AddItems(
+                            certificates.Select(certificate => certificate.RawData.ToByteString()));
                     }
 
                     if (((int)masks & (int)TrustListMasks.IssuerCrls) != 0)
                     {
                         X509CRLCollection crls = await store.EnumerateCRLsAsync(cancellationToken)
                             .ConfigureAwait(false);
-                        foreach (X509CRL crl in crls)
-                        {
-                            trustList.IssuerCrls.Add(crl.RawData);
-                        }
+                        trustList.IssuerCrls = trustList.IssuerCrls.AddItems(
+                            crls.Select(crl => crl.RawData.ToByteString()));
                     }
                 }
                 finally
@@ -280,7 +274,7 @@ namespace Technosoftware.UaServer
 
                 lock (m_lock)
                 {
-                    if (m_sessionId != null)
+                    if (!m_sessionId.IsNull)
                     {
                         // to avoid deadlocks, last open always wins
                         m_sessionId = default;
@@ -314,7 +308,7 @@ namespace Technosoftware.UaServer
             NodeId objectId,
             uint fileHandle,
             int length,
-            ref byte[] data)
+            ref ByteString data)
         {
             ReadMethodStateResult result = ReadAsync(
                 context,
@@ -337,19 +331,19 @@ namespace Technosoftware.UaServer
         {
             HasSecureReadAccess(context);
 
-            byte[] data;
+            ByteString data;
 
             lock (m_lock)
             {
                 if (context is ISessionSystemContext session &&
-                    m_sessionId != session.SessionId)
+                    !m_sessionId.Equals(session.SessionId))
                 {
                     return new ValueTask<ReadMethodStateResult>(new ReadMethodStateResult
                     {
                         ServiceResult = ServiceResult.Create(
                         StatusCodes.BadUserAccessDenied,
                             "Session not authorized"),
-                        Data = null
+                        Data = default
                     });
                 }
 
@@ -360,7 +354,7 @@ namespace Technosoftware.UaServer
                         ServiceResult = ServiceResult.Create(
                         StatusCodes.BadInvalidArgument,
                             "Invalid file handle"),
-                        Data = null
+                        Data = default
                     });
                 }
 
@@ -373,23 +367,20 @@ namespace Technosoftware.UaServer
                         StatusCodes.BadEncodingLimitsExceeded,
                         "Trust list size exceeds maximum allowed size of {0} bytes",
                             m_maxTrustListSize),
-                        Data = null
+                        Data = default
                     });
                 }
 
-                data = new byte[length];
+                byte[] buffer = new byte[length];
 
-                int bytesRead = m_strm.Read(data, 0, length);
+                int bytesRead = m_strm.Read(buffer, 0, length);
                 Debug.Assert(bytesRead >= 0);
 
                 m_totalBytesProcessed += bytesRead;
 
-                if (bytesRead < length)
-                {
-                    byte[] bytes = new byte[bytesRead];
-                    Array.Copy(data, bytes, bytesRead);
-                    data = bytes;
-                }
+                data = bytesRead < length
+                    ? ByteString.From(buffer.AsSpan(0, bytesRead))
+                    : ByteString.From(buffer);
             }
 
             return new ValueTask<ReadMethodStateResult>(new ReadMethodStateResult
@@ -404,7 +395,7 @@ namespace Technosoftware.UaServer
             MethodState method,
             NodeId objectId,
             uint fileHandle,
-            byte[] data)
+            ByteString data)
         {
             WriteMethodStateResult result = WriteAsync(
                 context,
@@ -421,7 +412,7 @@ namespace Technosoftware.UaServer
             MethodState method,
             NodeId objectId,
             uint fileHandle,
-            byte[] data,
+            ByteString data,
             CancellationToken cancellationToken)
         {
             HasSecureWriteAccess(context);
@@ -429,7 +420,7 @@ namespace Technosoftware.UaServer
             lock (m_lock)
             {
                 if (context is ISessionSystemContext session &&
-                    m_sessionId != session.SessionId)
+                    !m_sessionId.Equals(session.SessionId))
                 {
                     return new ValueTask<WriteMethodStateResult>(new WriteMethodStateResult
                     {
@@ -457,7 +448,7 @@ namespace Technosoftware.UaServer
                     });
                 }
 
-                m_strm.Write(data, 0, data.Length);
+                m_strm.Write(data.Span);
                 m_totalBytesProcessed += data.Length;
             }
 
@@ -494,7 +485,7 @@ namespace Technosoftware.UaServer
             lock (m_lock)
             {
                 if (context is ISessionSystemContext session &&
-                    m_sessionId != session.SessionId)
+                    !m_sessionId.Equals(session.SessionId))
                 {
                     return new ValueTask<CloseMethodStateResult>(new CloseMethodStateResult
                     {
@@ -545,7 +536,7 @@ namespace Technosoftware.UaServer
             uint fileHandle,
             CancellationToken cancellationToken)
         {
-            object[] inputParameters = [fileHandle];
+            ArrayOf<Variant> inputParameters = [Variant.From(fileHandle)];
             m_node.ReportTrustListUpdateRequestedAuditEvent(
                 context,
                 objectId,
@@ -562,7 +553,7 @@ namespace Technosoftware.UaServer
             lock (m_lock)
             {
                 if (context is ISessionSystemContext session &&
-                    m_sessionId != session.SessionId)
+                    !m_sessionId.Equals(session.SessionId))
                 {
                     return new CloseAndUpdateMethodStateResult
                     {
@@ -588,42 +579,44 @@ namespace Technosoftware.UaServer
                 TrustListDataType trustList = DecodeTrustListData(context, strm);
                 int masks = (int)trustList.SpecifiedLists;
 
-                X509Certificate2Collection issuerCertificates = null;
+                CertificateCollection issuerCertificates = null;
                 X509CRLCollection issuerCrls = null;
-                X509Certificate2Collection trustedCertificates = null;
+                CertificateCollection trustedCertificates = null;
                 X509CRLCollection trustedCrls = null;
 
                 // test integrity of all CRLs
                 if ((masks & (int)TrustListMasks.IssuerCertificates) != 0)
                 {
                     issuerCertificates = [];
-                    foreach (byte[] cert in trustList.IssuerCertificates)
+                    foreach (ByteString cert in trustList.IssuerCertificates)
                     {
-                        issuerCertificates.Add(X509CertificateLoader.LoadCertificate(cert));
+                        using var certificate = Certificate.FromRawData(cert);
+                        issuerCertificates.Add(certificate);
                     }
                 }
                 if ((masks & (int)TrustListMasks.IssuerCrls) != 0)
                 {
                     issuerCrls = [];
-                    foreach (byte[] crl in trustList.IssuerCrls)
+                    foreach (ByteString crl in trustList.IssuerCrls)
                     {
-                        issuerCrls.Add(new X509CRL(crl));
+                        issuerCrls.Add(new X509CRL(crl.ToArray()));
                     }
                 }
                 if ((masks & (int)TrustListMasks.TrustedCertificates) != 0)
                 {
                     trustedCertificates = [];
-                    foreach (byte[] cert in trustList.TrustedCertificates)
+                    foreach (ByteString cert in trustList.TrustedCertificates)
                     {
-                        trustedCertificates.Add(CertificateFactory.Create(cert));
+                        using var certificate = Certificate.FromRawData(cert);
+                        trustedCertificates.Add(certificate);
                     }
                 }
                 if ((masks & (int)TrustListMasks.TrustedCrls) != 0)
                 {
                     trustedCrls = [];
-                    foreach (byte[] crl in trustList.TrustedCrls)
+                    foreach (ByteString crl in trustList.TrustedCrls)
                     {
-                        trustedCrls.Add(new X509CRL(crl));
+                        trustedCrls.Add(new X509CRL(crl.ToArray()));
                     }
                 }
 
@@ -693,7 +686,7 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            byte[] certificate,
+            ByteString certificate,
             bool isTrustedCertificate)
         {
             AddCertificateMethodStateResult result = AddCertificateAsync(
@@ -710,11 +703,12 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             MethodState method,
             NodeId objectId,
-            byte[] certificate,
+            ByteString certificate,
             bool isTrustedCertificate,
             CancellationToken cancellationToken)
         {
-            object[] inputParameters = [certificate, isTrustedCertificate];
+            ArrayOf<Variant> inputParameters =
+                [Variant.From(certificate), Variant.From(isTrustedCertificate)];
             m_node.ReportTrustListUpdateRequestedAuditEvent(
                 context,
                 objectId,
@@ -729,23 +723,23 @@ namespace Technosoftware.UaServer
             bool isSessionOpen;
             lock (m_lock)
             {
-                isSessionOpen = m_sessionId != null;
+                isSessionOpen = !m_sessionId.IsNull;
             }
 
             if (isSessionOpen)
             {
                 result = StatusCodes.BadInvalidState;
             }
-            else if (certificate == null)
+            else if (certificate.IsEmpty)
             {
                 result = StatusCodes.BadInvalidArgument;
             }
             else
             {
-                X509Certificate2 cert = null;
+                Certificate cert = null;
                 try
                 {
-                    cert = CertificateFactory.Create(certificate);
+                    cert = DefaultCertificateFactory.Instance.CreateFromRawData(certificate);
                 }
                 catch
                 {
@@ -821,7 +815,8 @@ namespace Technosoftware.UaServer
             bool isTrustedCertificate,
             CancellationToken cancellationToken)
         {
-            object[] inputParameters = [thumbprint, isTrustedCertificate];
+            ArrayOf<Variant> inputParameters =
+                [Variant.From(thumbprint), Variant.From(isTrustedCertificate)];
             m_node.ReportTrustListUpdateRequestedAuditEvent(
                 context,
                 objectId,
@@ -836,7 +831,7 @@ namespace Technosoftware.UaServer
             bool isSessionOpen;
             lock (m_lock)
             {
-                isSessionOpen = m_sessionId != null;
+                isSessionOpen = !m_sessionId.IsNull;
             }
 
             if (isSessionOpen)
@@ -861,7 +856,7 @@ namespace Technosoftware.UaServer
                             "Failed to open certificate store.");
                     }
 
-                    X509Certificate2Collection certCollection = await store
+                    CertificateCollection certCollection = await store
                         .FindByThumbprintAsync(thumbprint, cancellationToken)
                         .ConfigureAwait(false);
 
@@ -877,7 +872,7 @@ namespace Technosoftware.UaServer
                             .ConfigureAwait(false);
                         foreach (X509CRL crl in crls)
                         {
-                            foreach (X509Certificate2 cert in certCollection)
+                            foreach (Certificate cert in certCollection)
                             {
                                 if (X509Utils.CompareDistinguishedName(
                                         cert.SubjectName,
@@ -938,16 +933,16 @@ namespace Technosoftware.UaServer
             ISystemContext context,
             TrustListDataType trustList)
         {
-            IServiceMessageContext messageContext = new ServiceMessageContext(context.Telemetry)
-            {
-                NamespaceUris = context.NamespaceUris,
-                ServerUris = context.ServerUris,
-                Factory = context.EncodeableFactory
-            };
+            IServiceMessageContext messageContext =
+                new ServiceMessageContext(context.Telemetry, context.EncodeableFactory)
+                {
+                    NamespaceUris = context.NamespaceUris,
+                    ServerUris = context.ServerUris
+                };
             var strm = new MemoryStream();
             using (var encoder = new BinaryEncoder(strm, messageContext, true))
             {
-                encoder.WriteEncodeable(null, trustList, null);
+                encoder.WriteEncodeable(null, trustList, default);
             }
             strm.Position = 0;
             return strm;
@@ -958,12 +953,12 @@ namespace Technosoftware.UaServer
             MemoryStream strm)
         {
             var trustList = new TrustListDataType();
-            IServiceMessageContext messageContext = new ServiceMessageContext(context.Telemetry)
-            {
-                NamespaceUris = context.NamespaceUris,
-                ServerUris = context.ServerUris,
-                Factory = context.EncodeableFactory
-            };
+            IServiceMessageContext messageContext =
+                new ServiceMessageContext(context.Telemetry, context.EncodeableFactory)
+                {
+                    NamespaceUris = context.NamespaceUris,
+                    ServerUris = context.ServerUris
+                };
             strm.Position = 0;
             using (var decoder = new BinaryDecoder(strm, messageContext))
             {
@@ -1018,7 +1013,7 @@ namespace Technosoftware.UaServer
 
         private async Task<bool> UpdateStoreCertificatesAsync(
             CertificateStoreIdentifier storeIdentifier,
-            X509Certificate2Collection updatedCerts,
+            CertificateCollection updatedCerts,
             CancellationToken cancellationToken = default)
         {
             bool result = true;
@@ -1033,9 +1028,9 @@ namespace Technosoftware.UaServer
                             "Failed to open certificate store.");
                     }
 
-                    X509Certificate2Collection storeCerts = await store.EnumerateAsync(cancellationToken)
+                    CertificateCollection storeCerts = await store.EnumerateAsync(cancellationToken)
                         .ConfigureAwait(false);
-                    foreach (X509Certificate2 cert in storeCerts)
+                    foreach (Certificate cert in storeCerts)
                     {
                         if (!updatedCerts.Contains(cert))
                         {
@@ -1049,7 +1044,7 @@ namespace Technosoftware.UaServer
                             updatedCerts.Remove(cert);
                         }
                     }
-                    foreach (X509Certificate2 cert in updatedCerts)
+                    foreach (Certificate cert in updatedCerts)
                     {
                         await store.AddAsync(cert, null, cancellationToken).ConfigureAwait(false);
                     }

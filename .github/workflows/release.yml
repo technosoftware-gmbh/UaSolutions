@@ -1,6 +1,6 @@
 name: Release
 
-# This repository is the single source of the four Technosoftware.UaSolutions.*
+# This repository is the single source of the four Technosoftware.Ua*
 # libraries and publishes them. ClientGateway is released separately from the
 # private UaSolutionsNet repository, after this one.
 #
@@ -9,14 +9,13 @@ name: Release
 #
 # Versioning is MinVer: the tag IS the version, so `fetch-depth: 0` is required.
 #
-#   git tag 6.0.4 && git push origin 6.0.4        -> stable  -> GitHub Packages
-#   git tag 6.1.0-preview.1 && git push origin ... -> preview -> GitHub Packages
+#   git tag 6.0.2 && git push origin 6.0.2        -> stable  -> GitHub Packages + nuget.org
+#   git tag 6.1.0-preview.1 && git push origin ... -> preview -> GitHub Packages only
 #
-# 6.x is published to GitHub Packages only. nuget.org rejects the
-# Technosoftware.UaSolutions.* IDs as too similar to the ownerless 3.x
-# Technosoftware.UaSolution.* packages, so from 7.0 the libraries ship as
-# Technosoftware.Ua* and only that release line publishes to nuget.org.
-# The nuget.org Trusted Publishing policy lists only the 7.0 IDs.
+# nuget.org uses Trusted Publishing rather than a long-lived API key: the job asks
+# GitHub for an OIDC token and exchanges it for a key that lives one hour. Configure
+# the matching policy on nuget.org with owner technosoftware-gmbh, repository
+# UaSolutions, workflow file release.yml, environment nuget.org.
 
 on:
   push:
@@ -38,6 +37,29 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
+  # nuget.org publishing is optional: until the nuget.org account and its Trusted
+  # Publishing policy exist, a release should still go out to GitHub Packages rather
+  # than failing. Trusted Publishing needs no API key, only the nuget.org profile name
+  # (NOT the e-mail address) in NUGET_USER. Secrets cannot be read from a job-level
+  # `if`, so the answer is computed here and consumed as an output.
+  check-secrets:
+    name: Check optional secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has_nuget_user: ${{ steps.check.outputs.has_nuget_user }}
+    steps:
+    - id: check
+      shell: bash
+      env:
+        NUGET_USER: ${{ secrets.NUGET_USER }}
+      run: |
+        if [ -n "${NUGET_USER:-}" ]; then
+          echo "has_nuget_user=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has_nuget_user=false" >> "$GITHUB_OUTPUT"
+          echo "::notice::NUGET_USER is not configured - nuget.org publishing will be skipped."
+        fi
+
   pack:
     name: Build, test and pack
     runs-on: ubuntu-latest
@@ -83,7 +105,7 @@ jobs:
         set -euo pipefail
         found=0
         mkdir -p "$RUNNER_TEMP/unpack"
-        for pkg in artifacts/Technosoftware.UaSolutions.UaUtilities.*.nupkg; do
+        for pkg in artifacts/Technosoftware.UaUtilities.*.nupkg; do
           unzip -o -q "$pkg" -d "$RUNNER_TEMP/unpack"
         done
         while IFS= read -r asm; do
@@ -100,9 +122,9 @@ jobs:
       shell: bash
       run: |
         set -euo pipefail
-        pkg="$(ls artifacts/Technosoftware.UaSolutions.UaClient.*.nupkg | head -1)"
+        pkg="$(ls artifacts/Technosoftware.UaClient.*.nupkg | head -1)"
         produced="$(basename "$pkg" .nupkg)"
-        produced="${produced#Technosoftware.UaSolutions.UaClient.}"
+        produced="${produced#Technosoftware.UaClient.}"
         echo "MinVer produced version: ${produced}"
         ls artifacts
         if [ "${{ github.event_name }}" = "push" ] && [ "$produced" != "${GITHUB_REF_NAME}" ]; then
@@ -159,7 +181,7 @@ jobs:
       contents: read
       packages: write
     steps:
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@v7
       with:
         name: nupkg
         path: artifacts
@@ -169,7 +191,7 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Push
-      # GitHub Packages does not accept .snupkg; symbols are attached to the GitHub Release.
+      # GitHub Packages does not accept .snupkg; symbols go to nuget.org only.
       # One package per call, spaced out, with a retry. Re-running an already
       # published tag turns every PUT into a 409, and a burst of those makes the
       # registry answer 403 "could not be authenticated" on a token that had just
@@ -198,6 +220,55 @@ jobs:
           sleep 2
         done
 
+  publish-nuget-org:
+    name: Publish to nuget.org
+    needs: [ check-secrets, pack, publish-github-packages ]
+    if: >-
+      (github.event_name == 'push' || inputs.dry_run == false)
+      && needs.pack.outputs.prerelease == 'false'
+      && needs.check-secrets.outputs.has_nuget_user == 'true'
+    runs-on: ubuntu-latest
+    # Must match the Environment field of the nuget.org Trusted Publishing policy.
+    environment: nuget.org
+    permissions:
+      contents: read
+      # Lets this job request the OIDC token that NuGet/login exchanges for a key.
+      id-token: write
+    steps:
+    - uses: actions/download-artifact@v7
+      with:
+        name: nupkg
+        path: artifacts
+
+    - uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Exchange the OIDC token for a temporary API key
+      # The key is valid for one hour, so this runs immediately before the push.
+      uses: NuGet/login@v1
+      id: nuget-login
+      with:
+        user: ${{ secrets.NUGET_USER }}
+
+    - name: Push
+      # Only these four packages belong on the public gallery. artifacts/ also
+      # holds the SampleCompany tutorial package, which stays on GitHub Packages.
+      # The Trusted Publishing policy lists exactly these four ids and answers
+      # anything else with a 403, which would fail the job - possibly after some
+      # real packages had gone up. Keep this list and the policy in step.
+      # UaUtilities first: the others depend on it.
+      shell: bash
+      run: |
+        set -euo pipefail
+        for id in Technosoftware.UaUtilities Technosoftware.UaConfiguration \
+                  Technosoftware.UaClient Technosoftware.UaServer; do
+          dotnet nuget push artifacts/"${id}".[0-9]*.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
+            --skip-duplicate
+        done
+
   github-release:
     name: Create GitHub Release
     needs: pack
@@ -206,13 +277,13 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@v7
       with:
         name: nupkg
         path: artifacts
 
     - name: Create release
-      uses: softprops/action-gh-release@v3
+      uses: softprops/action-gh-release@v2
       with:
         name: OPC UA Solutions .NET ${{ needs.pack.outputs.version }}
         body_path: artifacts/RELEASE_NOTES.md

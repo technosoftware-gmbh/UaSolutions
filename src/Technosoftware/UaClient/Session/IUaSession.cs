@@ -170,7 +170,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Gets the locales that the server should use when returning localized text.
         /// </summary>
-        StringCollection PreferredLocales { get; }
+        ArrayOf<string> PreferredLocales { get; }
 
         /// <summary>
         /// Gets the subscriptions owned by the session.
@@ -232,7 +232,8 @@ namespace Technosoftware.UaClient
         DateTime LastKeepAliveTime { get; }
 
         /// <summary>
-        /// Gets the TickCount in ms of the last keep alive based on <see cref="HiResClock.TickCount"/>.
+        /// Gets the TickCount in ms of the last keep alive, taken from the
+        /// session's <see cref="TimeProvider"/>.
         /// </summary>
         int LastKeepAliveTickCount { get; }
 
@@ -374,7 +375,7 @@ namespace Technosoftware.UaClient
         /// <remarks>
         /// This method can be used to ensure the TypeTree is populated.
         /// </remarks>
-        Task FetchTypeTreeAsync(ExpandedNodeIdCollection typeIds, CancellationToken ct = default);
+        Task FetchTypeTreeAsync(List<ExpandedNodeId> typeIds, CancellationToken ct = default);
 
         /// <summary>
         /// Establishes a session with the server.
@@ -392,7 +393,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             bool checkDomain,
             bool closeChannel,
             CancellationToken ct = default);
@@ -405,7 +406,7 @@ namespace Technosoftware.UaClient
         /// <param name="ct">The cancellation token.</param>
         Task UpdateSessionAsync(
             IUserIdentity identity,
-            StringCollection preferredLocales,
+            List<string> preferredLocales,
             CancellationToken ct = default);
 
         /// <summary>
@@ -414,7 +415,7 @@ namespace Technosoftware.UaClient
         /// <param name="preferredLocales">The preferred locales.</param>
         /// <param name="ct">The cancellation token.</param>
         Task ChangePreferredLocalesAsync(
-            StringCollection preferredLocales,
+            List<string> preferredLocales,
             CancellationToken ct = default);
 
         /// <summary>

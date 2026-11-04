@@ -38,7 +38,7 @@ namespace SampleCompany.NodeManagers
         /// </summary>
         public static async Task ApplyCTTModeAsync(TextWriter output, UaStandardServer server)
         {
-            var methodsToCall = new CallMethodRequestCollection();
+            var methodsToCall = new List<CallMethodRequest>();
             int index = server.CurrentInstance.NamespaceUris.GetIndex(Alarms.Namespaces.Alarms);
             if (index > 0)
             {
@@ -58,7 +58,7 @@ namespace SampleCompany.NodeManagers
                         TimeoutHint = 10000
                     };
                     var context = new UaServerOperationContext(requestHeader, null, RequestType.Call);
-                    (CallMethodResultCollection results, DiagnosticInfoCollection diagnosticInfos) = await server.CurrentInstance.NodeManager.CallAsync(
+                    (List<CallMethodResult> results, List<DiagnosticInfo> diagnosticInfos) = await server.CurrentInstance.NodeManager.CallAsync(
                         context,
                         methodsToCall)
                         .ConfigureAwait(false);
@@ -115,12 +115,12 @@ namespace SampleCompany.NodeManagers
         /// <summary>
         /// The property with available node manager factories.
         /// </summary>
-        public static ReadOnlyList<IUaNodeManagerFactory> NodeManagerFactories
+        public static IReadOnlyList<IUaNodeManagerFactory> NodeManagerFactories
         {
             get
             {
                 s_nodeManagerFactories ??= GetNodeManagerFactories();
-                return new ReadOnlyList<IUaNodeManagerFactory>(s_nodeManagerFactories);
+                return s_nodeManagerFactories.AsReadOnly();
             }
         }
 
@@ -151,6 +151,6 @@ namespace SampleCompany.NodeManagers
             return [.. nodeManagerFactories];
         }
 
-        private static IList<IUaNodeManagerFactory> s_nodeManagerFactories;
+        private static List<IUaNodeManagerFactory> s_nodeManagerFactories;
     }
 }

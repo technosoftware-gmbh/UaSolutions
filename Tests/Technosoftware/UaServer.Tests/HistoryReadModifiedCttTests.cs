@@ -61,7 +61,7 @@ namespace Technosoftware.UaServer.Tests
         [OneTimeSetUp]
         public async Task OneTimeSetUpAsync()
         {
-            m_fixture = new ServerFixture<ReferenceServer>
+            m_fixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry))
             {
                 AllNodeManagers = true,
                 OperationLimits = true,
@@ -93,7 +93,7 @@ namespace Technosoftware.UaServer.Tests
                 m_secureChannelContext,
                 m_requestHeader,
                 true,
-                CancellationToken.None).ConfigureAwait(false);
+                RequestLifetime.None).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -123,11 +123,11 @@ namespace Technosoftware.UaServer.Tests
             HistoryReadResult result = response.Results[0];
             Assert.AreEqual((StatusCode)StatusCodes.BadInvalidArgument, result.StatusCode);
             Assert.IsTrue(
-                result.ContinuationPoint == null || result.ContinuationPoint.Length == 0,
+                result.ContinuationPoint.IsEmpty,
                 "No ContinuationPoint expected.");
             Assert.AreEqual(
                 0,
-                (result.HistoryData?.Body as HistoryData)?.DataValues?.Count ?? 0,
+                result.HistoryData.TryGetValue(out HistoryData data) ? data.DataValues.Count : 0,
                 "No data expected with a Bad operation result.");
         }
 
@@ -177,7 +177,7 @@ namespace Technosoftware.UaServer.Tests
             };
         }
 
-        private Task<HistoryReadResponse> HistoryReadAsync(NodeId nodeId, ReadRawModifiedDetails details)
+        private ValueTask<HistoryReadResponse> HistoryReadAsync(NodeId nodeId, ReadRawModifiedDetails details)
         {
             m_requestHeader.Timestamp = DateTime.UtcNow;
             return m_server.HistoryReadAsync(
@@ -186,8 +186,8 @@ namespace Technosoftware.UaServer.Tests
                 new ExtensionObject(details),
                 TimestampsToReturn.Source,
                 false,
-                new HistoryReadValueIdCollection { new HistoryReadValueId { NodeId = nodeId } },
-                CancellationToken.None);
+                [new HistoryReadValueId { NodeId = nodeId }],
+                RequestLifetime.None);
         }
 
         private async Task<DateTime[]> ReadFirstRecordsAsync(NodeId nodeId, uint count)
@@ -207,8 +207,10 @@ namespace Technosoftware.UaServer.Tests
             Assert.IsTrue(
                 StatusCode.IsGood(response.Results[0].StatusCode),
                 $"Reading the first records failed with {response.Results[0].StatusCode}.");
-            DateTime[] times = [.. ((HistoryData)response.Results[0].HistoryData.Body)
-                .DataValues.Select(v => v.SourceTimestamp)];
+            Assert.IsTrue(
+                response.Results[0].HistoryData.TryGetValue(out HistoryData historyData),
+                "Reading the first records returned no HistoryData.");
+            DateTime[] times = [.. historyData.DataValues.ToArray().Select(v => v.SourceTimestamp.ToDateTime())];
             Assert.AreEqual(count, (uint)times.Length);
             return times;
         }

@@ -117,7 +117,7 @@ namespace Technosoftware.UaClient
             ClientHandle = state.ClientId;
             ServerId = state.ServerId;
             TriggeringItemId = state.TriggeringItemId;
-            TriggeredItems = state.TriggeredItems != null ? [.. state.TriggeredItems] : null;
+            TriggeredItems = state.TriggeredItems;
             CacheQueueSize = state.CacheQueueSize < 1 ? 1 : state.CacheQueueSize;
         }
 
@@ -129,7 +129,7 @@ namespace Technosoftware.UaClient
                 ServerId = Status.Id,
                 ClientId = ClientHandle,
                 TriggeringItemId = TriggeringItemId,
-                TriggeredItems = TriggeredItems != null ? [.. TriggeredItems] : null,
+                TriggeredItems = TriggeredItems,
                 CacheQueueSize = CacheQueueSize
             };
         }
@@ -154,7 +154,7 @@ namespace Technosoftware.UaClient
         public NodeId StartNodeId
         {
             get => State.StartNodeId;
-            set => State = State with { StartNodeId = value ?? NodeId.Null };
+            set => State = State with { StartNodeId = value };
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace Technosoftware.UaClient
         public QualifiedName Encoding
         {
             get => State.Encoding;
-            set => State = State with { Encoding = value ?? QualifiedName.Null };
+            set => State = State with { Encoding = value };
         }
 
         /// <summary>
@@ -533,7 +533,7 @@ namespace Technosoftware.UaClient
 
                 if (m_dataCache != null && newValue is MonitoredItemNotification datachange)
                 {
-                    if (datachange.Value != null)
+                    if (!datachange.Value.IsNull)
                     {
                         if (validateTimestamp)
                         {
@@ -564,7 +564,7 @@ namespace Technosoftware.UaClient
                                 "Overflow bit set for data change with ServerTimestamp {ServerTimestamp} " +
                                 "and value {Value} for MonitoredItemId {MonitoredItemId}",
                                 datachange.Value.ServerTimestamp.ToLocalTime(),
-                                datachange.Value.Value,
+                                datachange.Value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
                                 ClientHandle);
                         }
                     }
@@ -619,7 +619,7 @@ namespace Technosoftware.UaClient
         protected internal void SetResolvePathResult(
             BrowsePathResult result,
             int index,
-            DiagnosticInfoCollection diagnosticInfos,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             ServiceResult? error = null;
@@ -655,7 +655,7 @@ namespace Technosoftware.UaClient
             MonitoredItemCreateRequest request,
             MonitoredItemCreateResult result,
             int index,
-            DiagnosticInfoCollection diagnosticInfos,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             ServiceResult? error = null;
@@ -680,7 +680,7 @@ namespace Technosoftware.UaClient
             MonitoredItemModifyRequest request,
             MonitoredItemModifyResult result,
             int index,
-            DiagnosticInfoCollection diagnosticInfos,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader responseHeader)
         {
             ServiceResult? error = null;
@@ -716,7 +716,7 @@ namespace Technosoftware.UaClient
         protected internal void SetDeleteResult(
             StatusCode result,
             int index,
-            DiagnosticInfoCollection? diagnosticInfos,
+            ArrayOf<DiagnosticInfo> diagnosticInfos,
             ResponseHeader? responseHeader)
         {
             ServiceResult? error = null;
@@ -758,7 +758,7 @@ namespace Technosoftware.UaClient
             string browsePath,
             uint attributeId)
         {
-            QualifiedNameCollection browseNames = SimpleAttributeOperand.Parse(browsePath);
+            ArrayOf<QualifiedName> browseNames = SimpleAttributeOperand.Parse(browsePath);
             return GetFieldValue(eventFields, eventTypeId, browseNames, attributeId);
         }
 
@@ -770,8 +770,11 @@ namespace Technosoftware.UaClient
             NodeId eventTypeId,
             QualifiedName browseName)
         {
-            var browsePath = new QualifiedNameCollection { browseName };
-            return GetFieldValue(eventFields, eventTypeId, browsePath, Attributes.Value);
+            return GetFieldValue(
+                eventFields,
+                eventTypeId,
+                ArrayOf.Wrapped(browseName),
+                Attributes.Value);
         }
 
         /// <summary>
@@ -780,7 +783,7 @@ namespace Technosoftware.UaClient
         public object? GetFieldValue(
             EventFieldList eventFields,
             NodeId eventTypeId,
-            IList<QualifiedName> browsePath,
+            ArrayOf<QualifiedName> browsePath,
             uint attributeId)
         {
             if (eventFields == null)
@@ -810,15 +813,15 @@ namespace Technosoftware.UaClient
                 }
 
                 // match null browse path.
-                if (browsePath == null || browsePath.Count == 0)
+                if (browsePath.Count == 0)
                 {
-                    if (clause.BrowsePath != null && clause.BrowsePath.Count > 0)
+                    if (clause.BrowsePath.Count > 0)
                     {
                         continue;
                     }
 
                     // ignore event type id when matching null browse paths.
-                    return eventFields.EventFields[ii].Value;
+                    return eventFields.EventFields[ii].AsBoxedObject(Variant.BoxingBehavior.Legacy);
                 }
 
                 // match browse path.
@@ -854,7 +857,7 @@ namespace Technosoftware.UaClient
                 }
 
                 // return value.
-                return eventFields.EventFields[ii].Value;
+                return eventFields.EventFields[ii].AsBoxedObject(Variant.BoxingBehavior.Legacy);
             }
 
             // no event type in event field list.
@@ -869,12 +872,15 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             // get event type.
-            var eventTypeId = GetFieldValue(
+            if (GetFieldValue(
                 eventFields,
-                ObjectTypes.BaseEventType,
-                BrowseNames.EventType) as NodeId;
+                new NodeId(ObjectTypes.BaseEventType),
+                new QualifiedName(BrowseNames.EventType)) is not NodeId eventTypeId)
+            {
+                return null;
+            }
 
-            if (eventTypeId != null &&
+            if (!eventTypeId.IsNull &&
                 Subscription != null &&
                 Subscription.Session != null)
             {
@@ -895,8 +901,8 @@ namespace Technosoftware.UaClient
             // get event time.
             var eventTime = GetFieldValue(
                 eventFields,
-                ObjectTypes.BaseEventType,
-                BrowseNames.Time) as DateTime?;
+                new NodeId(ObjectTypes.BaseEventType),
+                new QualifiedName(BrowseNames.Time)) as DateTime?;
 
             if (eventTime != null)
             {
@@ -941,7 +947,7 @@ namespace Technosoftware.UaClient
                 return null;
             }
 
-            NotificationMessage message = eventFields.Message;
+            NotificationMessage? message = eventFields.Message;
 
             if (message == null)
             {
@@ -954,7 +960,7 @@ namespace Technosoftware.UaClient
             }
 
             if (ExtensionObject.ToEncodeable(
-                    eventFields.EventFields[index].Value as ExtensionObject)
+                    eventFields.EventFields[index].GetExtensionObject())
                 is not StatusResult status)
             {
                 return null;
@@ -1033,15 +1039,15 @@ namespace Technosoftware.UaClient
         {
             var filter = new EventFilter();
 
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.EventId);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.EventType);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.SourceNode);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.SourceName);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Time);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.ReceiveTime);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.LocalTime);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Message);
-            filter.AddSelectClause(ObjectTypes.BaseEventType, BrowseNames.Severity);
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.EventId));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.EventType));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.SourceNode));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.SourceName));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.Time));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.ReceiveTime));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.LocalTime));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.Message));
+            filter.AddSelectClause(new NodeId(ObjectTypes.BaseEventType), new QualifiedName(BrowseNames.Severity));
 
             return filter;
         }
@@ -1066,7 +1072,7 @@ namespace Technosoftware.UaClient
         /// Collection of server-side identifiers of monitored items that are
         /// triggered by this item. Null if this item does not trigger any other items.
         /// </summary>
-        internal UInt32Collection? TriggeredItems { get; set; }
+        internal ArrayOf<uint> TriggeredItems { get; set; } = [];
     }
 
     /// <summary>
@@ -1126,7 +1132,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The last value received from the server.
         /// </summary>
-        public DataValue? LastValue { get; private set; }
+        public DataValue LastValue { get; private set; }
 
         /// <summary>
         /// Returns all values in the queue.
@@ -1137,12 +1143,12 @@ namespace Technosoftware.UaClient
             if (m_values != null)
             {
                 values = new List<DataValue>(m_values.Count);
-                while (m_values.TryDequeue(out DataValue? dequeued))
+                while (m_values.TryDequeue(out DataValue dequeued))
                 {
                     values.Add(dequeued);
                 }
             }
-            else if (LastValue == null)
+            else if (LastValue.IsNull)
             {
                 values = [];
             }
@@ -1181,7 +1187,7 @@ namespace Technosoftware.UaClient
                 m_values.Enqueue(notification.Value);
                 while (m_values.Count > QueueSize)
                 {
-                    if (!m_values.TryDequeue(out DataValue? dropped))
+                    if (!m_values.TryDequeue(out DataValue dropped))
                     {
                         break;
                     }
@@ -1225,7 +1231,7 @@ namespace Technosoftware.UaClient
             }
             while (m_values.Count > QueueSize)
             {
-                if (!m_values.TryDequeue(out DataValue? dropped))
+                if (!m_values.TryDequeue(out DataValue dropped))
                 {
                     break;
                 }

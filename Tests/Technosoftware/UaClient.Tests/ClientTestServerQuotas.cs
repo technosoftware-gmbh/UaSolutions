@@ -17,6 +17,7 @@
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using NUnit.Framework;
+using System.Collections.Generic;
 using Opc.Ua;
 using Technosoftware.UaServer.Tests;
 using SampleCompany.NodeManagers.Reference;
@@ -73,7 +74,7 @@ namespace Technosoftware.UaClient.Tests
             bool securityNone)
         {
             // start Ref server
-            ServerFixture = new ServerFixture<ReferenceServer>(
+            ServerFixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry), 
                 enableTracing,
                 disableActivityLogging)
             {
@@ -88,15 +89,19 @@ namespace Technosoftware.UaClient.Tests
             ServerFixture.Config.TransportQuotas.MaxMessageSize = TransportQuotaMaxMessageSize;
             ServerFixture.Config.TransportQuotas.MaxByteStringLength = MaxByteStringLengthForTest;
             ServerFixture.Config.TransportQuotas.MaxStringLength = TransportQuotaMaxStringLength;
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies
-                .Add(new UserTokenPolicy(UserTokenType.UserName));
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
-                new UserTokenPolicy(UserTokenType.Certificate));
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+            // UserTokenPolicies is an immutable ArrayOf in 2.0. The list the
+            // configuration already carries - the Anonymous policy among them -
+            // has to be spread back in, or assigning replaces rather than adds.
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies =
+            [
+                .. ServerFixture.Config.ServerConfiguration.UserTokenPolicies,
+                new UserTokenPolicy(UserTokenType.UserName),
+                new UserTokenPolicy(UserTokenType.Certificate),
                 new UserTokenPolicy(UserTokenType.IssuedToken)
                 {
                     IssuedTokenType = Profiles.JwtUserToken
-                });
+                },
+            ];
 
             ReferenceServer = await ServerFixture.StartAsync()
                 .ConfigureAwait(false);
@@ -148,14 +153,18 @@ namespace Technosoftware.UaClient.Tests
             {
                 NodeId = nodeId,
                 AttributeId = Attributes.Value,
-                Value = new DataValue { WrappedValue = new Variant(chunk) },
+                // byte[] converts implicitly to ArrayOf<byte> but only
+                // explicitly to ByteString, so new Variant(chunk) picks the
+                // Byte array overload and the server rejects the write to a
+                // ByteString node with BadTypeMismatch.
+                Value = new DataValue(Variant.From(ByteString.From(chunk))),
                 IndexRange = null
             };
-            var writeValues = new WriteValueCollection { writeValue };
+            var writeValues = new List<WriteValue> { writeValue };
 
             WriteResponse result = await theSession.WriteAsync(null, writeValues, default)
                 .ConfigureAwait(false);
-            StatusCodeCollection results = result.Results;
+            ArrayOf<StatusCode> results = result.Results;
 
             if (results[0] != StatusCodes.Good)
             {

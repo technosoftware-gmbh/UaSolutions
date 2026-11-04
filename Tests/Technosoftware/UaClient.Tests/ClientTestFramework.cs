@@ -56,8 +56,8 @@ namespace Technosoftware.UaClient.Tests
         public ServerFixture<ReferenceServer> ServerFixture { get; set; }
         public ClientFixture ClientFixture { get; set; }
         public ReferenceServer ReferenceServer { get; set; }
-        public EndpointDescriptionCollection Endpoints { get; set; }
-        public ReferenceDescriptionCollection ReferenceDescriptions { get; set; }
+        public ArrayOf<EndpointDescription> Endpoints { get; set; }
+        public ArrayOf<ReferenceDescription> ReferenceDescriptions { get; set; }
         public IUaSession Session { get; protected set; }
         public OperationLimits OperationLimits { get; private set; }
         public int SecurityTokenLifetime { get; set; } = 3_600_000;
@@ -94,7 +94,7 @@ namespace Technosoftware.UaClient.Tests
         [DatapointSource]
         public static readonly string[] Policies =
         [
-            .. SecurityPolicies.GetDisplayNames().Select(SecurityPolicies.GetUri)
+            .. SecurityPolicies.Default.GetDisplayNames().Select(SecurityPolicies.Default.GetUri)
         ];
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace Technosoftware.UaClient.Tests
             bool securityNone)
         {
             // start Ref server
-            ServerFixture = new ServerFixture<ReferenceServer>(
+            ServerFixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry), 
                 enableTracing,
                 disableActivityLogging)
             {
@@ -218,92 +218,81 @@ namespace Technosoftware.UaClient.Tests
                 .TransportQuotas
                 .MaxStringLength = TransportQuotaMaxStringLength;
             ServerFixture.Config.TransportQuotas.SecurityTokenLifetime = SecurityTokenLifetime;
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies
-                .Add(new UserTokenPolicy(UserTokenType.UserName));
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
-                new UserTokenPolicy(UserTokenType.Certificate));
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+            // UserTokenPolicies is an immutable ArrayOf in 2.0. The list the
+            // configuration already carries - the Anonymous policy among them -
+            // has to be spread back in, or assigning replaces rather than adds.
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies =
+            [
+                .. ServerFixture.Config.ServerConfiguration.UserTokenPolicies,
+                new UserTokenPolicy(UserTokenType.UserName),
+                new UserTokenPolicy(UserTokenType.Certificate),
                 new UserTokenPolicy(UserTokenType.IssuedToken)
-                {
-                    IssuedTokenType = Profiles.JwtUserToken
-                });
-
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            IssuedTokenType = Profiles.JwtUserToken
+                        },
                 new UserTokenPolicy(UserTokenType.UserName)
-                {
-                    SecurityPolicyUri
-                        = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
-                });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            SecurityPolicyUri
+                                = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
+                        },
                 new UserTokenPolicy(UserTokenType.UserName)
-                {
-                    SecurityPolicyUri
-                        = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1"
-                });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            SecurityPolicyUri
+                                = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1"
+                        },
                 new UserTokenPolicy(UserTokenType.UserName)
-                {
-                    SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256"
-                });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256"
+                        },
                 new UserTokenPolicy(UserTokenType.UserName)
-                {
-                    SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384"
-                });
-
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384"
+                        },
                 new UserTokenPolicy(UserTokenType.Certificate)
-                {
-                    SecurityPolicyUri
-                        = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
-                });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            SecurityPolicyUri
+                                = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
+                        },
                 new UserTokenPolicy(UserTokenType.Certificate)
-                {
-                    SecurityPolicyUri
-                        = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1"
-                });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            SecurityPolicyUri
+                                = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1"
+                        },
                 new UserTokenPolicy(UserTokenType.Certificate)
-                {
-                    SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256"
-                });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256"
+                        },
                 new UserTokenPolicy(UserTokenType.Certificate)
-                {
-                    SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384"
-                });
-
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384"
+                        },
                 new UserTokenPolicy(UserTokenType.IssuedToken)
-                {
-                    IssuedTokenType = Profiles.JwtUserToken,
-                    PolicyId = Profiles.JwtUserToken,
-                    SecurityPolicyUri
-                        = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
-                });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            IssuedTokenType = Profiles.JwtUserToken,
+                            PolicyId = Profiles.JwtUserToken,
+                            SecurityPolicyUri
+                                = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1"
+                        },
                 new UserTokenPolicy(UserTokenType.IssuedToken)
-                {
-                    IssuedTokenType = Profiles.JwtUserToken,
-                    PolicyId = Profiles.JwtUserToken,
-                    SecurityPolicyUri
-                        = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1"
-                });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            IssuedTokenType = Profiles.JwtUserToken,
+                            PolicyId = Profiles.JwtUserToken,
+                            SecurityPolicyUri
+                                = "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1"
+                        },
                 new UserTokenPolicy(UserTokenType.IssuedToken)
-                {
-                    IssuedTokenType = Profiles.JwtUserToken,
-                    PolicyId = Profiles.JwtUserToken,
-                    SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256"
-                });
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+                        {
+                            IssuedTokenType = Profiles.JwtUserToken,
+                            PolicyId = Profiles.JwtUserToken,
+                            SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256"
+                        },
                 new UserTokenPolicy(UserTokenType.IssuedToken)
-                {
-                    IssuedTokenType = Profiles.JwtUserToken,
-                    PolicyId = Profiles.JwtUserToken,
-                    SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384"
-                });
+                        {
+                            IssuedTokenType = Profiles.JwtUserToken,
+                            PolicyId = Profiles.JwtUserToken,
+                            SecurityPolicyUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384"
+                        },
+            ];
 
             ServerFixture.Config.ServerConfiguration.MaxChannelCount = MaxChannelCount;
             ServerFixture.Config.ServerConfiguration.MaxSubscriptionCount = 1000;
@@ -330,7 +319,7 @@ namespace Technosoftware.UaClient.Tests
                 await ServerFixture.StopAsync().ConfigureAwait(false);
                 await Task.Delay(100).ConfigureAwait(false);
             }
-            Utils.SilentDispose(ClientFixture);
+            ClientFixture?.Dispose();
 
             // Clean up pki
             try
@@ -387,7 +376,7 @@ namespace Technosoftware.UaClient.Tests
         public IList<NodeId> GetTestSetStatic(NamespaceTable namespaceUris)
         {
             return [.. TestSetStatic.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                .Where(n => n != null)];
+                .Where(n => !n.IsNull)];
         }
 
         /// <summary>
@@ -405,7 +394,7 @@ namespace Technosoftware.UaClient.Tests
                 foreach (ExpandedNodeId expandedNodeId in entry.NodeIds)
                 {
                     var nodeId = ExpandedNodeId.ToNodeId(expandedNodeId, namespaceUris);
-                    if (nodeId != null)
+                    if (!nodeId.IsNull)
                     {
                         result[nodeId] = type;
                     }
@@ -422,7 +411,7 @@ namespace Technosoftware.UaClient.Tests
         public IList<NodeId> GetTestSetSimulation(NamespaceTable namespaceUris)
         {
             return [.. TestSetSimulation.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                .Where(n => n != null)];
+                .Where(n => !n.IsNull)];
         }
 
         /// <summary>
@@ -434,11 +423,11 @@ namespace Technosoftware.UaClient.Tests
         {
             var simulation = TestSetSimulation
                 .Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                .Where(n => n != null)
+                .Where(n => !n.IsNull)
                 .ToList();
             simulation.AddRange(
                 TestSetDataSimulation.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                    .Where(n => n != null));
+                    .Where(n => !n.IsNull));
             return simulation;
         }
 
@@ -452,7 +441,7 @@ namespace Technosoftware.UaClient.Tests
             return
             [
                 .. TestSetDataSimulation.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                    .Where(n => n != null)
+                    .Where(n => !n.IsNull)
             ];
         }
 
@@ -464,7 +453,7 @@ namespace Technosoftware.UaClient.Tests
         public IList<NodeId> GetTestSetHistory(NamespaceTable namespaceUris)
         {
             return [.. TestSetHistory.Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
-                .Where(n => n != null)];
+                .Where(n => !n.IsNull)];
         }
 
         /// <summary>

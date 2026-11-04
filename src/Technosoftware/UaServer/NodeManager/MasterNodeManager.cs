@@ -191,18 +191,18 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_namespaceManagersSemaphoreSlim);
+                m_namespaceManagersSemaphoreSlim?.Dispose();
 
                 m_startupShutdownSemaphoreSlim.Wait();
 
                 List<IUaStandardAsyncNodeManager> nodeManagers = [.. m_nodeManagers];
                 m_nodeManagers.Clear();
 
-                Utils.SilentDispose(m_startupShutdownSemaphoreSlim);
+                m_startupShutdownSemaphoreSlim?.Dispose();
 
                 foreach (IUaStandardAsyncNodeManager nodeManager in nodeManagers)
                 {
-                    Utils.SilentDispose(nodeManager);
+                    (nodeManager as IDisposable)?.Dispose();
                 }
             }
         }
@@ -537,7 +537,7 @@ namespace Technosoftware.UaServer
             nodeManager = null;
 
             // null node ids have no manager.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -580,7 +580,7 @@ namespace Technosoftware.UaServer
             object handle;
 
             // null node ids have no manager.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return (null, null);
             }
@@ -703,21 +703,12 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public virtual void RegisterNodes(
             UaServerOperationContext context,
-            NodeIdCollection nodesToRegister,
-            out NodeIdCollection registeredNodeIds)
+            ArrayOf<NodeId> nodesToRegister,
+            out ArrayOf<NodeId> registeredNodeIds)
         {
-            if (nodesToRegister == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToRegister));
-            }
-
-            // return the node id provided.
-            registeredNodeIds = new NodeIdCollection(nodesToRegister.Count);
-
-            for (int ii = 0; ii < nodesToRegister.Count; ii++)
-            {
-                registeredNodeIds.Add(nodesToRegister[ii]);
-            }
+            // return the node id provided; ArrayOf<T> is immutable, so the
+            // copy the loop used to make is no longer needed.
+            registeredNodeIds = nodesToRegister;
 
             m_logger.LogTrace(
                 Utils.TraceMasks.ServiceDetail,
@@ -742,13 +733,8 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public virtual void UnregisterNodes(
             UaServerOperationContext context,
-            NodeIdCollection nodesToUnregister)
+            ArrayOf<NodeId> nodesToUnregister)
         {
-            if (nodesToUnregister == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToUnregister));
-            }
-
             m_logger.LogTrace(
                 Utils.TraceMasks.ServiceDetail,
                 "MasterNodeManager.UnregisterNodes - Count={Count}",
@@ -769,20 +755,15 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(BrowsePathResultCollection results, DiagnosticInfoCollection diagnosticInfos)>
+        public virtual async ValueTask<(List<BrowsePathResult> results, List<DiagnosticInfo> diagnosticInfos)>
             TranslateBrowsePathsToNodeIdsAsync(
             UaServerOperationContext context,
-            BrowsePathCollection browsePaths,
+            ArrayOf<BrowsePath> browsePaths,
             CancellationToken cancellationToken = default)
         {
-            if (browsePaths == null)
-            {
-                throw new ArgumentNullException(nameof(browsePaths));
-            }
-
             bool diagnosticsExist = false;
-            var results = new BrowsePathResultCollection(browsePaths.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(browsePaths.Count);
+            var results = new List<BrowsePathResult>(browsePaths.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(browsePaths.Count);
 
             for (int ii = 0; ii < browsePaths.Count; ii++)
             {
@@ -857,7 +838,7 @@ namespace Technosoftware.UaServer
         protected void UpdateDiagnostics(
             UaServerOperationContext context,
             bool diagnosticsExist,
-            ref DiagnosticInfoCollection diagnosticInfos)
+            ref List<DiagnosticInfo> diagnosticInfos)
         {
             if (diagnosticInfos == null)
             {
@@ -918,7 +899,7 @@ namespace Technosoftware.UaServer
             // check the relative path.
             RelativePath relativePath = browsePath.RelativePath;
 
-            if (relativePath.Elements == null || relativePath.Elements.Count == 0)
+            if (relativePath.Elements.Count == 0)
             {
                 return StatusCodes.BadNothingToDo;
             }
@@ -927,12 +908,12 @@ namespace Technosoftware.UaServer
             {
                 RelativePathElement element = relativePath.Elements[ii];
 
-                if (element == null || QualifiedName.IsNull(relativePath.Elements[ii].TargetName))
+                if (element == null || (relativePath.Elements[ii].TargetName).IsNull)
                 {
                     return StatusCodes.BadBrowseNameInvalid;
                 }
 
-                if (NodeId.IsNull(element.ReferenceTypeId))
+                if (element.ReferenceTypeId.IsNull)
                 {
                     element.ReferenceTypeId = ReferenceTypeIds.References;
                     element.IncludeSubtypes = true;
@@ -951,16 +932,22 @@ namespace Technosoftware.UaServer
                 .ConfigureAwait(false);
             if (ServiceResult.IsGood(serviceResult))
             {
-                // translate path only if validation is passing
+                // translate path only if validation is passing. BrowsePathResult
+                // carries its targets as an immutable ArrayOf, so the recursion
+                // fills a List and the result is assigned once.
+                var targets = new List<BrowsePathTarget>();
+
                 await TranslateBrowsePathAsync(
                     context,
                     nodeManager,
                     sourceHandle,
                     relativePath,
-                    result.Targets,
+                    targets,
                     0,
                     cancellationToken)
                 .ConfigureAwait(false);
+
+                result.Targets = targets.ToArrayOf();
             }
 
             return serviceResult;
@@ -975,7 +962,7 @@ namespace Technosoftware.UaServer
             IUaStandardAsyncNodeManager nodeManager,
             object sourceHandle,
             RelativePath relativePath,
-            BrowsePathTargetCollection targets,
+            IList<BrowsePathTarget> targets,
             int index,
             CancellationToken cancellationToken)
         {
@@ -994,13 +981,13 @@ namespace Technosoftware.UaServer
             RelativePathElement element = relativePath.Elements[index];
 
             // check for valid reference type.
-            if (!element.IncludeSubtypes && NodeId.IsNull(element.ReferenceTypeId))
+            if (!element.IncludeSubtypes && element.ReferenceTypeId.IsNull)
             {
                 return;
             }
 
             // check for valid target name.
-            if (QualifiedName.IsNull(element.TargetName))
+            if (element.TargetName.IsNull)
             {
                 throw new ServiceResultException(StatusCodes.BadBrowseNameInvalid);
             }
@@ -1147,11 +1134,11 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos)> BrowseAsync(
+        public virtual async ValueTask<(List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos)> BrowseAsync(
             UaServerOperationContext context,
             ViewDescription view,
             uint maxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -1159,12 +1146,7 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (nodesToBrowse == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToBrowse));
-            }
-
-            if (view != null && !NodeId.IsNull(view.ViewId))
+            if (view != null && !view.ViewId.IsNull)
             {
                 (object viewHandle, IUaStandardAsyncNodeManager viewManager) =
                     await GetManagerHandleAsync(view.ViewId, cancellationToken)
@@ -1205,8 +1187,8 @@ namespace Technosoftware.UaServer
             }
 
             bool diagnosticsExist = false;
-            var results = new BrowseResultCollection(nodesToBrowse.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(nodesToBrowse.Count);
+            var results = new List<BrowseResult>(nodesToBrowse.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(nodesToBrowse.Count);
 
             uint continuationPointsAssigned = 0;
 
@@ -1219,7 +1201,7 @@ namespace Technosoftware.UaServer
                     foreach (BrowseResult current in results)
                     {
                         if (current != null &&
-                            current.ContinuationPoint != null &&
+                            !current.ContinuationPoint.IsNull &&
                             current.ContinuationPoint.Length > 0)
                         {
                             UaContinuationPoint cp = context.Session
@@ -1264,7 +1246,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // check for continuation point.
-                if (result.ContinuationPoint != null && result.ContinuationPoint.Length > 0)
+                if (!result.ContinuationPoint.IsNull && result.ContinuationPoint.Length > 0)
                 {
                     continuationPointsAssigned++;
                 }
@@ -1303,8 +1285,8 @@ namespace Technosoftware.UaServer
         /// <param name="uniqueNodesServiceAttributes">The resulting cache that holds the values of the AccessRestrictions and RolePermissions attributes needed for Read service</param>
         /// <exception cref="ArgumentException"></exception>
         private static void PrepareValidationCache<T>(
-            List<T> nodesCollection,
-            out Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes)
+            ArrayOf<T> nodesCollection,
+            out Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributes)
         {
             var uniqueNodes = new HashSet<NodeId>();
             for (int i = 0; i < nodesCollection.Count; i++)
@@ -1317,10 +1299,10 @@ namespace Technosoftware.UaServer
                     nodeId = (nodesCollection[i] as ReadValueId)?.NodeId ?? default;
                 }
 
-                if (nodeId == null)
+                if (nodeId.IsNull)
                 {
                     throw new ArgumentException(
-                        "Provided List<T> nodesCollection is of wrong type, T should be type BrowseDescription, ReadValueId or CallMethodRequest",
+                        "Provided ArrayOf<T> nodesCollection is of wrong type, T should be type BrowseDescription, ReadValueId or CallMethodRequest",
                         nameof(nodesCollection));
                 }
 
@@ -1335,11 +1317,11 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos)>
+        public virtual async ValueTask<(List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos)>
             BrowseNextAsync(
                 UaServerOperationContext context,
                 bool releaseContinuationPoints,
-                ByteStringCollection continuationPoints,
+                ArrayOf<ByteString> continuationPoints,
                 CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -1347,14 +1329,9 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (continuationPoints == null)
-            {
-                throw new ArgumentNullException(nameof(continuationPoints));
-            }
-
             bool diagnosticsExist = false;
-            var results = new BrowseResultCollection(continuationPoints.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(continuationPoints.Count);
+            var results = new List<BrowseResult>(continuationPoints.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(continuationPoints.Count);
 
             uint continuationPointsAssigned = 0;
 
@@ -1369,7 +1346,7 @@ namespace Technosoftware.UaServer
                     foreach (BrowseResult current in results)
                     {
                         if (current != null &&
-                            current.ContinuationPoint != null &&
+                            !current.ContinuationPoint.IsNull &&
                             current.ContinuationPoint.Length > 0)
                         {
                             cp = context.Session
@@ -1440,7 +1417,7 @@ namespace Technosoftware.UaServer
                     // need to trap unexpected exceptions to handle bugs in the node managers.
                     try
                     {
-                        ReferenceDescriptionCollection references = result.References;
+                        ArrayOf<ReferenceDescription> references = result.References;
 
                         (error, cp, references) = await FetchReferencesAsync(
                                 context,
@@ -1461,7 +1438,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // check for continuation point.
-                    if (result.ContinuationPoint != null && result.ContinuationPoint.Length > 0)
+                    if (!result.ContinuationPoint.IsNull && result.ContinuationPoint.Length > 0)
                     {
                         continuationPointsAssigned++;
                     }
@@ -1491,7 +1468,7 @@ namespace Technosoftware.UaServer
                 if (cp != null && ServiceResult.IsGood(error))
                 {
                     result.StatusCode = StatusCodes.Good;
-                    result.ContinuationPoint = cp.Id.ToByteArray();
+                    result.ContinuationPoint = cp.Id.ToByteArray().ToByteString();
                 }
             }
 
@@ -1526,7 +1503,7 @@ namespace Technosoftware.UaServer
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            if (!NodeId.IsNull(nodeToBrowse.ReferenceTypeId) &&
+            if (!nodeToBrowse.ReferenceTypeId.IsNull &&
                 !Server.TypeTree.IsKnown(nodeToBrowse.ReferenceTypeId))
             {
                 return StatusCodes.BadReferenceTypeIdInvalid;
@@ -1569,14 +1546,14 @@ namespace Technosoftware.UaServer
             };
 
             // check if reference type left unspecified.
-            if (NodeId.IsNull(cp.ReferenceTypeId))
+            if (cp.ReferenceTypeId.IsNull)
             {
                 cp.ReferenceTypeId = ReferenceTypeIds.References;
                 cp.IncludeSubtypes = true;
             }
 
             // loop until browse is complete or max results.
-            ReferenceDescriptionCollection references = result.References;
+            ArrayOf<ReferenceDescription> references = result.References;
 
             ServiceResult error;
 
@@ -1594,7 +1571,7 @@ namespace Technosoftware.UaServer
             if (cp != null && ServiceResult.IsGood(error))
             {
                 result.StatusCode = StatusCodes.Good;
-                result.ContinuationPoint = cp.Id.ToByteArray();
+                result.ContinuationPoint = cp.Id.ToByteArray().ToByteString();
             }
 
             // all is good.
@@ -1607,34 +1584,39 @@ namespace Technosoftware.UaServer
         protected async ValueTask<(
             ServiceResult serviceResult,
             UaContinuationPoint cp,
-            ReferenceDescriptionCollection references
+            ArrayOf<ReferenceDescription> references
             )> FetchReferencesAsync(
                 UaServerOperationContext context,
                 bool assignContinuationPoint,
                 UaContinuationPoint cp,
-                ReferenceDescriptionCollection references,
+                ArrayOf<ReferenceDescription> references,
                 CancellationToken cancellationToken = default)
         {
             Debug.Assert(context != null);
             Debug.Assert(cp != null);
-            Debug.Assert(references != null);
 
             IUaStandardAsyncNodeManager nodeManager = cp.Manager;
             var nodeClassMask = (NodeClass)cp.NodeClassMask;
             BrowseResultMask resultMask = cp.ResultMask;
 
+            // the node managers append to the list they are handed, and
+            // ArrayOf is immutable, so the loop works on a List and wraps
+            // once on return.
+            List<ReferenceDescription> referenceList = references.ToList();
+
             // loop until browse is complete or max results.
             while (cp != null)
             {
-                cp = await nodeManager.BrowseAsync(context, cp, references, cancellationToken)
+                cp = await nodeManager
+                    .BrowseAsync(context, cp, referenceList, cancellationToken)
                     .ConfigureAwait(false);
 
-                var referencesToKeep = new ReferenceDescriptionCollection(references.Count);
+                var referencesToKeep = new List<ReferenceDescription>(referenceList.Count);
 
                 // check for incomplete reference descriptions.
-                for (int ii = 0; ii < references.Count; ii++)
+                for (int ii = 0; ii < referenceList.Count; ii++)
                 {
-                    ReferenceDescription reference = references[ii];
+                    ReferenceDescription reference = referenceList[ii];
 
                     // check if filtering must be applied.
                     if (reference.Unfiltered)
@@ -1666,15 +1648,18 @@ namespace Technosoftware.UaServer
                 }
 
                 // replace list.
-                references = referencesToKeep;
+                referenceList = referencesToKeep;
 
                 // check if browse limit reached.
-                if (cp != null && references.Count >= cp.MaxResultsToReturn)
+                if (cp != null && referenceList.Count >= cp.MaxResultsToReturn)
                 {
                     if (!assignContinuationPoint)
                     {
                         cp.Dispose();
-                        return (StatusCodes.BadNoContinuationPoints, null, references);
+                        return (
+                            StatusCodes.BadNoContinuationPoints,
+                            null,
+                            referenceList.ToArrayOf());
                     }
 
                     cp.Id = Guid.NewGuid();
@@ -1684,7 +1669,7 @@ namespace Technosoftware.UaServer
             }
 
             // all is good.
-            return (ServiceResult.Good, cp, references);
+            return (ServiceResult.Good, cp, referenceList.ToArrayOf());
         }
 
         /// <summary>
@@ -1699,7 +1684,7 @@ namespace Technosoftware.UaServer
             ReferenceDescription description,
             CancellationToken cancellationToken = default)
         {
-            if (targetId == null)
+            if (targetId.IsNull)
             {
                 throw new ArgumentNullException(nameof(targetId));
             }
@@ -1751,18 +1736,13 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(DataValueCollection values, DiagnosticInfoCollection diagnosticInfos)> ReadAsync(
+        public virtual async ValueTask<(List<DataValue> values, List<DiagnosticInfo> diagnosticInfos)> ReadAsync(
             UaServerOperationContext context,
             double maxAge,
             TimestampsToReturn timestampsToReturn,
-            ReadValueIdCollection nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             CancellationToken cancellationToken = default)
         {
-            if (nodesToRead == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToRead));
-            }
-
             if (maxAge < 0)
             {
                 throw new ServiceResultException(StatusCodes.BadMaxAgeInvalid);
@@ -1774,8 +1754,8 @@ namespace Technosoftware.UaServer
             }
 
             bool diagnosticsExist = false;
-            var values = new DataValueCollection(nodesToRead.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(nodesToRead.Count);
+            var values = new List<DataValue>(nodesToRead.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(nodesToRead.Count);
 
             // create empty list of errors.
             var errors = new List<ServiceResult>(values.Count);
@@ -1794,12 +1774,12 @@ namespace Technosoftware.UaServer
 
             PrepareValidationCache(
                 nodesToRead,
-                out Dictionary<NodeId, List<object>> uniqueNodesReadAttributes);
+                out Dictionary<NodeId, Variant[]> uniqueNodesReadAttributes);
 
             for (int ii = 0; ii < nodesToRead.Count; ii++)
             {
                 // add default value to values collection
-                values.Add(null);
+                values.Add(default);
                 // add placeholder for diagnostics
                 diagnosticInfos.Add(null);
 
@@ -1848,7 +1828,7 @@ namespace Technosoftware.UaServer
                 // set an error code for nodes that were not handled by any node manager.
                 if (!nodesToRead[ii].Processed)
                 {
-                    value = values[ii] = new DataValue(
+                    value = values[ii] = DataValue.FromStatusCode(
                         StatusCodes.BadNodeIdUnknown,
                         DateTime.UtcNow);
                     errors[ii] = new ServiceResult(values[ii].StatusCode);
@@ -1857,9 +1837,14 @@ namespace Technosoftware.UaServer
                 // update the diagnostic info and ensure the status code in the data value is the same as the error code.
                 if (errors[ii] != null && errors[ii].Code != StatusCodes.Good)
                 {
-                    value ??= values[ii] = new DataValue(errors[ii].Code, DateTime.UtcNow);
+                    if (value.IsNull)
+                    {
+                        value = values[ii] = DataValue.FromStatusCode(
+                            errors[ii].Code,
+                            DateTime.UtcNow);
+                    }
 
-                    value.StatusCode = errors[ii].Code;
+                    value = values[ii] = value.WithStatus(errors[ii].Code);
 
                     if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
                     {
@@ -1875,12 +1860,12 @@ namespace Technosoftware.UaServer
                 // apply the timestamp filters.
                 if (timestampsToReturn is not TimestampsToReturn.Server and not TimestampsToReturn.Both)
                 {
-                    value.ServerTimestamp = DateTime.MinValue;
+                    value = value.WithServerTimestamp(DateTime.MinValue);
                 }
 
                 if (timestampsToReturn is not TimestampsToReturn.Source and not TimestampsToReturn.Both)
                 {
-                    value.SourceTimestamp = DateTime.MinValue;
+                    value = value.WithSourceTimestamp(DateTime.MinValue);
                 }
             }
 
@@ -1891,29 +1876,29 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(HistoryReadResultCollection values, DiagnosticInfoCollection diagnosticInfos)> HistoryReadAsync(
+        public virtual async ValueTask<(List<HistoryReadResult> values, List<DiagnosticInfo> diagnosticInfos)> HistoryReadAsync(
             UaServerOperationContext context,
             ExtensionObject historyReadDetails,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            HistoryReadValueIdCollection nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             CancellationToken cancellationToken = default)
         {
             // validate history details parameter.
-            if (ExtensionObject.IsNull(historyReadDetails))
+            if (historyReadDetails.IsNull)
             {
                 throw new ServiceResultException(StatusCodes.BadHistoryOperationInvalid);
             }
 
-            if (historyReadDetails.Body is not HistoryReadDetails details)
+            if (!historyReadDetails.TryGetValue(out HistoryReadDetails details))
             {
                 throw new ServiceResultException(StatusCodes.BadHistoryOperationInvalid);
             }
 
             // create result lists.
             bool diagnosticsExist = false;
-            var results = new HistoryReadResultCollection(nodesToRead.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(nodesToRead.Count);
+            var results = new List<HistoryReadResult>(nodesToRead.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(nodesToRead.Count);
 
             // pre-validate items.
             bool validItems = false;
@@ -2019,9 +2004,9 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos)> WriteAsync(
+        public virtual async ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> WriteAsync(
             UaServerOperationContext context,
-            WriteValueCollection nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -2029,16 +2014,11 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (nodesToWrite == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToWrite));
-            }
-
             int count = nodesToWrite.Count;
 
             bool diagnosticsExist = false;
-            var results = new StatusCodeCollection(count);
-            var diagnosticInfos = new DiagnosticInfoCollection(count);
+            var results = new List<StatusCode>(count);
+            var diagnosticInfos = new List<DiagnosticInfo>(count);
 
             // add placeholder for each result.
             bool validItems = false;
@@ -2128,10 +2108,10 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(HistoryUpdateResultCollection results, DiagnosticInfoCollection diagnosticInfos)>
+        public virtual async ValueTask<(List<HistoryUpdateResult> results, List<DiagnosticInfo> diagnosticInfos)>
             HistoryUpdateAsync(
                 UaServerOperationContext context,
-                ExtensionObjectCollection historyUpdateDetails,
+                ArrayOf<ExtensionObject> historyUpdateDetails,
                 CancellationToken cancellationToken = default)
         {
             Type detailsType = null;
@@ -2140,21 +2120,19 @@ namespace Technosoftware.UaServer
             // verify that all extension objects in the list have the same type.
             foreach (ExtensionObject details in historyUpdateDetails)
             {
-                if (detailsType == null)
+                if (!details.TryGetValue(out IEncodeable detail))
                 {
-                    detailsType = details.Body.GetType();
+                    continue;
                 }
 
-                if (!ExtensionObject.IsNull(details))
-                {
-                    nodesToUpdate.Add(details.Body as HistoryUpdateDetails);
-                }
+                detailsType ??= detail.GetType();
+                nodesToUpdate.Add(detail as HistoryUpdateDetails);
             }
 
             // create result lists.
             bool diagnosticsExist = false;
-            var results = new HistoryUpdateResultCollection(nodesToUpdate.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(nodesToUpdate.Count);
+            var results = new List<HistoryUpdateResult>(nodesToUpdate.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(nodesToUpdate.Count);
 
             // pre-validate items.
             bool validItems = false;
@@ -2263,10 +2241,10 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<(CallMethodResultCollection results, DiagnosticInfoCollection diagnosticInfos)>
+        public virtual async ValueTask<(List<CallMethodResult> results, List<DiagnosticInfo> diagnosticInfos)>
             CallAsync(
                 UaServerOperationContext context,
-                CallMethodRequestCollection methodsToCall,
+                ArrayOf<CallMethodRequest> methodsToCall,
                 CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -2274,14 +2252,9 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (methodsToCall == null)
-            {
-                throw new ArgumentNullException(nameof(methodsToCall));
-            }
-
             bool diagnosticsExist = false;
-            var results = new CallMethodResultCollection(methodsToCall.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(methodsToCall.Count);
+            var results = new List<CallMethodResult>(methodsToCall.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(methodsToCall.Count);
             var errors = new List<ServiceResult>(methodsToCall.Count);
 
             // add placeholder for each result.
@@ -2401,7 +2374,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             IList<IUaMonitoredItem> monitoredItems,
@@ -2411,11 +2384,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (itemsToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToCreate));
             }
 
             if (errors == null)
@@ -2518,7 +2486,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             IList<IUaMonitoredItem> monitoredItems,
@@ -2533,13 +2501,13 @@ namespace Technosoftware.UaServer
                 if (!itemToCreate.Processed)
                 {
                     // must make sure the filter is not null before checking its type.
-                    if (ExtensionObject.IsNull(itemToCreate.RequestedParameters.Filter))
+                    if (itemToCreate.RequestedParameters.Filter.IsNull)
                     {
                         continue;
                     }
 
                     // all event subscriptions required an event filter.
-                    if (itemToCreate.RequestedParameters.Filter.Body is not EventFilter filter)
+                    if (!itemToCreate.RequestedParameters.Filter.TryGetValue(out EventFilter filter))
                     {
                         continue;
                     }
@@ -2561,7 +2529,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // the data encoding has no meaning for event subscriptions.
-                    if (!QualifiedName.IsNull(itemToCreate.ItemToMonitor.DataEncoding))
+                    if (!itemToCreate.ItemToMonitor.DataEncoding.IsNull)
                     {
                         errors[ii] = StatusCodes.BadDataEncodingInvalid;
                         continue;
@@ -2800,7 +2768,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             CancellationToken cancellationToken = default)
@@ -2808,11 +2776,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (itemsToModify == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToModify));
             }
 
             if (monitoredItems == null)
@@ -2906,7 +2869,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             CancellationToken cancellationToken = default)
@@ -2924,7 +2887,7 @@ namespace Technosoftware.UaServer
                 itemToModify.Processed = true;
 
                 // check for a valid filter.
-                if (ExtensionObject.IsNull(itemToModify.RequestedParameters.Filter))
+                if (itemToModify.RequestedParameters.Filter.IsNull)
                 {
                     errors[ii] = StatusCodes.BadEventFilterInvalid;
                     continue;
@@ -2932,7 +2895,7 @@ namespace Technosoftware.UaServer
 
                 // all event subscriptions required an event filter.
 
-                if (itemToModify.RequestedParameters.Filter.Body is not EventFilter filter)
+                if (!itemToModify.RequestedParameters.Filter.TryGetValue(out EventFilter filter))
                 {
                     errors[ii] = StatusCodes.BadEventFilterInvalid;
                     continue;
@@ -3165,11 +3128,6 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (itemsToModify == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToModify));
-            }
-
             if (errors == null)
             {
                 throw new ArgumentNullException(nameof(errors));
@@ -3270,8 +3228,8 @@ namespace Technosoftware.UaServer
             }
 
             // check for known filter.
-            if (!ExtensionObject.IsNull(attributes.Filter) &&
-                attributes.Filter.Body is not MonitoringFilter)
+            if (!attributes.Filter.IsNull &&
+                !attributes.Filter.TryGetValue(out MonitoringFilter _))
             {
                 return new ServiceResult(StatusCodes.BadMonitoredItemFilterInvalid);
             }
@@ -3286,10 +3244,10 @@ namespace Technosoftware.UaServer
         protected static ServiceResult ValidateMonitoringFilter(ExtensionObject filter)
         {
             // check that no filter is specified for non-value attributes.
-            if (!ExtensionObject.IsNull(filter))
+            if (!filter.IsNull)
             {
                 // validate data change filter.
-                if (filter.Body is DataChangeFilter datachangeFilter)
+                if (filter.TryGetValue(out DataChangeFilter datachangeFilter))
                 {
                     ServiceResult error = datachangeFilter.Validate();
 
@@ -3352,7 +3310,7 @@ namespace Technosoftware.UaServer
             if (item.ItemToMonitor.AttributeId is not Attributes.Value and not Attributes
                 .EventNotifier)
             {
-                if (!ExtensionObject.IsNull(attributes.Filter))
+                if (!attributes.Filter.IsNull)
                 {
                     return new ServiceResult(StatusCodes.BadFilterNotAllowed);
                 }
@@ -3419,20 +3377,23 @@ namespace Technosoftware.UaServer
             }
 
             // check object id.
-            if (NodeId.IsNull(callMethodRequest.ObjectId))
+            if (callMethodRequest.ObjectId.IsNull)
             {
                 return StatusCodes.BadNodeIdInvalid;
             }
 
             // check method id.
-            if (NodeId.IsNull(callMethodRequest.MethodId))
+            if (callMethodRequest.MethodId.IsNull)
             {
                 return StatusCodes.BadMethodInvalid;
             }
 
             // Initialize input arguments to empty collection if null.
             // Methods with only output parameters (no input parameters) are valid.
-            callMethodRequest.InputArguments ??= [];
+            if (callMethodRequest.InputArguments.IsNull)
+            {
+                callMethodRequest.InputArguments = [];
+            }
 
             return StatusCodes.Good;
         }
@@ -3443,7 +3404,7 @@ namespace Technosoftware.UaServer
         protected async ValueTask<ServiceResult> ValidateReadRequestAsync(
             UaServerOperationContext operationContext,
             ReadValueId readValueId,
-            Dictionary<NodeId, List<object>> uniqueNodesReadAttributes = null,
+            Dictionary<NodeId, Variant[]> uniqueNodesReadAttributes = null,
             bool permissionsOnly = false,
             CancellationToken cancellationToken = default)
         {
@@ -3582,7 +3543,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             NodeId nodeId,
             PermissionType requestedPermision,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes = null,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributes = null,
             bool permissionsOnly = false,
             CancellationToken cancellationToken = default)
         {
@@ -3622,7 +3583,7 @@ namespace Technosoftware.UaServer
             IUaStandardAsyncNodeManager nodeManager,
             object nodeHandle,
             PermissionType requestedPermision,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes = null,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributes = null,
             bool permissionsOnly = false,
             CancellationToken cancellationToken = default)
         {
@@ -3756,30 +3717,22 @@ namespace Technosoftware.UaServer
             }
 
             // get the intersection of user role permissions and role permissions
-            RolePermissionTypeCollection userRolePermissions = null;
-            if (nodeMetadata.UserRolePermissions != null &&
-                nodeMetadata.UserRolePermissions.Count > 0)
+            ArrayOf<RolePermissionType> userRolePermissions = default;
+            if (nodeMetadata.UserRolePermissions.Count > 0)
             {
                 userRolePermissions = nodeMetadata.UserRolePermissions;
             }
-            else if (nodeMetadata.DefaultUserRolePermissions != null &&
-                nodeMetadata.DefaultUserRolePermissions.Count > 0)
+            else if (nodeMetadata.DefaultUserRolePermissions.Count > 0)
             {
                 userRolePermissions = nodeMetadata.DefaultUserRolePermissions;
             }
 
-            RolePermissionTypeCollection rolePermissions;
-            if (nodeMetadata.RolePermissions != null && nodeMetadata.RolePermissions.Count > 0)
-            {
-                rolePermissions = nodeMetadata.RolePermissions;
-            }
-            else
-            {
-                rolePermissions = nodeMetadata.DefaultRolePermissions;
-            }
+            ArrayOf<RolePermissionType> rolePermissions =
+                nodeMetadata.RolePermissions.Count > 0
+                    ? nodeMetadata.RolePermissions
+                    : nodeMetadata.DefaultRolePermissions;
 
-            if ((userRolePermissions == null || userRolePermissions.Count == 0) &&
-                (rolePermissions == null || rolePermissions.Count == 0))
+            if (userRolePermissions.Count == 0 && rolePermissions.Count == 0)
             {
                 // there is no restriction from role permissions
                 return StatusCodes.Good;
@@ -3787,7 +3740,7 @@ namespace Technosoftware.UaServer
 
             // group all permissions defined in rolePermissions by RoleId
             var roleIdPermissions = new Dictionary<NodeId, PermissionType>();
-            if (rolePermissions != null && rolePermissions.Count > 0)
+            if (rolePermissions.Count > 0)
             {
                 foreach (RolePermissionType rolePermission in rolePermissions)
                 {
@@ -3806,7 +3759,7 @@ namespace Technosoftware.UaServer
 
             // group all permissions defined in userRolePermissions by RoleId
             var roleIdPermissionsDefinedForUser = new Dictionary<NodeId, PermissionType>();
-            if (userRolePermissions != null && userRolePermissions.Count > 0)
+            if (userRolePermissions.Count > 0)
             {
                 foreach (RolePermissionType rolePermission in userRolePermissions)
                 {
@@ -3824,12 +3777,12 @@ namespace Technosoftware.UaServer
             }
 
             Dictionary<NodeId, PermissionType> commonRoleIdPermissions;
-            if (rolePermissions == null || rolePermissions.Count == 0)
+            if (rolePermissions.Count == 0)
             {
                 // there were no role permissions defined for this node only user role permissions
                 commonRoleIdPermissions = roleIdPermissionsDefinedForUser;
             }
-            else if (userRolePermissions == null || userRolePermissions.Count == 0)
+            else if (userRolePermissions.Count == 0)
             {
                 // there were no role permissions defined for this node only user role permissions
                 commonRoleIdPermissions = roleIdPermissions;
@@ -3849,8 +3802,9 @@ namespace Technosoftware.UaServer
                 }
             }
 
-            NodeIdCollection currentRoleIds = context?.UserIdentity?.GrantedRoleIds;
-            if (currentRoleIds == null || currentRoleIds.Count == 0)
+            ArrayOf<NodeId> currentRoleIds =
+                context?.UserIdentity?.GrantedRoleIds ?? default;
+            if (currentRoleIds.Count == 0)
             {
                 return ServiceResult.Create(
                     StatusCodes.BadUserAccessDenied,

@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using Opc.Ua.Bindings;
 using KeyValuePair = Opc.Ua.KeyValuePair;
 #endregion Using Directives
@@ -34,6 +35,19 @@ namespace Technosoftware.UaServer
     /// <inheritdoc/>
     public class UaStandardServer : SessionServerBase, IUaStandardServer
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UaStandardServer"/> class.
+        /// </summary>
+        /// <param name="telemetry">
+        /// The telemetry context the server and everything it creates log
+        /// through. Required by <see cref="SessionServerBase"/> since 2.0;
+        /// there is no parameterless construction any more.
+        /// </param>
+        public UaStandardServer(ITelemetryContext telemetry)
+            : base(telemetry)
+        {
+        }
+
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
@@ -47,28 +61,26 @@ namespace Technosoftware.UaServer
                 // halt any outstanding timer.
                 if (m_registrationTimer != null)
                 {
-                    Utils.SilentDispose(m_registrationTimer);
+                    m_registrationTimer?.Dispose();
                     m_registrationTimer = null;
                 }
 
                 // close the watcher.
                 if (m_configurationWatcher != null)
                 {
-                    Utils.SilentDispose(m_configurationWatcher);
+                    m_configurationWatcher?.Dispose();
                     m_configurationWatcher = null;
                 }
 
                 // close the server.
                 if (m_serverInternal != null)
                 {
-                    Utils.SilentDispose(m_serverInternal);
+                    m_serverInternal?.Dispose();
                     m_serverInternal = null;
                 }
 
-                if (CertificateValidator != null)
-                {
-                    CertificateValidator.CertificateUpdate -= OnCertificateUpdateAsync;
-                }
+                m_certificateManagerSubscription?.Dispose();
+                m_certificateManagerSubscription = null;
             }
 
             base.Dispose(disposing);
@@ -82,19 +94,20 @@ namespace Technosoftware.UaServer
         /// <param name="endpointUrl">The endpoint URL.</param>
         /// <param name="localeIds">The locale ids.</param>
         /// <param name="serverUris">The server uris.</param>
-        /// <param name="ct">The cancellation token</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="FindServersResponse"/> object
         /// </returns>
-        public override async Task<FindServersResponse> FindServersAsync(
+        public override async ValueTask<FindServersResponse> FindServersAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             string endpointUrl,
-            StringCollection localeIds,
-            StringCollection serverUris,
-            CancellationToken ct)
+            ArrayOf<string> localeIds,
+            ArrayOf<string> serverUris,
+            RequestLifetime requestLifetime)
         {
-            ApplicationDescriptionCollection servers = [];
+            CancellationToken ct = requestLifetime.CancellationToken;
+            List<ApplicationDescription> servers = [];
 
             ValidateRequest(requestHeader);
 
@@ -114,7 +127,6 @@ namespace Technosoftware.UaServer
                 // check if nothing to do.
                 if (baseAddresses.Count == 0)
                 {
-                    servers = [];
                     return new FindServersResponse
                     {
                         ResponseHeader = CreateResponse(requestHeader, StatusCodes.Good),
@@ -136,9 +148,8 @@ namespace Technosoftware.UaServer
                     }
 
                     // check client is filtering by server uri.
-                    if (serverUris != null &&
-                        serverUris.Count > 0 &&
-                        !serverUris.Contains(server.ApplicationUri))
+                    if (serverUris.Count > 0 &&
+                        !serverUris.Contains(uri => uri == server.ApplicationUri))
                     {
                         continue;
                     }
@@ -146,7 +157,7 @@ namespace Technosoftware.UaServer
                     // localize the application name if requested.
                     LocalizedText applicationName = server.ApplicationName;
 
-                    if (localeIds != null && localeIds.Count > 0)
+                    if (localeIds.Count > 0)
                     {
                         applicationName = m_serverInternal.ResourceManager
                             .Translate(localeIds, applicationName);
@@ -185,19 +196,20 @@ namespace Technosoftware.UaServer
         /// <param name="endpointUrl">The endpoint URL.</param>
         /// <param name="localeIds">The locale ids.</param>
         /// <param name="profileUris">The profile uris.</param>
-        /// <param name="ct">The cancellation token</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="GetEndpointsResponse"/> object
         /// </returns>
-        public override async Task<GetEndpointsResponse> GetEndpointsAsync(
+        public override async ValueTask<GetEndpointsResponse> GetEndpointsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             string endpointUrl,
-            StringCollection localeIds,
-            StringCollection profileUris,
-            CancellationToken ct)
+            ArrayOf<string> localeIds,
+            ArrayOf<string> profileUris,
+            RequestLifetime requestLifetime)
         {
-            EndpointDescriptionCollection endpoints = null;
+            CancellationToken ct = requestLifetime.CancellationToken;
+            ArrayOf<EndpointDescription> endpoints = default;
 
             ValidateRequest(requestHeader);
 
@@ -225,12 +237,12 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Returns the endpoints that match the base address and endpoint url.
         /// </summary>
-        protected EndpointDescriptionCollection GetEndpointDescriptions(
+        protected ArrayOf<EndpointDescription> GetEndpointDescriptions(
             string endpointUrl,
             IList<BaseAddress> baseAddresses,
-            StringCollection localeIds)
+            ArrayOf<string> localeIds)
         {
-            EndpointDescriptionCollection endpoints = null;
+            ArrayOf<EndpointDescription> endpoints = default;
 
             // parse the url provided by the client.
             Uri parsedEndpointUrl = Utils.ParseUri(endpointUrl);
@@ -246,7 +258,7 @@ namespace Technosoftware.UaServer
                 // localize the application name if requested.
                 LocalizedText applicationName = ServerDescription.ApplicationName;
 
-                if (localeIds != null && localeIds.Count > 0)
+                if (localeIds.Count > 0)
                 {
                     applicationName = m_serverInternal.ResourceManager
                         .Translate(localeIds, applicationName);
@@ -276,7 +288,7 @@ namespace Technosoftware.UaServer
             string globalChannelId,
             EndpointDescription endpointDescription,
             OpenSecureChannelRequest request,
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             Exception exception)
         {
             ServerInternal?.ReportAuditOpenSecureChannelEvent(
@@ -298,7 +310,7 @@ namespace Technosoftware.UaServer
 
         /// <inheritdoc/>
         public override void ReportAuditCertificateEvent(
-            X509Certificate2 clientCertificate,
+            Certificate clientCertificate,
             Exception exception)
         {
             ServerInternal?.ReportAuditCertificateEvent(clientCertificate, exception, m_logger);
@@ -318,29 +330,30 @@ namespace Technosoftware.UaServer
         /// <param name="clientCertificate">The client certificate.</param>
         /// <param name="requestedSessionTimeout">The requested session timeout.</param>
         /// <param name="maxResponseMessageSize">Size of the max response message.</param>
-        /// <param name="ct">The cancellation token</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="CreateSessionResponse"/> object
         /// </returns>
-        public override async Task<CreateSessionResponse> CreateSessionAsync(
+        public override async ValueTask<CreateSessionResponse> CreateSessionAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             ApplicationDescription clientDescription,
             string serverUri,
             string endpointUrl,
             string sessionName,
-            byte[] clientNonce,
-            byte[] clientCertificate,
+            ByteString clientNonce,
+            ByteString clientCertificate,
             double requestedSessionTimeout,
             uint maxResponseMessageSize,
-            CancellationToken ct)
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             NodeId sessionId;
             NodeId authenticationToken;
             double revisedSessionTimeout = 0;
-            byte[] serverNonce;
-            byte[] serverCertificate = null;
-            EndpointDescriptionCollection serverEndpoints = null;
+            ByteString serverNonce;
+            ByteString serverCertificate = default;
+            ArrayOf<EndpointDescription> serverEndpoints = default;
             SignatureData serverSignature = null;
             uint maxRequestMessageSize = (uint)MessageContext.MaxMessageSize;
 
@@ -357,21 +370,21 @@ namespace Technosoftware.UaServer
                 bool requireEncryption = RequireEncryption(
                     context?.ChannelContext?.EndpointDescription);
 
-                if (!requireEncryption && clientCertificate != null)
+                if (!requireEncryption && !clientCertificate.IsNull)
                 {
                     requireEncryption = true;
                 }
 
-                X509Certificate2Collection clientIssuerCertificates = null;
+                CertificateCollection clientIssuerCertificates = null;
 
                 // validate client application instance certificate.
-                X509Certificate2 parsedClientCertificate = null;
+                Certificate parsedClientCertificate = null;
 
-                if (requireEncryption && clientCertificate != null && clientCertificate.Length > 0)
+                if (requireEncryption && !clientCertificate.IsNull && clientCertificate.Length > 0)
                 {
                     try
                     {
-                        X509Certificate2Collection clientCertificateChain
+                        CertificateCollection clientCertificateChain
                             = Utils.ParseCertificateChainBlob(
                                 clientCertificate,
                                 m_serverInternal.Telemetry);
@@ -389,7 +402,10 @@ namespace Technosoftware.UaServer
                         if (context.SecurityPolicyUri != SecurityPolicies.None)
                         {
                             // verify if applicationUri from ApplicationDescription matches the applicationUris in the client certificate.
-                            if (!string.IsNullOrEmpty(clientDescription.ApplicationUri))
+                            // A client may create a session without an
+                            // ApplicationDescription, so the URI check is only
+                            // reached when one was supplied.
+                            if (!string.IsNullOrEmpty(clientDescription?.ApplicationUri))
                             {
                                 if (!X509Utils.CompareApplicationUriWithCertificate(parsedClientCertificate, clientDescription.ApplicationUri))
                                 {
@@ -407,7 +423,20 @@ namespace Technosoftware.UaServer
                                         clientDescription.ApplicationUri);
                                 }
 
-                                await CertificateValidator.ValidateAsync(clientCertificateChain, ct).ConfigureAwait(false);
+                                Opc.Ua.CertificateValidationResult clientCertificateResult =
+                                    await CertificateManager
+                                        .ValidateAsync(
+                                            clientCertificateChain,
+                                            TrustListIdentifier.Peers,
+                                            options: null,
+                                            ct: ct)
+                                        .ConfigureAwait(false);
+
+                                if (!clientCertificateResult.IsValid)
+                                {
+                                    throw new ServiceResultException(
+                                        clientCertificateResult.StatusCode);
+                                }
                             }
                         }
                     }
@@ -421,24 +450,31 @@ namespace Technosoftware.UaServer
                 }
 
                 // verify the nonce provided by the client.
-                if (clientNonce != null)
+                if (context.SecurityPolicyUri != SecurityPolicies.None)
                 {
-                    if (clientNonce.Length < m_minNonceLength)
+                    if (clientNonce.Length < m_minNonceLength || clientNonce.Length > 128)
                     {
                         throw new ServiceResultException(StatusCodes.BadNonceInvalid);
                     }
-
-                    // ignore nonce if security policy set to none
-                    if (context.SecurityPolicyUri == SecurityPolicies.None)
-                    {
-                        clientNonce = null;
-                    }
+                }
+                else if (clientNonce.Length > 128)
+                {
+                    // A nonce sent on a None channel is kept: the None channel
+                    // variant of an enhanced user token signature
+                    // (ServerNonce | Hash(ServerCertificate) | ClientNonce)
+                    // covers the nonce the client sent. Part 4 5.7.2.3 (Table 16)
+                    // requires Bad_NonceInvalid for a nonce longer than 128 bytes
+                    // on every channel. An empty or short nonce stays accepted on
+                    // a None channel, where nothing else requires one.
+                    throw new ServiceResultException(StatusCodes.BadNonceInvalid);
                 }
 
-                // load the certificate for the security profile
-                X509Certificate2 instanceCertificate = InstanceCertificateTypesProvider
-                    .GetInstanceCertificate(
-                        context.SecurityPolicyUri);
+                // load the certificate for the security profile. The session takes
+                // its own ref-counted handle on it, so the entry acquired here is
+                // released when this scope exits.
+                using CertificateEntry instanceEntry = CertificateManager
+                    .AcquireApplicationCertificateBySecurityPolicy(context.SecurityPolicyUri);
+                Certificate instanceCertificate = instanceEntry?.Certificate;
 
                 // create the session.
                 CreateSessionResult result = await ServerInternal.SessionManager.CreateSessionAsync(
@@ -471,10 +507,10 @@ namespace Technosoftware.UaServer
                             EndpointUrl = new Uri(endpointUrl)
                         };
 
-                        CertificateValidator.ValidateDomains(
+                        CertificateManager.ValidateDomains(
                             instanceCertificate,
                             configuredEndpoint,
-                            true);
+                            serverValidation: true);
                     }
                     catch (ServiceResultException sre)
                         when (sre.StatusCode == StatusCodes.BadCertificateHostNameInvalid)
@@ -507,31 +543,44 @@ namespace Technosoftware.UaServer
                     if (requireEncryption)
                     {
                         // check if complete chain should be sent.
-                        if (InstanceCertificateTypesProvider.SendCertificateChain)
+                        if (CertificateManager.SendCertificateChain)
                         {
-                            serverCertificate = InstanceCertificateTypesProvider
-                                .LoadCertificateChainRaw(
-                                    instanceCertificate);
+                            serverCertificate = instanceEntry.GetEncodedChainBlob().ToByteString();
                         }
                         else
                         {
-                            serverCertificate = instanceCertificate.RawData;
+                            serverCertificate = instanceCertificate.RawData.ToByteString();
                         }
                     }
 
                     // return the endpoints supported by the server.
-                    serverEndpoints = GetEndpointDescriptions(endpointUrl, BaseAddresses, null);
+                    serverEndpoints = GetEndpointDescriptions(endpointUrl, BaseAddresses, default);
 
                     // sign the nonce provided by the client.
                     serverSignature = null;
 
                     //  sign the client nonce (if provided).
-                    if (parsedClientCertificate != null && clientNonce != null)
+                    if (parsedClientCertificate != null && !clientNonce.IsEmpty)
                     {
-                        byte[] dataToSign = Utils.Append(parsedClientCertificate.RawData, clientNonce);
-                        serverSignature = SecurityPolicies.Sign(
-                            instanceCertificate,
+                        // 2.0 builds the data to sign through the security
+                        // policy, which lets a policy mix in the channel
+                        // thumbprint and the channel certificates.
+                        ISecurityPolicyRegistry policies = SecurityPolicies.Default;
+                        SecurityPolicyInfo securityPolicy =
+                            policies.GetInfo(context.SecurityPolicyUri)!;
+                        SecureChannelContext channelContext = context.ChannelContext;
+
+                        byte[] dataToSign = securityPolicy.GetServerSignatureData(
+                            channelContext.ChannelThumbprint.ToArrayOrNull(),
+                            clientNonce.ToArray(),
+                            channelContext.ServerChannelCertificate.ToArrayOrNull(),
+                            parsedClientCertificate.RawData,
+                            channelContext.ClientChannelCertificate.ToArrayOrNull(),
+                            serverNonce.ToArray());
+
+                        serverSignature = policies.CreateSignatureData(
                             context.SecurityPolicyUri,
+                            instanceCertificate,
                             dataToSign);
                     }
                 }
@@ -622,43 +671,48 @@ namespace Technosoftware.UaServer
             IUaSession session,
             AdditionalParametersType parameters)
         {
-            AdditionalParametersType response = null;
-
-            if (parameters != null && parameters.Parameters != null)
+            if (parameters?.Parameters == null)
             {
-                response = new AdditionalParametersType();
-
-                foreach (KeyValuePair ii in parameters.Parameters)
-                {
-                    if (ii.Key == "ECDHPolicyUri")
-                    {
-                        string policyUri = ii.Value.ToString();
-
-                        if (EccUtils.IsEccPolicy(policyUri))
-                        {
-                            session.SetEccUserTokenSecurityPolicy(policyUri);
-                            EphemeralKeyType key = session.GetNewEccKey();
-                            response.Parameters.Add(
-                                new KeyValuePair
-                                {
-                                    Key = "ECDHKey",
-                                    Value = new ExtensionObject(key)
-                                });
-                        }
-                        else
-                        {
-                            response.Parameters.Add(
-                                new KeyValuePair
-                                {
-                                    Key = "ECDHKey",
-                                    Value = StatusCodes.BadSecurityPolicyRejected
-                                });
-                        }
-                    }
-                }
+                return null;
             }
 
-            return response;
+            var responseParameters = new List<KeyValuePair>();
+
+            foreach (KeyValuePair ii in parameters.Parameters)
+            {
+                if (ii.Key != AdditionalParameterNames.ECDHPolicyUri ||
+                    !ii.Value.TryGetValue(out string policyUri))
+                {
+                    responseParameters.Add(ii);
+                    continue;
+                }
+
+                // 2.0 added policies that derive an ephemeral key without being
+                // ECC policies - the RSA_DH ones - so the policy's own
+                // ephemeral key algorithm decides, not whether it is ECC.
+                SecurityPolicyInfo securityPolicy = SecurityPolicies.Default.GetInfo(policyUri);
+
+                if (securityPolicy != null &&
+                    securityPolicy.EphemeralKeyAlgorithm != CertificateKeyAlgorithm.None)
+                {
+                    session.SetEccUserTokenSecurityPolicy(policyUri);
+                    EphemeralKeyType key = session.GetNewEccKey();
+                    responseParameters.Add(new KeyValuePair
+                    {
+                        Key = new QualifiedName(AdditionalParameterNames.ECDHKey),
+                        Value = new ExtensionObject(key)
+                    });
+                    continue;
+                }
+
+                responseParameters.Add(new KeyValuePair
+                {
+                    Key = new QualifiedName(AdditionalParameterNames.ECDHKey),
+                    Value = StatusCodes.BadSecurityPolicyRejected
+                });
+            }
+
+            return new AdditionalParametersType { Parameters = responseParameters };
         }
 
         /// <summary>
@@ -678,8 +732,7 @@ namespace Technosoftware.UaServer
             if (key != null)
             {
                 response = new AdditionalParametersType();
-                response.Parameters
-                    .Add(new KeyValuePair { Key = "ECDHKey", Value = new ExtensionObject(key) });
+                response.Parameters += new KeyValuePair { Key = new QualifiedName("ECDHKey"), Value = new ExtensionObject(key) };
             }
 
             return response;
@@ -695,23 +748,24 @@ namespace Technosoftware.UaServer
         /// <param name="localeIds">The locale ids.</param>
         /// <param name="userIdentityToken">The user identity token.</param>
         /// <param name="userTokenSignature">The user token signature.</param>
-        /// <param name="ct">The cancellationToken</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="ActivateSessionResponse"/> object
         /// </returns>
-        public override async Task<ActivateSessionResponse> ActivateSessionAsync(
+        public override async ValueTask<ActivateSessionResponse> ActivateSessionAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             SignatureData clientSignature,
-            SignedSoftwareCertificateCollection clientSoftwareCertificates,
-            StringCollection localeIds,
+            ArrayOf<SignedSoftwareCertificate> clientSoftwareCertificates,
+            ArrayOf<string> localeIds,
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
-            CancellationToken ct)
+            RequestLifetime requestLifetime)
         {
-            byte[] serverNonce;
-            StatusCodeCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
+            CancellationToken ct = requestLifetime.CancellationToken;
+            ByteString serverNonce;
+            List<StatusCode> results = null;
+            List<DiagnosticInfo> diagnosticInfos = null;
 
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.ActivateSession);
 
@@ -871,13 +925,14 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="deleteSubscriptions">if set to <c>true</c> subscriptions are deleted.</param>
-        /// <param name="ct">The cancellation token.</param>
-        public override async Task<CloseSessionResponse> CloseSessionAsync(
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
+        public override async ValueTask<CloseSessionResponse> CloseSessionAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             bool deleteSubscriptions,
-            CancellationToken ct)
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.CloseSession);
             try
             {
@@ -923,17 +978,20 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="requestHandle">The request handle assigned to the request.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="CancelResponse"/> object
         /// </returns>
-        public override Task<CancelResponse> CancelAsync(
+        public override ValueTask<CancelResponse> CancelAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint requestHandle,
-            CancellationToken ct)
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Cancel);
+
+            CancelResponse response;
 
             try
             {
@@ -942,11 +1000,11 @@ namespace Technosoftware.UaServer
                     requestHandle,
                     out uint cancelCount);
 
-                return Task.FromResult(new CancelResponse
+                response = new CancelResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable),
                     CancelCount = cancelCount
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -966,26 +1024,29 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
         /// Invokes the Browse service using async Task based request.
         /// </summary>
-        public override async Task<BrowseResponse> BrowseAsync(
+        public override async ValueTask<BrowseResponse> BrowseAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             ViewDescription view,
             uint requestedMaxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
-            CancellationToken ct)
+            ArrayOf<BrowseDescription> nodesToBrowse,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Browse);
 
             try
             {
                 ValidateOperationLimits(nodesToBrowse, OperationLimits.MaxNodesPerBrowse);
 
-                (BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.BrowseAsync(
                         context,
                         view,
@@ -1024,20 +1085,21 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Invokes the BrowseNext service using async Task based request.
         /// </summary>
-        public override async Task<BrowseNextResponse> BrowseNextAsync(
+        public override async ValueTask<BrowseNextResponse> BrowseNextAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             bool releaseContinuationPoints,
-            ByteStringCollection continuationPoints,
-            CancellationToken ct)
+            ArrayOf<ByteString> continuationPoints,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.BrowseNext);
 
             try
             {
                 ValidateOperationLimits(continuationPoints, OperationLimits.MaxNodesPerBrowse);
 
-                (BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.BrowseNextAsync(
                         context,
                         releaseContinuationPoints,
@@ -1078,30 +1140,33 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="nodesToRegister">The list of NodeIds to register.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="RegisterNodesResponse"/> object
         /// </returns>
-        public override Task<RegisterNodesResponse> RegisterNodesAsync(
+        public override ValueTask<RegisterNodesResponse> RegisterNodesAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
-            NodeIdCollection nodesToRegister,
-            CancellationToken ct)
+            ArrayOf<NodeId> nodesToRegister,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.RegisterNodes);
+
+            RegisterNodesResponse response;
 
             try
             {
                 ValidateOperationLimits(nodesToRegister, OperationLimits.MaxNodesPerRegisterNodes);
 
                 m_serverInternal.NodeManager
-                    .RegisterNodes(context, nodesToRegister, out NodeIdCollection registeredNodeIds);
+                    .RegisterNodes(context, nodesToRegister, out ArrayOf<NodeId> registeredNodeIds);
 
-                return Task.FromResult(new RegisterNodesResponse
+                response = new RegisterNodesResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable),
                     RegisteredNodeIds = registeredNodeIds
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1121,6 +1186,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1129,17 +1196,20 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="nodesToUnregister">The list of NodeIds to unregister</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="UnregisterNodesResponse"/> object
         /// </returns>
-        public override Task<UnregisterNodesResponse> UnregisterNodesAsync(
+        public override ValueTask<UnregisterNodesResponse> UnregisterNodesAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
-            NodeIdCollection nodesToUnregister,
-            CancellationToken ct)
+            ArrayOf<NodeId> nodesToUnregister,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.UnregisterNodes);
+
+            UnregisterNodesResponse response;
 
             try
             {
@@ -1149,10 +1219,10 @@ namespace Technosoftware.UaServer
 
                 m_serverInternal.NodeManager.UnregisterNodes(context, nodesToUnregister);
 
-                return Task.FromResult(new UnregisterNodesResponse
+                response = new UnregisterNodesResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1172,17 +1242,20 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
         /// Invokes the TranslateBrowsePathsToNodeIds service using async Task based request.
         /// </summary>
-        public override async Task<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
+        public override async ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
-            BrowsePathCollection browsePaths,
-            CancellationToken ct)
+            ArrayOf<BrowsePath> browsePaths,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
@@ -1201,7 +1274,7 @@ namespace Technosoftware.UaServer
                         OperationLimits.MaxNodesPerTranslateBrowsePathsToNodeIds);
                 }
 
-                (BrowsePathResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<BrowsePathResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.TranslateBrowsePathsToNodeIdsAsync(
                         context,
                         browsePaths,
@@ -1238,21 +1311,22 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Invokes the Read service using async Task based request.
         /// </summary>
-        public override async Task<ReadResponse> ReadAsync(
+        public override async ValueTask<ReadResponse> ReadAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             double maxAge,
             TimestampsToReturn timestampsToReturn,
-            ReadValueIdCollection nodesToRead,
-            CancellationToken ct)
+            ArrayOf<ReadValueId> nodesToRead,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Read);
 
             try
             {
                 ValidateOperationLimits(nodesToRead, OperationLimits.MaxNodesPerRead);
 
-                (DataValueCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<DataValue> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.ReadAsync(
                         context,
                         maxAge,
@@ -1292,20 +1366,21 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Invokes the HistoryRead service using async Task based request.
         /// </summary>
-        public override async Task<HistoryReadResponse> HistoryReadAsync(
+        public override async ValueTask<HistoryReadResponse> HistoryReadAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             ExtensionObject historyReadDetails,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            HistoryReadValueIdCollection nodesToRead,
-            CancellationToken ct)
+            ArrayOf<HistoryReadValueId> nodesToRead,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.HistoryRead);
 
             try
             {
-                if (historyReadDetails?.Body is ReadEventDetails)
+                if (historyReadDetails.TryGetValue(out ReadEventDetails _))
                 {
                     ValidateOperationLimits(
                         nodesToRead,
@@ -1318,7 +1393,7 @@ namespace Technosoftware.UaServer
                         OperationLimits.MaxNodesPerHistoryReadData);
                 }
 
-                (HistoryReadResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<HistoryReadResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.HistoryReadAsync(
                         context,
                         historyReadDetails,
@@ -1360,19 +1435,20 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Invokes the Write service using async Task based request.
         /// </summary>
-        public override async Task<WriteResponse> WriteAsync(
+        public override async ValueTask<WriteResponse> WriteAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
-            WriteValueCollection nodesToWrite,
-            CancellationToken ct)
+            ArrayOf<WriteValue> nodesToWrite,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Write);
 
             try
             {
                 ValidateOperationLimits(nodesToWrite, OperationLimits.MaxNodesPerWrite);
 
-                (StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager
                         .WriteAsync(context, nodesToWrite, ct)
                         .ConfigureAwait(false);
@@ -1407,12 +1483,13 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Invokes the HistoryUpdate service using async Task based request.
         /// </summary>
-        public override async Task<HistoryUpdateResponse> HistoryUpdateAsync(
+        public override async ValueTask<HistoryUpdateResponse> HistoryUpdateAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
-            ExtensionObjectCollection historyUpdateDetails,
-            CancellationToken ct)
+            ArrayOf<ExtensionObject> historyUpdateDetails,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.HistoryUpdate);
 
             try
@@ -1422,7 +1499,7 @@ namespace Technosoftware.UaServer
                 // must be checked in NodeManager (TODO)
                 ValidateOperationLimits(historyUpdateDetails);
 
-                (HistoryUpdateResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<HistoryUpdateResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.HistoryUpdateAsync(context, historyUpdateDetails, ct).ConfigureAwait(false);
 
                 return new HistoryUpdateResponse
@@ -1463,11 +1540,11 @@ namespace Technosoftware.UaServer
         /// <param name="maxNotificationsPerPublish">The maximum number of notifications that the Client wishes to receive in a single Publish response.</param>
         /// <param name="publishingEnabled">If set to <c>true</c> publishing is enabled for the Subscription.</param>
         /// <param name="priority">The relative priority of the Subscription.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="CreateSubscriptionResponse"/> object
         /// </returns>
-        public override async Task<CreateSubscriptionResponse> CreateSubscriptionAsync(
+        public override async ValueTask<CreateSubscriptionResponse> CreateSubscriptionAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             double requestedPublishingInterval,
@@ -1476,8 +1553,9 @@ namespace Technosoftware.UaServer
             uint maxNotificationsPerPublish,
             bool publishingEnabled,
             byte priority,
-            CancellationToken ct)
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
@@ -1526,14 +1604,15 @@ namespace Technosoftware.UaServer
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionIds">The list of Subscriptions to transfer.</param>
         /// <param name="sendInitialValues">If the initial values should be sent.</param>
-        /// <param name="ct">The cancellation token.</param>
-        public override async Task<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
+        public override async ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool sendInitialValues,
-            CancellationToken ct)
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
@@ -1579,16 +1658,17 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionIds">The list of Subscriptions to delete.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="DeleteSubscriptionsResponse"/> object
         /// </returns>
-        public override async Task<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
+        public override async ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
-            CancellationToken ct)
+            ArrayOf<uint> subscriptionIds,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
@@ -1633,16 +1713,17 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionAcknowledgements">The list of acknowledgements for one or more Subscriptions.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="PublishResponse"/>
         /// </returns>
-        public override async Task<PublishResponse> PublishAsync(
+        public override async ValueTask<PublishResponse> PublishAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
-            CancellationToken ct)
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Publish);
 
             try
@@ -1711,18 +1792,21 @@ namespace Technosoftware.UaServer
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionId">The subscription id.</param>
         /// <param name="retransmitSequenceNumber">The sequence number of a specific NotificationMessage to be republished.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="RepublishResponse"/> object
         /// </returns>
-        public override Task<RepublishResponse> RepublishAsync(
+        public override ValueTask<RepublishResponse> RepublishAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
             uint retransmitSequenceNumber,
-            CancellationToken ct)
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Republish);
+
+            RepublishResponse response;
 
             try
             {
@@ -1731,11 +1815,11 @@ namespace Technosoftware.UaServer
                     subscriptionId,
                     retransmitSequenceNumber);
 
-                return Task.FromResult(new RepublishResponse
+                response = new RepublishResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable),
                     NotificationMessage = notificationMessage
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1755,6 +1839,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1768,11 +1854,11 @@ namespace Technosoftware.UaServer
         /// <param name="requestedMaxKeepAliveCount">The requested max keep alive count.</param>
         /// <param name="maxNotificationsPerPublish">The maximum number of notifications that the Client wishes to receive in a single Publish response.</param>
         /// <param name="priority">The relative priority of the Subscription.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="ModifySubscriptionResponse"/> object
         /// </returns>
-        public override Task<ModifySubscriptionResponse> ModifySubscriptionAsync(
+        public override ValueTask<ModifySubscriptionResponse> ModifySubscriptionAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
@@ -1781,12 +1867,15 @@ namespace Technosoftware.UaServer
             uint requestedMaxKeepAliveCount,
             uint maxNotificationsPerPublish,
             byte priority,
-            CancellationToken ct)
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
                 RequestType.ModifySubscription);
+
+            ModifySubscriptionResponse response;
 
             try
             {
@@ -1802,13 +1891,13 @@ namespace Technosoftware.UaServer
                     out uint revisedLifetimeCount,
                     out uint revisedMaxKeepAliveCount);
 
-                return Task.FromResult(new ModifySubscriptionResponse
+                response = new ModifySubscriptionResponse
                 {
                     RevisedPublishingInterval = revisedPublishingInterval,
                     RevisedLifetimeCount = revisedLifetimeCount,
                     RevisedMaxKeepAliveCount = revisedMaxKeepAliveCount,
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1828,6 +1917,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1837,21 +1928,24 @@ namespace Technosoftware.UaServer
         /// <param name="requestHeader">The request header.</param>
         /// <param name="publishingEnabled">If set to <c>true</c> publishing of NotificationMessages is enabled for the Subscription.</param>
         /// <param name="subscriptionIds">The list of subscription ids.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="SetPublishingModeResponse"/> object
         /// </returns>
-        public override Task<SetPublishingModeResponse> SetPublishingModeAsync(
+        public override ValueTask<SetPublishingModeResponse> SetPublishingModeAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             bool publishingEnabled,
-            UInt32Collection subscriptionIds,
-            CancellationToken ct)
+            ArrayOf<uint> subscriptionIds,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
                 RequestType.SetPublishingMode);
+
+            SetPublishingModeResponse response;
 
             try
             {
@@ -1861,15 +1955,15 @@ namespace Technosoftware.UaServer
                     context,
                     publishingEnabled,
                     subscriptionIds,
-                    out StatusCodeCollection results,
-                    out DiagnosticInfoCollection diagnosticInfos);
+                    out List<StatusCode> results,
+                    out List<DiagnosticInfo> diagnosticInfos);
 
-                return Task.FromResult(new SetPublishingModeResponse
+                response = new SetPublishingModeResponse
                 {
                     Results = results,
                     DiagnosticInfos = diagnosticInfos,
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1889,6 +1983,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1900,32 +1996,32 @@ namespace Technosoftware.UaServer
         /// <param name="triggeringItemId">The id for the MonitoredItem used as the triggering item.</param>
         /// <param name="linksToAdd">The list of ids of the items to report that are to be added as triggering links.</param>
         /// <param name="linksToRemove">The list of ids of the items to report for the triggering links to be deleted.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="SetTriggeringResponse"/> object
         /// </returns>
-        public override Task<SetTriggeringResponse> SetTriggeringAsync(
+        public override ValueTask<SetTriggeringResponse> SetTriggeringAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
             uint triggeringItemId,
-            UInt32Collection linksToAdd,
-            UInt32Collection linksToRemove,
-            CancellationToken ct)
+            ArrayOf<uint> linksToAdd,
+            ArrayOf<uint> linksToRemove,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.SetTriggering);
+
+            SetTriggeringResponse response;
 
             try
             {
-                if ((linksToAdd == null || linksToAdd.Count == 0) &&
-                    (linksToRemove == null || linksToRemove.Count == 0))
+                if (linksToAdd.IsEmpty && linksToRemove.IsEmpty)
                 {
                     throw new ServiceResultException(StatusCodes.BadNothingToDo);
                 }
 
-                int monitoredItemsCount = 0;
-                monitoredItemsCount += (linksToAdd?.Count) ?? 0;
-                monitoredItemsCount += (linksToRemove?.Count) ?? 0;
+                int monitoredItemsCount = linksToAdd.Count + linksToRemove.Count;
                 ValidateOperationLimits(
                     monitoredItemsCount,
                     OperationLimits.MaxMonitoredItemsPerCall);
@@ -1936,19 +2032,19 @@ namespace Technosoftware.UaServer
                     triggeringItemId,
                     linksToAdd,
                     linksToRemove,
-                    out StatusCodeCollection addResults,
-                    out DiagnosticInfoCollection addDiagnosticInfos,
-                    out StatusCodeCollection removeResults,
-                    out DiagnosticInfoCollection removeDiagnosticInfos);
+                    out List<StatusCode> addResults,
+                    out List<DiagnosticInfo> addDiagnosticInfos,
+                    out List<StatusCode> removeResults,
+                    out List<DiagnosticInfo> removeDiagnosticInfos);
 
-                return Task.FromResult(new SetTriggeringResponse
+                response = new SetTriggeringResponse
                 {
                     AddResults = addResults,
                     AddDiagnosticInfos = addDiagnosticInfos,
                     RemoveResults = removeResults,
                     RemoveDiagnosticInfos = removeDiagnosticInfos,
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1968,6 +2064,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1978,18 +2076,19 @@ namespace Technosoftware.UaServer
         /// <param name="subscriptionId">The subscription id that will report notifications.</param>
         /// <param name="timestampsToReturn">The type of timestamps to be returned for the MonitoredItems.</param>
         /// <param name="itemsToCreate">The list of MonitoredItems to be created and assigned to the specified subscription</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="CreateMonitoredItemsResponse"/> object
         /// </returns>
-        public override async Task<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
+        public override async ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
-            CancellationToken ct)
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
@@ -2038,18 +2137,19 @@ namespace Technosoftware.UaServer
         /// <param name="subscriptionId">The subscription id.</param>
         /// <param name="timestampsToReturn">The type of timestamps to be returned for the MonitoredItems.</param>
         /// <param name="itemsToModify">The list of MonitoredItems to modify.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="ModifyMonitoredItemsResponse"/> object
         /// </returns>
-        public override async Task<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
+        public override async ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
-            CancellationToken ct)
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
@@ -2097,17 +2197,18 @@ namespace Technosoftware.UaServer
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionId">The subscription id.</param>
         /// <param name="monitoredItemIds">The list of MonitoredItems to delete.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="DeleteMonitoredItemsResponse"/> object
         /// </returns>
-        public override async Task<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
+        public override async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
-            UInt32Collection monitoredItemIds,
-            CancellationToken ct)
+            ArrayOf<uint> monitoredItemIds,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
@@ -2155,18 +2256,19 @@ namespace Technosoftware.UaServer
         /// <param name="subscriptionId">The subscription id.</param>
         /// <param name="monitoringMode">The monitoring mode to be set for the MonitoredItems.</param>
         /// <param name="monitoredItemIds">The list of MonitoredItems to modify.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="SetMonitoringModeResponse"/>
         /// </returns>
-        public override async Task<SetMonitoringModeResponse> SetMonitoringModeAsync(
+        public override async ValueTask<SetMonitoringModeResponse> SetMonitoringModeAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
-            CancellationToken ct)
+            ArrayOf<uint> monitoredItemIds,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(
                 secureChannelContext,
                 requestHeader,
@@ -2176,7 +2278,7 @@ namespace Technosoftware.UaServer
             {
                 ValidateOperationLimits(monitoredItemIds, OperationLimits.MaxMonitoredItemsPerCall);
 
-                (StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos) =
                     await ServerInternal.SubscriptionManager.SetMonitoringModeAsync(
                     context,
                     subscriptionId,
@@ -2218,23 +2320,24 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="methodsToCall">The methods to call.</param>
-        /// <param name="ct">The cancellation token</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="ResponseHeader"/> object
         /// </returns>
-        public override async Task<CallResponse> CallAsync(
+        public override async ValueTask<CallResponse> CallAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
-            CallMethodRequestCollection methodsToCall,
-            CancellationToken ct)
+            ArrayOf<CallMethodRequest> methodsToCall,
+            RequestLifetime requestLifetime)
         {
+            CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Call);
 
             try
             {
                 ValidateOperationLimits(methodsToCall, OperationLimits.MaxNodesPerMethodCall);
 
-                (CallMethodResultCollection results, DiagnosticInfoCollection diagnosticInfos) =
+                (List<CallMethodResult> results, List<DiagnosticInfo> diagnosticInfos) =
                     await m_serverInternal.NodeManager.CallAsync(context, methodsToCall, ct)
                         .ConfigureAwait(false);
 
@@ -2294,11 +2397,14 @@ namespace Technosoftware.UaServer
         {
             var configuration = new ApplicationConfiguration(Configuration)
             {
-                // use a dedicated certificate validator with the registration, but derive behavior from server config
-                CertificateValidator = new CertificateValidator(MessageContext.Telemetry)
+                // use a dedicated certificate manager for the registration, but derive
+                // behaviour from the server configuration
+                CertificateManager = CertificateManagerFactory.Create(
+                    Configuration.SecurityConfiguration,
+                    MessageContext.Telemetry)
             };
             await configuration
-                .CertificateValidator.UpdateAsync(
+                .CertificateManager.UpdateAsync(
                     configuration.SecurityConfiguration,
                     configuration.ApplicationUri,
                     ct)
@@ -2339,16 +2445,18 @@ namespace Technosoftware.UaServer
                                 Timestamp = DateTime.UtcNow
                             };
 
-                            // create the client.
-                            X509Certificate2 instanceCertificate =
-                                InstanceCertificateTypesProvider.GetInstanceCertificate(
+                            // create the client. Ownership of the AddRef'd handle
+                            // transfers to the registration channel, which disposes
+                            // it when the channel closes.
+                            using CertificateEntry registrationEntry = CertificateManager
+                                .AcquireApplicationCertificateBySecurityPolicy(
                                     endpoint.Description?.SecurityPolicyUri ??
                                     SecurityPolicies.None);
                             client = await RegistrationClient.CreateAsync(
                                 configuration,
                                 endpoint.Description,
                                 endpoint.Configuration,
-                                instanceCertificate,
+                                registrationEntry?.Certificate?.AddRef(),
                                 ct: ct).ConfigureAwait(false);
 
                             client.OperationTimeout = 10000;
@@ -2356,7 +2464,7 @@ namespace Technosoftware.UaServer
                             // register the server.
                             if (m_useRegisterServer2)
                             {
-                                var discoveryConfiguration = new ExtensionObjectCollection();
+                                var discoveryConfiguration = new List<ExtensionObject>();
                                 var mdnsDiscoveryConfig = new MdnsDiscoveryConfiguration
                                 {
                                     ServerCapabilities = configuration.ServerConfiguration
@@ -2576,7 +2684,7 @@ namespace Technosoftware.UaServer
         /// <param name="result">The result.</param>
         /// <exception cref="ServiceResultException"></exception>
         protected virtual void OnApplicationCertificateError(
-            byte[] clientCertificate,
+            ByteString clientCertificate,
             ServiceResult result)
         {
             // see https://reference.opcfoundation.org/Core/Part4/v105/docs/6.1.3
@@ -2634,15 +2742,15 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Validate operation limits.
         /// </summary>
-        /// <param name="operation">A list of operations.</param>
+        /// <param name="operation">The operations to validate.</param>
         /// <param name="operationLimit">The operation limit property.</param>
         /// <exception cref="ServiceResultException">BadNothingToDo if list is null or empty.</exception>
         /// <exception cref="ServiceResultException">BadTooManyOperations if list is larger than operation limit property.</exception>
-        protected void ValidateOperationLimits(
-            IList operation,
+        protected void ValidateOperationLimits<T>(
+            ArrayOf<T> operation,
             PropertyState<uint> operationLimit = null)
         {
-            if (operation == null || operation.Count == 0)
+            if (operation.IsEmpty)
             {
                 throw new ServiceResultException(StatusCodes.BadNothingToDo);
             }
@@ -2674,7 +2782,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             ServiceResultException e)
         {
-            IList<string> preferredLocales = null;
+            ArrayOf<string> preferredLocales = default;
 
             if (context != null && context.Session != null)
             {
@@ -2693,7 +2801,7 @@ namespace Technosoftware.UaServer
         /// <returns>Returns an exception thrown when a UA defined error occurs, the return type is <seealso cref="ServiceResultException"/>.</returns>
         protected virtual ServiceResultException TranslateException(
             DiagnosticsMasks diagnosticsMasks,
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             ServiceResultException e)
         {
             if (e == null)
@@ -2714,7 +2822,7 @@ namespace Technosoftware.UaServer
             }
 
             // check if translated text required.
-            LocalizedText translatedText = null;
+            LocalizedText translatedText = default;
 
             if ((diagnosticsMasks & DiagnosticsMasks.ServiceLocalizedText) != 0)
             {
@@ -2724,7 +2832,7 @@ namespace Technosoftware.UaServer
             // create new result object.
             var result = new ServiceResult(
                 e.NamespaceUri,
-                new StatusCode(e.StatusCode, e.SymbolicId),
+                new StatusCode(e.StatusCode.Code, e.SymbolicId),
                 translatedText,
                 e.AdditionalInfo,
                 innerResult);
@@ -2743,7 +2851,7 @@ namespace Technosoftware.UaServer
         /// <returns>Returns a class that combines the status code and diagnostic info structures.</returns>
         protected virtual ServiceResult TranslateResult(
             DiagnosticsMasks diagnosticsMasks,
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             ServiceResult result)
         {
             if (result == null)
@@ -2833,16 +2941,16 @@ namespace Technosoftware.UaServer
                     .SecurityConfiguration
                     .RejectedCertificateStore;
 
-                await Configuration.CertificateValidator.UpdateAsync(
+                await Configuration.CertificateManager.UpdateAsync(
                     Configuration.SecurityConfiguration,
                     ct: cancellationToken).ConfigureAwait(false);
 
                 // update trace configuration.
-#pragma warning disable CS0618 // Type or member is obsolete
                 Configuration.TraceConfiguration = configuration.TraceConfiguration ??
                     new TraceConfiguration();
-                Configuration.TraceConfiguration.ApplySettings();
-#pragma warning restore CS0618 // Type or member is obsolete
+
+                // TraceConfiguration.ApplySettings was removed in 2.0: logging is configured
+                // through the ITelemetryContext.
             }
             catch (Exception e)
             {
@@ -2882,26 +2990,24 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         /// <param name="bindingFactory">The transport listener binding factory.</param>
-        /// <param name="serverDescription">The server description.</param>
-        /// <param name="endpoints">The endpoints.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>
-        /// Returns IList of a host for a UA service.
+        /// The hosts for the UA services, with the server description and the endpoints.
         /// </returns>
-        protected override IList<ServiceHost> InitializeServiceHosts(
+        protected override async ValueTask<ServiceHostInitializationResult> InitializeServiceHostsAsync(
             ApplicationConfiguration configuration,
-            ITransportListenerBindings bindingFactory,
-            out ApplicationDescription serverDescription,
-            out EndpointDescriptionCollection endpoints)
+            ITransportBindingRegistry bindingFactory,
+            CancellationToken cancellationToken = default)
         {
-            serverDescription = null;
-            endpoints = null;
+            ApplicationDescription serverDescription;
+            var endpoints = new List<EndpointDescription>();
 
             var hosts = new Dictionary<string, ServiceHost>();
 
             // ensure at least one security policy exists.
             if (configuration.ServerConfiguration.SecurityPolicies.Count == 0)
             {
-                configuration.ServerConfiguration.SecurityPolicies.Add(new ServerSecurityPolicy());
+                configuration.ServerConfiguration.SecurityPolicies += new ServerSecurityPolicy();
             }
 
             // ensure at least one user token policy exists.
@@ -2910,7 +3016,7 @@ namespace Technosoftware.UaServer
                 var userTokenPolicy = new UserTokenPolicy { TokenType = UserTokenType.Anonymous };
                 userTokenPolicy.PolicyId = userTokenPolicy.TokenType.ToString();
 
-                configuration.ServerConfiguration.UserTokenPolicies.Add(userTokenPolicy);
+                configuration.ServerConfiguration.UserTokenPolicies += userTokenPolicy;
             }
 
             // set server description.
@@ -2923,30 +3029,34 @@ namespace Technosoftware.UaServer
                 DiscoveryUrls = GetDiscoveryUrls()
             };
 
-            endpoints = [];
-            IList<EndpointDescription> endpointsForHost = null;
-
-            StringCollection baseAddresses = configuration.ServerConfiguration.BaseAddresses;
+            ArrayOf<string> baseAddresses = configuration.ServerConfiguration.BaseAddresses;
             foreach (
                 string scheme in Utils.DefaultUriSchemes.Where(scheme =>
-                    baseAddresses.Any(a => a.StartsWith(scheme, StringComparison.Ordinal))))
+                    baseAddresses.Contains(a => a.StartsWith(scheme, StringComparison.Ordinal))))
             {
-                ITransportListenerFactory binding = bindingFactory.GetBinding(scheme, MessageContext.Telemetry);
+                ITransportListenerFactory binding = bindingFactory.GetListenerFactory(scheme);
                 if (binding != null)
                 {
-                    endpointsForHost = binding.CreateServiceHost(
-                        this,
-                        hosts,
-                        configuration,
-                        configuration.ServerConfiguration.BaseAddresses,
-                        serverDescription,
-                        configuration.ServerConfiguration.SecurityPolicies,
-                        InstanceCertificateTypesProvider);
+                    List<EndpointDescription> endpointsForHost = await binding
+                        .CreateServiceHostAsync(
+                            this,
+                            hosts,
+                            configuration,
+                            configuration.ServerConfiguration.BaseAddresses,
+                            serverDescription,
+                            configuration.ServerConfiguration.SecurityPolicies,
+                            CertificateManager,
+                            configuration.CertificateManager,
+                            cancellationToken)
+                        .ConfigureAwait(false);
                     endpoints.AddRange(endpointsForHost);
                 }
             }
 
-            return [.. hosts.Values];
+            return new ServiceHostInitializationResult(
+                [.. hosts.Values],
+                serverDescription,
+                endpoints.ToArrayOf());
         }
 
         /// <summary>
@@ -2954,15 +3064,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public override ServiceHost CreateServiceHost(ServerBase server, params Uri[] addresses)
         {
-            return new ServiceHost(this, typeof(SessionEndpoint), addresses);
-        }
-
-        /// <summary>
-        /// Returns the service contract to use.
-        /// </summary>
-        protected override Type GetServiceContract()
-        {
-            return typeof(ISessionEndpoint);
+            return new ServiceHost(this, addresses);
         }
 
         /// <summary>
@@ -2998,9 +3100,7 @@ namespace Technosoftware.UaServer
                 m_serverInternal = new GenericServerData(
                     ServerProperties,
                     configuration,
-                    MessageContext,
-                    new CertificateValidator(MessageContext.Telemetry),
-                    InstanceCertificateTypesProvider);
+                    MessageContext);
 
                 // create the manager responsible for providing localized string resources.
                 m_logger.LogInformation(Utils.TraceMasks.StartStop, "Server - CreateResourceManager.");
@@ -3108,7 +3208,7 @@ namespace Technosoftware.UaServer
                     {
                         ServerUri = serverDescription.ApplicationUri
                     };
-                    m_registrationInfo.ServerNames.Add(serverDescription.ApplicationName);
+                    m_registrationInfo.ServerNames += serverDescription.ApplicationName;
                     m_registrationInfo.ProductUri = serverDescription.ProductUri;
                     m_registrationInfo.ServerType = serverDescription.ApplicationType;
                     m_registrationInfo.GatewayServerUri = null;
@@ -3117,6 +3217,8 @@ namespace Technosoftware.UaServer
 
                     // add all discovery urls.
                     string computerName = Utils.GetHostName();
+
+                    var discoveryUrls = new List<string>(BaseAddresses.Count);
 
                     for (int ii = 0; ii < BaseAddresses.Count; ii++)
                     {
@@ -3130,8 +3232,10 @@ namespace Technosoftware.UaServer
                             uri.Host = computerName;
                         }
 
-                        m_registrationInfo.DiscoveryUrls.Add(uri.ToString());
+                        discoveryUrls.Add(uri.ToString());
                     }
+
+                    m_registrationInfo.DiscoveryUrls = discoveryUrls.ToArrayOf();
 
                     // build list of registration endpoints.
                     m_registrationEndpoints = new ConfiguredEndpointCollection(configuration);
@@ -3179,7 +3283,7 @@ namespace Technosoftware.UaServer
             {
                 const string message = "Unexpected error starting application";
                 m_logger.LogCritical(Utils.TraceMasks.StartStop, e, message);
-                Utils.SilentDispose(m_serverInternal);
+                m_serverInternal?.Dispose();
                 m_serverInternal = null;
                 var error = ServiceResult.Create(e, StatusCodes.BadInternalError, message);
                 ServerError = error;
@@ -3205,7 +3309,15 @@ namespace Technosoftware.UaServer
                 m_configurationWatcher.Changed += OnConfigurationChangedAsync;
             }
 
-            CertificateValidator.CertificateUpdate += OnCertificateUpdateAsync;
+            // Subscribe to CertificateManager change notifications and fan out to
+            // OnCertificateUpdateAsync so endpoint descriptions and transport
+            // listeners pick up certificate hot-updates. In 1.5 this was the
+            // CertificateValidator.CertificateUpdate event.
+            if (CertificateManager != null)
+            {
+                m_certificateManagerSubscription = CertificateManager.CertificateChanges
+                    .Subscribe(new CertificateManagerChangeObserver(this, m_logger));
+            }
         }
 
         /// <summary>
@@ -3260,7 +3372,7 @@ namespace Technosoftware.UaServer
                 // ensure that everything is cleaned up.
                 if (m_serverInternal != null)
                 {
-                    Utils.SilentDispose(m_serverInternal);
+                    m_serverInternal?.Dispose();
                     m_serverInternal = null;
                 }
             }
@@ -3792,6 +3904,71 @@ namespace Technosoftware.UaServer
         private bool m_useRegisterServer2;
         private readonly List<IUaNodeManagerFactory> m_nodeManagerFactories = [];
         private readonly List<IUaAsyncNodeManagerFactory> m_asyncNodeManagerFactories = [];
+        private IDisposable m_certificateManagerSubscription;
         #endregion Private Fields
+
+        #region Private Types
+        /// <summary>
+        /// Forwards the certificate manager's change notifications to
+        /// <see cref="ServerBase.OnCertificateUpdateAsync"/>, which is what
+        /// refreshes the endpoint descriptions and the transport listeners.
+        /// </summary>
+        /// <remarks>
+        /// The reload itself has already been performed by the certificate
+        /// manager before the notification fires, so there is nothing to do
+        /// here beyond the fan-out.
+        /// </remarks>
+        private sealed class CertificateManagerChangeObserver : IObserver<CertificateChangeEvent>
+        {
+            /// <summary>
+            /// Initializes a new instance of the
+            /// <see cref="CertificateManagerChangeObserver"/> class.
+            /// </summary>
+            /// <param name="server">The server to notify.</param>
+            /// <param name="logger">The logger to report fan-out failures to.</param>
+            public CertificateManagerChangeObserver(UaStandardServer server, ILogger logger)
+            {
+                m_server = server;
+                m_logger = logger;
+            }
+
+            /// <inheritdoc/>
+            public void OnNext(CertificateChangeEvent value)
+            {
+                if (value.Kind != CertificateChangeKind.ApplicationCertificateUpdated)
+                {
+                    return;
+                }
+
+                try
+                {
+                    var args = new CertificateUpdateEventArgs(
+                        m_server.Configuration?.SecurityConfiguration,
+                        m_server.CertificateManager);
+
+                    m_server.OnCertificateUpdateAsync(m_server, args);
+                }
+                catch (Exception ex)
+                {
+                    m_logger.LogError(
+                        ex,
+                        "Failed to fan out a certificate manager change notification.");
+                }
+            }
+
+            /// <inheritdoc/>
+            public void OnError(Exception error)
+            {
+            }
+
+            /// <inheritdoc/>
+            public void OnCompleted()
+            {
+            }
+
+            private readonly UaStandardServer m_server;
+            private readonly ILogger m_logger;
+        }
+        #endregion Private Types
     }
 }

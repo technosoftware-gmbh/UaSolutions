@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -157,7 +158,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc/>
         public IUaApplicationConfigurationSecurityOptions AddSecurityConfiguration(
-            CertificateIdentifierCollection certIdList,
+            List<CertificateIdentifier> certIdList,
             string pkiRoot = null,
             string rejectedRoot = null)
         {
@@ -329,8 +330,9 @@ namespace Technosoftware.UaConfiguration
             // ensure for a user token policy
             if (ApplicationConfiguration.ServerConfiguration?.UserTokenPolicies.Count == 0)
             {
-                ApplicationConfiguration.ServerConfiguration.UserTokenPolicies.Add(
-                    new UserTokenPolicy(UserTokenType.Anonymous));
+                ApplicationConfiguration.ServerConfiguration.UserTokenPolicies =
+                    [.. ApplicationConfiguration.ServerConfiguration.UserTokenPolicies,
+                        new UserTokenPolicy(UserTokenType.Anonymous)];
             }
 
             // ensure for secure transport profiles
@@ -339,15 +341,14 @@ namespace Technosoftware.UaConfiguration
                 AddSecurityPolicies();
             }
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            ApplicationConfiguration.TraceConfiguration?.ApplySettings();
-#pragma warning restore CS0618 // Type or member is obsolete
+            // TraceConfiguration.ApplySettings was removed in 2.0: logging is configured
+            // through the ITelemetryContext, so there is nothing to apply here.
 
             await ApplicationConfiguration.ValidateAsync(ApplicationInstance.ApplicationType, ct)
                 .ConfigureAwait(false);
 
             await ApplicationConfiguration
-                .CertificateValidator.UpdateAsync(
+                .CertificateManager.UpdateAsync(
                     ApplicationConfiguration.SecurityConfiguration,
                     applicationUri: null,
                     ct)
@@ -389,7 +390,8 @@ namespace Technosoftware.UaConfiguration
             // base addresses
             foreach (string baseAddress in baseAddresses)
             {
-                serverConfiguration.BaseAddresses.Add(Utils.ReplaceLocalhost(baseAddress));
+                serverConfiguration.BaseAddresses =
+                    [.. serverConfiguration.BaseAddresses, Utils.ReplaceLocalhost(baseAddress)];
             }
 
             // alternate base addresses
@@ -397,8 +399,9 @@ namespace Technosoftware.UaConfiguration
             {
                 foreach (string alternateBaseAddress in alternateBaseAddresses)
                 {
-                    serverConfiguration.AlternateBaseAddresses
-                        .Add(Utils.ReplaceLocalhost(alternateBaseAddress));
+                    serverConfiguration.AlternateBaseAddresses =
+                        [.. serverConfiguration.AlternateBaseAddresses,
+                            Utils.ReplaceLocalhost(alternateBaseAddress)];
                 }
             }
 
@@ -419,10 +422,10 @@ namespace Technosoftware.UaConfiguration
         {
             if (addPolicy)
             {
-                ServerSecurityPolicyCollection policies = ApplicationConfiguration
-                    .ServerConfiguration
-                    .SecurityPolicies;
+                List<ServerSecurityPolicy> policies =
+                    [.. ApplicationConfiguration.ServerConfiguration.SecurityPolicies];
                 InternalAddPolicy(policies, MessageSecurityMode.None, SecurityPolicies.None);
+                ApplicationConfiguration.ServerConfiguration.SecurityPolicies = policies;
             }
             return this;
         }
@@ -468,7 +471,7 @@ namespace Technosoftware.UaConfiguration
             MessageSecurityMode securityMode,
             string securityPolicy)
         {
-            if (!SecurityPolicies.IsValidSecurityPolicyUri(securityPolicy))
+            if (!SecurityPolicies.Default.IsValidSecurityPolicyUri(securityPolicy))
             {
                 throw new ArgumentException("Unknown security policy", nameof(securityPolicy));
             }
@@ -479,10 +482,10 @@ namespace Technosoftware.UaConfiguration
                 throw new ArgumentException("Use AddUnsecurePolicyNone to add no security policy.");
             }
 
-            InternalAddPolicy(
-                ApplicationConfiguration.ServerConfiguration.SecurityPolicies,
-                securityMode,
-                securityPolicy);
+            List<ServerSecurityPolicy> policies =
+                [.. ApplicationConfiguration.ServerConfiguration.SecurityPolicies];
+            InternalAddPolicy(policies, securityMode, securityPolicy);
+            ApplicationConfiguration.ServerConfiguration.SecurityPolicies = policies;
             return this;
         }
 
@@ -490,8 +493,9 @@ namespace Technosoftware.UaConfiguration
         public IUaApplicationConfigurationServerSelected AddUserTokenPolicy(
             UserTokenType userTokenType)
         {
-            ApplicationConfiguration.ServerConfiguration.UserTokenPolicies
-                .Add(new UserTokenPolicy(userTokenType));
+            ApplicationConfiguration.ServerConfiguration.UserTokenPolicies =
+                [.. ApplicationConfiguration.ServerConfiguration.UserTokenPolicies,
+                    new UserTokenPolicy(userTokenType)];
             return this;
         }
 
@@ -504,13 +508,14 @@ namespace Technosoftware.UaConfiguration
                 throw new ArgumentNullException(nameof(userTokenPolicy));
             }
 
-            ApplicationConfiguration.ServerConfiguration.UserTokenPolicies.Add(userTokenPolicy);
+            ApplicationConfiguration.ServerConfiguration.UserTokenPolicies =
+                [.. ApplicationConfiguration.ServerConfiguration.UserTokenPolicies, userTokenPolicy];
             return this;
         }
 
         /// <inheritdoc/>
         public IUaApplicationConfigurationSecurityOptions SetApplicationCertificates(
-            CertificateIdentifierCollection certIdList)
+            List<CertificateIdentifier> certIdList)
         {
             ApplicationConfiguration.SecurityConfiguration.ApplicationCertificates = certIdList;
             return this;
@@ -853,17 +858,17 @@ namespace Technosoftware.UaConfiguration
         }
 
         /// <inheritdoc/>
-        public IUaApplicationConfigurationServerOptions SetMinMetadataSamplingInterval(
-            int minMetadataSamplingInterval)
+        public IUaApplicationConfigurationServerOptions SetMinSupportedSamplingInterval(
+            double minSupportedSamplingInterval)
         {
-            ApplicationConfiguration.ServerConfiguration.MinMetadataSamplingInterval
-                = minMetadataSamplingInterval;
+            ApplicationConfiguration.ServerConfiguration.MinSupportedSamplingInterval
+                = minSupportedSamplingInterval;
             return this;
         }
 
         /// <inheritdoc/>
         public IUaApplicationConfigurationServerOptions SetAvailableSamplingRates(
-            SamplingRateGroupCollection availableSampleRates)
+            List<SamplingRateGroup> availableSampleRates)
         {
             ApplicationConfiguration.ServerConfiguration.AvailableSamplingRates
                 = availableSampleRates;
@@ -934,7 +939,8 @@ namespace Technosoftware.UaConfiguration
         /// <inheritdoc/>
         public IUaApplicationConfigurationServerOptions AddServerProfile(string serverProfile)
         {
-            ApplicationConfiguration.ServerConfiguration.ServerProfileArray.Add(serverProfile);
+            ApplicationConfiguration.ServerConfiguration.ServerProfileArray =
+                [.. ApplicationConfiguration.ServerConfiguration.ServerProfileArray, serverProfile];
             return this;
         }
 
@@ -949,13 +955,14 @@ namespace Technosoftware.UaConfiguration
         public IUaApplicationConfigurationServerOptions AddServerCapabilities(
             string serverCapability)
         {
-            ApplicationConfiguration.ServerConfiguration.ServerCapabilities.Add(serverCapability);
+            ApplicationConfiguration.ServerConfiguration.ServerCapabilities =
+                [.. ApplicationConfiguration.ServerConfiguration.ServerCapabilities, serverCapability];
             return this;
         }
 
         /// <inheritdoc/>
         public IUaApplicationConfigurationServerOptions SetSupportedPrivateKeyFormats(
-            StringCollection supportedPrivateKeyFormats)
+            List<string> supportedPrivateKeyFormats)
         {
             ApplicationConfiguration.ServerConfiguration.SupportedPrivateKeyFormats
                 = supportedPrivateKeyFormats;
@@ -1024,8 +1031,9 @@ namespace Technosoftware.UaConfiguration
         public IUaApplicationConfigurationClientOptions AddWellKnownDiscoveryUrls(
             string wellKnownDiscoveryUrl)
         {
-            ApplicationConfiguration.ClientConfiguration.WellKnownDiscoveryUrls
-                .Add(wellKnownDiscoveryUrl);
+            ApplicationConfiguration.ClientConfiguration.WellKnownDiscoveryUrls =
+                [.. ApplicationConfiguration.ClientConfiguration.WellKnownDiscoveryUrls,
+                    wellKnownDiscoveryUrl];
             return this;
         }
 
@@ -1033,7 +1041,8 @@ namespace Technosoftware.UaConfiguration
         public IUaApplicationConfigurationClientOptions AddDiscoveryServer(
             EndpointDescription discoveryServer)
         {
-            ApplicationConfiguration.ClientConfiguration.DiscoveryServers.Add(discoveryServer);
+            ApplicationConfiguration.ClientConfiguration.DiscoveryServers =
+                [.. ApplicationConfiguration.ClientConfiguration.DiscoveryServers, discoveryServer];
             return this;
         }
 
@@ -1072,42 +1081,34 @@ namespace Technosoftware.UaConfiguration
         }
 
         /// <inheritdoc/>
-        [Obsolete("Use ITelemetryContext and ILogger-based diagnostics instead.")]
         public IUaApplicationConfigurationTraceConfiguration SetOutputFilePath(
             string outputFilePath)
         {
-#pragma warning disable CS0618 // Type or member is obsolete
             ApplicationConfiguration.TraceConfiguration.OutputFilePath = outputFilePath;
-#pragma warning restore CS0618 // Type or member is obsolete
             return this;
         }
 
         /// <inheritdoc/>
-        [Obsolete("Use ITelemetryContext and ILogger-based diagnostics instead.")]
         public IUaApplicationConfigurationTraceConfiguration SetDeleteOnLoad(bool deleteOnLoad)
         {
-#pragma warning disable CS0618 // Type or member is obsolete
             ApplicationConfiguration.TraceConfiguration.DeleteOnLoad = deleteOnLoad;
-#pragma warning restore CS0618 // Type or member is obsolete
             return this;
         }
 
         /// <inheritdoc/>
-        [Obsolete("Use ITelemetryContext and ILogger-based diagnostics instead.")]
         public IUaApplicationConfigurationTraceConfiguration SetTraceMasks(int traceMasks)
         {
-#pragma warning disable CS0618 // Type or member is obsolete
             ApplicationConfiguration.TraceConfiguration.TraceMasks = traceMasks;
-#pragma warning restore CS0618 // Type or member is obsolete
             return this;
         }
 
         /// <inheritdoc/>
         public IUaApplicationConfigurationExtension AddExtension<T>(
             XmlQualifiedName elementName,
-            object value)
+            T value)
+            where T : IEncodeable
         {
-            ApplicationConfiguration.UpdateExtension<T>(elementName, value);
+            ApplicationConfiguration.UpdateExtension(elementName, value);
             return this;
         }
 
@@ -1154,12 +1155,12 @@ namespace Technosoftware.UaConfiguration
         /// <param name="storeType">The cert store type: ex: "Directory"</param>
         /// <param name="storePath">The PKI root.</param>
         /// <returns>The application certificates.</returns>
-        public static CertificateIdentifierCollection CreateDefaultApplicationCertificates(
+        public static List<CertificateIdentifier> CreateDefaultApplicationCertificates(
             string subjectName,
             string storeType = null,
             string storePath = null)
         {
-            var certificateIdentifiers = new CertificateIdentifierCollection
+            var certificateIdentifiers = new List<CertificateIdentifier>
             {
                 new CertificateIdentifier
                 {
@@ -1364,19 +1365,18 @@ namespace Technosoftware.UaConfiguration
             bool policyNone = false)
         {
             // create list of supported policies
-            System.Collections.Generic.List<string> defaultPolicyUris = [.. SecurityPolicies
+            System.Collections.Generic.List<string> defaultPolicyUris = [.. SecurityPolicies.Default
                 .GetDefaultUris()];
             if (deprecated)
             {
-                defaultPolicyUris.AddRange(SecurityPolicies.GetDefaultDeprecatedUris());
+                defaultPolicyUris.AddRange(SecurityPolicies.Default.GetDefaultDeprecatedUris());
             }
 
+            List<ServerSecurityPolicy> policies =
+                [.. ApplicationConfiguration.ServerConfiguration.SecurityPolicies];
             foreach (MessageSecurityMode securityMode in typeof(MessageSecurityMode)
                 .GetEnumValues())
             {
-                ServerSecurityPolicyCollection policies = ApplicationConfiguration
-                    .ServerConfiguration
-                    .SecurityPolicies;
                 if (policyNone && securityMode == MessageSecurityMode.None)
                 {
                     InternalAddPolicy(policies, MessageSecurityMode.None, SecurityPolicies.None);
@@ -1390,6 +1390,8 @@ namespace Technosoftware.UaConfiguration
                     }
                 }
             }
+
+            ApplicationConfiguration.ServerConfiguration.SecurityPolicies = policies;
         }
 
         /// <summary>
@@ -1398,18 +1400,18 @@ namespace Technosoftware.UaConfiguration
         private void AddEccSecurityPolicies(bool sign = false)
         {
             // create list of supported policies
-            string[] defaultPolicyUris = SecurityPolicies.GetDefaultEccUris();
+            string[] defaultPolicyUris = SecurityPolicies.Default.GetDefaultEccUris();
             MessageSecurityMode securityMode = sign
                 ? MessageSecurityMode.Sign
                 : MessageSecurityMode.SignAndEncrypt;
             {
-                ServerSecurityPolicyCollection policies = ApplicationConfiguration
-                    .ServerConfiguration
-                    .SecurityPolicies;
+                List<ServerSecurityPolicy> policies =
+                    [.. ApplicationConfiguration.ServerConfiguration.SecurityPolicies];
                 foreach (string policyUri in defaultPolicyUris)
                 {
                     InternalAddPolicy(policies, securityMode, policyUri);
                 }
+                ApplicationConfiguration.ServerConfiguration.SecurityPolicies = policies;
             }
         }
 
@@ -1437,7 +1439,7 @@ namespace Technosoftware.UaConfiguration
         /// <param name="policyUri">The security policy Uri.</param>
         /// <exception cref="ArgumentException"><paramref name="securityMode"/></exception>
         private static bool InternalAddPolicy(
-            ServerSecurityPolicyCollection policies,
+            List<ServerSecurityPolicy> policies,
             MessageSecurityMode securityMode,
             string policyUri)
         {

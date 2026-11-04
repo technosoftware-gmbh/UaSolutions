@@ -86,13 +86,13 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             // check for null.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return null;
             }
 
             m_cacheLock.EnterReadLock();
-            INode node;
+            INode? node;
             try
             {
                 // check if node already exists.
@@ -141,12 +141,12 @@ namespace Technosoftware.UaClient
 
             int count = nodeIds.Count;
             var nodes = new List<INode?>(count);
-            var fetchNodeIds = new ExpandedNodeIdCollection();
+            var fetchNodeIds = new List<ExpandedNodeId>();
 
             int ii;
             for (ii = 0; ii < count; ii++)
             {
-                INode node;
+                INode? node;
 
                 m_cacheLock.EnterReadLock();
                 try
@@ -285,7 +285,7 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public async ValueTask<IList<INode>> FindAsync(
+        public async ValueTask<ArrayOf<INode>> FindAsync(
             ExpandedNodeId sourceId,
             NodeId referenceTypeId,
             bool isInverse,
@@ -358,7 +358,7 @@ namespace Technosoftware.UaClient
         {
             var localId = ExpandedNodeId.ToNodeId(nodeId, m_context.NamespaceUris);
 
-            if (localId == null)
+            if (localId.IsNull)
             {
                 return null;
             }
@@ -369,7 +369,7 @@ namespace Technosoftware.UaClient
             try
             {
                 // fetch references from server.
-                ReferenceDescriptionCollection references = await m_context
+                ArrayOf<ReferenceDescription> references = await m_context
                     .FetchReferencesAsync(null, localId, ct)
                     .ConfigureAwait(false);
 
@@ -382,7 +382,7 @@ namespace Technosoftware.UaClient
                         if (!m_nodes.Exists(reference.NodeId))
                         {
                             // transform absolute identifiers.
-                            if (reference.NodeId != null && reference.NodeId.IsAbsolute)
+                            if (!reference.NodeId.IsNull && reference.NodeId.IsAbsolute)
                             {
                                 reference.NodeId = ExpandedNodeId.ToNodeId(
                                     reference.NodeId,
@@ -428,15 +428,17 @@ namespace Technosoftware.UaClient
                 return [];
             }
 
-            var localIds = new NodeIdCollection(
+            var localIds = new List<NodeId>(
                 nodeIds.Select(nodeId => ExpandedNodeId.ToNodeId(nodeId, m_context.NamespaceUris)));
 
             // fetch nodes and references from server.
-            (IReadOnlyList<Node> sourceNodes, IReadOnlyList<ServiceResult> readErrors) = await m_context
-                .FetchNodesAsync(null, localIds, NodeClass.Unspecified, ct: ct)
+            (ArrayOf<Node> sourceNodes, ArrayOf<ServiceResult> readErrors) = await m_context
+                .FetchNodesAsync(null, localIds.ToArrayOf(), NodeClass.Unspecified, ct: ct)
                 .ConfigureAwait(false);
-            (IReadOnlyList<ReferenceDescriptionCollection> referenceCollectionList, IReadOnlyList<ServiceResult> fetchErrors) =
-                await m_context.FetchReferencesAsync(null, localIds, ct).ConfigureAwait(false);
+            (ArrayOf<ArrayOf<ReferenceDescription>> referenceCollectionList,
+                ArrayOf<ServiceResult> fetchErrors) = await m_context
+                    .FetchReferencesAsync(null, localIds.ToArrayOf(), ct)
+                    .ConfigureAwait(false);
 
             int ii = 0;
             for (ii = 0; ii < count; ii++)
@@ -458,7 +460,7 @@ namespace Technosoftware.UaClient
                             if (!m_nodes.Exists(reference.NodeId))
                             {
                                 // transform absolute identifiers.
-                                if (reference.NodeId != null && reference.NodeId.IsAbsolute)
+                                if (!reference.NodeId.IsNull && reference.NodeId.IsAbsolute)
                                 {
                                     reference.NodeId = ExpandedNodeId.ToNodeId(
                                         reference.NodeId,
@@ -518,7 +520,7 @@ namespace Technosoftware.UaClient
                 m_cacheLock.ExitReadLock();
             }
 
-            var targetIds = new ExpandedNodeIdCollection(
+            var targetIds = new List<ExpandedNodeId>(
                 references.Select(reference => reference.TargetId));
 
             IList<INode?> result = await FindAsync(targetIds, ct).ConfigureAwait(false);
@@ -546,7 +548,7 @@ namespace Technosoftware.UaClient
             {
                 return targets;
             }
-            var targetIds = new ExpandedNodeIdCollection();
+            var targetIds = new List<ExpandedNodeId>();
             IList<INode?> sources = await FindAsync(nodeIds, ct).ConfigureAwait(false);
             foreach (INode? source in sources)
             {
@@ -674,7 +676,7 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public async ValueTask<IList<NodeId>> FindSubTypesAsync(
+        public async ValueTask<ArrayOf<NodeId>> FindSubTypesAsync(
             ExpandedNodeId typeId,
             CancellationToken ct = default)
         {
@@ -802,11 +804,11 @@ namespace Technosoftware.UaClient
         }
 
         /// <inheritdoc/>
-        public ValueTask<QualifiedName?> FindReferenceTypeNameAsync(
+        public ValueTask<QualifiedName> FindReferenceTypeNameAsync(
             NodeId referenceTypeId,
             CancellationToken ct = default)
         {
-            QualifiedName? typeName;
+            QualifiedName typeName;
             m_cacheLock.EnterReadLock();
             try
             {
@@ -816,7 +818,7 @@ namespace Technosoftware.UaClient
             {
                 m_cacheLock.ExitReadLock();
             }
-            return new ValueTask<QualifiedName?>(typeName);
+            return new ValueTask<QualifiedName>(typeName);
         }
 
         /// <inheritdoc/>
@@ -881,7 +883,7 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             // no match on null values.
-            if (value == null)
+            if (value.IsNull)
             {
                 return false;
             }
@@ -928,17 +930,17 @@ namespace Technosoftware.UaClient
         /// <inheritdoc/>
         public async ValueTask<bool> IsEncodingForAsync(
             NodeId expectedTypeId,
-            object value,
+            Variant value,
             CancellationToken ct = default)
         {
             // null actual datatype matches nothing.
-            if (value == null)
+            if (value.IsNull)
             {
                 return false;
             }
 
             // null expected datatype matches everything.
-            if (NodeId.IsNull(expectedTypeId))
+            if (expectedTypeId.IsNull)
             {
                 return true;
             }
@@ -967,7 +969,7 @@ namespace Technosoftware.UaClient
 
             // for structure types must try to determine the subtype.
 
-            if (value is ExtensionObject extension)
+            if (value.TryGetValue(out ExtensionObject extension))
             {
                 return await IsEncodingForAsync(
                     expectedTypeId,
@@ -977,9 +979,9 @@ namespace Technosoftware.UaClient
 
             // every element in an array must match.
 
-            if (value is ExtensionObject[] extensions)
+            if (value.TryGetValue(out ArrayOf<ExtensionObject> extensions))
             {
-                for (int ii = 0; ii < extensions.Length; ii++)
+                for (int ii = 0; ii < extensions.Count; ii++)
                 {
                     if (!await IsEncodingForAsync(
                         expectedTypeId,
@@ -1069,13 +1071,9 @@ namespace Technosoftware.UaClient
                 return;
             }
 
-            var predefinedNodes = new NodeStateCollection();
-            Assembly assembly = typeof(ReadRequest).GetTypeInfo().Assembly;
-            predefinedNodes.LoadFromBinaryResource(
-                context,
-                "Opc.Ua.Stack.Generated.Opc.Ua.PredefinedNodes.uanodes",
-                assembly,
-                true);
+            // The .uanodes resource is gone in 2.0; the standard address
+            // space is built by the generated builder instead.
+            NodeStateCollection predefinedNodes = new NodeStateCollection().AddOpcUa(context);
 
             m_cacheLock.EnterWriteLock();
             try
@@ -1187,7 +1185,7 @@ namespace Technosoftware.UaClient
             ExpandedNodeId nodeId,
             CancellationToken ct = default)
         {
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return string.Empty;
             }
@@ -1211,7 +1209,7 @@ namespace Technosoftware.UaClient
             ReferenceDescription reference,
             CancellationToken ct = default)
         {
-            if (reference == null || NodeId.IsNull(reference.NodeId))
+            if (reference == null || reference.NodeId.IsNull)
             {
                 return string.Empty;
             }

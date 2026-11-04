@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Opc.Ua;
 using Range = Opc.Ua.Range;
+using System.Threading;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
@@ -28,9 +29,12 @@ namespace SampleCompany.NodeManagers.TestData
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
-        protected override void OnAfterCreate(ISystemContext context, NodeState node)
+        protected override void OnAfterCreate(
+            ISystemContext context,
+            NodeState node,
+            CancellationToken ct = default)
         {
-            base.OnAfterCreate(context, node);
+            base.OnAfterCreate(context, node, ct);
 
             GenerateValues.OnCall = OnGenerateValues;
         }
@@ -79,15 +83,15 @@ namespace SampleCompany.NodeManagers.TestData
 
             if (variable.FindChild(
                 context,
-                Opc.Ua.BrowseNames.EURange) is BaseVariableState euRange)
+                new QualifiedName(Opc.Ua.BrowseNames.EURange)) is BaseVariableState euRange)
             {
                 if (context.TypeTable.IsTypeOf(variable.DataType, Opc.Ua.DataTypeIds.UInteger))
                 {
-                    euRange.Value = new Range(250, 50);
+                    euRange.Value = Variant.FromStructure(new Range(250, 50));
                 }
                 else
                 {
-                    euRange.Value = new Range(100, -100);
+                    euRange.Value = Variant.FromStructure(new Range(100, -100));
                 }
                 variable.OnSimpleWriteValue = OnWriteAnalogValue;
             }
@@ -99,23 +103,25 @@ namespace SampleCompany.NodeManagers.TestData
         public ServiceResult OnWriteAnalogValue(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             try
             {
                 if (node.FindChild(
                     context,
-                    Opc.Ua.BrowseNames.EURange) is not BaseVariableState euRange)
+                    new QualifiedName(Opc.Ua.BrowseNames.EURange)) is not BaseVariableState euRange)
                 {
                     return ServiceResult.Good;
                 }
 
-                if (euRange.Value is not Range range)
+                // Variant carries the extension object's body itself in 2.0,
+                // so the range is read out of it rather than pattern-matched.
+                if (!euRange.Value.TryGetStructure(out Range range))
                 {
                     return ServiceResult.Good;
                 }
 
-                if (value is Array array)
+                if (value.AsBoxedObject() is Array array)
                 {
                     for (int ii = 0; ii < array.Length; ii++)
                     {
@@ -123,7 +129,7 @@ namespace SampleCompany.NodeManagers.TestData
 
                         if (typeof(Variant).IsInstanceOfType(element))
                         {
-                            element = ((Variant)element).Value;
+                            element = ((Variant)element).AsBoxedObject();
                         }
 
                         double elementNumber = Convert.ToDouble(
@@ -139,7 +145,7 @@ namespace SampleCompany.NodeManagers.TestData
                     return ServiceResult.Good;
                 }
 
-                double number = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+                double number = value.GetDouble();
 
                 if (number > range.High || number < range.Low)
                 {
@@ -187,9 +193,9 @@ namespace SampleCompany.NodeManagers.TestData
 
                 e.Initialize(context, this, EventSeverity.MediumLow, new LocalizedText(message));
 
-                e.Iterations = new PropertyState<uint>(e) { Value = count };
+                e.CreateOrReplaceIterations(context, null, false).Value = count;
 
-                e.NewValueCount = new PropertyState<uint>(e) { Value = 10 };
+                e.CreateOrReplaceNewValueCount(context, null, false).Value = 10;
 
                 ReportEvent(context, e);
             }
@@ -209,9 +215,9 @@ namespace SampleCompany.NodeManagers.TestData
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             if (node is not BaseVariableState variable)
             {

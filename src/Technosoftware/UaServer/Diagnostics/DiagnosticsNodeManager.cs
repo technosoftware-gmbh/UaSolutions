@@ -82,10 +82,10 @@ namespace Technosoftware.UaServer
             {
                 lock (Lock)
                 {
-                    Utils.SilentDispose(m_diagnosticsScanTimer);
+                    m_diagnosticsScanTimer?.Dispose();
                     m_diagnosticsScanTimer = null;
 
-                    Utils.SilentDispose(m_samplingTimer);
+                    m_samplingTimer?.Dispose();
                     m_samplingTimer = null;
                 }
             }
@@ -128,7 +128,7 @@ namespace Technosoftware.UaServer
                 {
                     NodeState samplingDiagnosticsArrayNode = serverDiagnosticsNode.FindChild(
                         SystemContext,
-                        BrowseNames.SamplingIntervalDiagnosticsArray);
+                        new QualifiedName(BrowseNames.SamplingIntervalDiagnosticsArray));
 
                     if (samplingDiagnosticsArrayNode != null)
                     {
@@ -156,9 +156,11 @@ namespace Technosoftware.UaServer
 
                 if (getMonitoredItemsOutputArguments != null)
                 {
-                    var outputArgumentsValue = (Argument[])getMonitoredItemsOutputArguments.Value;
+                    ArrayOf<Argument> outputArgumentsValue =
+                        getMonitoredItemsOutputArguments.WrappedValue
+                            .GetStructureArray<Argument>();
 
-                    if (outputArgumentsValue != null)
+                    if (!outputArgumentsValue.IsNull)
                     {
                         foreach (Argument argument in outputArgumentsValue)
                         {
@@ -188,7 +190,7 @@ namespace Technosoftware.UaServer
                     {
                         NodeState setSubscriptionDurableNode = serverObject.FindChild(
                             SystemContext,
-                            BrowseNames.SetSubscriptionDurable);
+                            new QualifiedName(BrowseNames.SetSubscriptionDurable));
 
                         if (setSubscriptionDurableNode != null)
                         {
@@ -230,17 +232,15 @@ namespace Technosoftware.UaServer
         public ServiceResult OnGetMonitoredItems(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
-            if (inputArguments == null || inputArguments.Count != 1)
+            if (inputArguments.Count != 1)
             {
                 return StatusCodes.BadInvalidArgument;
             }
 
-            uint? subscriptionId = inputArguments[0] as uint?;
-
-            if (subscriptionId == null)
+            if (!inputArguments[0].TryGetValue(out uint subscriptionId))
             {
                 return StatusCodes.BadInvalidArgument;
             }
@@ -250,18 +250,18 @@ namespace Technosoftware.UaServer
                 if (subscription.Id == subscriptionId)
                 {
                     if (context is ISessionSystemContext session &&
-                        subscription.SessionId != session.SessionId)
+                        !subscription.SessionId.Equals(session.SessionId))
                     {
                         // user tries to access subscription of different session
                         return StatusCodes.BadUserAccessDenied;
                     }
 
                     subscription.GetMonitoredItems(
-                        out uint[] serverHandles,
-                        out uint[] clientHandles);
+                        out ArrayOf<uint> serverHandles,
+                        out ArrayOf<uint> clientHandles);
 
-                    outputArguments[0] = serverHandles;
-                    outputArguments[1] = clientHandles;
+                    outputArguments[0] = Variant.From(serverHandles);
+                    outputArguments[1] = Variant.From(clientHandles);
 
                     return ServiceResult.Good;
                 }
@@ -276,17 +276,15 @@ namespace Technosoftware.UaServer
         public ServiceResult OnResendData(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
-            if (inputArguments == null || inputArguments.Count != 1)
+            if (inputArguments.Count != 1)
             {
                 return StatusCodes.BadInvalidArgument;
             }
 
-            uint? subscriptionId = inputArguments[0] as uint?;
-
-            if (subscriptionId == null)
+            if (!inputArguments[0].TryGetValue(out uint subscriptionId))
             {
                 return StatusCodes.BadInvalidArgument;
             }
@@ -296,7 +294,7 @@ namespace Technosoftware.UaServer
                 if (subscription.Id == subscriptionId)
                 {
                     if (context is not UaServerContext session ||
-                        subscription.SessionId != session.SessionId)
+                        !subscription.SessionId.Equals(session.SessionId))
                     {
                         // user tries to access subscription of different session
                         return StatusCodes.BadUserAccessDenied;
@@ -322,12 +320,13 @@ namespace Technosoftware.UaServer
         {
             var systemContext = context as UaServerContext;
 
-            if (m_serverLockHolder != null && m_serverLockHolder != systemContext.SessionId)
+            if (!m_serverLockHolder.IsNull &&
+                !m_serverLockHolder.Equals(systemContext.SessionId))
             {
                 return StatusCodes.BadSessionIdInvalid;
             }
 
-            m_serverLockHolder = systemContext.SessionId;
+            m_serverLockHolder = systemContext.SessionId ?? default;
 
             return ServiceResult.Good;
         }
@@ -343,7 +342,8 @@ namespace Technosoftware.UaServer
         {
             var systemContext = context as UaServerContext;
 
-            if (m_serverLockHolder != null && m_serverLockHolder != systemContext.SessionId)
+            if (!m_serverLockHolder.IsNull &&
+                !m_serverLockHolder.Equals(systemContext.SessionId))
             {
                 return StatusCodes.BadSessionIdInvalid;
             }
@@ -354,18 +354,211 @@ namespace Technosoftware.UaServer
         }
 
         /// <summary>
-        /// Loads a node set from a file or resource and adds them to the set of predefined nodes.
+        /// Builds the standard address space and adds it to the set of predefined nodes.
         /// </summary>
+        /// <remarks>
+        /// The standard address space used to be an embedded .uanodes resource in
+        /// Opc.Ua.Core. The model source generator replaced it, so the nodes are built
+        /// rather than deserialized. The generated builder emits only the mandatory
+        /// children, so the optional ones this SDK implements are added afterwards -
+        /// see <see cref="AddSdkImplementedOptionalChildren"/>.
+        /// </remarks>
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
-            var predefinedNodes = new NodeStateCollection();
-            Assembly assembly = typeof(ReadRequest).GetTypeInfo().Assembly;
-            predefinedNodes.LoadFromBinaryResource(
-                context,
-                "Opc.Ua.Stack.Generated.Opc.Ua.PredefinedNodes.uanodes",
-                assembly,
-                true);
+            NodeStateCollection predefinedNodes = new NodeStateCollection().AddOpcUa(context);
+
+            AddSdkImplementedOptionalChildren(context, predefinedNodes);
+
             return predefinedNodes;
+        }
+
+        /// <summary>
+        /// Programmatically adds the optional children of the well-known singletons that
+        /// this SDK implements.
+        /// </summary>
+        /// <remarks>
+        /// A hook for subclasses that override <see cref="LoadPredefinedNodes"/>: call it
+        /// after the base collection is built to preserve the SDK-visible behaviour.
+        /// </remarks>
+        /// <param name="context">The system context.</param>
+        /// <param name="nodes">The predefined nodes to add the optional children to.</param>
+        protected virtual void AddSdkImplementedOptionalChildren(
+            ISystemContext context,
+            NodeStateCollection nodes)
+        {
+            foreach (NodeState node in nodes)
+            {
+                switch (node)
+                {
+                    case ServerObjectState serverObject:
+                        AddServerSdkOptionalChildren(context, serverObject);
+                        break;
+                    case HistoryServerCapabilitiesState historyCapabilities:
+                        historyCapabilities.AddServerTimestampSupported(context);
+                        break;
+                    case RoleState roleState:
+                        AddWellKnownRoleSdkOptionalChildren(context, roleState);
+                        break;
+                    case NamespaceMetadataState metadataState:
+                        AddOpcUaNamespaceMetadataSdkOptionalChildren(context, metadataState);
+                        break;
+                    case AliasNameCategoryState aliasCategory:
+                        AddAliasNameCategorySdkOptionalChildren(context, aliasCategory);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds the optional children of the Server object that this SDK implements.
+        /// </summary>
+        private void AddServerSdkOptionalChildren(
+            ISystemContext context,
+            ServerObjectState serverObject)
+        {
+            serverObject
+                .AddGetMonitoredItems(context)
+                .AddResendData(context)
+                .AddSetSubscriptionDurable(context, m_durableSubscriptionsEnabled, _ => { })
+                .AddNamespaces(context)
+                .AddUrisVersion(context)
+                .AddEstimatedReturnTime(context)
+                .AddRequestServerStateChange(context)
+                .AddLocalTime(context);
+
+            if (serverObject.ServerCapabilities != null)
+            {
+                AddServerCapabilitiesSdkOptionalChildren(context, serverObject.ServerCapabilities);
+            }
+
+            serverObject.ServerRedundancy?.AddRedundantServerArray(context);
+        }
+
+        /// <summary>
+        /// Adds the optional children of the ServerCapabilities object that this SDK implements.
+        /// </summary>
+        private static void AddServerCapabilitiesSdkOptionalChildren(
+            ISystemContext context,
+            ServerCapabilitiesState serverCapabilities)
+        {
+            serverCapabilities
+                .AddMaxArrayLength(context)
+                .AddMaxStringLength(context)
+                .AddMaxByteStringLength(context)
+                .AddMaxSessions(context)
+                .AddMaxSubscriptions(context)
+                .AddMaxMonitoredItems(context)
+                .AddMaxSubscriptionsPerSession(context)
+                .AddMaxMonitoredItemsPerSubscription(context)
+                .AddMaxSelectClauseParameters(context)
+                .AddMaxWhereClauseParameters(context)
+                .AddMaxMonitoredItemsQueueSize(context)
+                .AddConformanceUnits(context)
+                .AddRoleSet(context)
+                .AddOperationLimits(context)
+                .OperationLimits
+                    .AddMaxNodesPerRead(context)
+                    .AddMaxNodesPerHistoryReadData(context)
+                    .AddMaxNodesPerHistoryReadEvents(context)
+                    .AddMaxNodesPerWrite(context)
+                    .AddMaxNodesPerHistoryUpdateData(context)
+                    .AddMaxNodesPerHistoryUpdateEvents(context)
+                    .AddMaxNodesPerMethodCall(context)
+                    .AddMaxNodesPerBrowse(context)
+                    .AddMaxNodesPerRegisterNodes(context)
+                    .AddMaxNodesPerTranslateBrowsePathsToNodeIds(context)
+                    .AddMaxNodesPerNodeManagement(context)
+                    .AddMaxMonitoredItemsPerCall(context);
+        }
+
+        /// <summary>
+        /// Adds the optional children of the OPC UA namespace metadata object.
+        /// </summary>
+        private static void AddOpcUaNamespaceMetadataSdkOptionalChildren(
+            ISystemContext context,
+            NamespaceMetadataState metadataState)
+        {
+            if (metadataState.NodeId.IdType != IdType.Numeric ||
+                metadataState.NodeId.NamespaceIndex != 0 ||
+                !metadataState.NodeId.TryGetValue(out uint numericId) ||
+                numericId != Objects.OPCUANamespaceMetadata)
+            {
+                return;
+            }
+
+            metadataState
+                .AddDefaultRolePermissions(context)
+                .AddDefaultUserRolePermissions(context)
+                .AddDefaultAccessRestrictions(context);
+        }
+
+        /// <summary>
+        /// Adds the optional children of the alias name category object.
+        /// </summary>
+        private static void AddAliasNameCategorySdkOptionalChildren(
+            ISystemContext context,
+            AliasNameCategoryState category)
+        {
+            if (category.NodeId.IdType != IdType.Numeric ||
+                category.NodeId.NamespaceIndex != 0 ||
+                !category.NodeId.TryGetValue(out uint numericId) ||
+                numericId != Objects.Aliases)
+            {
+                return;
+            }
+
+            category.AddLastChange(context);
+        }
+
+        /// <summary>
+        /// Re-adds the optional RoleType children of the six modifiable well-known roles.
+        /// </summary>
+        /// <remarks>
+        /// Observer, Operator, Engineer, Supervisor, ConfigureAdmin and SecurityAdmin. The
+        /// three immutable roles - Anonymous, AuthenticatedUser and TrustedApplication -
+        /// have no well-known instance NodeIds for the optional methods and properties.
+        /// </remarks>
+        private static void AddWellKnownRoleSdkOptionalChildren(
+            ISystemContext context,
+            RoleState roleState)
+        {
+            if (roleState.NodeId.IdType != IdType.Numeric ||
+                roleState.NodeId.NamespaceIndex != 0 ||
+                !roleState.NodeId.TryGetValue(out uint numericId))
+            {
+                return;
+            }
+
+            switch (numericId)
+            {
+                case Objects.WellKnownRole_Observer:
+                case Objects.WellKnownRole_Operator:
+                case Objects.WellKnownRole_Engineer:
+                case Objects.WellKnownRole_Supervisor:
+                case Objects.WellKnownRole_ConfigureAdmin:
+                case Objects.WellKnownRole_SecurityAdmin:
+                    AddWellKnownRoleChildren(context, roleState);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Adds the optional children of a modifiable well-known role.
+        /// </summary>
+        private static void AddWellKnownRoleChildren(ISystemContext context, RoleState role)
+        {
+            role
+                .AddApplications(context)
+                .AddApplicationsExclude(context)
+                .AddEndpoints(context)
+                .AddEndpointsExclude(context)
+                .AddCustomConfiguration(context)
+                .AddAddIdentity(context)
+                .AddRemoveIdentity(context)
+                .AddAddApplication(context)
+                .AddRemoveApplication(context)
+                .AddAddEndpoint(context)
+                .AddRemoveEndpoint(context);
         }
 
         /// <summary>
@@ -432,12 +625,12 @@ namespace Technosoftware.UaServer
 
             NodeId typeId = passiveNode.TypeDefinitionId;
 
-            if (!IsNodeIdInNamespace(typeId) || typeId.IdType != IdType.Numeric)
+            if (!IsNodeIdInNamespace(typeId) || !typeId.TryGetValue(out uint numericTypeId))
             {
                 return predefinedNode;
             }
 
-            switch ((uint)typeId.Identifier)
+            switch (numericTypeId)
             {
                 case ObjectTypes.ServerType:
                 {
@@ -548,12 +741,13 @@ namespace Technosoftware.UaServer
 
             NodeId typeId = instance.TypeDefinitionId;
 
-            if (typeId == null || typeId.IdType != IdType.Numeric || typeId.NamespaceIndex != 0)
+            if (typeId.IsNull || typeId.NamespaceIndex != 0 ||
+                !typeId.TryGetValue(out uint numericTypeId))
             {
                 return false;
             }
 
-            switch ((uint)typeId.Identifier)
+            switch (numericTypeId)
             {
                 case VariableTypes.ServerDiagnosticsSummaryType:
                 case ObjectTypes.SessionDiagnosticsObjectType:
@@ -638,7 +832,7 @@ namespace Technosoftware.UaServer
                     {
                         if (diagnosticsNode.SamplingIntervalDiagnosticsArray != null)
                         {
-                            diagnosticsNode.SamplingIntervalDiagnosticsArray.Value = null;
+                            diagnosticsNode.SamplingIntervalDiagnosticsArray.Value = default;
                             diagnosticsNode.SamplingIntervalDiagnosticsArray.StatusCode =
                                 StatusCodes.BadWaitingForInitialData;
                             diagnosticsNode.SamplingIntervalDiagnosticsArray.Timestamp = DateTime
@@ -647,7 +841,7 @@ namespace Technosoftware.UaServer
 
                         if (diagnosticsNode.SubscriptionDiagnosticsArray != null)
                         {
-                            diagnosticsNode.SubscriptionDiagnosticsArray.Value = null;
+                            diagnosticsNode.SubscriptionDiagnosticsArray.Value = default;
                             diagnosticsNode.SubscriptionDiagnosticsArray.StatusCode =
                                 StatusCodes.BadWaitingForInitialData;
                             diagnosticsNode.SubscriptionDiagnosticsArray.Timestamp = DateTime
@@ -657,7 +851,7 @@ namespace Technosoftware.UaServer
                         if (diagnosticsNode.SessionsDiagnosticsSummary != null)
                         {
                             diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray.Value
-                                = null;
+                                = default;
                             diagnosticsNode.SessionsDiagnosticsSummary.SessionDiagnosticsArray
                                 .StatusCode =
                                 StatusCodes.BadWaitingForInitialData;
@@ -670,7 +864,7 @@ namespace Technosoftware.UaServer
                         {
                             diagnosticsNode.SessionsDiagnosticsSummary
                                 .SessionSecurityDiagnosticsArray
-                                .Value = null;
+                                .Value = default;
                             diagnosticsNode.SessionsDiagnosticsSummary
                                 .SessionSecurityDiagnosticsArray
                                 .StatusCode =
@@ -808,7 +1002,7 @@ namespace Technosoftware.UaServer
 
                 // initialize diagnostics node.
                 var diagnosticsNode =
-                    sessionNode.CreateChild(systemContext, BrowseNames.SessionDiagnostics) as
+                    sessionNode.CreateChild(systemContext, new QualifiedName(BrowseNames.SessionDiagnostics)) as
                     SessionDiagnosticsVariableState;
 
                 // wrap diagnostics in a thread safe object.
@@ -828,7 +1022,7 @@ namespace Technosoftware.UaServer
                 var securityDiagnosticsNode =
                     sessionNode.CreateChild(
                         systemContext,
-                        BrowseNames.SessionSecurityDiagnostics) as
+                        new QualifiedName(BrowseNames.SessionSecurityDiagnostics)) as
                     SessionSecurityDiagnosticsState;
 
                 // wrap diagnostics in a thread safe object.
@@ -943,7 +1137,7 @@ namespace Technosoftware.UaServer
 
                 array?.AddReference(ReferenceTypeIds.HasComponent, false, diagnosticsNode.NodeId);
 
-                if (diagnostics.SessionId != null)
+                if (!diagnostics.SessionId.IsNull)
                 {
                     // add reference to session subscription array.
                     diagnosticsNode.AddReference(
@@ -962,7 +1156,7 @@ namespace Technosoftware.UaServer
                     array = (SubscriptionDiagnosticsArrayState)
                         sessionNode.CreateChild(
                             systemContext,
-                            BrowseNames.SubscriptionDiagnosticsArray);
+                            new QualifiedName(BrowseNames.SubscriptionDiagnosticsArray));
 
                     array?.AddReference(
                         ReferenceTypeIds.HasComponent,
@@ -1045,11 +1239,11 @@ namespace Technosoftware.UaServer
                     if (parent != null)
                     {
                         parent.AddReference(
-                            ReferenceTypes.HasComponent,
+                            new NodeId(ReferenceTypes.HasComponent),
                             false,
                             historyServerCapabilitiesNode.NodeId);
                         historyServerCapabilitiesNode.AddReference(
-                            ReferenceTypes.HasComponent,
+                            new NodeId(ReferenceTypes.HasComponent),
                             true,
                             parent.NodeId);
                     }
@@ -1121,12 +1315,12 @@ namespace Technosoftware.UaServer
                 var state = new FolderState(null)
                 {
                     SymbolicName = aggregateName,
-                    ReferenceTypeId = ReferenceTypes.HasComponent,
+                    ReferenceTypeId = new NodeId(ReferenceTypes.HasComponent),
                     TypeDefinitionId = ObjectTypeIds.AggregateFunctionType,
                     NodeId = aggregateId,
                     BrowseName = new QualifiedName(aggregateName, aggregateId.NamespaceIndex)
                 };
-                state.DisplayName = state.BrowseName.Name;
+                state.DisplayName = new LocalizedText(state.BrowseName.Name);
                 state.WriteMask = AttributeWriteMask.None;
                 state.UserWriteMask = AttributeWriteMask.None;
                 state.EventNotifier = EventNotifiers.None;
@@ -1136,8 +1330,8 @@ namespace Technosoftware.UaServer
 
                 if (folder != null)
                 {
-                    folder.AddReference(ReferenceTypes.Organizes, false, state.NodeId);
-                    state.AddReference(ReferenceTypes.Organizes, true, folder.NodeId);
+                    folder.AddReference(new NodeId(ReferenceTypes.Organizes), false, state.NodeId);
+                    state.AddReference(new NodeId(ReferenceTypes.Organizes), true, folder.NodeId);
                 }
 
                 if (isHistorical)
@@ -1147,8 +1341,8 @@ namespace Technosoftware.UaServer
 
                     if (folder != null)
                     {
-                        folder.AddReference(ReferenceTypes.Organizes, false, state.NodeId);
-                        state.AddReference(ReferenceTypes.Organizes, true, folder.NodeId);
+                        folder.AddReference(new NodeId(ReferenceTypes.Organizes), false, state.NodeId);
+                        state.AddReference(new NodeId(ReferenceTypes.Organizes), true, folder.NodeId);
                     }
                 }
 
@@ -1166,12 +1360,12 @@ namespace Technosoftware.UaServer
                 var state = new FolderState(null)
                 {
                     SymbolicName = modellingRuleName,
-                    ReferenceTypeId = ReferenceTypes.HasComponent,
+                    ReferenceTypeId = new NodeId(ReferenceTypes.HasComponent),
                     TypeDefinitionId = ObjectTypeIds.ModellingRuleType,
                     NodeId = modellingRuleId,
                     BrowseName = new QualifiedName(modellingRuleName, modellingRuleId.NamespaceIndex)
                 };
-                state.DisplayName = state.BrowseName.Name;
+                state.DisplayName = new LocalizedText(state.BrowseName.Name);
                 state.WriteMask = AttributeWriteMask.None;
                 state.UserWriteMask = AttributeWriteMask.None;
                 state.EventNotifier = EventNotifiers.None;
@@ -1181,8 +1375,8 @@ namespace Technosoftware.UaServer
 
                 if (folder != null)
                 {
-                    folder.AddReference(ReferenceTypes.Organizes, false, state.NodeId);
-                    state.AddReference(ReferenceTypes.Organizes, true, folder.NodeId);
+                    folder.AddReference(new NodeId(ReferenceTypes.Organizes), false, state.NodeId);
+                    state.AddReference(new NodeId(ReferenceTypes.Organizes), true, folder.NodeId);
                 }
 
                 AddPredefinedNode(SystemContext, state);
@@ -1195,14 +1389,14 @@ namespace Technosoftware.UaServer
         private bool UpdateServerDiagnosticsSummary()
         {
             // get the latest snapshot.
-            object value = null;
+            Variant value = default;
 
             ServiceResult result = m_serverDiagnosticsCallback(
                 SystemContext,
                 m_serverDiagnostics.Variable,
                 ref value);
 
-            var newValue = value as ServerDiagnosticsSummaryDataType;
+            ServerDiagnosticsSummaryDataType newValue = value.GetStructure<ServerDiagnosticsSummaryDataType>();
 
             // check for changes.
             if (Utils.IsEqual(newValue, m_serverDiagnostics.Value))
@@ -1245,14 +1439,14 @@ namespace Technosoftware.UaServer
             int index)
         {
             // get the latest snapshot.
-            object value = null;
+            Variant value = default;
 
             ServiceResult result = diagnostics.UpdateCallback(
                 SystemContext,
                 diagnostics.Value.Variable,
                 ref value);
 
-            var newValue = value as SessionDiagnosticsDataType;
+            SessionDiagnosticsDataType newValue = value.GetStructure<SessionDiagnosticsDataType>();
 
             sessionArray[index] = newValue;
 
@@ -1302,14 +1496,14 @@ namespace Technosoftware.UaServer
             int index)
         {
             // get the latest snapshot.
-            object value = null;
+            Variant value = default;
 
             ServiceResult result = diagnostics.SecurityUpdateCallback(
                 SystemContext,
                 diagnostics.SecurityValue.Variable,
                 ref value);
 
-            var newValue = value as SessionSecurityDiagnosticsDataType;
+            SessionSecurityDiagnosticsDataType newValue = value.GetStructure<SessionSecurityDiagnosticsDataType>();
 
             sessionArray[index] = newValue;
 
@@ -1359,14 +1553,14 @@ namespace Technosoftware.UaServer
             int index)
         {
             // get the latest snapshot.
-            object value = null;
+            Variant value = default;
 
             ServiceResult result = diagnostics.UpdateCallback(
                 SystemContext,
                 diagnostics.Value.Variable,
                 ref value);
 
-            var newValue = value as SubscriptionDiagnosticsDataType;
+            SubscriptionDiagnosticsDataType newValue = value.GetStructure<SubscriptionDiagnosticsDataType>();
 
             subscriptionArray[index] = newValue;
 
@@ -1431,7 +1625,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadUserRolePermissions(
             ISystemContext context,
             NodeState node,
-            ref RolePermissionTypeCollection value)
+            ref ArrayOf<RolePermissionType> value)
         {
             bool adminUser;
 
@@ -1443,7 +1637,8 @@ namespace Technosoftware.UaServer
             else
             {
                 NodeId curSession = (context as ISessionSystemContext)?.SessionId ?? default;
-                adminUser = node.NodeId == curSession || HasApplicationSecureAdminAccess(context);
+                adminUser = node.NodeId.Equals(curSession) ||
+                    HasApplicationSecureAdminAccess(context);
             }
 
             if (adminUser)
@@ -1507,7 +1702,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadDiagnosticsArray(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             lock (Lock)
             {
@@ -1536,7 +1731,7 @@ namespace Technosoftware.UaServer
                     }
                     sessionArray = [.. sessionArray.Where(s => s != null)];
 
-                    value = sessionArray;
+                    value = Variant.FromStructure(sessionArray.ToArrayOf());
                 }
                 else if (node.NodeId ==
                     VariableIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionSecurityDiagnosticsArray)
@@ -1555,7 +1750,7 @@ namespace Technosoftware.UaServer
                     }
                     sessionSecurityArray = [.. sessionSecurityArray.Where(s => s != null)];
 
-                    value = sessionSecurityArray;
+                    value = Variant.FromStructure(sessionSecurityArray.ToArrayOf());
                 }
                 else if (node.NodeId == VariableIds
                     .Server_ServerDiagnostics_SubscriptionDiagnosticsArray)
@@ -1574,7 +1769,7 @@ namespace Technosoftware.UaServer
                     }
                     subscriptionArray = [.. subscriptionArray.Where(s => s != null)];
 
-                    value = subscriptionArray;
+                    value = Variant.FromStructure(subscriptionArray.ToArrayOf());
                 }
 
                 return ServiceResult.Good;
@@ -1647,7 +1842,7 @@ namespace Technosoftware.UaServer
 
                         if (sessionsNode != null &&
                             (
-                                sessionsNode.Value == null ||
+                                sessionsNode.Value.IsNull ||
                                 StatusCode.IsBad(sessionsNode.StatusCode) ||
                                 sessionsChanged))
                         {
@@ -1681,7 +1876,7 @@ namespace Technosoftware.UaServer
 
                         if (sessionsSecurityNode != null &&
                             (
-                                sessionsSecurityNode.Value == null ||
+                                sessionsSecurityNode.Value.IsNull ||
                                 StatusCode.IsBad(sessionsSecurityNode.StatusCode) ||
                                 sessionsSecurityChanged)
                             )
@@ -1715,7 +1910,7 @@ namespace Technosoftware.UaServer
 
                         if (subscriptionsNode != null &&
                             (
-                                subscriptionsNode.Value == null ||
+                                subscriptionsNode.Value.IsNull ||
                                 StatusCode.IsBad(subscriptionsNode.StatusCode) ||
                                 subscriptionsChanged))
                         {
@@ -1754,11 +1949,11 @@ namespace Technosoftware.UaServer
                             subscriptionsNode = (SubscriptionDiagnosticsArrayState)
                                 diagnostics.Summary.CreateChild(
                                     SystemContext,
-                                    BrowseNames.SubscriptionDiagnosticsArray);
+                                    new QualifiedName(BrowseNames.SubscriptionDiagnosticsArray));
 
                             if (subscriptionsNode != null &&
                                 (
-                                    subscriptionsNode.Value == null ||
+                                    subscriptionsNode.Value.IsNull ||
                                     StatusCode.IsBad(subscriptionsNode.StatusCode) ||
                                     subscriptionsChanged))
                             {
@@ -2145,14 +2340,14 @@ namespace Technosoftware.UaServer
                             monitoredItem.AttributeId,
                             monitoredItem.IndexRange,
                             monitoredItem.DataEncoding,
-                            value);
+                            ref value);
 
                         if (ServiceResult.IsBad(error))
                         {
-                            value = new DataValue(error.StatusCode);
+                            value = DataValue.FromStatusCode(error.StatusCode);
                         }
 
-                        value.ServerTimestamp = DateTime.UtcNow;
+                        value = value.WithServerTimestamp(DateTime.UtcNow);
 
                         // queue the value.
                         monitoredItem.QueueValue(value, error);

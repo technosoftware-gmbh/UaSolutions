@@ -77,19 +77,19 @@ namespace SampleCompany.NodeManagers.Alarms
                     alarm.ShelvingState.Create(
                         SystemContext,
                         default,
-                        BrowseNames.ShelvingState,
-                        BrowseNames.ShelvingState,
+                        new QualifiedName(BrowseNames.ShelvingState),
+                        new LocalizedText(BrowseNames.ShelvingState),
                         false);
                 }
                 // Off normal does not create MaxTimeShelved.
-                alarm.MaxTimeShelved ??= new PropertyState<double>(alarm);
+                _ = alarm.CreateOrReplaceMaxTimeShelved(SystemContext, null, false);
             }
 
             // Call the base class to set parameters
             base.Initialize(alarmTypeIdentifier, name);
 
             alarm.SetActiveState(SystemContext, active: false);
-            alarm.InputNode.Value = new NodeId(m_trigger.NodeId);
+            alarm.InputNode.Value = m_trigger.NodeId;
 
             if (Optional)
             {
@@ -100,7 +100,7 @@ namespace SampleCompany.NodeManagers.Alarms
                     oneShot: false,
                     shelvingTime: double.MaxValue);
                 alarm.ShelvingState.LastTransition.Value = new LocalizedText(string.Empty);
-                alarm.ShelvingState.LastTransition.Id.Value = 0;
+                alarm.ShelvingState.LastTransition.Id.Value = default;
 
                 alarm.OnShelve = OnShelve;
                 alarm.OnTimedUnshelve = OnTimedUnshelve;
@@ -248,7 +248,7 @@ namespace SampleCompany.NodeManagers.Alarms
                 shelved = "Unshelved";
             }
 
-            alarm.Message.Value = "The alarm is " + shelved + dueTo;
+            alarm.Message.Value = new LocalizedText("The alarm is " + shelved + dueTo);
             alarm.SetShelvingState(context, shelving, oneShot, shelvingTime);
 
             return ServiceResult.Good;
@@ -260,7 +260,7 @@ namespace SampleCompany.NodeManagers.Alarms
         private ServiceResult OnTimedUnshelve(ISystemContext context, AlarmConditionState alarm)
         {
             // update the alarm state and produce and event.
-            alarm.Message.Value = "The timed shelving period expired.";
+            alarm.Message.Value = new LocalizedText("The timed shelving period expired.");
             alarm.SetShelvingState(context, false, false, 0);
 
             base.SetValue(alarm.Message.Value.Text);

@@ -200,7 +200,7 @@ namespace Technosoftware.UaClient
         /// Browses the specified node.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public async ValueTask<ReferenceDescriptionCollection> BrowseAsync(
+        public async ValueTask<ArrayOf<ReferenceDescription>> BrowseAsync(
             NodeId nodeId,
             CancellationToken ct = default)
         {
@@ -221,7 +221,7 @@ namespace Technosoftware.UaClient
                 ResultMask = state.ResultMask
             };
 
-            var nodesToBrowse = new BrowseDescriptionCollection { nodeToBrowse };
+            ArrayOf<BrowseDescription> nodesToBrowse = ArrayOf.Wrapped(nodeToBrowse);
 
             // make the call to the server.
             BrowseResponse browseResponse = await session.BrowseAsync(
@@ -231,8 +231,8 @@ namespace Technosoftware.UaClient
                 nodesToBrowse,
                 ct).ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = browseResponse.DiagnosticInfos;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
             ResponseHeader responseHeader = browseResponse.ResponseHeader;
 
             // ensure that the server returned valid results.
@@ -249,20 +249,25 @@ namespace Technosoftware.UaClient
                     responseHeader.StringTable);
             }
 
-            // fetch initial set of references.
-            byte[]? continuationPoint = results[0].ContinuationPoint;
-            ReferenceDescriptionCollection references = results[0].References;
+            // fetch initial set of references. ArrayOf<T> is immutable, so the
+            // continuation batches are collected in a list and converted once.
+            ByteString continuationPoint = results[0].ContinuationPoint;
+            var references = new List<ReferenceDescription>(results[0].References.Count);
+            references.AddRange(results[0].References);
 
             try
             {
-                // process any continuation point.
-                while (continuationPoint?.Length > 0)
+                // Process any continuation point. One that is present but
+                // empty means there is nothing more to fetch; IsNull only
+                // rules out the default ByteString, so IsEmpty is what the
+                // 1.5 null test meant.
+                while (!continuationPoint.IsEmpty)
                 {
-                    ReferenceDescriptionCollection additionalReferences;
+                    ArrayOf<ReferenceDescription> additionalReferences;
 
                     if (!ContinueUntilDone && m_MoreReferences != null)
                     {
-                        var args = new BrowserEventArgs(references);
+                        var args = new BrowserEventArgs(references.ToArrayOf());
                         m_MoreReferences(this, args);
 
                         // cancel browser and return the references fetched so far.
@@ -277,7 +282,7 @@ namespace Technosoftware.UaClient
                                     true,
                                     ct).ConfigureAwait(false);
                             }
-                            return references;
+                            return references.ToArrayOf();
                         }
 
                         ContinueUntilDone = args.ContinueUntilDone;
@@ -293,7 +298,7 @@ namespace Technosoftware.UaClient
                         continuationPoint,
                         false,
                         ct).ConfigureAwait(false);
-                    if (additionalReferences != null && additionalReferences.Count > 0)
+                    if (additionalReferences.Count > 0)
                     {
                         references.AddRange(additionalReferences);
                     }
@@ -305,7 +310,7 @@ namespace Technosoftware.UaClient
                     }
                 }
             }
-            catch (OperationCanceledException) when (continuationPoint?.Length > 0)
+            catch (OperationCanceledException) when (!continuationPoint.IsEmpty)
             {
                 session = Session;
                 if (session != null)
@@ -318,7 +323,7 @@ namespace Technosoftware.UaClient
                 }
             }
             // return the results.
-            return references;
+            return references.ToArrayOf();
         }
 
         /// <summary>
@@ -350,8 +355,8 @@ namespace Technosoftware.UaClient
         /// <param name="ct">Cancellation token to use</param>
         /// <returns></returns>
         /// <exception cref="ServiceResultException"></exception>
-        public async ValueTask<ResultSet<ReferenceDescriptionCollection>> BrowseAsync(
-            IReadOnlyList<NodeId> nodesToBrowse,
+        public async ValueTask<ResultSet<ArrayOf<ReferenceDescription>>> BrowseAsync(
+            ArrayOf<NodeId> nodesToBrowse,
             CancellationToken ct = default)
         {
             BrowserOptions state = State;
@@ -361,7 +366,13 @@ namespace Technosoftware.UaClient
                     "Cannot browse if not connected to a server.");
 
             int count = nodesToBrowse.Count;
-            var result = new List<ReferenceDescriptionCollection>(count);
+
+            // The per-node lists are handed to resultForPass and to the
+            // next-pass list and are then filled in place, so they have to
+            // stay reference types: an ArrayOf element would be copied on
+            // every assignment and the references would never reach the
+            // caller.
+            var result = new List<List<ReferenceDescription>>(count);
             var errors = new List<ServiceResult>(count);
 
             // first attempt for implementation: create the references for the output in advance.
@@ -376,7 +387,7 @@ namespace Technosoftware.UaClient
             var nodesToBrowseForPass = new List<NodeId>(count);
             nodesToBrowseForPass.AddRange(nodesToBrowse);
 
-            var resultForPass = new List<ReferenceDescriptionCollection>(count);
+            var resultForPass = new List<List<ReferenceDescription>>(count);
             resultForPass.AddRange(result);
 
             var errorsForPass = new List<ServiceResult>(count);
@@ -404,17 +415,17 @@ namespace Technosoftware.UaClient
                 int batchOffset = 0;
 
                 var nodesToBrowseForNextPass = new List<NodeId>();
-                var referenceDescriptionsForNextPass
-                    = new List<ReferenceDescriptionCollection>();
+                var referenceDescriptionsForNextPass = new List<List<ReferenceDescription>>();
                 var errorsForNextPass = new List<ServiceResult>();
 
                 // loop over the batches
-                foreach (List<NodeId> nodesToBrowseBatch in nodesToBrowseForPass
-                    .Batch<NodeId, List<NodeId>>(maxNodesPerBrowse))
+                foreach (ArrayOf<NodeId> nodesToBrowseBatch in nodesToBrowseForPass
+                    .ToArrayOf()
+                    .Batch((int)maxNodesPerBrowse))
                 {
                     int nodesToBrowseBatchCount = nodesToBrowseBatch.Count;
 
-                    ResultSet<ReferenceDescriptionCollection> results = await BrowseAsync(
+                    ResultSet<ArrayOf<ReferenceDescription>> results = await BrowseAsync(
                         session,
                         state.RequestHeader,
                         state.View,
@@ -506,7 +517,9 @@ namespace Technosoftware.UaClient
 
                 passCount++;
             } while (nodesToBrowseForPass.Count > 0);
-            return new ResultSet<ReferenceDescriptionCollection>(result, errors);
+            return new ResultSet<ArrayOf<ReferenceDescription>>(
+                result.ConvertAll(references => (ArrayOf<ReferenceDescription>)references),
+                errors);
         }
 
         /// <summary>
@@ -515,11 +528,11 @@ namespace Technosoftware.UaClient
         /// of specific service results, specifically
         /// BadNoContinuationPoint and BadContinuationPointInvalid
         /// </summary>
-        private static async ValueTask<ResultSet<ReferenceDescriptionCollection>> BrowseAsync(
+        private static async ValueTask<ResultSet<ArrayOf<ReferenceDescription>>> BrowseAsync(
             ISessionClient session,
             RequestHeader? requestHeader,
             ViewDescription? view,
-            List<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             uint maxResultsToReturn,
             BrowseDirection browseDirection,
             NodeId referenceTypeId,
@@ -529,11 +542,15 @@ namespace Technosoftware.UaClient
         {
             requestHeader?.RequestHandle = 0;
 
-            var result = new List<ReferenceDescriptionCollection>(nodeIds.Count);
+            // The per-node lists are shared with the continuation-point
+            // bookkeeping below and filled in place, so they stay reference
+            // types; an ArrayOf element would be copied on assignment and the
+            // references fetched by BrowseNext would never reach the caller.
+            var result = new List<List<ReferenceDescription>>(nodeIds.Count);
             (
                 _,
-                ByteStringCollection continuationPoints,
-                IList<ReferenceDescriptionCollection> referenceDescriptions,
+                List<ByteString> continuationPoints,
+                IList<ArrayOf<ReferenceDescription>> referenceDescriptions,
                 IList<ServiceResult> errors
             ) = await session.BrowseAsync(
                     requestHeader,
@@ -547,10 +564,13 @@ namespace Technosoftware.UaClient
                     ct)
                 .ConfigureAwait(false);
 
-            result.AddRange(referenceDescriptions);
+            foreach (ArrayOf<ReferenceDescription> references in referenceDescriptions)
+            {
+                result.Add([.. references]);
+            }
 
             // process any continuation point.
-            List<ReferenceDescriptionCollection> previousResults = result;
+            List<List<ReferenceDescription>> previousResults = [.. result];
             var errorAnchors = new List<ReferenceWrapper<ServiceResult>>();
             var previousErrors = new List<ReferenceWrapper<ServiceResult>>();
             foreach (ServiceResult error in errors)
@@ -559,13 +579,13 @@ namespace Technosoftware.UaClient
                 errorAnchors.Add(previousErrors[^1]);
             }
 
-            var nextContinuationPoints = new ByteStringCollection();
-            var nextResults = new List<ReferenceDescriptionCollection>();
+            var nextContinuationPoints = new List<ByteString>();
+            var nextResults = new List<List<ReferenceDescription>>();
             var nextErrors = new List<ReferenceWrapper<ServiceResult>>();
 
             for (int ii = 0; ii < nodeIds.Count; ii++)
             {
-                if (continuationPoints[ii] != null &&
+                if (!continuationPoints[ii].IsEmpty &&
                     !StatusCode.IsBad(previousErrors[ii].Reference.StatusCode))
                 {
                     nextContinuationPoints.Add(continuationPoints[ii]);
@@ -578,8 +598,8 @@ namespace Technosoftware.UaClient
                 requestHeader?.RequestHandle = 0;
                 (
                     _,
-                    ByteStringCollection revisedContinuationPoints,
-                    IList<ReferenceDescriptionCollection> browseNextResults,
+                    List<ByteString> revisedContinuationPoints,
+                    IList<ArrayOf<ReferenceDescription>> browseNextResults,
                     IList<ServiceResult> browseNextErrors
                 ) = await session.BrowseNextAsync(
                     requestHeader,
@@ -602,7 +622,7 @@ namespace Technosoftware.UaClient
 
                 for (int ii = 0; ii < revisedContinuationPoints.Count; ii++)
                 {
-                    if (revisedContinuationPoints[ii] != null &&
+                    if (!revisedContinuationPoints[ii].IsEmpty &&
                         !StatusCode.IsBad(browseNextErrors[ii].StatusCode))
                     {
                         nextContinuationPoints.Add(revisedContinuationPoints[ii]);
@@ -617,7 +637,9 @@ namespace Technosoftware.UaClient
                 finalErrors.Add(errorReference.Reference);
             }
 
-            return new ResultSet<ReferenceDescriptionCollection>(result, finalErrors);
+            return new ResultSet<ArrayOf<ReferenceDescription>>(
+                result.ConvertAll(references => (ArrayOf<ReferenceDescription>)references),
+                finalErrors);
         }
 
         /// <summary>
@@ -629,13 +651,13 @@ namespace Technosoftware.UaClient
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The next batch of references</returns>
         /// <exception cref="ServiceResultException"></exception>
-        private static async ValueTask<(ReferenceDescriptionCollection, byte[]?)> BrowseNextAsync(
+        private static async ValueTask<(ArrayOf<ReferenceDescription>, ByteString)> BrowseNextAsync(
             ISessionClient session,
-            byte[] continuationPoint,
+            ByteString continuationPoint,
             bool cancel,
             CancellationToken ct = default)
         {
-            var continuationPoints = new ByteStringCollection { continuationPoint };
+            ArrayOf<ByteString> continuationPoints = ArrayOf.Wrapped(continuationPoint);
 
             // make the call to the server.
             BrowseNextResponse browseResponse = await session.BrowseNextAsync(
@@ -645,8 +667,8 @@ namespace Technosoftware.UaClient
                 ct)
                 .ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = browseResponse.DiagnosticInfos;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
             ResponseHeader responseHeader = browseResponse.ResponseHeader;
 
             // ensure that the server returned valid results.
@@ -672,12 +694,17 @@ namespace Technosoftware.UaClient
         /// </summary>
         public static Browser? Load(Stream stream, ITelemetryContext telemetry)
         {
-            // secure settings
-            XmlReaderSettings settings = Utils.DefaultXmlReaderSettings();
-            using var reader = XmlReader.Create(stream, settings);
-            var serializer = new DataContractSerializer(typeof(BrowserOptions));
-            using IDisposable scope = AmbientMessageContext.SetScopedContext(telemetry);
-            var options = (BrowserOptions?)serializer.ReadObject(reader);
+            var context = ServiceMessageContext.Create(telemetry);
+            using var decoder = new BinaryDecoder(stream, context, true);
+            ArrayOf<string?> nsUris = decoder.ReadStringArray(null);
+            ArrayOf<string?> serverUris = decoder.ReadStringArray(null);
+
+            // The tables on the wire are nullable string arrays, but the
+            // decoder never yields a null entry for them.
+            context.NamespaceUris = new NamespaceTable(nsUris.Memory.ToArray()!);
+            context.ServerUris = new StringTable(serverUris.Memory.ToArray()!);
+            var options = new BrowserOptions();
+            options.Decode(decoder);
             return new Browser(telemetry, options);
         }
 
@@ -686,10 +713,12 @@ namespace Technosoftware.UaClient
         /// </summary>
         public void Save(Stream stream)
         {
-            // secure settings
-            using IDisposable scope = AmbientMessageContext.SetScopedContext(m_telemetry);
-            var serializer = new DataContractSerializer(typeof(BrowserOptions));
-            serializer.WriteObject(stream, State);
+            IServiceMessageContext context = AmbientMessageContext.CurrentContext
+                ?? ServiceMessageContext.Create(m_telemetry);
+            using var encoder = new BinaryEncoder(stream, context, true);
+            encoder.WriteStringArray(null, context.NamespaceUris.ToArrayOf());
+            encoder.WriteStringArray(null, context.ServerUris.ToArrayOf());
+            State.Encode(encoder);
         }
 
         /// <summary>
@@ -716,7 +745,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Creates a new instance.
         /// </summary>
-        internal BrowserEventArgs(ReferenceDescriptionCollection references)
+        internal BrowserEventArgs(ArrayOf<ReferenceDescription> references)
         {
             References = references;
         }
@@ -734,7 +763,7 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// The references that have been fetched so far.
         /// </summary>
-        public ReferenceDescriptionCollection References { get; }
+        public ArrayOf<ReferenceDescription> References { get; }
     }
 
     /// <summary>

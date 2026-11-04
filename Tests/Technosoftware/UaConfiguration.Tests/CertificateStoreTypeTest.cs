@@ -117,7 +117,7 @@ namespace Technosoftware.UaConfiguration.Tests
         private static async Task OpenCertStoreAsync(CertificateTrustList trustList, ITelemetryContext telemetry)
         {
             using ICertificateStore trustListStore = trustList.OpenStore(telemetry);
-            X509Certificate2Collection certs = await trustListStore.EnumerateAsync()
+            CertificateCollection certs = await trustListStore.EnumerateAsync()
                 .ConfigureAwait(false);
             X509CRLCollection crls = await trustListStore.EnumerateCRLsAsync()
                 .ConfigureAwait(false);
@@ -189,7 +189,7 @@ namespace Technosoftware.UaConfiguration.Tests
 
         /// <inheritdoc/>
         public Task AddAsync(
-            X509Certificate2 certificate,
+            Certificate certificate,
             char[] password = null,
             CancellationToken ct = default)
         {
@@ -203,13 +203,13 @@ namespace Technosoftware.UaConfiguration.Tests
         }
 
         /// <inheritdoc/>
-        public Task<X509Certificate2Collection> EnumerateAsync(CancellationToken ct = default)
+        public Task<CertificateCollection> EnumerateAsync(CancellationToken ct = default)
         {
             return m_innerStore.EnumerateAsync(ct);
         }
 
         /// <inheritdoc/>
-        public Task<X509Certificate2Collection> FindByThumbprintAsync(
+        public Task<CertificateCollection> FindByThumbprintAsync(
             string thumbprint,
             CancellationToken ct = default)
         {
@@ -245,7 +245,7 @@ namespace Technosoftware.UaConfiguration.Tests
 
         /// <inheritdoc/>
         public Task<X509CRLCollection> EnumerateCRLsAsync(
-            X509Certificate2 issuer,
+            Certificate issuer,
             bool validateUpdateTime = true,
             CancellationToken ct = default)
         {
@@ -254,8 +254,8 @@ namespace Technosoftware.UaConfiguration.Tests
 
         /// <inheritdoc/>
         public Task<StatusCode> IsRevokedAsync(
-            X509Certificate2 issuer,
-            X509Certificate2 certificate,
+            Certificate issuer,
+            Certificate certificate,
             CancellationToken ct = default)
         {
             return m_innerStore.IsRevokedAsync(issuer, certificate, ct);
@@ -265,7 +265,7 @@ namespace Technosoftware.UaConfiguration.Tests
         public bool SupportsLoadPrivateKey => m_innerStore.SupportsLoadPrivateKey;
 
         /// <inheritdoc/>
-        public Task<X509Certificate2> LoadPrivateKeyAsync(
+        public Task<Certificate> LoadPrivateKeyAsync(
             string thumbprint,
             string subjectName,
             string applicationUri,
@@ -284,7 +284,7 @@ namespace Technosoftware.UaConfiguration.Tests
 
         /// <inheritdoc/>
         public Task AddRejectedAsync(
-            X509Certificate2Collection certificates,
+            CertificateCollection certificates,
             int maxCertificates,
             CancellationToken ct = default)
         {

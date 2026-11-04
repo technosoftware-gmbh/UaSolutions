@@ -34,7 +34,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public virtual ValueTask CallAsync(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors,
             CancellationToken cancellationToken = default)

@@ -34,7 +34,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// <param name="position">A index that must be passed to the NextRaw call. </param>
         /// <returns>The DataValue.</returns>
         DataValue FirstRaw(
-            DateTime startTime,
+            DateTimeUtc startTime,
             bool isForward,
             bool isReadModified,
             out int position);
@@ -47,6 +47,6 @@ namespace SampleCompany.NodeManagers.TestData
         /// <param name="isReadModified">Whether to return modified data.</param>
         /// <param name="position">A index previously returned by the reader.</param>
         /// <returns>The DataValue.</returns>
-        DataValue NextRaw(DateTime lastTime, bool isForward, bool isReadModified, ref int position);
+        DataValue NextRaw(DateTimeUtc lastTime, bool isForward, bool isReadModified, ref int position);
     }
 }

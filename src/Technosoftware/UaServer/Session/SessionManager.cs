@@ -17,11 +17,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -89,7 +89,7 @@ namespace Technosoftware.UaServer
 
                 foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValue in sessions)
                 {
-                    Utils.SilentDispose(sessionKeyValue.Value);
+                    sessionKeyValue.Value?.Dispose();
                 }
 
                 m_shutdownEvent.Set();
@@ -137,7 +137,7 @@ namespace Technosoftware.UaServer
 
             foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValue in sessions)
             {
-                Utils.SilentDispose(sessionKeyValue.Value);
+                sessionKeyValue.Value?.Dispose();
             }
         }
 
@@ -147,20 +147,20 @@ namespace Technosoftware.UaServer
         /// <exception cref="ServiceResultException"></exception>
         public virtual async ValueTask<CreateSessionResult> CreateSessionAsync(
             UaServerOperationContext context,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             string sessionName,
-            byte[] clientNonce,
+            ByteString clientNonce,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double requestedSessionTimeout,
             uint maxResponseMessageSize,
             CancellationToken cancellationToken = default)
         {
-            NodeId sessionId = 0;
+            NodeId sessionId = default;
             NodeId authenticationToken;
-            byte[] serverNonce;
+            ByteString serverNonce;
             double revisedSessionTimeout = requestedSessionTimeout;
 
             IUaSession session;
@@ -175,13 +175,14 @@ namespace Technosoftware.UaServer
                 }
 
                 // check for same Nonce in another session
-                if (clientNonce != null)
+                if (!clientNonce.IsEmpty)
                 {
                     // iterate over key/value pairs in the dictionary with a thread safe iterator
                     foreach (KeyValuePair<NodeId, IUaSession> sessionKeyValueIterator in m_sessions)
                     {
-                        byte[] sessionClientNonce = sessionKeyValueIterator.Value?.ClientNonce;
-                        if (Nonce.CompareNonce(sessionClientNonce, clientNonce))
+                        ByteString sessionClientNonce =
+                            sessionKeyValueIterator.Value?.ClientNonce ?? default;
+                        if (sessionClientNonce == clientNonce)
                         {
                             throw new ServiceResultException(StatusCodes.BadNonceInvalid);
                         }
@@ -193,7 +194,7 @@ namespace Technosoftware.UaServer
                 // between every client of a listener, so the token is the only
                 // secret that binds a request to its session (Part 6 7.4.1).
                 byte[] token = Nonce.CreateRandomNonceData(32);
-                authenticationToken = new NodeId(token);
+                authenticationToken = new NodeId(token.ToByteString());
 
                 // determine session timeout.
                 if (requestedSessionTimeout > m_maxSessionTimeout)
@@ -236,7 +237,7 @@ namespace Technosoftware.UaServer
 
                 // get the session id.
                 sessionId = session.Id;
-                serverNonce = serverNonceObject.Data;
+                serverNonce = serverNonceObject.Data.ToByteString();
 
                 // save session.
                 if (!m_sessions.TryAdd(authenticationToken, session))
@@ -267,21 +268,21 @@ namespace Technosoftware.UaServer
         /// Activates an existing session
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public virtual async ValueTask<(bool IdentityContextChanged, byte[] ServerNonce)> ActivateSessionAsync(
+        public virtual async ValueTask<(bool IdentityContextChanged, ByteString ServerNonce)> ActivateSessionAsync(
             UaServerOperationContext context,
             NodeId authenticationToken,
             SignatureData clientSignature,
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
-            StringCollection localeIds,
+            ArrayOf<string> localeIds,
             CancellationToken cancellationToken = default)
         {
-            byte[] serverNonce = null;
+            ByteString serverNonce = default;
 
             Nonce serverNonceObject = null;
 
             IUaSession session = null;
-            UserIdentityToken newIdentity = null;
+            IUserIdentityTokenHandler newIdentity = null;
             UserTokenPolicy userTokenPolicy = null;
 
             // fast path no lock
@@ -314,21 +315,25 @@ namespace Technosoftware.UaServer
                 serverNonceObject = CreateSessionNonce(
                     context.ChannelContext.EndpointDescription.SecurityPolicyUri);
 
-                // validate before activation.
-                session.ValidateBeforeActivate(
-                    context,
-                    clientSignature,
-                    userIdentityToken,
-                    userTokenSignature,
-                    out newIdentity,
-                    out userTokenPolicy);
-
-                serverNonce = serverNonceObject.Data;
+                serverNonce = serverNonceObject.Data.ToByteString();
             }
             finally
             {
                 m_semaphoreSlim.Release();
             }
+
+            // validate before activation. The token's crypto is asynchronous in
+            // 2.0, so this runs outside the manager's semaphore; it only touches
+            // the session's own state.
+            (newIdentity, userTokenPolicy) = await session
+                .ValidateBeforeActivateAsync(
+                    context,
+                    clientSignature,
+                    userIdentityToken,
+                    userTokenSignature,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             IUserIdentity identity = null;
             IUserIdentity effectiveIdentity = null;
             ServiceResult error = null;
@@ -385,7 +390,7 @@ namespace Technosoftware.UaServer
 
             bool contextChanged = session.Activate(
                 context,
-                newIdentity,
+                newIdentity.Token,
                 identity,
                 effectiveIdentity,
                 localeIds,
@@ -526,15 +531,15 @@ namespace Technosoftware.UaServer
         protected virtual IUaSession CreateSession(
             UaServerOperationContext context,
             IUaServerData server,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             NodeId sessionCookie,
-            byte[] clientNonce,
+            ByteString clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double sessionTimeout,
             uint maxResponseMessageSize,
             int maxRequestAge, // TBD - Remove unused parameter.
@@ -580,13 +585,15 @@ namespace Technosoftware.UaServer
         /// </remarks>
         private Nonce CreateSessionNonce(string securityPolicyUri)
         {
-            if (EccUtils.IsEccPolicy(securityPolicyUri))
+            SecurityPolicyInfo securityPolicy = SecurityPolicies.Default.GetInfo(securityPolicyUri);
+            if (securityPolicy == null ||
+                securityPolicy.EphemeralKeyAlgorithm != CertificateKeyAlgorithm.None)
             {
                 return Nonce.CreateNonce(securityPolicyUri);
             }
 
-            uint length = Math.Max(Nonce.GetNonceLength(securityPolicyUri), m_minSessionNonceLength);
-            return Nonce.CreateNonce(securityPolicyUri, Nonce.CreateRandomNonceData(length));
+            uint length = Math.Max((uint)securityPolicy.SecureChannelNonceLength, m_minSessionNonceLength);
+            return Nonce.CreateNonce(securityPolicyUri, Nonce.CreateRandomNonceData((int)length));
         }
 
         /// <summary>

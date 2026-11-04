@@ -116,17 +116,17 @@ namespace Technosoftware.UaServer
 
                 foreach (SessionPublishQueue publishQueue in publishQueues)
                 {
-                    Utils.SilentDispose(publishQueue);
+                    publishQueue?.Dispose();
                 }
 
                 foreach (IUaSubscription subscription in subscriptions)
                 {
-                    Utils.SilentDispose(subscription);
+                    subscription?.Dispose();
                 }
 
-                Utils.SilentDispose(m_shutdownEvent);
-                Utils.SilentDispose(m_conditionRefreshEvent);
-                Utils.SilentDispose(m_semaphoreSlim);
+                m_shutdownEvent?.Dispose();
+                m_conditionRefreshEvent?.Dispose();
+                m_semaphoreSlim?.Dispose();
             }
         }
 
@@ -384,8 +384,8 @@ namespace Technosoftware.UaServer
                     continue;
                 }
 
-                subscription.GetMonitoredItems(out uint[] monitoredItemsIds, out _);
-                createdSubscriptions.Add(subscription.Id, monitoredItemsIds);
+                subscription.GetMonitoredItems(out ArrayOf<uint> monitoredItemsIds, out _);
+                createdSubscriptions.Add(subscription.Id, monitoredItemsIds.ToArray() ?? []);
             }
 
             m_lastSubscriptionId = restoreResult.Subscriptions.Max(s => s.Id);
@@ -671,7 +671,7 @@ namespace Technosoftware.UaServer
                 {
                     NodeId sessionId = subscription.SessionId;
 
-                    if (!NodeId.IsNull(sessionId))
+                    if (!sessionId.IsNull)
                     {
                         // check that the subscription is the owner.
                         if (context != null &&
@@ -923,15 +923,18 @@ namespace Technosoftware.UaServer
         /// </summary>
         public async ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             UaServerOperationContext context,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken cancellationToken = default)
         {
             bool diagnosticsExist = false;
-            var results = new StatusCodeCollection(subscriptionIds.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(subscriptionIds.Count);
+            var results = new List<StatusCode>(subscriptionIds.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(subscriptionIds.Count);
 
-            foreach (uint subscriptionId in subscriptionIds)
+            // ArrayOf's enumerator is a span enumerator and cannot live across
+            // an await, so this loop indexes instead.
+            for (int ii = 0; ii < subscriptionIds.Count; ii++)
             {
+                uint subscriptionId = subscriptionIds[ii];
                 try
                 {
                     StatusCode result = await DeleteSubscriptionAsync(context, subscriptionId, cancellationToken).ConfigureAwait(false);
@@ -991,7 +994,7 @@ namespace Technosoftware.UaServer
                     Message = subscription.PublishTimeout()
                 };
 
-                if (subscription.SessionId != null &&
+                if (!subscription.SessionId.IsNull &&
                     m_statusMessages.TryGetValue(
                         subscription.SessionId,
                         out Queue<StatusMessage> queue))
@@ -1007,7 +1010,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ServiceResultException"></exception>
         public async Task<PublishResponse> PublishAsync(
             UaServerOperationContext context,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             CancellationToken cancellationToken = default)
         {
             // get publish queue for session.
@@ -1025,8 +1028,8 @@ namespace Technosoftware.UaServer
             queue.Acknowledge(
                 context,
                 subscriptionAcknowledgements,
-                out StatusCodeCollection acknowledgeResults,
-                out DiagnosticInfoCollection acknowledgeDiagnosticInfos);
+                out List<StatusCode> acknowledgeResults,
+                out List<DiagnosticInfo> acknowledgeDiagnosticInfos);
 
             // update diagnostics.
             if (context.Session != null)
@@ -1102,7 +1105,7 @@ namespace Technosoftware.UaServer
                     {
                         NotificationMessage message = subscription.Publish(
                             context,
-                            out UInt32Collection availableSequenceNumbers,
+                            out ArrayOf<uint> availableSequenceNumbers,
                             out moreNotifications);
 
                         // a null message indicates a false alarm; requeue and wait for the next one.
@@ -1273,14 +1276,14 @@ namespace Technosoftware.UaServer
         public void SetPublishingMode(
             UaServerOperationContext context,
             bool publishingEnabled,
-            UInt32Collection subscriptionIds,
-            out StatusCodeCollection results,
-            out DiagnosticInfoCollection diagnosticInfos)
+            ArrayOf<uint> subscriptionIds,
+            out List<StatusCode> results,
+            out List<DiagnosticInfo> diagnosticInfos)
         {
             bool diagnosticsExist = false;
 
-            results = new StatusCodeCollection(subscriptionIds.Count);
-            diagnosticInfos = new DiagnosticInfoCollection(subscriptionIds.Count);
+            results = new List<StatusCode>(subscriptionIds.Count);
+            diagnosticInfos = new List<DiagnosticInfo>(subscriptionIds.Count);
 
             for (int ii = 0; ii < subscriptionIds.Count; ii++)
             {
@@ -1341,12 +1344,12 @@ namespace Technosoftware.UaServer
         /// </summary>
         public async ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             UaServerOperationContext context,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool sendInitialValues,
             CancellationToken cancellationToken = default)
         {
-            var results = new TransferResultCollection();
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var results = new List<TransferResult>();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             m_logger.LogInformation(
                 "TransferSubscriptions to SessionId={SessionId}, Count={Count}, sendInitialValues={SendInitialValues}",
@@ -1380,7 +1383,7 @@ namespace Technosoftware.UaServer
                     // check if new and old sessions are different
                     IUaSession ownerSession = subscription.Session;
                     if (ownerSession != null &&
-                        !NodeId.IsNull(ownerSession.Id) &&
+                        !ownerSession.Id.IsNull &&
                         ownerSession.Id == context.Session.Id)
                     {
                         result.StatusCode = StatusCodes.BadNothingToDo;
@@ -1394,13 +1397,13 @@ namespace Technosoftware.UaServer
 
                     // get the identity of the current or last owner
                     UserIdentityToken ownerIdentity = subscription.EffectiveIdentity
-                        .GetIdentityToken();
+                        ?.TokenHandler?.Token;
 
                     // Validate the identity of the user who owns/owned the subscription
                     // is the same as the new owner.
                     bool validIdentity = Utils.IsEqualUserIdentity(
                         ownerIdentity,
-                        context.Session.EffectiveIdentity.GetIdentityToken());
+                        context.Session.EffectiveIdentity?.TokenHandler?.Token);
 
                     // Test if anonymous user is using a
                     // secure session using Sign or SignAndEncrypt
@@ -1513,7 +1516,7 @@ namespace Technosoftware.UaServer
                         bool statusQueued = false;
                         lock (m_statusMessagesLock)
                         {
-                            if (!NodeId.IsNull(ownerSession.Id) &&
+                            if (!ownerSession.Id.IsNull &&
                                 m_statusMessages.TryGetValue(
                                     ownerSession.Id,
                                     out Queue<StatusMessage> queue))
@@ -1636,12 +1639,12 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             uint triggeringItemId,
-            UInt32Collection linksToAdd,
-            UInt32Collection linksToRemove,
-            out StatusCodeCollection addResults,
-            out DiagnosticInfoCollection addDiagnosticInfos,
-            out StatusCodeCollection removeResults,
-            out DiagnosticInfoCollection removeDiagnosticInfos)
+            ArrayOf<uint> linksToAdd,
+            ArrayOf<uint> linksToRemove,
+            out List<StatusCode> addResults,
+            out List<DiagnosticInfo> addDiagnosticInfos,
+            out List<StatusCode> removeResults,
+            out List<DiagnosticInfo> removeDiagnosticInfos)
         {
             // find subscription.
 
@@ -1670,7 +1673,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken cancellationToken = default)
         {
             // find subscription.
@@ -1712,7 +1715,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken cancellationToken = default)
         {
             // find subscription.
@@ -1736,7 +1739,7 @@ namespace Technosoftware.UaServer
         public async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
             uint subscriptionId,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             // find subscription.
@@ -1773,11 +1776,11 @@ namespace Technosoftware.UaServer
         /// Changes the monitoring mode for a set of items.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public ValueTask<(StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos)> SetMonitoringModeAsync(
+        public ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> SetMonitoringModeAsync(
             UaServerOperationContext context,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default)
         {
             // find subscription.

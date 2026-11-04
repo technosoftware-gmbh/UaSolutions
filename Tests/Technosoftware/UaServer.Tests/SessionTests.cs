@@ -30,7 +30,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public async Task UpdateDiagnosticCounters_RaisesEvent_WhenPerRequestCounterChangedAsync()
         {
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
             await fixture.StartAsync().ConfigureAwait(false);
 
             try
@@ -73,7 +73,7 @@ namespace Technosoftware.UaServer.Tests
         [TestCase(RequestType.Cancel)]
         public async Task UpdateDiagnosticCounters_DoesNotRaiseEvent_ForIgnoredRequestTypesAsync(RequestType requestType)
         {
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
             await fixture.StartAsync().ConfigureAwait(false);
 
             try

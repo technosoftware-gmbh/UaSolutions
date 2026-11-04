@@ -121,7 +121,7 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_samplingGroupManager);
+                m_samplingGroupManager?.Dispose();
             }
         }
 
@@ -213,11 +213,9 @@ namespace Technosoftware.UaServer
             if (previousMode == MonitoringMode.Disabled &&
                 monitoringMode != MonitoringMode.Disabled)
             {
-                var initialValue = new DataValue
-                {
-                    ServerTimestamp = DateTime.UtcNow,
-                    StatusCode = StatusCodes.BadWaitingForInitialData
-                };
+                var initialValue = new DataValue()
+                    .WithServerTimestamp(DateTime.UtcNow)
+                    .WithStatus(StatusCodes.BadWaitingForInitialData);
 
                 // read the initial value.
 
@@ -226,12 +224,12 @@ namespace Technosoftware.UaServer
                     ServiceResult error = node.Read(
                         context,
                         monitoredItem.AttributeId,
-                        initialValue);
+                        ref initialValue);
 
                     if (ServiceResult.IsBad(error))
                     {
-                        initialValue.Value = null;
-                        initialValue.StatusCode = error.StatusCode;
+                        initialValue = initialValue.WithWrappedValue(Variant.Null);
+                        initialValue = initialValue.WithStatus(error.StatusCode);
                     }
                 }
 

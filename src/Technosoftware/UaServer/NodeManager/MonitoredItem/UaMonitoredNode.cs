@@ -41,6 +41,7 @@ namespace Technosoftware.UaServer
         {
             NodeManager = nodeManager;
             Node = node;
+            m_timeProvider = nodeManager.ServerData?.TimeProvider ?? TimeProvider.System;
         }
 
         /// <summary>
@@ -227,10 +228,9 @@ namespace Technosoftware.UaServer
                     // enqueue event
                     if (context is ISessionSystemContext session &&
                         session.SessionId != null &&
-                        monitoredItem?.Session?.Id?.Identifier != null)
+                        monitoredItem?.Session != null)
                     {
-                        if (monitoredItem.Session.Id.Identifier
-                            .Equals(session.SessionId.Identifier))
+                        if (monitoredItem.Session.Id.Equals(session.SessionId))
                         {
                             monitoredItem?.QueueEvent(e);
                         }
@@ -305,13 +305,11 @@ namespace Technosoftware.UaServer
             NodeState node,
             IUaDataChangeMonitoredItem2 monitoredItem)
         {
-            var value = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.Good
-            };
+            var value = new DataValue()
+                .WithWrappedValue(Variant.Null)
+                .WithServerTimestamp(DateTime.UtcNow)
+                .WithSourceTimestamp(DateTime.MinValue)
+                .WithStatus(StatusCodes.Good);
 
             ISystemContext contextToUse = context;
 
@@ -325,11 +323,11 @@ namespace Technosoftware.UaServer
                 monitoredItem.AttributeId,
                 monitoredItem.IndexRange,
                 monitoredItem.DataEncoding,
-                value);
+                ref value);
 
             if (ServiceResult.IsBad(error))
             {
-                value = null;
+                value = default;
             }
 
             monitoredItem.QueueValue(value, error);
@@ -346,7 +344,7 @@ namespace Technosoftware.UaServer
             IUaDataChangeMonitoredItem2 monitoredItem)
         {
             uint monitoredItemId = monitoredItem.Id;
-            int currentTicks = HiResClock.TickCount;
+            int currentTicks = m_timeProvider.GetTickCount();
 
             // Check if the context already exists in the cache
             if (m_contextCache.TryGetValue(
@@ -380,5 +378,6 @@ namespace Technosoftware.UaServer
             new();
 
         private readonly int m_cacheLifetimeTicks = (int)TimeSpan.FromMinutes(5).TotalMilliseconds;
+        private readonly TimeProvider m_timeProvider;
     }
 }

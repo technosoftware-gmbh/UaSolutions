@@ -18,8 +18,10 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -49,15 +51,15 @@ namespace Technosoftware.UaServer
         public Session(
             UaServerOperationContext context,
             IUaServerData server,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             NodeId authenticationToken,
-            byte[] clientNonce,
+            ByteString clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double sessionTimeout,
             int maxBrowseContinuationPoints,
             int maxHistoryContinuationPoints)
@@ -75,6 +77,11 @@ namespace Technosoftware.UaServer
 
             m_server = server ?? throw new ArgumentNullException(nameof(server));
             m_logger = server.Telemetry.CreateLogger<Session>();
+            // 2.0 resolves signature algorithms through a registry rather than
+            // the static SecurityPolicies helpers. IUaServerData exposes no
+            // registry of its own, so the process-wide default is used; the
+            // field is the seam for a per-server registry later.
+            m_securityPolicies = SecurityPolicies.Default;
             ClientNonce = clientNonce;
             m_serverNonce = serverNonce;
             m_sessionName = sessionName;
@@ -113,7 +120,7 @@ namespace Technosoftware.UaServer
                 AuthenticationMechanism = Identity.TokenType.ToString(),
                 Encoding = context.ChannelContext.MessageEncoding.ToString()
             };
-            m_securityDiagnostics.ClientUserIdHistory.Add(Identity.DisplayName);
+            m_securityDiagnostics.ClientUserIdHistory += Identity.DisplayName;
 
             EndpointDescription description = context.ChannelContext.EndpointDescription;
 
@@ -126,7 +133,7 @@ namespace Technosoftware.UaServer
 
             if (clientCertificate != null)
             {
-                m_securityDiagnostics.ClientCertificate = clientCertificate.RawData;
+                m_securityDiagnostics.ClientCertificate = clientCertificate.RawData.ToByteString();
             }
 
             UaServerContext systemContext = m_server.DefaultSystemContext.Copy(context);
@@ -170,7 +177,7 @@ namespace Technosoftware.UaServer
                 {
                     for (int ii = 0; ii < browseCPs.Count; ii++)
                     {
-                        Utils.SilentDispose(browseCPs[ii]);
+                        browseCPs[ii]?.Dispose();
                     }
                 }
 
@@ -186,7 +193,7 @@ namespace Technosoftware.UaServer
                 {
                     for (int ii = 0; ii < historyCPs.Count; ii++)
                     {
-                        Utils.SilentDispose(historyCPs[ii].Value);
+                        (historyCPs[ii].Value as IDisposable)?.Dispose();
                     }
                 }
             }
@@ -215,7 +222,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// A lock which must be acquired before accessing the diagnostics.
         /// </summary>
-        public object DiagnosticsLock => SessionDiagnostics;
+        public Lock DiagnosticsLock { get; } = new();
 
         /// <summary>
         /// The diagnostics associated with the session.
@@ -225,12 +232,12 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The client Nonce associated with the session.
         /// </summary>
-        public byte[] ClientNonce { get; }
+        public ByteString ClientNonce { get; }
 
         /// <summary>
         /// The application instance certificate associated with the client.
         /// </summary>
-        public X509Certificate2 ClientCertificate { get; }
+        public Certificate ClientCertificate { get; }
 
         /// <summary>
         /// The locales requested when the session was created.
@@ -262,7 +269,7 @@ namespace Technosoftware.UaServer
             {
                 lock (DiagnosticsLock)
                 {
-                    return SessionDiagnostics.ClientLastContactTime;
+                    return (DateTime)SessionDiagnostics.ClientLastContactTime;
                 }
             }
         }
@@ -299,14 +306,14 @@ namespace Technosoftware.UaServer
 
                 m_eccUserTokenNonce = Nonce.CreateNonce(m_eccUserTokenSecurityPolicyUri);
 
-                var key = new EphemeralKeyType { PublicKey = m_eccUserTokenNonce.Data };
-
-                key.Signature = EccUtils.Sign(
-                    new ArraySegment<byte>(key.PublicKey),
-                    m_serverCertificate,
-                    m_eccUserTokenSecurityPolicyUri);
-
-                return key;
+                return new EphemeralKeyType
+                {
+                    PublicKey = m_eccUserTokenNonce.Data.ToByteString(),
+                    Signature = CryptoUtils.Sign(
+                        new ArraySegment<byte>(m_eccUserTokenNonce.Data!),
+                        m_serverCertificate,
+                        m_eccUserTokenSecurityPolicyUri).ToByteString()
+                };
             }
         }
 
@@ -366,7 +373,7 @@ namespace Technosoftware.UaServer
                 DiagnosticsMasks.ServiceAdditionalInfo | DiagnosticsMasks.OperationAdditionalInfo);
             if ((requestHeader.ReturnDiagnostics & additionalInfoDiagnosticsMask) != 0)
             {
-                NodeIdCollection currentRoleIds = EffectiveIdentity?.GrantedRoleIds;
+                ArrayOf<NodeId>? currentRoleIds = EffectiveIdentity?.GrantedRoleIds;
                 if ((currentRoleIds?.Contains(ObjectIds.WellKnownRole_SecurityAdmin)) == true ||
                     (currentRoleIds?.Contains(ObjectIds.WellKnownRole_ConfigureAdmin)) == true)
                 {
@@ -392,13 +399,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <returns>true if the new locale ids are different from the old locale ids.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="localeIds"/> is <c>null</c>.</exception>
-        public bool UpdateLocaleIds(StringCollection localeIds)
+        public bool UpdateLocaleIds(ArrayOf<string> localeIds)
         {
-            if (localeIds == null)
-            {
-                throw new ArgumentNullException(nameof(localeIds));
-            }
-
             lock (m_lock)
             {
                 string[] ids = [.. localeIds];
@@ -424,13 +426,14 @@ namespace Technosoftware.UaServer
         /// Activates the session and binds it to the current secure channel.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        public void ValidateBeforeActivate(
-            UaServerOperationContext context,
-            SignatureData clientSignature,
-            ExtensionObject userIdentityToken,
-            SignatureData userTokenSignature,
-            out UserIdentityToken identityToken,
-            out UserTokenPolicy userTokenPolicy)
+        public async ValueTask<(
+            IUserIdentityTokenHandler IdentityTokenHandler,
+            UserTokenPolicy UserTokenPolicy)> ValidateBeforeActivateAsync(
+                UaServerOperationContext context,
+                SignatureData clientSignature,
+                ExtensionObject userIdentityToken,
+                SignatureData userTokenSignature,
+                CancellationToken ct = default)
         {
             lock (m_lock)
             {
@@ -450,29 +453,43 @@ namespace Technosoftware.UaServer
                 }
 
                 // verify the client signature.
+                if (EndpointDescription.SecurityPolicyUri != SecurityPolicies.None &&
+                    (ClientCertificate == null ||
+                        clientSignature == null ||
+                        clientSignature.Signature.IsEmpty))
+                {
+                    throw new ServiceResultException(
+                        StatusCodes.BadApplicationSignatureInvalid);
+                }
+
                 if (ClientCertificate != null)
                 {
-                    if (EndpointDescription.SecurityPolicyUri != SecurityPolicies.None &&
-                        clientSignature != null &&
-                        clientSignature.Signature == null)
-                    {
-                        throw new ServiceResultException(
-                            StatusCodes.BadApplicationSignatureInvalid);
-                    }
+                    // 2.0 builds the data to sign through the security policy
+                    // rather than by appending the certificate and the nonce
+                    // here, so a policy that mixes in the channel certificates
+                    // or thumbprint is handled without a change in this file.
+                    SecurityPolicyInfo securityPolicy = m_securityPolicies.GetInfo(
+                        EndpointDescription.SecurityPolicyUri)!;
 
-                    byte[] dataToSign = Utils.Append(
+                    byte[] clientNonceData = ClientNonce.ToArray();
+
+                    byte[] dataToSign = securityPolicy.GetClientSignatureData(
+                        context.ChannelContext.ChannelThumbprint.ToArrayOrNull(),
+                        m_serverNonce.Data,
                         m_serverCertificate.RawData,
-                        m_serverNonce.Data);
+                        context.ChannelContext.ServerChannelCertificate.ToArrayOrNull(),
+                        context.ChannelContext.ClientChannelCertificate.ToArrayOrNull(),
+                        clientNonceData);
 
-                    if (!SecurityPolicies.Verify(
-                            ClientCertificate,
+                    if (!m_securityPolicies.VerifySignatureData(
+                            clientSignature!,
                             EndpointDescription.SecurityPolicyUri,
-                            dataToSign,
-                            clientSignature))
+                            ClientCertificate,
+                            dataToSign))
                     {
                         // verify for certificate chain in endpoint.
                         // validate the signature with complete chain if the check with leaf certificate failed.
-                        X509Certificate2Collection serverCertificateChain =
+                        using CertificateCollection serverCertificateChain =
                             Utils.ParseCertificateChainBlob(
                                 EndpointDescription.ServerCertificate,
                                 m_server.Telemetry);
@@ -489,15 +506,19 @@ namespace Technosoftware.UaServer
 
                             byte[] serverCertificateChainData = [.. serverCertificateChainList];
 
-                            dataToSign = Utils.Append(
+                            dataToSign = securityPolicy.GetClientSignatureData(
+                                context.ChannelContext.ChannelThumbprint.ToArrayOrNull(),
+                                m_serverNonce.Data,
                                 serverCertificateChainData,
-                                m_serverNonce.Data);
+                                context.ChannelContext.ServerChannelCertificate.ToArrayOrNull(),
+                                context.ChannelContext.ClientChannelCertificate.ToArrayOrNull(),
+                                clientNonceData);
 
-                            if (!SecurityPolicies.Verify(
-                                    ClientCertificate,
+                            if (!m_securityPolicies.VerifySignatureData(
+                                    clientSignature!,
                                     EndpointDescription.SecurityPolicyUri,
-                                    dataToSign,
-                                    clientSignature))
+                                    ClientCertificate,
+                                    dataToSign))
                             {
                                 throw new ServiceResultException(
                                     StatusCodes.BadApplicationSignatureInvalid);
@@ -520,14 +541,19 @@ namespace Technosoftware.UaServer
                     }
                 }
 
-                // validate the user identity token.
-                identityToken = ValidateUserIdentityToken(
+            }
+
+            // the identity token is decrypted and its signature verified with
+            // asynchronous crypto in 2.0, so this half cannot run under m_lock.
+            (IUserIdentityTokenHandler identityToken, UserTokenPolicy userTokenPolicy) =
+                await ValidateUserIdentityTokenAsync(
+                    context,
                     userIdentityToken,
                     userTokenSignature,
-                    out userTokenPolicy);
+                    ct).ConfigureAwait(false);
 
-                TraceState("VALIDATED");
-            }
+            TraceState("VALIDATED");
+            return (identityToken, userTokenPolicy);
         }
 
         /// <summary>
@@ -538,7 +564,7 @@ namespace Technosoftware.UaServer
             UserIdentityToken identityToken,
             IUserIdentity identity,
             IUserIdentity effectiveIdentity,
-            StringCollection localeIds,
+            ArrayOf<string> localeIds,
             Nonce serverNonce)
         {
             lock (m_lock)
@@ -621,7 +647,7 @@ namespace Technosoftware.UaServer
                 {
                     UaContinuationPoint cp = m_browseContinuationPoints[0];
                     m_browseContinuationPoints.RemoveAt(0);
-                    Utils.SilentDispose(cp);
+                    cp?.Dispose();
                 }
 
                 // add to end of list.
@@ -635,7 +661,7 @@ namespace Technosoftware.UaServer
         /// <remarks>
         /// The caller is responsible for disposing the continuation point returned.
         /// </remarks>
-        public UaContinuationPoint RestoreContinuationPoint(byte[] continuationPoint)
+        public UaContinuationPoint RestoreContinuationPoint(ByteString continuationPoint)
         {
             lock (m_lock)
             {
@@ -644,12 +670,12 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                if (continuationPoint == null || continuationPoint.Length != 16)
+                if (continuationPoint.Length != 16)
                 {
                     return null;
                 }
 
-                var id = new Guid(continuationPoint);
+                var id = new Guid(continuationPoint.ToArray());
 
                 for (int ii = 0; ii < m_browseContinuationPoints.Count; ii++)
                 {
@@ -691,7 +717,7 @@ namespace Technosoftware.UaServer
                 {
                     HistoryContinuationPoint oldCP = m_historyContinuationPoints[0];
                     m_historyContinuationPoints.RemoveAt(0);
-                    Utils.SilentDispose(oldCP.Value);
+                    (oldCP.Value as IDisposable)?.Dispose();
                 }
 
                 // create the cp.
@@ -756,7 +782,7 @@ namespace Technosoftware.UaServer
 
                     HistoryContinuationPoint oldCP = m_historyContinuationPoints[index];
                     m_historyContinuationPoints.RemoveAt(index);
-                    Utils.SilentDispose(oldCP.Value);
+                    (oldCP.Value as IDisposable)?.Dispose();
                 }
 
                 m_historyContinuationPoints.Add(new HistoryContinuationPoint
@@ -776,7 +802,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="continuationPoint">The identifier for the continuation point.</param>
         /// <returns>The save continuation point. null if not found.</returns>
-        public object RestoreHistoryContinuationPoint(byte[] continuationPoint)
+        public object RestoreHistoryContinuationPoint(ByteString continuationPoint)
         {
             lock (m_lock)
             {
@@ -785,12 +811,12 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                if (continuationPoint == null || continuationPoint.Length != 16)
+                if (continuationPoint.Length != 16)
                 {
                     return null;
                 }
 
-                var id = new Guid(continuationPoint);
+                var id = new Guid(continuationPoint.ToArray());
 
                 for (int ii = 0; ii < m_historyContinuationPoints.Count; ii++)
                 {
@@ -846,11 +872,11 @@ namespace Technosoftware.UaServer
         private ServiceResult OnUpdateDiagnostics(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             lock (DiagnosticsLock)
             {
-                value = Utils.Clone(SessionDiagnostics);
+                value = Variant.FromStructure(SessionDiagnostics, copy: true);
             }
 
             return ServiceResult.Good;
@@ -862,11 +888,11 @@ namespace Technosoftware.UaServer
         private ServiceResult OnUpdateSecurityDiagnostics(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             lock (DiagnosticsLock)
             {
-                value = Utils.Clone(m_securityDiagnostics);
+                value = Variant.FromStructure(m_securityDiagnostics, copy: true);
             }
 
             return ServiceResult.Good;
@@ -876,21 +902,29 @@ namespace Technosoftware.UaServer
         /// Validates the identity token supplied by the client.
         /// </summary>
         /// <exception cref="ServiceResultException"></exception>
-        private UserIdentityToken ValidateUserIdentityToken(
-            ExtensionObject identityToken,
-            SignatureData userTokenSignature,
-            out UserTokenPolicy policy)
+        private async ValueTask<(
+            IUserIdentityTokenHandler IdentityTokenHandler,
+            UserTokenPolicy UserTokenPolicy)> ValidateUserIdentityTokenAsync(
+                UaServerOperationContext context,
+                ExtensionObject identityToken,
+                SignatureData userTokenSignature,
+                CancellationToken ct)
         {
-            policy = null;
+            UserTokenPolicy policy = null;
+
+            // ExtensionObject.Body is gone; what it held is reached either as
+            // an encodeable or, when the token arrived binary encoded and has
+            // not been decoded yet, as the raw blob.
+            bool hasEncodeable = identityToken.TryGetValue(out IEncodeable tokenBody);
+            bool hasBinaryBody = identityToken.TryGetAsBinary(out _);
 
             // check for empty token.
-            if (identityToken == null ||
-                identityToken.Body == null ||
-                identityToken.Body.GetType() == typeof(AnonymousIdentityToken))
+            if (identityToken.IsNull ||
+                (!hasEncodeable && !hasBinaryBody) ||
+                tokenBody is AnonymousIdentityToken)
             {
                 // check if an anonymous login is permitted.
-                if (EndpointDescription.UserIdentityTokens != null &&
-                    EndpointDescription.UserIdentityTokens.Count > 0)
+                if (EndpointDescription.UserIdentityTokens.Count > 0)
                 {
                     bool found = false;
 
@@ -914,16 +948,23 @@ namespace Technosoftware.UaServer
                 }
 
                 // create an anonymous token to use for subsequent validation.
-                return new AnonymousIdentityToken { PolicyId = policy.PolicyId };
+                return (
+                    AnonymousIdentityTokenHandler.Create(policy),
+                    policy);
             }
 
             UserIdentityToken token;
+            IUserIdentityTokenHandler handler;
             // check for unrecognized token.
-            if (!typeof(UserIdentityToken).IsInstanceOfType(identityToken.Body))
+            if (tokenBody is not UserIdentityToken decodedToken)
             {
-                //handle the use case when the UserIdentityToken is binary encoded over xml message encoding
+                // handle the use case when the UserIdentityToken is binary
+                // encoded over xml message encoding. In 1.5 the undecoded body
+                // was a byte[]; it is a ByteString now, so the old type test
+                // would never have matched and a binary encoded token would
+                // have been rejected outright.
                 if (identityToken.Encoding == ExtensionObjectEncoding.Binary &&
-                    typeof(byte[]).IsInstanceOfType(identityToken.Body))
+                    hasBinaryBody)
                 {
                     if (BaseVariableState.DecodeExtensionObject(
                             null,
@@ -1001,7 +1042,7 @@ namespace Technosoftware.UaServer
             else
             {
                 // get the token.
-                token = (UserIdentityToken)identityToken.Body;
+                token = decodedToken;
             }
 
             // find the user token policy.
@@ -1016,11 +1057,10 @@ namespace Technosoftware.UaServer
                     "User token policy not supported.");
             }
 
-            if (token is IssuedIdentityToken issuedToken &&
-                policy.IssuedTokenType == Profiles.JwtUserToken)
-            {
-                issuedToken.IssuedTokenType = IssuedTokenType.JWT;
-            }
+            // 2.0 does the token's own crypto through a handler rather than on
+            // UserIdentityToken itself, and keeps a decrypted secret on the
+            // handler rather than writing it back onto the token.
+            handler = token.AsTokenHandler(m_securityPolicies);
 
             // determine the security policy uri.
             string securityPolicyUri = policy.SecurityPolicyUri;
@@ -1033,32 +1073,26 @@ namespace Technosoftware.UaServer
             if (ServerBase.RequireEncryption(EndpointDescription))
             {
                 // decrypt the token.
-                if (m_serverCertificate == null)
-                {
-                    m_serverCertificate = X509CertificateLoader.LoadCertificate(
-                        EndpointDescription.ServerCertificate);
+                m_serverCertificate ??= Certificate.FromRawData(
+                    EndpointDescription.ServerCertificate) ??
+                    throw ServiceResultException.ConfigurationError(
+                        "ApplicationCertificate cannot be found.");
 
-                    // check for valid certificate.
-                    if (m_serverCertificate == null)
-                    {
-                        throw ServiceResultException.Create(
-                            StatusCodes.BadConfigurationError,
-                            "ApplicationCertificate cannot be found.");
-                    }
-                }
+                handler.UpdatePolicy(policy);
 
                 try
                 {
-                    token.Decrypt(
+                    await handler.DecryptAsync(
                         m_serverCertificate,
                         m_serverNonce,
                         securityPolicyUri,
                         m_server.MessageContext,
                         m_eccUserTokenNonce,
                         ClientCertificate,
-                        m_clientIssuerCertificates);
+                        m_clientIssuerCertificates,
+                        ct: ct).ConfigureAwait(false);
                 }
-                catch (Exception e)
+                catch (Exception e) when (e is not OperationCanceledException)
                 {
                     // Every decryption, padding, length or nonce error must look the
                     // same to the client (OPC 10000-4 7.40.2.1). The cause is logged
@@ -1075,18 +1109,35 @@ namespace Technosoftware.UaServer
                         "Could not decrypt identity token.");
                 }
 
+
                 // verify the signature.
                 if (securityPolicyUri != SecurityPolicies.None)
                 {
-                    byte[] dataToSign = Utils.Append(
-                        m_serverCertificate.RawData,
-                        m_serverNonce.Data);
+                    SecurityPolicyInfo securityPolicy = m_securityPolicies.GetInfo(
+                        securityPolicyUri)!;
 
-                    if (!token.Verify(dataToSign, userTokenSignature, securityPolicyUri, m_server.Telemetry))
+                    SecureChannelContext channelContext = context.ChannelContext;
+                    byte[] clientNonceData = ClientNonce.ToArray();
+
+                    byte[] dataToSign = securityPolicy.GetUserTokenSignatureData(
+                        channelContext.ChannelThumbprint.ToArrayOrNull(),
+                        m_serverNonce.Data,
+                        m_serverCertificate.RawData,
+                        channelContext.ServerChannelCertificate.ToArrayOrNull(),
+                        ClientCertificate?.RawData,
+                        channelContext.ClientChannelCertificate.ToArrayOrNull(),
+                        clientNonceData,
+                        EndpointDescription.SecurityMode);
+
+                    if (!await handler.VerifyAsync(
+                            dataToSign,
+                            userTokenSignature,
+                            securityPolicyUri,
+                            ct).ConfigureAwait(false))
                     {
                         // verify for certificate chain in endpoint.
                         // validate the signature with complete chain if the check with leaf certificate failed.
-                        X509Certificate2Collection serverCertificateChain =
+                        using CertificateCollection serverCertificateChain =
                             Utils.ParseCertificateChainBlob(
                                 EndpointDescription.ServerCertificate,
                                 m_server.Telemetry);
@@ -1101,13 +1152,21 @@ namespace Technosoftware.UaServer
                                     serverCertificateChain[i].RawData);
                             }
 
-                            byte[] serverCertificateChainData = [.. serverCertificateChainList];
+                            dataToSign = securityPolicy.GetUserTokenSignatureData(
+                                channelContext.ChannelThumbprint.ToArrayOrNull(),
+                                m_serverNonce.Data,
+                                [.. serverCertificateChainList],
+                                channelContext.ServerChannelCertificate.ToArrayOrNull(),
+                                ClientCertificate?.RawData,
+                                channelContext.ClientChannelCertificate.ToArrayOrNull(),
+                                clientNonceData,
+                                EndpointDescription.SecurityMode);
 
-                            dataToSign = Utils.Append(
-                                serverCertificateChainData,
-                                m_serverNonce.Data);
-
-                            if (!token.Verify(dataToSign, userTokenSignature, securityPolicyUri, m_server.Telemetry))
+                            if (!await handler.VerifyAsync(
+                                    dataToSign,
+                                    userTokenSignature,
+                                    securityPolicyUri,
+                                    ct).ConfigureAwait(false))
                             {
                                 throw new ServiceResultException(
                                     StatusCodes.BadIdentityTokenRejected,
@@ -1125,7 +1184,7 @@ namespace Technosoftware.UaServer
             }
 
             // validate user identity token.
-            return token;
+            return (handler, policy);
         }
 
         /// <summary>
@@ -1163,7 +1222,7 @@ namespace Technosoftware.UaServer
                     m_securityDiagnostics.ClientUserIdOfSession = identity.DisplayName;
                     m_securityDiagnostics.AuthenticationMechanism = identity.TokenType.ToString();
 
-                    m_securityDiagnostics.ClientUserIdHistory.Add(identity.DisplayName);
+                    m_securityDiagnostics.ClientUserIdHistory += identity.DisplayName;
                 }
 
                 return changed;
@@ -1319,12 +1378,13 @@ namespace Technosoftware.UaServer
         private readonly Lock m_lock = new();
         private readonly ILogger m_logger;
         private readonly IUaServerData m_server;
+        private readonly ISecurityPolicyRegistry m_securityPolicies;
         private readonly string m_sessionName;
-        private X509Certificate2 m_serverCertificate;
+        private Certificate m_serverCertificate;
         private Nonce m_serverNonce;
         private string m_eccUserTokenSecurityPolicyUri;
         private Nonce m_eccUserTokenNonce;
-        private readonly X509Certificate2Collection m_clientIssuerCertificates;
+        private readonly CertificateCollection m_clientIssuerCertificates;
         private readonly int m_maxHistoryContinuationPoints;
         private readonly SessionSecurityDiagnosticsDataType m_securityDiagnostics;
         private List<UaContinuationPoint> m_browseContinuationPoints;

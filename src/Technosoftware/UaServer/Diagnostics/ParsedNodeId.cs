@@ -61,12 +61,12 @@ namespace Technosoftware.UaServer
         public static ParsedNodeId Parse(NodeId nodeId)
         {
             // can only parse non-null string node identifiers.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return null;
             }
 
-            string identifier = nodeId.Identifier as string;
+            nodeId.TryGetValue(out string identifier);
 
             if (string.IsNullOrEmpty(identifier))
             {
@@ -262,7 +262,7 @@ namespace Technosoftware.UaServer
             }
 
             // parent must have a string identifier.
-            if (instance.Parent.NodeId.Identifier is not string parentId)
+            if (!instance.Parent.NodeId.TryGetValue(out string parentId))
             {
                 return default;
             }

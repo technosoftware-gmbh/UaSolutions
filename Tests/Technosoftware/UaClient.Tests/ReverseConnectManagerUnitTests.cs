@@ -66,7 +66,7 @@ namespace Technosoftware.UaClient.Tests
         [Test]
         public async Task HeldConnectionSurvivesRegistrationForAnotherServerAsync()
         {
-            using ReverseConnectManager manager = CreateManager(kHoldTime);
+            using ReverseConnectManager manager = await CreateManagerAsync(kHoldTime).ConfigureAwait(false);
 
             var serverA = new TestConnectionWaitingEventArgs(kServerUriA, s_endpointUrlA);
             var serverB = new TestConnectionWaitingEventArgs(kServerUriB, s_endpointUrlB);
@@ -113,7 +113,7 @@ namespace Technosoftware.UaClient.Tests
         [Test]
         public async Task HeldConnectionIsRejectedWhenHoldTimeExpiresAsync()
         {
-            using ReverseConnectManager manager = CreateManager(1000);
+            using ReverseConnectManager manager = await CreateManagerAsync(1000).ConfigureAwait(false);
 
             var server = new TestConnectionWaitingEventArgs(kServerUriA, s_endpointUrlA);
 
@@ -131,7 +131,7 @@ namespace Technosoftware.UaClient.Tests
         [Test]
         public async Task DisposeReleasesHeldConnectionAsync()
         {
-            ReverseConnectManager manager = CreateManager(kHoldTime);
+            ReverseConnectManager manager = await CreateManagerAsync(kHoldTime).ConfigureAwait(false);
 
             var server = new TestConnectionWaitingEventArgs(kServerUriA, s_endpointUrlA);
 
@@ -148,17 +148,17 @@ namespace Technosoftware.UaClient.Tests
         /// Create a started manager without a listener, only the hold time and
         /// the wait timeout of the configuration are used by the tests.
         /// </summary>
-        private static ReverseConnectManager CreateManager(int holdTime)
+        private static async Task<ReverseConnectManager> CreateManagerAsync(int holdTime)
         {
             var manager = new ReverseConnectManager(NUnitTelemetryContext.Create());
             try
             {
-                manager.StartService(
+                await manager.StartServiceAsync(
                     new ReverseConnectClientConfiguration
                     {
                         HoldTime = holdTime,
                         WaitTimeout = kCompletionTimeout
-                    });
+                    }).ConfigureAwait(false);
             }
             catch
             {

@@ -37,7 +37,7 @@ namespace SampleCompany.NodeManagers.Alarms
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
         {
             get
             {
@@ -90,7 +90,7 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             if (node is BaseInstanceState instance &&
                 instance.Parent != null &&
-                instance.Parent.NodeId.Identifier is string id)
+                instance.Parent.NodeId.TryGetValue(out string id))
             {
                 return new NodeId(
                     id + "_" + instance.SymbolicName,
@@ -133,12 +133,12 @@ namespace SampleCompany.NodeManagers.Alarms
 
                     FolderState alarmsFolder = CreateFolder(null, alarmsNodeName, alarmsName);
                     alarmsFolder.AddReference(
-                        ReferenceTypes.Organizes,
+                        new NodeId(ReferenceTypes.Organizes),
                         true,
                         ObjectIds.ObjectsFolder);
                     references.Add(
                         new NodeStateReference(
-                            ReferenceTypes.Organizes,
+                            new NodeId(ReferenceTypes.Organizes),
                             false,
                             alarmsFolder.NodeId));
                     alarmsFolder.EventNotifier = EventNotifiers.SubscribeToEvents;
@@ -151,7 +151,10 @@ namespace SampleCompany.NodeManagers.Alarms
                         NamespaceIndex,
                         startMethodNodeName,
                         startMethodName);
-                    AlarmHelpers.AddStartInputParameters(startMethod, NamespaceIndex);
+                    AlarmHelpers.AddStartInputParameters(
+                        SystemContext,
+                        startMethod,
+                        NamespaceIndex);
                     startMethod.OnCallMethod = new GenericMethodCalledEventHandler(OnStart);
 
                     const string startBranchMethodName = "StartBranch";
@@ -163,7 +166,10 @@ namespace SampleCompany.NodeManagers.Alarms
                         NamespaceIndex,
                         startBranchMethodNodeName,
                         startBranchMethodName);
-                    AlarmHelpers.AddStartInputParameters(startBranchMethod, NamespaceIndex);
+                    AlarmHelpers.AddStartInputParameters(
+                        SystemContext,
+                        startBranchMethod,
+                        NamespaceIndex);
                     startBranchMethod.OnCallMethod
                         = new GenericMethodCalledEventHandler(OnStartBranch);
 
@@ -272,7 +278,7 @@ namespace SampleCompany.NodeManagers.Alarms
             var folder = new FolderState(parent)
             {
                 SymbolicName = name,
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = ObjectTypeIds.FolderType,
                 NodeId = new NodeId(path, NamespaceIndex),
                 BrowseName = new QualifiedName(path, NamespaceIndex),
@@ -306,7 +312,7 @@ namespace SampleCompany.NodeManagers.Alarms
                             controller.Source.GetReferences(
                                 SystemContext,
                                 references,
-                                ReferenceTypes.HasCondition,
+                                new NodeId(ReferenceTypes.HasCondition),
                                 false);
                             foreach (IReference reference in references)
                             {
@@ -335,8 +341,8 @@ namespace SampleCompany.NodeManagers.Alarms
         public ServiceResult OnStart(
             ISystemContext context,
             NodeState node,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             uint seconds;
@@ -374,7 +380,7 @@ namespace SampleCompany.NodeManagers.Alarms
                         sourceController.Source.GetReferences(
                             SystemContext,
                             references,
-                            ReferenceTypes.HasCondition,
+                            new NodeId(ReferenceTypes.HasCondition),
                             false);
                         foreach (IReference reference in references)
                         {
@@ -397,8 +403,8 @@ namespace SampleCompany.NodeManagers.Alarms
         public ServiceResult OnStartBranch(
             ISystemContext context,
             NodeState node,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             uint seconds;
@@ -438,7 +444,7 @@ namespace SampleCompany.NodeManagers.Alarms
                         sourceController.Source.GetReferences(
                             SystemContext,
                             references,
-                            ReferenceTypes.HasCondition,
+                            new NodeId(ReferenceTypes.HasCondition),
                             false);
                         foreach (IReference reference in references)
                         {
@@ -461,8 +467,8 @@ namespace SampleCompany.NodeManagers.Alarms
         public ServiceResult OnEnd(
             ISystemContext context,
             NodeState node,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             ServiceResult result = ServiceResult.Good;
 
@@ -484,7 +490,7 @@ namespace SampleCompany.NodeManagers.Alarms
                         sourceController.Source.GetReferences(
                             SystemContext,
                             references,
-                            ReferenceTypes.HasCondition,
+                            new NodeId(ReferenceTypes.HasCondition),
                             false);
                         foreach (IReference reference in references)
                         {
@@ -508,9 +514,9 @@ namespace SampleCompany.NodeManagers.Alarms
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             Dictionary<string, SourceController> sourceControllers = GetUnitAlarms(node);
             if (sourceControllers == null)
@@ -537,7 +543,7 @@ namespace SampleCompany.NodeManagers.Alarms
                 sourceController.Source.GetReferences(
                     SystemContext,
                     references,
-                    ReferenceTypes.HasCondition,
+                    new NodeId(ReferenceTypes.HasCondition),
                     false);
                 foreach (IReference reference in references)
                 {
@@ -556,10 +562,8 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             AlarmHolder alarmHolder = null;
 
-            Type nodeIdType = node.Identifier.GetType();
-            if (nodeIdType.Name == "String")
+            if (node.TryGetValue(out string unmodifiedName))
             {
-                string unmodifiedName = node.Identifier.ToString();
 
                 // This is bad, but I'm not sure why the NodeName is being attached with an underscore, it messes with this lookup.
                 string name = unmodifiedName.Replace(
@@ -606,9 +610,8 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             string unit = string.Empty;
 
-            if (nodeId.IdType == IdType.String)
+            if (nodeId.TryGetValue(out string nodeIdString))
             {
-                string nodeIdString = (string)nodeId.Identifier;
                 string[] splitString = nodeIdString.Split('.');
                 // Alarms.UnitName.MethodName
                 if (splitString.Length >= 1)
@@ -644,9 +647,8 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             string sourceName = string.Empty;
 
-            if (nodeId.IdType == IdType.String)
+            if (nodeId.TryGetValue(out string nodeIdString))
             {
-                string nodeIdString = (string)nodeId.Identifier;
                 string[] splitString = nodeIdString.Split('.');
                 // Alarms.UnitName.AnalogSource
                 if (splitString.Length >= 2)
@@ -688,7 +690,7 @@ namespace SampleCompany.NodeManagers.Alarms
         /// </summary>
         public override void Call(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors)
         {
@@ -890,9 +892,9 @@ namespace SampleCompany.NodeManagers.Alarms
 
                 if (holder != null && holder.HasBranches())
                 {
-                    byte[] eventId = GetEventIdFromAckConfirmMethod(methodToCall);
+                    ByteString eventId = GetEventIdFromAckConfirmMethod(methodToCall);
 
-                    if (eventId != null)
+                    if (!eventId.IsNull)
                     {
                         BaseEventState state = holder.GetBranch(eventId);
 
@@ -932,16 +934,15 @@ namespace SampleCompany.NodeManagers.Alarms
             return isAckConfirm;
         }
 
-        private static byte[] GetEventIdFromAckConfirmMethod(CallMethodRequest request)
+        private static ByteString GetEventIdFromAckConfirmMethod(CallMethodRequest request)
         {
-            byte[] eventId = null;
+            ByteString eventId = default;
 
             // Bad magic Numbers hereStart
-            if (request.InputArguments != null &&
-                request.InputArguments.Count == 2 &&
+            if (request.InputArguments.Count == 2 &&
                 request.InputArguments[0].TypeInfo.BuiltInType.Equals(BuiltInType.ByteString))
             {
-                eventId = (byte[])request.InputArguments[0].Value;
+                request.InputArguments[0].TryGetValue(out eventId);
             }
             return eventId;
         }
@@ -953,7 +954,7 @@ namespace SampleCompany.NodeManagers.Alarms
         {
             m_logger.LogInformation("Alarms: Starting simulation");
 
-            Utils.SilentDispose(m_simulationTimer);
+            m_simulationTimer?.Dispose();
             m_simulationTimer = new Timer(
                 DoSimulation,
                 null,
@@ -966,7 +967,7 @@ namespace SampleCompany.NodeManagers.Alarms
         /// </summary>
         private void DisposeTimer()
         {
-            Utils.SilentDispose(m_simulationTimer);
+            m_simulationTimer?.Dispose();
             m_simulationTimer = null;
 
             m_logger.LogInformation("Alarms: Stopped simulation");

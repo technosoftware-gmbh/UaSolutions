@@ -44,28 +44,28 @@ namespace Technosoftware.UaClient.Tests
             RequestHeader requestHeader,
             ViewDescription view,
             uint requestedMaxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken ct = default)
         {
-            return new ValueTask<BrowseResponse>(m_session.BrowseAsync(
+            return m_session.BrowseAsync(
                 requestHeader,
                 view,
                 requestedMaxReferencesPerNode,
                 nodesToBrowse,
-                ct));
+                ct);
         }
 
         public ValueTask<BrowseNextResponse> BrowseNextAsync(
             RequestHeader requestHeader,
             bool releaseContinuationPoints,
-            ByteStringCollection continuationPoints,
+            ArrayOf<ByteString> continuationPoints,
             CancellationToken ct = default)
         {
-            return new ValueTask<BrowseNextResponse>(m_session.BrowseNextAsync(
+            return m_session.BrowseNextAsync(
                 requestHeader,
                 releaseContinuationPoints,
                 continuationPoints,
-                ct));
+                ct);
         }
 
         public ValueTask<CreateSubscriptionResponse> CreateSubscriptionAsync(
@@ -78,7 +78,7 @@ namespace Technosoftware.UaClient.Tests
             byte priority,
             CancellationToken ct = default)
         {
-            return new ValueTask<CreateSubscriptionResponse>(m_session.CreateSubscriptionAsync(
+            return m_session.CreateSubscriptionAsync(
                 requestHeader,
                 requestedPublishingInterval,
                 requestedLifetimeCount,
@@ -86,22 +86,22 @@ namespace Technosoftware.UaClient.Tests
                 maxNotificationsPerPublish,
                 publishingEnabled,
                 priority,
-                ct));
+                ct);
         }
 
         public ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken ct = default)
         {
-            return new ValueTask<CreateMonitoredItemsResponse>(m_session.CreateMonitoredItemsAsync(
+            return m_session.CreateMonitoredItemsAsync(
                 requestHeader,
                 subscriptionId,
                 timestampsToReturn,
                 itemsToCreate,
-                ct));
+                ct);
         }
 
         public ValueTask<ModifySubscriptionResponse> ModifySubscriptionAsync(
@@ -114,7 +114,7 @@ namespace Technosoftware.UaClient.Tests
             byte priority,
             CancellationToken ct = default)
         {
-            return new ValueTask<ModifySubscriptionResponse>(m_session.ModifySubscriptionAsync(
+            return m_session.ModifySubscriptionAsync(
                 requestHeader,
                 subscriptionId,
                 requestedPublishingInterval,
@@ -122,61 +122,61 @@ namespace Technosoftware.UaClient.Tests
                 requestedMaxKeepAliveCount,
                 maxNotificationsPerPublish,
                 priority,
-                ct));
+                ct);
         }
 
         public ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken ct = default)
         {
-            return new ValueTask<ModifyMonitoredItemsResponse>(m_session.ModifyMonitoredItemsAsync(
+            return m_session.ModifyMonitoredItemsAsync(
                 requestHeader,
                 subscriptionId,
                 timestampsToReturn,
                 itemsToModify,
-                ct));
+                ct);
         }
 
         public ValueTask<PublishResponse> PublishAsync(
             RequestHeader requestHeader,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             CancellationToken ct = default)
         {
-            return new ValueTask<PublishResponse>(m_session.PublishAsync(
+            return m_session.PublishAsync(
                 requestHeader,
                 subscriptionAcknowledgements,
-                ct));
+                ct);
         }
 
         public ValueTask<SetPublishingModeResponse> SetPublishingModeAsync(
             RequestHeader requestHeader,
             bool publishingEnabled,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default)
         {
-            return new ValueTask<SetPublishingModeResponse>(m_session.SetPublishingModeAsync(
+            return m_session.SetPublishingModeAsync(
                 requestHeader,
                 publishingEnabled,
                 subscriptionIds,
-                ct));
+                ct);
         }
 
         public ValueTask<SetMonitoringModeResponse> SetMonitoringModeAsync(
             RequestHeader requestHeader,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken ct = default)
         {
-            return new ValueTask<SetMonitoringModeResponse>(m_session.SetMonitoringModeAsync(
+            return m_session.SetMonitoringModeAsync(
                 requestHeader,
                 subscriptionId,
                 monitoringMode,
                 monitoredItemIds,
-                ct));
+                ct);
         }
 
         public ValueTask<RepublishResponse> RepublishAsync(
@@ -185,46 +185,46 @@ namespace Technosoftware.UaClient.Tests
             uint retransmitSequenceNumber,
             CancellationToken ct = default)
         {
-            return new ValueTask<RepublishResponse>(m_session.RepublishAsync(
+            return m_session.RepublishAsync(
                 requestHeader,
                 subscriptionId,
                 retransmitSequenceNumber,
-                ct));
+                ct);
         }
 
         public ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default)
         {
-            return new ValueTask<DeleteSubscriptionsResponse>(m_session.DeleteSubscriptionsAsync(
+            return m_session.DeleteSubscriptionsAsync(
                 requestHeader,
                 subscriptionIds,
-                ct));
+                ct);
         }
 
         public ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool sendInitialValues,
             CancellationToken ct = default)
         {
-            return new ValueTask<TransferSubscriptionsResponse>(m_session.TransferSubscriptionsAsync(
+            return m_session.TransferSubscriptionsAsync(
                 requestHeader,
                 subscriptionIds,
                 sendInitialValues,
-                ct));
+                ct);
         }
 
         public ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
             RequestHeader requestHeader,
-            BrowsePathCollection browsePaths,
+            ArrayOf<BrowsePath> browsePaths,
             CancellationToken ct = default)
         {
-            return new ValueTask<TranslateBrowsePathsToNodeIdsResponse>(m_session.TranslateBrowsePathsToNodeIdsAsync(
+            return m_session.TranslateBrowsePathsToNodeIdsAsync(
                 requestHeader,
                 browsePaths,
-                ct));
+                ct);
         }
     }
 }

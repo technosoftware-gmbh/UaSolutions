@@ -23,6 +23,7 @@ using NUnit.Framework;
 using Opc.Ua;
 using Technosoftware.UaServer.Tests;
 using SampleCompany.NodeManagers.Reference;
+using Technosoftware.Tests;
 using Assert = NUnit.Framework.Legacy.ClassicAssert;
 #endregion Using Directives
 
@@ -60,7 +61,7 @@ namespace Technosoftware.UaClient.Tests
         {
             {
                 // start Ref server
-                ServerFixture = new ServerFixture<ReferenceServer>(
+                ServerFixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry), 
                     enableTracing,
                     disableActivityLogging)
                 {
@@ -81,15 +82,19 @@ namespace Technosoftware.UaClient.Tests
                 .MaxStringLength = TransportQuotaMaxStringLength;
             ServerFixture.Config.ServerConfiguration.MinSessionTimeout = 1000;
             ServerFixture.Config.ServerConfiguration.MinSubscriptionLifetime = 1500;
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies
-                .Add(new UserTokenPolicy(UserTokenType.UserName));
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
-                new UserTokenPolicy(UserTokenType.Certificate));
-            ServerFixture.Config.ServerConfiguration.UserTokenPolicies.Add(
+            // UserTokenPolicies is an immutable ArrayOf in 2.0. The list the
+            // configuration already carries - the Anonymous policy among them -
+            // has to be spread back in, or assigning replaces rather than adds.
+            ServerFixture.Config.ServerConfiguration.UserTokenPolicies =
+            [
+                .. ServerFixture.Config.ServerConfiguration.UserTokenPolicies,
+                new UserTokenPolicy(UserTokenType.UserName),
+                new UserTokenPolicy(UserTokenType.Certificate),
                 new UserTokenPolicy(UserTokenType.IssuedToken)
                 {
                     IssuedTokenType = Profiles.JwtUserToken
-                });
+                },
+            ];
 
             ReferenceServer = await ServerFixture.StartAsync()
                 .ConfigureAwait(false);
@@ -126,7 +131,7 @@ namespace Technosoftware.UaClient.Tests
                         .ConnectAsync(
                             ServerUrl,
                             SecurityPolicies.Basic256Sha256,
-                            null,
+                            default,
                             new UserIdentity("sysadmin", "demo"u8))
                         .ConfigureAwait(false);
                     Session.DeleteSubscriptionsOnClose = false;
@@ -192,12 +197,12 @@ namespace Technosoftware.UaClient.Tests
             Dictionary<string, object> modifiedValues =
                 await GetValuesAsync(desiredNodeIds).ConfigureAwait(false);
 
-            var maxLifetimeCountValue = modifiedValues["MaxLifetimeCount"] as DataValue;
-            Assert.IsNotNull(maxLifetimeCountValue);
-            Assert.IsNotNull(maxLifetimeCountValue.Value);
+            // DataValue is a struct in 2.0, so the cast is direct.
+            var maxLifetimeCountValue = (DataValue)modifiedValues["MaxLifetimeCount"];
+            Assert.IsNotNull(maxLifetimeCountValue.BoxedValue());
             Assert.AreEqual(
                 expectedLifetime,
-                Convert.ToUInt32(maxLifetimeCountValue.Value, CultureInfo.InvariantCulture));
+                Convert.ToUInt32(maxLifetimeCountValue.BoxedValue(), CultureInfo.InvariantCulture));
 
             Assert.True(await Session.RemoveSubscriptionAsync(subscription).ConfigureAwait(false));
         }
@@ -437,7 +442,7 @@ namespace Technosoftware.UaClient.Tests
 
                         foreach (DataValue value in item.DequeueValues())
                         {
-                            list.Add(value.SourceTimestamp);
+                            list.Add((DateTime)value.SourceTimestamp);
                         }
                     };
 
@@ -484,7 +489,7 @@ namespace Technosoftware.UaClient.Tests
                 .ConnectAsync(
                     ServerUrl,
                     SecurityPolicies.Basic256Sha256,
-                    null,
+                    default,
                     new UserIdentity("sysadmin", "demo"u8))
                 .ConfigureAwait(false);
 #else // TODO: Remove once failure is understood.
@@ -594,12 +599,11 @@ namespace Technosoftware.UaClient.Tests
             Dictionary<string, object> modifiedValues =
                 await GetValuesAsync(nodeIds).ConfigureAwait(false);
 
-            var dataValue = modifiedValues[desiredValue] as DataValue;
-            Assert.IsNotNull(dataValue);
-            Assert.IsNotNull(dataValue.Value);
+            var dataValue = (DataValue)modifiedValues[desiredValue];
+            Assert.IsNotNull(dataValue.BoxedValue());
             Assert.AreEqual(
                 expectedValue,
-                Convert.ToUInt32(dataValue.Value, CultureInfo.InvariantCulture));
+                Convert.ToUInt32(dataValue.BoxedValue(), CultureInfo.InvariantCulture));
 
             return modifiedValues;
         }
@@ -637,7 +641,7 @@ namespace Technosoftware.UaClient.Tests
             NodeId currentLifetimeCountNodeId = default;
             NodeId publishingIntervalNodeId = default;
 
-            (_, _, ReferenceDescriptionCollection references) = await Session.BrowseAsync(
+            (_, _, ArrayOf<ReferenceDescription> references) = await Session.BrowseAsync(
                 null,
                 null,
                 serverDiags,
@@ -655,7 +659,9 @@ namespace Technosoftware.UaClient.Tests
                 references.Count,
                 subscriptionId);
 
-            foreach (ReferenceDescription reference in references)
+            // ArrayOf's enumerator is a span enumerator and cannot cross an
+            // await, so the references are materialised first.
+            foreach (ReferenceDescription reference in references.ToArray())
             {
                 TestContext.Out
                     .WriteLine("Initial Browse Reference {0}", reference.BrowseName.Name);
@@ -665,8 +671,8 @@ namespace Technosoftware.UaClient.Tests
                 {
                     (
                         _,
-                        byte[] anotherContinuationPoint,
-                        ReferenceDescriptionCollection desiredReferences
+                        ByteString anotherContinuationPoint,
+                        ArrayOf<ReferenceDescription> desiredReferences
                     ) = await Session.BrowseAsync(
                         null,
                         null,
@@ -702,11 +708,11 @@ namespace Technosoftware.UaClient.Tests
                         }
                         else
                         {
-                            recreated = new NodeId(
-                                referenceDescription.NodeId.Identifier,
-                                referenceDescription.NodeId.NamespaceIndex);
+                            recreated = ExpandedNodeId.ToNodeId(
+                                referenceDescription.NodeId,
+                                Session.NamespaceUris);
 
-                            if (recreated.IsNullNodeId)
+                            if (recreated.IsNull)
                             {
                                 TestContext.Out.WriteLine(
                                     "Subscription Reference {0} Recreated Node is Null",
@@ -793,18 +799,19 @@ namespace Technosoftware.UaClient.Tests
         {
             var whereClause = new ContentFilter();
 
+            // ContentFilter.Push takes Variant operands in 2.0.
             whereClause.Push(
                 FilterOperator.Equals,
-                [
+                Variant.FromStructure(
                     new SimpleAttributeOperand
                     {
                         AttributeId = Attributes.Value,
                         TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                        BrowsePath = [.. new QualifiedName[] { "EventType" }]
-                    },
+                        BrowsePath = [new QualifiedName("EventType")]
+                    }),
+                Variant.FromStructure(
                     new LiteralOperand {
-                        Value = new Variant(ObjectTypeIds.BaseEventType) }
-                ]);
+                        Value = new Variant(ObjectTypeIds.BaseEventType) }));
 
             return new MonitoredItem(Session.MessageContext.Telemetry)
             {
@@ -823,7 +830,7 @@ namespace Technosoftware.UaClient.Tests
                             {
                                 AttributeId = Attributes.Value,
                                 TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                                BrowsePath = [.. new QualifiedName[] { BrowseNames.Message }]
+                                BrowsePath = [.. new QualifiedName[] { new QualifiedName(BrowseNames.Message )}]
                             }
                         }
                     ],

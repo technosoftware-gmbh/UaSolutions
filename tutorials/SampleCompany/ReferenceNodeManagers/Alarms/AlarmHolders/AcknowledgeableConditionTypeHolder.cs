@@ -130,7 +130,7 @@ namespace SampleCompany.NodeManagers.Alarms
             return (AcknowledgeableConditionState)alarm;
         }
 
-        private AcknowledgeableConditionState GetAlarmOrBranch(byte[] eventId)
+        private AcknowledgeableConditionState GetAlarmOrBranch(ByteString eventId)
         {
             AcknowledgeableConditionState alarmOrBranch = null;
 
@@ -146,10 +146,10 @@ namespace SampleCompany.NodeManagers.Alarms
         private ServiceResult OnAcknowledge(
             ISystemContext context,
             ConditionState condition,
-            byte[] eventId,
+            ByteString eventId,
             LocalizedText comment)
         {
-            string eventIdString = Utils.ToHexString(eventId);
+            string eventIdString = eventId.ToHexString();
 
             if (m_acked.Contains(eventIdString))
             {
@@ -180,7 +180,7 @@ namespace SampleCompany.NodeManagers.Alarms
             }
             else
             {
-                alarm.Message.Value = "User Acknowledged Event " + DateTime.Now.ToShortTimeString();
+                alarm.Message.Value = new LocalizedText("User Acknowledged Event " + DateTime.Now.ToShortTimeString());
                 Log("OnAcknowledge", "Setting Confirmed State to False");
                 alarm.SetConfirmedState(SystemContext, confirmed: false);
             }
@@ -196,10 +196,10 @@ namespace SampleCompany.NodeManagers.Alarms
         private ServiceResult OnConfirm(
             ISystemContext context,
             ConditionState condition,
-            byte[] eventId,
+            ByteString eventId,
             LocalizedText comment)
         {
-            string eventIdString = Utils.ToHexString(eventId);
+            string eventIdString = eventId.ToHexString();
 
             Log(
                 "OnConfirm",
@@ -222,7 +222,7 @@ namespace SampleCompany.NodeManagers.Alarms
 
             m_confirmed.Add(eventIdString);
 
-            alarm.Message.Value = "User Confirmed Event " + DateTime.Now.ToShortTimeString();
+            alarm.Message.Value = new LocalizedText("User Confirmed Event " + DateTime.Now.ToShortTimeString());
 
             m_alarmController.OnAcknowledge();
 

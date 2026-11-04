@@ -77,20 +77,27 @@ namespace Technosoftware.UaServer
         /// <param name="queueFactory">the factory for <see cref="IUaDataChangeMonitoredItemQueue"/></param>
         /// <param name="telemetry">The telemetry context to use to create obvservability instruments</param>
         /// <param name="discardedValueHandler">Handler for discarded values</param>
+        /// <param name="timeProvider">
+        /// The time source the sampling interval is measured against. Defaults
+        /// to <see cref="TimeProvider.System"/>.
+        /// </param>
         public DataChangeQueueHandler(
             uint monitoredItemId,
             bool createDurable,
             IUaMonitoredItemQueueFactory queueFactory,
             ITelemetryContext telemetry,
-            Action discardedValueHandler = null)
+            Action discardedValueHandler = null,
+            TimeProvider timeProvider = null)
         {
             m_logger = telemetry.CreateLogger<DataChangeQueueHandler>();
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_dataValueQueue = queueFactory.CreateDataChangeQueue(createDurable, monitoredItemId);
 
             m_discardedValueHandler = discardedValueHandler;
             m_monitoredItemId = monitoredItemId;
             m_discardOldest = false;
-            m_overflow = null;
+            m_overflow = default;
+            m_overflowPending = false;
             m_nextSampleTime = 0;
             m_samplingInterval = 0;
         }
@@ -99,21 +106,33 @@ namespace Technosoftware.UaServer
         /// Create a DatachangeQueueHandler from an existing queue
         /// Used for restore after a server restart
         /// </summary>
+        /// <param name="dataValueQueue">The restored queue.</param>
+        /// <param name="discardOldest">Whether the oldest value is discarded when the queue overflows.</param>
+        /// <param name="samplingInterval">The sampling interval of the monitored item.</param>
+        /// <param name="telemetry">The telemetry context.</param>
+        /// <param name="discardedValueHandler">Called when a value is discarded.</param>
+        /// <param name="timeProvider">
+        /// The time source the sampling interval is measured against. Defaults
+        /// to <see cref="TimeProvider.System"/>.
+        /// </param>
         public DataChangeQueueHandler(
             IUaDataChangeMonitoredItemQueue dataValueQueue,
             bool discardOldest,
             double samplingInterval,
             ITelemetryContext telemetry,
-            Action discardedValueHandler = null)
+            Action discardedValueHandler = null,
+            TimeProvider timeProvider = null)
         {
             m_logger = telemetry.CreateLogger<DataChangeQueueHandler>();
+            m_timeProvider = timeProvider ?? TimeProvider.System;
 
             m_dataValueQueue = dataValueQueue;
             m_monitoredItemId = dataValueQueue.QueueSize;
             m_discardOldest = discardOldest;
             m_discardedValueHandler = discardedValueHandler;
             m_nextSampleTime = 0;
-            m_overflow = null;
+            m_overflow = default;
+            m_overflowPending = false;
             SetSamplingInterval(samplingInterval);
         }
 
@@ -150,7 +169,8 @@ namespace Technosoftware.UaServer
 
             m_dataValueQueue.ResetQueue(queueSize, queueErrors);
 
-            m_overflow = null;
+            m_overflow = default;
+            m_overflowPending = false;
 
             // requeue the data.
             if (existingValues != null)
@@ -200,7 +220,7 @@ namespace Technosoftware.UaServer
         /// <returns>true of overflow occured</returns>
         public bool QueueValue(DataValue value, ServiceResult error)
         {
-            long now = HiResClock.TickCount64;
+            long now = m_timeProvider.GetTimestampMilliseconds();
 
             if (m_dataValueQueue.ItemsInQueue > 0)
             {
@@ -259,10 +279,15 @@ namespace Technosoftware.UaServer
         {
             if (m_dataValueQueue.Dequeue(out value, out error))
             {
-                if (m_overflow != null && m_overflow == value)
+                // DataValue was a class in 1.5 and this comparison was
+                // reference equality: the one value that actually overflowed.
+                // As a struct it compares by content and would mark every
+                // equal value, so a flag carries the identity instead.
+                if (m_overflowPending && m_overflow == value)
                 {
                     SetOverflowBit(ref value, ref error);
-                    m_overflow = null;
+                    m_overflow = default;
+                    m_overflowPending = false;
                 }
 
                 if (!noEventLog && m_logger.IsEnabled(LogLevel.Trace))
@@ -301,7 +326,7 @@ namespace Technosoftware.UaServer
             }
 
             // check if the latest value has initial dummy data
-            if (m_dataValueQueue.PeekLastValue()?.StatusCode == StatusCodes
+            if (m_dataValueQueue.PeekLastValue().StatusCode == StatusCodes
                 .BadWaitingForInitialData)
             {
                 // overwrite the last value
@@ -324,6 +349,7 @@ namespace Technosoftware.UaServer
 
                     //set overflow bit in newest value
                     m_overflow = value;
+                    m_overflowPending = true;
 
                     // overwrite last value
                     m_dataValueQueue.OverwriteLastValue(value, error);
@@ -343,6 +369,7 @@ namespace Technosoftware.UaServer
                 }
                 //set overflow bit in oldest value
                 m_overflow = m_dataValueQueue.PeekOldestValue();
+                m_overflowPending = true;
 
                 m_dataValueQueue.Enqueue(value, error);
 
@@ -365,17 +392,14 @@ namespace Technosoftware.UaServer
         /// <param name="error">The error to update.</param>
         private static void SetOverflowBit(ref DataValue value, ref ServiceResult error)
         {
-            if (value != null)
+            if (!value.IsNull)
             {
-                StatusCode status = value.StatusCode;
-                status.Overflow = true;
-                value.StatusCode = status;
+                value = value.WithStatus(value.StatusCode.SetOverflow(true));
             }
 
             if (error != null)
             {
-                StatusCode status = error.StatusCode;
-                status.Overflow = true;
+                StatusCode status = error.StatusCode.SetOverflow(true);
 
                 // have to copy before updating because the ServiceResult is invariant.
                 error = new ServiceResult(
@@ -401,17 +425,19 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_dataValueQueue);
+                m_dataValueQueue?.Dispose();
             }
         }
 
         private readonly IUaDataChangeMonitoredItemQueue m_dataValueQueue;
         private readonly ILogger m_logger;
+        private readonly TimeProvider m_timeProvider;
         private readonly uint m_monitoredItemId;
         private bool m_discardOldest;
         private long m_nextSampleTime;
         private long m_samplingInterval;
         private readonly Action m_discardedValueHandler;
         private DataValue m_overflow;
+        private bool m_overflowPending;
     }
 }

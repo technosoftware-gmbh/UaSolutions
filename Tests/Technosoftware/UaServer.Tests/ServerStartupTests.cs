@@ -46,7 +46,7 @@ namespace Technosoftware.UaServer.Tests
         [Theory]
         public async Task StartServerAsync(string uriScheme)
         {
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
             Assert.NotNull(fixture);
             fixture.UriScheme = uriScheme;
             UaStandardServer server = await fixture.StartAsync().ConfigureAwait(false);

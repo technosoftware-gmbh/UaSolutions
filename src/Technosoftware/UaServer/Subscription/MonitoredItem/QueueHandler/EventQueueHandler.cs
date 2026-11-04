@@ -167,7 +167,7 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_eventQueue);
+                m_eventQueue?.Dispose();
             }
         }
 
@@ -232,7 +232,11 @@ namespace Technosoftware.UaServer
             {
                 foreach (Variant field in fields.EventFields)
                 {
-                    if (field.Value is StatusResult statusResult)
+                    // A structure in a variant boxes as the ExtensionObject
+                    // that carries it, never as the encodeable itself, so the
+                    // type test has to go through TryGetStructure or the
+                    // diagnostic masks are never applied.
+                    if (field.TryGetStructure(out StatusResult statusResult))
                     {
                         statusResult.ApplyDiagnosticMasks(
                             context.DiagnosticsMask,

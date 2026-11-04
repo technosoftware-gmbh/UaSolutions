@@ -90,7 +90,7 @@ namespace Technosoftware.UaUtilities
                                           <Product>
                                             <Name>OPC UA Solutions</Name>
                                             <Type>ClientAndServer</Type>
-                                            <Version>6.0.0</Version>
+                                            <Version>7.0.0</Version>
                                             <PublishedDate>Wed, 01 Jul 2026</PublishedDate>
                                           </Product>
                                           <License>
@@ -116,7 +116,7 @@ namespace Technosoftware.UaUtilities
                                             <Attribute name=""Product Identity"">a8482b9cc1d5cf8519bb80e0c979315703643f74ced77435eae31a6208b9c738</Attribute>
                                             <Attribute name=""Assembly Identity""></Attribute>
                                           </LicenseAttributes>
-                                          <Signature>MIGIAkIByabU63PQgwCwpoMJf5vfvNheg4hhd27e+24Ieyd3jr0rdlctW5C/oY8n07eJNO1rwPto6FuYlAu0xA2HAwk++loCQgHjWKwBWH+DY/S10SQMHVfP+LBJMQATPHu0dSZ65Td8OuYm7DywDIhiCHtwqR7atAdv45uvCPizRrtBrANCguJiJw==</Signature>
+                                          <Signature>MIGHAkEqasMWOapfccOYgamqV3vplI2Zqf8AvuUYwPxmUD1kVHnJjArpfpd+6+BuHAJjDUPttYiDUmB2zb2c7PJooWm/7wJCANd3jHy8q17tKg2/nsyDyfCYO9qNgvE0ORWP2qZ4u+P3a+FHgEGNQPHG5HmmzMMkFP5Dmb2MIphTVK4T+eoNIsvt</Signature>
                                         </License>";
 #pragma warning restore RCS1266 // Use raw string literal
         #endregion Constants
@@ -570,15 +570,11 @@ namespace Technosoftware.UaUtilities
                 return false;
             }
 
-            // Handling of old license types
-            if (!IsNewLicenseType && ProductVersion.Major >= 3 && ProductVersion.Build == 0)
+            // Old license types were only ever issued for versions 3 and 4, both retired.
+            // This source only ever builds as version 5 or later, so there is no product
+            // version an old license can still be valid for.
+            if (!IsNewLicenseType)
             {
-                // Special case for old license types where all major versions 3 and 4 with any minor version and build 0 (no service patch) are supported.
-                return true;
-            }
-            else if (!IsNewLicenseType && ProductVersion.Major >= 3 && ProductVersion.Build > 0)
-            {
-                // Special case for old license types where all major versions 3 and 4 with any minor version and build > 0 (service patch) are NOT supported.
                 return false;
             }
 
@@ -592,8 +588,12 @@ namespace Technosoftware.UaUtilities
 
             if (LicenseVersion.Major != 0 && LicenseVersion.Major < ProductVersion.Major)
             {
-                // Major version upgrades are only allowed if support contract is valid
-                return IsSupportContractValid();
+                // A license never unlocks a later major version. Customers holding a valid
+                // support contract when the new major version is released are issued a new
+                // license for it, and any exception is granted the same way. This used to
+                // return IsSupportContractValid(), which granted the upgrade at run time and
+                // withdrew it again if the support contract later lapsed.
+                return false;
             }
             if (ProductVersion.Build != 0)
             {

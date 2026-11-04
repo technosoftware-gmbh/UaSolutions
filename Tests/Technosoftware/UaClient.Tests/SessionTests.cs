@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -40,7 +41,7 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(2000u)),
                 new DataValue(new Variant(3000u)),
@@ -128,8 +129,8 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection();
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var dataValues = new List<DataValue>();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -155,7 +156,7 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(1000u)),
                 new DataValue(new Variant(2000u)),
@@ -190,12 +191,12 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
-                new DataValue(StatusCodes.BadUnexpectedError)
+                DataValue.FromStatusCode(StatusCodes.BadUnexpectedError)
             };
 
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -221,12 +222,12 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue("InvalidDataType")
             };
 
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -271,7 +272,7 @@ namespace Technosoftware.UaClient.Tests
             var channel = new Mock<ITransportChannel>();
             channel
                 .SetupGet(s => s.MessageContext)
-                .Returns(new ServiceMessageContext(telemetry));
+                .Returns(ServiceMessageContext.Create(telemetry));
             channel
                 .SetupGet(s => s.SupportedFeatures)
                 .Returns(TransportChannelFeatures.Reconnect);
@@ -305,7 +306,7 @@ namespace Technosoftware.UaClient.Tests
             CancellationToken ct = CancellationToken.None;
 
             // Server returns larger values
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(1000u)), // MaxNodesPerHistoryReadData - no client limit
                 new DataValue(new Variant(1000u)), // MaxNodesPerHistoryReadEvents - no client limit
@@ -371,7 +372,7 @@ namespace Technosoftware.UaClient.Tests
             var channel = new Mock<ITransportChannel>();
             channel
                 .SetupGet(s => s.MessageContext)
-                .Returns(new ServiceMessageContext(telemetry));
+                .Returns(ServiceMessageContext.Create(telemetry));
             channel
                 .SetupGet(s => s.SupportedFeatures)
                 .Returns(TransportChannelFeatures.Reconnect);
@@ -405,7 +406,7 @@ namespace Technosoftware.UaClient.Tests
             CancellationToken ct = CancellationToken.None;
 
             // Server returns smaller values
-            var dataValues = new DataValueCollection
+            var dataValues = new List<DataValue>
             {
                 new DataValue(new Variant(1000u)), // MaxNodesPerHistoryReadData
                 new DataValue(new Variant(1000u)), // MaxNodesPerHistoryReadEvents
@@ -588,7 +589,7 @@ namespace Technosoftware.UaClient.Tests
             CancellationToken ct = CancellationToken.None;
 
             var namespaceArray = new DataValue(new Variant([Opc.Ua.Namespaces.OpcUa, "http://namespace2"]));
-            var serverArray = new DataValue(StatusCodes.BadUnexpectedError);
+            var serverArray = DataValue.FromStatusCode(StatusCodes.BadUnexpectedError);
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -647,8 +648,8 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var namespaceArray = new DataValue(StatusCodes.BadUnexpectedError);
-            var serverArray = new DataValue(StatusCodes.BadUnexpectedError);
+            var namespaceArray = DataValue.FromStatusCode(StatusCodes.BadUnexpectedError);
+            var serverArray = DataValue.FromStatusCode(StatusCodes.BadUnexpectedError);
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -675,8 +676,8 @@ namespace Technosoftware.UaClient.Tests
             var sut = SessionMock.Create();
             CancellationToken ct = CancellationToken.None;
 
-            var dataValues = new DataValueCollection();
-            var diagnosticInfos = new DiagnosticInfoCollection();
+            var dataValues = new List<DataValue>();
+            var diagnosticInfos = new List<DiagnosticInfo>();
 
             sut.Channel
                 .Setup(c => c.SendRequestAsync(
@@ -954,7 +955,7 @@ namespace Technosoftware.UaClient.Tests
             sut.SetConnected();
             CancellationToken ct = CancellationToken.None;
 
-            byte[] serverNonce = [1, 2, 3, 4];
+            ByteString serverNonce = new byte[] { 1, 2, 3, 4 }.ToByteString();
 
             sut.Channel
                 .Setup(c => c.ReconnectAsync(
@@ -980,7 +981,7 @@ namespace Technosoftware.UaClient.Tests
 
             await sut.ReconnectAsync(ct).ConfigureAwait(false);
 
-            Assert.That(sut.ServerNonce, Is.EquivalentTo(serverNonce));
+            Assert.That(sut.ServerNonce, Is.EqualTo(serverNonce));
             sut.Channel.Verify();
         }
 
@@ -1072,7 +1073,7 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(new ValueTask<IServiceResponse>(new ActivateSessionResponse
                 {
-                    ServerNonce = null,
+                    ServerNonce = default,
                     Results = [],
                     DiagnosticInfos = []
                 }))
@@ -1080,7 +1081,7 @@ namespace Technosoftware.UaClient.Tests
 
             await sut.ReconnectAsync(ct).ConfigureAwait(false);
 
-            Assert.That(sut.ServerNonce, Is.Null);
+            Assert.That(sut.ServerNonce.IsEmpty, Is.True);
             sut.Channel.Verify();
         }
 
@@ -1192,7 +1193,7 @@ namespace Technosoftware.UaClient.Tests
             };
             var sut = SessionMock.Create(ep);
             CancellationToken ct = CancellationToken.None;
-            byte[] serverNonce = [1, 2, 3, 4];
+            ByteString serverNonce = new byte[] { 1, 2, 3, 4 }.ToByteString();
             var authToken = NodeId.Parse("s=cookie");
 
             sut.Channel
@@ -1258,8 +1259,8 @@ namespace Technosoftware.UaClient.Tests
                 {
                     Results =
                     [
-                        new (new[] { Opc.Ua.Namespaces.OpcUa }),
-                        new(Array.Empty<string>())
+                        new(new[] { Opc.Ua.Namespaces.OpcUa }.ToArrayOf()),
+                        new(Array.Empty<string>().ToArrayOf())
                     ],
                     DiagnosticInfos = []
                 }))
@@ -1267,7 +1268,7 @@ namespace Technosoftware.UaClient.Tests
 
             await sut.OpenAsync("test", new UserIdentity(), ct).ConfigureAwait(false);
 
-            Assert.That(sut.ServerNonce, Is.EquivalentTo(new byte[] { 1, 2, 3, 4 }));
+            Assert.That(sut.ServerNonce, Is.EqualTo(ByteString.From([1, 2, 3, 4])));
             sut.Channel.Verify();
         }
 
@@ -1287,7 +1288,7 @@ namespace Technosoftware.UaClient.Tests
             };
             var sut = SessionMock.Create(ep);
             CancellationToken ct = CancellationToken.None;
-            byte[] serverNonce = [1, 2, 3, 4];
+            ByteString serverNonce = new byte[] { 1, 2, 3, 4 }.ToByteString();
             var authToken = NodeId.Parse("s=cookie");
 
             sut.Channel
@@ -1353,7 +1354,7 @@ namespace Technosoftware.UaClient.Tests
             };
             var sut = SessionMock.Create(ep);
             CancellationToken ct = CancellationToken.None;
-            byte[] serverNonce = [1, 2, 3, 4];
+            ByteString serverNonce = new byte[] { 1, 2, 3, 4 }.ToByteString();
             var authToken = NodeId.Parse("s=cookie");
 
             sut.Channel
@@ -1402,7 +1403,7 @@ namespace Technosoftware.UaClient.Tests
                     "test",
                     60000,
                     new UserIdentity(),
-                    null,
+                    default,
                     true,
                     closeChannel: true,
                     default).ConfigureAwait(false));
@@ -1519,7 +1520,7 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(new ValueTask<IServiceResponse>(new CreateSessionResponse
                 {
-                    ServerNonce = null,
+                    ServerNonce = default,
                     SessionId = NodeId.Parse("s=connected")
                 }))
                 .Verifiable(Times.Once);

@@ -46,7 +46,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.IsAny<IReadOnlyList<NodeId>>(),
+                    It.IsAny<ArrayOf<NodeId>>(),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -236,7 +236,7 @@ namespace Technosoftware.UaClient.Tests
 
             // Arrange
             var id = new NodeId("test", 0);
-            var browsePath = new QualifiedNameCollection { new QualifiedName("invalid") };
+            var browsePath = new List<QualifiedName> { new QualifiedName("invalid") };
             var context = new Mock<IUaNodeCacheContext>();
 
             context
@@ -277,7 +277,7 @@ namespace Technosoftware.UaClient.Tests
                 NodeId = id,
                 NodeClass = NodeClass.Variable
             };
-            var browsePath = new QualifiedNameCollection { new QualifiedName("child") };
+            var browsePath = new List<QualifiedName> { new QualifiedName("child") };
             var references = new List<ReferenceDescription>
             {
                 new()
@@ -309,7 +309,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == id),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == id),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -346,7 +346,7 @@ namespace Technosoftware.UaClient.Tests
             var rootId = new NodeId("root", 0);
             var childId = new NodeId("child", 0);
             var grandChildId = new NodeId("grandChild", 0);
-            var browsePath = new QualifiedNameCollection
+            var browsePath = new List<QualifiedName>
             {
                 new QualifiedName("child"),
                 new QualifiedName("grandChild")
@@ -413,7 +413,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == childId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == childId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -425,7 +425,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == grandChildId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == grandChildId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -506,7 +506,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -593,7 +593,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == referenceSubTypeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == referenceSubTypeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -635,7 +635,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -720,7 +720,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == targetNodeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>
@@ -902,7 +902,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.IsAny<IReadOnlyList<NodeId>>(),
+                    It.IsAny<ArrayOf<NodeId>>(),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {
@@ -940,7 +940,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(i => i.ToHashSet().SetEquals(ids)),
+                    It.Is<ArrayOf<NodeId>>(i => i.ToArray().ToHashSet().SetEquals(ids)),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {
@@ -979,7 +979,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(i => i.ToHashSet().SetEquals(ids)),
+                    It.Is<ArrayOf<NodeId>>(i => i.ToArray().ToHashSet().SetEquals(ids)),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {
@@ -996,12 +996,12 @@ namespace Technosoftware.UaClient.Tests
             // Assert
             Assert.AreEqual(expected[0], result[0]);
             Assert.AreEqual(StatusCodes.Bad, (uint)result[1].StatusCode);
-            Assert.AreEqual(expected[1].Value, result[1].Value);
+            Assert.AreEqual(expected[1].BoxedValue(), result[1].BoxedValue());
 
             context
                 .Setup(c => c.FetchValuesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(i => i.Count == 1 && i[0] == ids[1]),
+                    It.Is<ArrayOf<NodeId>>(i => i.Count == 1 && i[0] == ids[1]),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<DataValue>
                 {
@@ -1124,7 +1124,7 @@ namespace Technosoftware.UaClient.Tests
             // Arrange
             var typeId = new NodeId("type", 0);
             var subTypeId = new NodeId("subType", 0);
-            var references = new ReferenceDescriptionCollection
+            var references = new List<ReferenceDescription>
             {
                 new()
                 {
@@ -1154,7 +1154,7 @@ namespace Technosoftware.UaClient.Tests
             context
                 .Setup(c => c.FetchNodesAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<IReadOnlyList<NodeId>>(n => n.Count == 1 && n[0] == subTypeId),
+                    It.Is<ArrayOf<NodeId>>(n => n.Count == 1 && n[0] == subTypeId),
                     false,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultSet<Node>

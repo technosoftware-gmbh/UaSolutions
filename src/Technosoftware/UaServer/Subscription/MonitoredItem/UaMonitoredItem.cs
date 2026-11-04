@@ -66,6 +66,7 @@ namespace Technosoftware.UaServer
             Initialize();
 
             m_server = server;
+            m_timeProvider = server.TimeProvider ?? TimeProvider.System;
             NodeManager = nodeManager;
             ManagerHandle = managerHandle;
             SubscriptionId = subscriptionId;
@@ -87,7 +88,7 @@ namespace Technosoftware.UaServer
             m_discardOldest = discardOldest;
             m_sourceSamplingInterval = (int)sourceSamplingInterval;
             m_calculator = null;
-            m_nextSamplingTime = HiResClock.TickCount64;
+            m_nextSamplingTime = m_timeProvider.GetTimestampMilliseconds();
             AlwaysReportUpdates = false;
             m_monitoredItemQueueFactory = m_server.MonitoredItemQueueFactory;
             m_subscriptionStore = m_server.SubscriptionStore;
@@ -120,7 +121,7 @@ namespace Technosoftware.UaServer
             {
                 m_calculator = m_server.AggregateManager.CreateCalculator(
                     aggregateFilter.AggregateType,
-                    aggregateFilter.StartTime,
+                    (DateTime)aggregateFilter.StartTime,
                     DateTime.MaxValue,
                     aggregateFilter.ProcessingInterval,
                     aggregateFilter.Stepped,
@@ -163,6 +164,7 @@ namespace Technosoftware.UaServer
             Initialize();
 
             m_server = server;
+            m_timeProvider = server.TimeProvider ?? TimeProvider.System;
             NodeManager = nodeManager;
             ManagerHandle = managerHandle;
             SubscriptionId = storedMonitoredItem.SubscriptionId;
@@ -184,7 +186,7 @@ namespace Technosoftware.UaServer
             m_discardOldest = storedMonitoredItem.DiscardOldest;
             m_sourceSamplingInterval = storedMonitoredItem.SourceSamplingInterval;
             m_calculator = null;
-            m_nextSamplingTime = HiResClock.TickCount64;
+            m_nextSamplingTime = m_timeProvider.GetTimestampMilliseconds();
             m_monitoredItemQueueFactory = m_server.MonitoredItemQueueFactory;
             m_subscriptionStore = m_server.SubscriptionStore;
             IsDurable = storedMonitoredItem.IsDurable;
@@ -198,7 +200,7 @@ namespace Technosoftware.UaServer
             {
                 m_calculator = m_server.AggregateManager.CreateCalculator(
                     aggregateFilter.AggregateType,
-                    aggregateFilter.StartTime,
+                    (DateTime)aggregateFilter.StartTime,
                     DateTime.MaxValue,
                     aggregateFilter.ProcessingInterval,
                     aggregateFilter.Stepped,
@@ -231,15 +233,15 @@ namespace Technosoftware.UaServer
             NodeId = default;
             AttributeId = 0;
             m_indexRange = null;
-            m_parsedIndexRange = NumericRange.Empty;
-            DataEncoding = null;
+            m_parsedIndexRange = NumericRange.Null;
+            DataEncoding = default;
             ClientHandle = 0;
             MonitoringMode = MonitoringMode.Disabled;
             m_samplingInterval = 0;
             QueueSize = 0;
             m_discardOldest = true;
             Filter = null;
-            m_lastValue = null;
+            m_lastValue = default;
             m_lastError = null;
             m_readyToPublish = false;
             m_readyToTrigger = false;
@@ -312,7 +314,7 @@ namespace Technosoftware.UaServer
                 if (m_sourceSamplingInterval == 0)
                 {
                     // re-queue if too little time has passed since the last publish, in case it doesn't ResendData
-                    long now = HiResClock.TickCount64;
+                    long now = m_timeProvider.GetTimestampMilliseconds();
 
                     if (m_nextSamplingTime > now)
                     {
@@ -712,7 +714,7 @@ namespace Technosoftware.UaServer
                     {
                         m_calculator = m_server.AggregateManager.CreateCalculator(
                             aggregateFilter.AggregateType,
-                            aggregateFilter.StartTime,
+                            (DateTime)aggregateFilter.StartTime,
                             DateTime.MaxValue,
                             aggregateFilter.ProcessingInterval,
                             aggregateFilter.Stepped,
@@ -794,9 +796,9 @@ namespace Technosoftware.UaServer
 
                 if (previousMode == MonitoringMode.Disabled)
                 {
-                    m_nextSamplingTime = HiResClock.TickCount64;
+                    m_nextSamplingTime = m_timeProvider.GetTimestampMilliseconds();
                     m_lastError = null;
-                    m_lastValue = null;
+                    m_lastValue = default;
                 }
 
                 MonitoringMode = monitoringMode;
@@ -853,7 +855,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // make a shallow copy of the value.
-                if (value != null)
+                if (!value.IsNull)
                 {
                     if (m_logger.IsEnabled(LogLevel.Trace))
                     {
@@ -864,36 +866,32 @@ namespace Technosoftware.UaServer
                             value.WrappedValue);
                     }
 
-                    value = new DataValue
-                    {
-                        WrappedValue = value.WrappedValue,
-                        StatusCode = value.StatusCode,
-                        SourceTimestamp = value.SourceTimestamp,
-                        SourcePicoseconds = value.SourcePicoseconds,
-                        ServerTimestamp = value.ServerTimestamp,
-                        ServerPicoseconds = value.ServerPicoseconds
-                    };
+                    value = new DataValue()
+                        .WithWrappedValue(value.WrappedValue)
+                        .WithStatus(value.StatusCode)
+                        .WithSourceTimestamp(value.SourceTimestamp)
+                        .WithSourcePicoseconds(value.SourcePicoseconds)
+                        .WithServerTimestamp(value.ServerTimestamp)
+                        .WithServerPicoseconds(value.ServerPicoseconds);
 
                     // ensure the data value matches the error status code.
                     if (error != null && error.StatusCode.Code != 0)
                     {
-                        value.StatusCode = error.StatusCode;
+                        value = value.WithStatus(error.StatusCode);
                     }
                 }
 
                 // create empty value if none provided.
-                if (ServiceResult.IsBad(error) && value == null)
+                if (ServiceResult.IsBad(error) && value.IsNull)
                 {
-                    value = new DataValue
-                    {
-                        StatusCode = error.StatusCode,
-                        SourceTimestamp = DateTime.UtcNow,
-                        ServerTimestamp = DateTime.UtcNow
-                    };
+                    value = new DataValue()
+                        .WithStatus(error.StatusCode)
+                        .WithSourceTimestamp(DateTime.UtcNow)
+                        .WithServerTimestamp(DateTime.UtcNow);
                 }
 
                 // this should never happen.
-                if (value == null)
+                if (value.IsNull)
                 {
                     return;
                 }
@@ -911,7 +909,7 @@ namespace Technosoftware.UaServer
 
                     DataValue processedValue = m_calculator.GetProcessedValue(false);
 
-                    while (processedValue != null)
+                    while (!processedValue.IsNull)
                     {
                         AddValueToQueue(processedValue, null);
                         processedValue = m_calculator.GetProcessedValue(false);
@@ -945,7 +943,7 @@ namespace Technosoftware.UaServer
                 overflow = m_dataChangeQueueHandler.QueueValue(value, error);
             }
 
-            if (m_lastValue != null)
+            if (!m_lastValue.IsNull)
             {
                 m_readyToTrigger = true;
             }
@@ -983,11 +981,12 @@ namespace Technosoftware.UaServer
         {
             // fetch the event fields.
             var fields = new EventFieldList { ClientHandle = ClientHandle, Handle = instance };
+            var eventFields = new List<Variant>(filter.SelectClauses.Count);
 
             foreach (SimpleAttributeOperand clause in filter.SelectClauses)
             {
                 // get the value of the attribute (apply localization).
-                object value = instance.GetAttributeValue(
+                Variant value = instance.GetAttributeValue(
                     context,
                     clause.TypeDefinitionId,
                     clause.BrowsePath,
@@ -995,23 +994,27 @@ namespace Technosoftware.UaServer
                     clause.ParsedIndexRange);
 
                 // add the value to the list of event fields.
-                if (value != null)
+                if (!value.IsNull)
                 {
                     // translate any localized text.
-                    if (value is LocalizedText text)
+                    if (value.TryGetValue(out LocalizedText text))
                     {
-                        value = m_server.ResourceManager.Translate(Session?.PreferredLocales, text);
+                        value = m_server.ResourceManager.Translate(
+                            Session?.PreferredLocales ?? default,
+                            text);
                     }
 
                     // add value.
-                    fields.EventFields.Add(new Variant(value));
+                    eventFields.Add(value);
                 }
                 // add a dummy entry for missing values.
                 else
                 {
-                    fields.EventFields.Add(Variant.Null);
+                    eventFields.Add(Variant.Null);
                 }
             }
+
+            fields.EventFields = eventFields.ToArrayOf();
 
             return fields;
         }
@@ -1184,17 +1187,6 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Determines whether an event can be sent with SupportsFilteredRetain in consideration.
         /// </summary>
-        protected bool CanSendFilteredAlarm(
-            IFilterContext context,
-            EventFilter filter,
-            IFilterTarget instance)
-        {
-            return CanSendFilteredAlarm(context, filter, instance, out _);
-        }
-
-        /// <summary>
-        /// Determines whether an event can be sent with SupportsFilteredRetain in consideration.
-        /// </summary>
         /// <remarks>
         /// <paramref name="overrideRetain"/> is <c>true</c> only for the trailing event a
         /// condition produces as it leaves this client's where clause. Part 9, 5.5.2 requires
@@ -1221,7 +1213,7 @@ namespace Technosoftware.UaServer
                 if (alarmCondition != null &&
                     alarmCondition.SupportsFilteredRetain != null &&
                     alarmCondition.SupportsFilteredRetain.Value &&
-                    filter.SelectClauses != null)
+                    !filter.SelectClauses.IsEmpty)
                 {
                     conditionId = alarmCondition.NodeId;
                 }
@@ -1230,7 +1222,7 @@ namespace Technosoftware.UaServer
             bool canSend = passedFilter;
 
             // ConditionId is valid only if FilteredRetain is set for the alarm condition
-            if (conditionId != null && alarmCondition != null)
+            if (!conditionId.IsNull && alarmCondition != null)
             {
                 HashSet<string> conditionIds = GetFilteredRetainConditionIds();
 
@@ -1286,7 +1278,7 @@ namespace Technosoftware.UaServer
         private void IncrementSampleTime()
         {
             // update next sample time.
-            long now = HiResClock.TickCount64;
+            long now = m_timeProvider.GetTimestampMilliseconds();
             long samplingInterval = (long)m_samplingInterval;
 
             if (m_nextSamplingTime > 0)
@@ -1482,7 +1474,7 @@ namespace Technosoftware.UaServer
                     {
                         DataValue processedValue = m_calculator.GetProcessedValue(false);
 
-                        while (processedValue != null)
+                        while (!processedValue.IsNull)
                         {
                             AddValueToQueue(processedValue, null);
                         }
@@ -1551,7 +1543,7 @@ namespace Technosoftware.UaServer
             // set semantics changed bit.
             if (m_semanticsChanged)
             {
-                value?.StatusCode = value.StatusCode.SetSemanticsChanged(true);
+                value = value.WithStatus(value.StatusCode.SetSemanticsChanged(true));
 
                 if (error != null)
                 {
@@ -1569,7 +1561,7 @@ namespace Technosoftware.UaServer
             // set structure changed bit.
             if (m_structureChanged)
             {
-                value?.StatusCode = value.StatusCode.SetStructureChanged(true);
+                value = value.WithStatus(value.StatusCode.SetStructureChanged(true));
 
                 if (error != null)
                 {
@@ -1590,12 +1582,12 @@ namespace Technosoftware.UaServer
             // apply timestamp filter.
             if (m_timestampsToReturn is not TimestampsToReturn.Server and not TimestampsToReturn.Both)
             {
-                item.Value.ServerTimestamp = DateTime.MinValue;
+                item.Value = item.Value.WithServerTimestamp(DateTime.MinValue);
             }
 
             if (m_timestampsToReturn is not TimestampsToReturn.Source and not TimestampsToReturn.Both)
             {
-                item.Value.SourceTimestamp = DateTime.MinValue;
+                item.Value = item.Value.WithSourceTimestamp(DateTime.MinValue);
             }
 
             UaServerUtils.ReportPublishValue(NodeId, Id, item.Value);
@@ -1655,7 +1647,7 @@ namespace Technosoftware.UaServer
                         return 0;
                     }
 
-                    long now = HiResClock.TickCount64;
+                    long now = m_timeProvider.GetTimestampMilliseconds();
 
                     if (m_nextSamplingTime <= now)
                     {
@@ -1707,7 +1699,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
         protected virtual bool ApplyFilter(DataValue value, ServiceResult error)
         {
-            if (value == null)
+            if (value.IsNull)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -1733,7 +1725,7 @@ namespace Technosoftware.UaServer
             DataChangeFilter filter,
             double range)
         {
-            if (value == null)
+            if (value.IsNull)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -1759,37 +1751,39 @@ namespace Technosoftware.UaServer
             }
 
             // get the current status.
-            uint status = StatusCodes.Good;
+            StatusCode status = StatusCodes.Good;
 
             if (error != null)
             {
-                status = error.StatusCode.Code;
+                status = error.StatusCode;
             }
-            else if (lastValue != null)
+            else if (!lastValue.IsNull)
             {
-                status = value.StatusCode.Code;
+                status = value.StatusCode;
             }
 
             // get the last status.
-            uint lastStatus = StatusCodes.Good;
+            StatusCode lastStatus = StatusCodes.Good;
 
             if (lastError != null)
             {
-                lastStatus = lastError.StatusCode.Code;
+                lastStatus = lastError.StatusCode;
             }
-            else if (lastValue != null)
+            else if (!lastValue.IsNull)
             {
-                lastStatus = lastValue.StatusCode.Code;
+                lastStatus = lastValue.StatusCode;
             }
 
-            // value changed if any status change occurrs.
-            if (status != lastStatus)
+            // value changed if any status change occurrs. StatusCode equality
+            // ignores the informational bits by default, so the comparison is
+            // made explicit over all of them, as it was over the raw uint.
+            if (!status.Equals(lastStatus, StatusCodeComparison.AllBits))
             {
                 return true;
             }
 
             // value changed if only one is null.
-            if (lastValue == null)
+            if (lastValue.IsNull)
             {
                 return true;
             }
@@ -1808,7 +1802,12 @@ namespace Technosoftware.UaServer
             }
 
             // check if reference to same object.
-            if (!Equals(lastValue.Value, value.Value, deadbandType, deadband, range))
+            if (!Equals(
+                    lastValue.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
+                    value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
+                    deadbandType,
+                    deadband,
+                    range))
             {
                 return true;
             }
@@ -1862,7 +1861,8 @@ namespace Technosoftware.UaServer
 
             if (value1 is not Array array1 || value2 is not Array array2)
             {
-                if (value1 is XmlElement xmlElement1 && value2 is XmlElement xmlElement2)
+                if (value1 is System.Xml.XmlElement xmlElement1 &&
+                    value2 is System.Xml.XmlElement xmlElement2)
                 {
                     return xmlElement1.OuterXml
                         .Equals(xmlElement2.OuterXml, StringComparison.Ordinal);
@@ -1894,8 +1894,8 @@ namespace Technosoftware.UaServer
 
                 if (isVariant)
                 {
-                    element1 = ((Variant)element1).Value;
-                    element2 = ((Variant)element2).Value;
+                    element1 = ((Variant)element1).AsBoxedObject(Variant.BoxingBehavior.Legacy);
+                    element2 = ((Variant)element2).AsBoxedObject(Variant.BoxingBehavior.Legacy);
                 }
 
                 if (!Equals(element1, element2, deadbandType, deadband, range))
@@ -1997,7 +1997,7 @@ namespace Technosoftware.UaServer
                     {
                         if (QueueSize <= 1)
                         {
-                            Utils.SilentDispose(m_dataChangeQueueHandler);
+                            m_dataChangeQueueHandler?.Dispose();
                             m_dataChangeQueueHandler = null;
                             break; // queueing is disabled
                         }
@@ -2011,7 +2011,8 @@ namespace Technosoftware.UaServer
                                 IsDurable,
                                 m_monitoredItemQueueFactory,
                                 m_server.Telemetry,
-                                QueueOverflowHandler);
+                                QueueOverflowHandler,
+                                m_timeProvider);
                             queueLastValue = true;
                         }
 
@@ -2021,7 +2022,7 @@ namespace Technosoftware.UaServer
                             DiagnosticsMasks);
                         m_dataChangeQueueHandler.SetSamplingInterval(m_samplingInterval);
 
-                        if (queueLastValue && m_lastValue != null)
+                        if (queueLastValue && !m_lastValue.IsNull)
                         {
                             m_dataChangeQueueHandler.QueueValue(m_lastValue, m_lastError);
                         }
@@ -2037,9 +2038,9 @@ namespace Technosoftware.UaServer
                     }
                     break;
                 case MonitoringMode.Disabled:
-                    Utils.SilentDispose(m_eventQueueHandler);
+                    m_eventQueueHandler?.Dispose();
                     m_eventQueueHandler = null;
-                    Utils.SilentDispose(m_dataChangeQueueHandler);
+                    m_dataChangeQueueHandler?.Dispose();
                     m_dataChangeQueueHandler = null;
                     break;
                 default:
@@ -2101,7 +2102,8 @@ namespace Technosoftware.UaServer
                                 m_discardOldest,
                                 m_samplingInterval,
                                 m_server.Telemetry,
-                                QueueOverflowHandler);
+                                QueueOverflowHandler,
+                                m_timeProvider);
                         }
                         else
                         {
@@ -2111,7 +2113,8 @@ namespace Technosoftware.UaServer
                                 IsDurable,
                                 m_monitoredItemQueueFactory,
                                 m_server.Telemetry,
-                                QueueOverflowHandler);
+                                QueueOverflowHandler,
+                                m_timeProvider);
 
                             m_dataChangeQueueHandler.SetQueueSize(
                                 QueueSize,
@@ -2192,14 +2195,15 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_dataChangeQueueHandler);
-                Utils.SilentDispose(m_eventQueueHandler);
+                m_dataChangeQueueHandler?.Dispose();
+                m_eventQueueHandler?.Dispose();
             }
         }
 
         private readonly Lock m_lock = new();
         private readonly ILogger m_logger;
         private IUaServerData m_server;
+        private readonly TimeProvider m_timeProvider;
         private string m_indexRange;
         private NumericRange m_parsedIndexRange;
         private TimestampsToReturn m_timestampsToReturn;

@@ -22,13 +22,13 @@ namespace Technosoftware.UaClient.Tests
 {
     public class TokenValidatorMock : ITokenValidator
     {
-        public IssuedIdentityToken LastIssuedToken { get; set; }
+        public IssuedIdentityTokenHandler LastIssuedToken { get; set; }
 
-        public IUserIdentity ValidateToken(IssuedIdentityToken issuedToken)
+        public IUserIdentity ValidateToken(IssuedIdentityTokenHandler issuedTokenHandler)
         {
-            LastIssuedToken = issuedToken;
+            LastIssuedToken = issuedTokenHandler;
 
-            return new UserIdentity(issuedToken);
+            return new UserIdentity(issuedTokenHandler);
         }
     }
 }

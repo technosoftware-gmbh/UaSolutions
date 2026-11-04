@@ -43,7 +43,7 @@ namespace Technosoftware.UaClient
             IUserIdentity identity,
             CancellationToken ct = default)
         {
-            return session.OpenAsync(sessionName, 0, identity, null, ct);
+            return session.OpenAsync(sessionName, 0, identity, default, ct);
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             return session.OpenAsync(
@@ -88,7 +88,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             bool checkDomain,
             CancellationToken ct = default)
         {
@@ -238,28 +238,22 @@ namespace Technosoftware.UaClient
         /// <summary>
         /// Finds the NodeIds for the components for an instance.
         /// </summary>
-        public static async Task<(NodeIdCollection, IList<ServiceResult>)> FindComponentIdsAsync(
+        public static async Task<(List<NodeId>, IList<ServiceResult>)> FindComponentIdsAsync(
             this IUaSession session,
             NodeId instanceId,
-            IList<string> componentPaths,
+            ArrayOf<string> componentPaths,
             CancellationToken ct = default)
         {
-            var componentIds = new NodeIdCollection();
+            var componentIds = new List<NodeId>();
             var errors = new List<ServiceResult>();
 
             // build list of paths to translate.
-            var pathsToTranslate = new BrowsePathCollection();
-
-            for (int ii = 0; ii < componentPaths.Count; ii++)
-            {
-                var pathToTranslate = new BrowsePath
+            ArrayOf<BrowsePath> pathsToTranslate = componentPaths.ConvertAll(
+                componentPath => new BrowsePath
                 {
                     StartingNode = instanceId,
-                    RelativePath = RelativePath.Parse(componentPaths[ii], session.TypeTree)
-                };
-
-                pathsToTranslate.Add(pathToTranslate);
-            }
+                    RelativePath = RelativePath.Parse(componentPath, session.TypeTree)
+                });
 
             // translate the paths.
 
@@ -268,8 +262,8 @@ namespace Technosoftware.UaClient
                 pathsToTranslate,
                 ct).ConfigureAwait(false);
 
-            BrowsePathResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<BrowsePathResult> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
 
             // verify that the server returned the correct number of results.
@@ -325,7 +319,7 @@ namespace Technosoftware.UaClient
                     continue;
                 }
 
-                if (NodeId.IsNull(results[ii].Targets[0].TargetId))
+                if ((results[ii].Targets[0].TargetId).IsNull)
                 {
                     errors[ii] = ServiceResult.Create(
                         StatusCodes.BadUnexpectedError,
@@ -360,7 +354,7 @@ namespace Technosoftware.UaClient
         /// <param name="variableId">The variable node.</param>
         /// <param name="ct">Cancellation token to use to cancel the operation</param>
         /// <exception cref="ServiceResultException"></exception>
-        public static async Task<ReferenceDescriptionCollection> ReadAvailableEncodingsAsync(
+        public static async Task<ArrayOf<ReferenceDescription>> ReadAvailableEncodingsAsync(
             this IUaSession session,
             NodeId variableId,
             CancellationToken ct = default)
@@ -375,7 +369,7 @@ namespace Technosoftware.UaClient
 
             // no encodings available if there was a problem reading the
             // data type for the node.
-            if (NodeId.IsNull(variable.DataType))
+            if (variable.DataType.IsNull)
             {
                 return [];
             }
@@ -390,7 +384,7 @@ namespace Technosoftware.UaClient
             }
 
             // look for cached values.
-            IList<INode> encodings = await session.NodeCache.FindAsync(
+            ArrayOf<INode> encodings = await session.NodeCache.FindAsync(
                 variableId,
                 ReferenceTypeIds.HasEncoding,
                 false,
@@ -399,7 +393,7 @@ namespace Technosoftware.UaClient
 
             if (encodings.Count > 0)
             {
-                var references = new ReferenceDescriptionCollection();
+                var references = new List<ReferenceDescription>();
 
                 foreach (INode encoding in encodings)
                 {

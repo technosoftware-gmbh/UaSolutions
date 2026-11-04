@@ -53,7 +53,7 @@ namespace Technosoftware.UaServer.Tests
         [OneTimeSetUp]
         public async Task OneTimeSetUpAsync()
         {
-            m_fixture = new ServerFixture<UaStandardServer>();
+            m_fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
             m_server = await m_fixture.StartAsync().ConfigureAwait(false);
         }
 
@@ -74,29 +74,23 @@ namespace Technosoftware.UaServer.Tests
             string securityPolicyUri,
             MessageSecurityMode securityMode)
         {
-            EndpointDescription endpoint = m_server.GetEndpoints().First(e =>
+            EndpointDescription endpoint = m_server.GetEndpoints().ToArray().First(e =>
                 e.TransportProfileUri.Equals(Profiles.UaTcpTransport, StringComparison.Ordinal));
             endpoint.SecurityPolicyUri = securityPolicyUri;
             endpoint.SecurityMode = securityMode;
 
-            var secureChannelContext = new SecureChannelContext(
-                TestContext.CurrentContext.Test.Name,
+            // 2.0 rejects a CreateSession without a client nonce on a secured channel
+            // (OPC 10000-4 5.7.2.3) and checks the client signature on activation.
+            using var channel = SecuredClientChannel.Create(
+                m_server,
                 endpoint,
-                RequestEncoding.Binary);
+                TestContext.CurrentContext.Test.Name);
+            SecureChannelContext secureChannelContext = channel.Context;
             var requestHeader = new RequestHeader { Timestamp = DateTime.UtcNow };
 
-            CreateSessionResponse createResponse = await m_server.CreateSessionAsync(
-                secureChannelContext,
-                requestHeader,
-                null,
-                null,
-                null,
-                TestContext.CurrentContext.Test.Name,
-                null,
-                null,
-                ServerFixtureUtils.DefaultSessionTimeout,
-                ServerFixtureUtils.DefaultMaxResponseMessageSize,
-                CancellationToken.None).ConfigureAwait(false);
+            (CreateSessionResponse createResponse, ByteString clientNonce) = await channel
+                .CreateSessionAsync(requestHeader, TestContext.CurrentContext.Test.Name)
+                .ConfigureAwait(false);
 
             requestHeader.AuthenticationToken = createResponse.AuthenticationToken;
             try
@@ -107,16 +101,16 @@ namespace Technosoftware.UaServer.Tests
                 ActivateSessionResponse activateResponse = await m_server.ActivateSessionAsync(
                     secureChannelContext,
                     requestHeader,
-                    createResponse.ServerSignature,
+                    channel.CreateClientSignature(createResponse, clientNonce),
                     [],
                     [],
                     default,
                     null,
-                    CancellationToken.None).ConfigureAwait(false);
+                    RequestLifetime.None).ConfigureAwait(false);
 
                 AssertSessionNonceLength(activateResponse.ServerNonce, "ActivateSession");
                 Assert.IsFalse(
-                    Utils.IsEqual(createResponse.ServerNonce, activateResponse.ServerNonce),
+                    createResponse.ServerNonce.Equals(activateResponse.ServerNonce),
                     "ActivateSession must return a new serverNonce.");
             }
             finally
@@ -126,13 +120,13 @@ namespace Technosoftware.UaServer.Tests
                     secureChannelContext,
                     requestHeader,
                     true,
-                    CancellationToken.None).ConfigureAwait(false);
+                    RequestLifetime.None).ConfigureAwait(false);
             }
         }
 
-        private static void AssertSessionNonceLength(byte[] serverNonce, string service)
+        private static void AssertSessionNonceLength(ByteString serverNonce, string service)
         {
-            Assert.NotNull(serverNonce, $"{service} returned no serverNonce.");
+            Assert.IsFalse(serverNonce.IsNull, $"{service} returned no serverNonce.");
             NUnit.Framework.Assert.That(
                 serverNonce.Length,
                 Is.InRange(kMinSessionNonceLength, kMaxSessionNonceLength),

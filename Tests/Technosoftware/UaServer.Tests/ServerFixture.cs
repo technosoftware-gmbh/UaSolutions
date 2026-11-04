@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace Technosoftware.UaServer.Tests
     /// </summary>
     /// <typeparam name="T">A server class T used for testing.</typeparam>
     public class ServerFixture<T>
-        where T : ServerBase, new()
+        where T : ServerBase
     {
         public ApplicationInstance Application { get; private set; }
         public ApplicationConfiguration Config { get; private set; }
@@ -60,10 +61,17 @@ namespace Technosoftware.UaServer.Tests
         public bool ProvisioningMode { get; set; }
         public ActivityListener ActivityListener { get; private set; }
 
+        /// <summary>
+        /// The transport bindings the server listens with. Defaults to
+        /// <see cref="TestTransportBindings.WithAllSchemes"/>.
+        /// </summary>
+        public Opc.Ua.Bindings.ITransportBindingRegistry TransportBindingRegistry { get; set; }
+
         public ServerFixture(
+            Func<ITelemetryContext, T> factory,
             bool useTracing,
             bool disableActivityLogging)
-            : this()
+            : this(factory)
         {
             UseTracing = useTracing;
             if (UseTracing)
@@ -72,8 +80,14 @@ namespace Technosoftware.UaServer.Tests
             }
         }
 
-        public ServerFixture()
+        /// <remarks>
+        /// UaStandardServer takes an ITelemetryContext in 2.0, which a new()
+        /// constraint cannot express, so the server under test is built by a
+        /// factory the caller supplies.
+        /// </remarks>
+        public ServerFixture(Func<ITelemetryContext, T> factory)
         {
+            m_factory = factory;
             m_telemetry = NUnitTelemetryContext.Create(true);
             m_logger = m_telemetry.CreateLogger<ServerFixture<T>>();
         }
@@ -120,6 +134,30 @@ namespace Technosoftware.UaServer.Tests
                     .AddSignAndEncryptPolicies()
                     .AddEccSignPolicies()
                     .AddEccSignAndEncryptPolicies();
+
+                // 2.0 adds the AEAD policies, which the client fixtures walk
+                // through; a server that does not offer them leaves those
+                // cases without an endpoint to connect to.
+                foreach (string securityPolicyUri in new[]
+                {
+                    SecurityPolicies.RSA_DH_AesGcm,
+                    SecurityPolicies.RSA_DH_ChaChaPoly,
+                    SecurityPolicies.ECC_nistP256_AesGcm,
+                    SecurityPolicies.ECC_nistP256_ChaChaPoly,
+                    SecurityPolicies.ECC_nistP384_AesGcm,
+                    SecurityPolicies.ECC_nistP384_ChaChaPoly,
+                    SecurityPolicies.ECC_brainpoolP256r1_AesGcm,
+                    SecurityPolicies.ECC_brainpoolP256r1_ChaChaPoly,
+                    SecurityPolicies.ECC_brainpoolP384r1_AesGcm,
+                    SecurityPolicies.ECC_brainpoolP384r1_ChaChaPoly
+                })
+                {
+                    AddPolicyIfSupported(serverConfig, MessageSecurityMode.Sign, securityPolicyUri);
+                    AddPolicyIfSupported(
+                        serverConfig,
+                        MessageSecurityMode.SignAndEncrypt,
+                        securityPolicyUri);
+                }
             }
 
             if (OperationLimits)
@@ -159,7 +197,7 @@ namespace Technosoftware.UaServer.Tests
                     });
             }
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     "CN=" + typeof(T).Name + ", C=US, S=Arizona, O=OPC Foundation, DC=localhost",
                     CertificateStoreType.Directory,
@@ -250,7 +288,13 @@ namespace Technosoftware.UaServer.Tests
             }
 
             // start the server.
-            var server = new T();
+            T server = m_factory(m_telemetry);
+
+            // 2.0 no longer loads a transport binding by reflection when an
+            // endpoint of that scheme is first touched; the server listens on
+            // the schemes its registry was given.
+            server.TransportBindings = TransportBindingRegistry
+                ?? TestTransportBindings.WithAllSchemes();
             if (AllNodeManagers && server is UaStandardServer standardServer)
             {
                 NodeManagerUtils.AddDefaultNodeManagers(standardServer);
@@ -275,12 +319,16 @@ namespace Technosoftware.UaServer.Tests
         /// </summary>
         public void StartActivityListenerInternal(bool disableActivityLogging = false)
         {
+            // Source construction invokes ShouldListenTo synchronously, so resolve before registration.
+            ActivitySource activitySource = m_telemetry.GetActivitySource();
+            string expectedName = activitySource.Name;
+
             if (disableActivityLogging)
             {
                 // Create an instance of ActivityListener without logging
                 ActivityListener = new ActivityListener
                 {
-                    ShouldListenTo = (source) => source.Name == m_telemetry.GetActivitySource().Name,
+                    ShouldListenTo = (source) => source.Name == expectedName,
                     Sample = (ref _) => ActivitySamplingResult.AllDataAndRecorded,
                     ActivityStarted = _ => { },
                     ActivityStopped = _ => { }
@@ -291,7 +339,7 @@ namespace Technosoftware.UaServer.Tests
                 // Create an instance of ActivityListener and configure its properties with logging
                 ActivityListener = new ActivityListener
                 {
-                    ShouldListenTo = (source) => source.Name == m_telemetry.GetActivitySource().Name,
+                    ShouldListenTo = (source) => source.Name == expectedName,
                     Sample = (ref _) => ActivitySamplingResult.AllDataAndRecorded,
                     ActivityStarted = activity =>
                         m_logger.LogInformation(
@@ -330,6 +378,21 @@ namespace Technosoftware.UaServer.Tests
             await Task.Delay(100).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Adds a policy only when this build of the stack implements it.
+        /// </summary>
+        private static void AddPolicyIfSupported(
+            IUaApplicationConfigurationServerSelected serverConfig,
+            MessageSecurityMode securityMode,
+            string securityPolicyUri)
+        {
+            if (SecurityPolicies.Default.GetInfo(securityPolicyUri) != null)
+            {
+                serverConfig.AddPolicy(securityMode, securityPolicyUri);
+            }
+        }
+
+        private readonly Func<ITelemetryContext, T> m_factory;
         private readonly ITelemetryContext m_telemetry;
         private readonly ILogger m_logger;
     }

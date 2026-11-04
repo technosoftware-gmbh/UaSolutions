@@ -41,7 +41,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public async Task SaveContinuationPointEvictsOldestWhenCountReachesConfiguredLimit()
         {
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
             await fixture.StartAsync().ConfigureAwait(false);
 
             try
@@ -69,7 +69,7 @@ namespace Technosoftware.UaServer.Tests
 
                 // the oldest continuation point must have been evicted at capacity.
                 Assert.That(
-                    session.RestoreContinuationPoint(points[0].Id.ToByteArray()),
+                    session.RestoreContinuationPoint(ByteString.From(points[0].Id.ToByteArray())),
                     Is.Null,
                     "The oldest continuation point should be evicted once the limit is reached.");
 
@@ -77,7 +77,7 @@ namespace Technosoftware.UaServer.Tests
                 for (int ii = 1; ii <= maxBrowse; ii++)
                 {
                     UaContinuationPoint restored =
-                        session.RestoreContinuationPoint(points[ii].Id.ToByteArray());
+                        session.RestoreContinuationPoint(ByteString.From(points[ii].Id.ToByteArray()));
                     Assert.That(restored, Is.SameAs(points[ii]));
                 }
             }
@@ -96,7 +96,7 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public async Task TrySaveHistoryContinuationPointFreesPriorRequestsButRefusesWithinRequestAsync()
         {
-            var fixture = new ServerFixture<UaStandardServer>();
+            var fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
             await fixture.StartAsync().ConfigureAwait(false);
 
             try
@@ -125,8 +125,8 @@ namespace Technosoftware.UaServer.Tests
                 // one more point for request 1 is refused and nothing is evicted.
                 var refused = Guid.NewGuid();
                 Assert.That(session.TrySaveHistoryContinuationPoint(refused, new object(), 1), Is.False);
-                Assert.That(session.RestoreHistoryContinuationPoint(refused.ToByteArray()), Is.Null);
-                object first = session.RestoreHistoryContinuationPoint(request1[0].ToByteArray());
+                Assert.That(session.RestoreHistoryContinuationPoint(ByteString.From(refused.ToByteArray())), Is.Null);
+                object first = session.RestoreHistoryContinuationPoint(ByteString.From(request1[0].ToByteArray()));
                 Assert.That(first, Is.Not.Null, "The oldest point of the request must not be evicted.");
                 Assert.That(
                     session.TrySaveHistoryContinuationPoint(request1[0], first, 1),
@@ -143,15 +143,15 @@ namespace Technosoftware.UaServer.Tests
                 }
 
                 Assert.That(
-                    request1.All(id => session.RestoreHistoryContinuationPoint(id.ToByteArray()) == null),
+                    request1.All(id => session.RestoreHistoryContinuationPoint(ByteString.From(id.ToByteArray())) == null),
                     Is.True,
                     "The points of the prior request must have been freed.");
 
                 // the legacy method keeps evicting the oldest point.
                 var legacy = Guid.NewGuid();
                 session.SaveHistoryContinuationPoint(legacy, new object());
-                Assert.That(session.RestoreHistoryContinuationPoint(request2[0].ToByteArray()), Is.Null);
-                Assert.That(session.RestoreHistoryContinuationPoint(legacy.ToByteArray()), Is.Not.Null);
+                Assert.That(session.RestoreHistoryContinuationPoint(ByteString.From(request2[0].ToByteArray())), Is.Null);
+                Assert.That(session.RestoreHistoryContinuationPoint(ByteString.From(legacy.ToByteArray())), Is.Not.Null);
             }
             finally
             {

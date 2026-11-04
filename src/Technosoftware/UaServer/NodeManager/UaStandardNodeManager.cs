@@ -188,10 +188,10 @@ namespace Technosoftware.UaServer
             {
                 lock (Lock)
                 {
-                    Utils.SilentDispose(m_monitoredItemManager);
+                    m_monitoredItemManager?.Dispose();
                     foreach (NodeState node in PredefinedNodes.Values)
                     {
-                        Utils.SilentDispose(node);
+                        (node as IDisposable)?.Dispose();
                     }
 
                     PredefinedNodes.Clear();
@@ -214,7 +214,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Acquires the lock on the node manager.
         /// </summary>
-        public object Lock { get; } = new object();
+        public System.Threading.Lock Lock { get; } = new();
 
         /// <summary>
         /// Gets the server that the node manager belongs to.
@@ -323,7 +323,7 @@ namespace Technosoftware.UaServer
         protected virtual bool IsNodeIdInNamespace(NodeId nodeId)
         {
             // nulls are never a valid node.
-            if (NodeId.IsNull(nodeId))
+            if (nodeId.IsNull)
             {
                 return false;
             }
@@ -393,7 +393,7 @@ namespace Technosoftware.UaServer
 
                 NodeState parent = null;
 
-                if (parentId != null)
+                if (!parentId.IsNull)
                 {
                     if (!PredefinedNodes.TryGetValue(parentId, out parent))
                     {
@@ -406,7 +406,7 @@ namespace Technosoftware.UaServer
                     parent.AddChild(instance);
                 }
 
-                instance.Create(contextToUse, default, browseName, null, true);
+                instance.Create(contextToUse, default, browseName, default, true);
                 AddPredefinedNode(contextToUse, instance);
 
                 return instance.NodeId;
@@ -443,7 +443,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public NodeState FindNodeInAddressSpace(NodeId nodeId)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -565,9 +565,9 @@ namespace Technosoftware.UaServer
             // assign a default value to any variable in namespace 0
             if (node is BaseVariableState nodeStateVar &&
                 nodeStateVar.NodeId.NamespaceIndex == 0 &&
-                nodeStateVar.Value == null)
+                nodeStateVar.Value.IsNull)
             {
-                nodeStateVar.Value = Opc.Ua.TypeInfo.GetDefaultValue(
+                nodeStateVar.Value = Opc.Ua.TypeInfo.GetDefaultVariantValue(
                     nodeStateVar.DataType,
                     nodeStateVar.ValueRank,
                     ServerData.TypeTree);
@@ -714,7 +714,7 @@ namespace Technosoftware.UaServer
                     IReference reference = references[ii];
 
                     // nothing to do with external nodes.
-                    if (reference.TargetId == null || reference.TargetId.IsAbsolute)
+                    if (reference.TargetId.IsNull || reference.TargetId.IsAbsolute)
                     {
                         continue;
                     }
@@ -807,7 +807,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected void AddTypesToTypeTree(BaseTypeState type)
         {
-            if (!NodeId.IsNull(type.SuperTypeId) && !ServerData.TypeTree.IsKnown(type.SuperTypeId))
+            if (!type.SuperTypeId.IsNull && !ServerData.TypeTree.IsKnown(type.SuperTypeId))
             {
                 AddTypesToTypeTree(type.SuperTypeId);
             }
@@ -847,7 +847,7 @@ namespace Technosoftware.UaServer
         /// <returns>Returns null if not found or not of the correct type.</returns>
         public T FindPredefinedNode<T>(NodeId nodeId) where T : NodeState
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -875,7 +875,7 @@ namespace Technosoftware.UaServer
 
             foreach (NodeState node in nodes)
             {
-                Utils.SilentDispose(node);
+                (node as IDisposable)?.Dispose();
             }
         }
 
@@ -1038,7 +1038,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // read the attributes.
-                List<object> values = target.ReadAttributes(
+                ArrayOf<Variant> values = target.ReadAttributes(
                     systemContext,
                     Attributes.WriteMask,
                     Attributes.UserWriteMask,
@@ -1062,52 +1062,59 @@ namespace Technosoftware.UaServer
                     DisplayName = target.DisplayName
                 };
 
-                if (values[0] != null && values[1] != null)
+                if (values[0].TryGetValue(out uint writeMask) &&
+                    values[1].TryGetValue(out uint userWriteMask))
                 {
-                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0]) &
-                        ((uint)values[1]));
+                    metadata.WriteMask = (AttributeWriteMask)(writeMask & userWriteMask);
                 }
 
-                metadata.DataType = values[2] is NodeId nodeId ? nodeId : default;
-
-                if (values[3] != null)
+                if (values[2].TryGetValue(out NodeId dataType))
                 {
-                    metadata.ValueRank = (int)values[3];
+                    metadata.DataType = dataType;
                 }
 
-                metadata.ArrayDimensions = (IList<uint>)values[4];
-
-                if (values[5] != null && values[6] != null)
+                if (values[3].TryGetValue(out int valueRank))
                 {
-                    metadata.AccessLevel = (byte)(((byte)values[5]) & ((byte)values[6]));
+                    metadata.ValueRank = valueRank;
                 }
 
-                if (values[7] != null)
+                if (values[4].TryGetValue(out ArrayOf<uint> arrayDimensions))
                 {
-                    metadata.EventNotifier = (byte)values[7];
+                    metadata.ArrayDimensions = arrayDimensions;
                 }
 
-                if (values[8] != null && values[9] != null)
+                if (values[5].TryGetValue(out byte accessLevel) &&
+                    values[6].TryGetValue(out byte userAccessLevel))
                 {
-                    metadata.Executable = ((bool)values[8]) && ((bool)values[9]);
+                    metadata.AccessLevel = (byte)(accessLevel & userAccessLevel);
                 }
 
-                if (values[10] != null)
+                if (values[7].TryGetValue(out byte eventNotifier))
                 {
-                    metadata.AccessRestrictions = (AccessRestrictionType)
-                        Enum.ToObject(typeof(AccessRestrictionType), values[10]);
+                    metadata.EventNotifier = eventNotifier;
                 }
 
-                if (values[11] != null)
+                if (values[8].TryGetValue(out bool executable) &&
+                    values[9].TryGetValue(out bool userExecutable))
                 {
-                    metadata.RolePermissions = [.. ExtensionObject.ToList<RolePermissionType>(
-                        values[11])];
+                    metadata.Executable = executable && userExecutable;
                 }
 
-                if (values[12] != null)
+                if (values[10].TryGetValue(out ushort accessRestriction))
                 {
-                    metadata.UserRolePermissions = [.. ExtensionObject.ToList<RolePermissionType>(
-                        values[12])];
+                    metadata.AccessRestrictions = (AccessRestrictionType)accessRestriction;
+                }
+
+                if (values[11].TryGetStructure(
+                    out ArrayOf<RolePermissionType> rolePermissions))
+                {
+                    metadata.RolePermissions = rolePermissions;
+                }
+
+                if (values[12].TryGetStructure(
+                    out ArrayOf<RolePermissionType> userRolePermissions))
+                {
+                    metadata.UserRolePermissions = userRolePermissions;
                 }
 
                 SetDefaultPermissions(systemContext, target, metadata);
@@ -1127,22 +1134,25 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Sets the AccessRestrictions, RolePermissions and UserRolePermissions values in the metadata
         /// </summary>
-        private static void SetAccessAndRolePermissions(List<object> values, UaNodeMetadata metadata)
+        private static void SetAccessAndRolePermissions(
+            ArrayOf<Variant> values,
+            UaNodeMetadata metadata)
         {
-            if (values[0] != null)
+            if (values[0].TryGetValue(out ushort accessRestrictions))
             {
-                metadata.AccessRestrictions = (AccessRestrictionType)
-                    Enum.ToObject(typeof(AccessRestrictionType), values[0]);
+                metadata.AccessRestrictions = (AccessRestrictionType)accessRestrictions;
             }
-            if (values[1] != null)
+
+            if (values[1].TryGetStructure(
+                out ArrayOf<RolePermissionType> rolePermissions))
             {
-                metadata.RolePermissions = [.. ExtensionObject.ToList<RolePermissionType>(
-                    values[1])];
+                metadata.RolePermissions = rolePermissions;
             }
-            if (values[2] != null)
+
+            if (values[2].TryGetStructure(
+                out ArrayOf<RolePermissionType> userRolePermissions))
             {
-                metadata.UserRolePermissions = [.. ExtensionObject.ToList<RolePermissionType>(
-                    values[2])];
+                metadata.UserRolePermissions = userRolePermissions;
             }
         }
 
@@ -1154,14 +1164,14 @@ namespace Technosoftware.UaServer
         /// <param name="target">The target for which the attributes are read and cached</param>
         /// <param name="key">The key representing the NodeId for which the cache is kept</param>
         /// <returns>The values of the attributes</returns>
-        private static List<object> ReadAndCacheValidationAttributes(
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributes,
+        private static ArrayOf<Variant> ReadAndCacheValidationAttributes(
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributes,
             UaServerContext systemContext,
             NodeState target,
             NodeId key)
         {
-            List<object> values = ReadValidationAttributes(systemContext, target);
-            uniqueNodesServiceAttributes[key] = values;
+            ArrayOf<Variant> values = ReadValidationAttributes(systemContext, target);
+            uniqueNodesServiceAttributes[key] = values.ToArray()!;
 
             return values;
         }
@@ -1172,7 +1182,7 @@ namespace Technosoftware.UaServer
         /// <param name="systemContext">The context</param>
         /// <param name="target">The target for which the attributes are read and cached</param>
         /// <returns>The values of the attributes</returns>
-        private static List<object> ReadValidationAttributes(
+        private static ArrayOf<Variant> ReadValidationAttributes(
             UaServerContext systemContext,
             NodeState target)
         {
@@ -1247,7 +1257,7 @@ namespace Technosoftware.UaServer
                         continuationPoint.ReferenceTypeId,
                         continuationPoint.IncludeSubtypes,
                         continuationPoint.BrowseDirection,
-                        null,
+                        default,
                         null,
                         false);
                 }
@@ -1587,7 +1597,7 @@ namespace Technosoftware.UaServer
         public virtual void Read(
             UaServerOperationContext context,
             double maxAge,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors)
         {
@@ -1624,10 +1634,10 @@ namespace Technosoftware.UaServer
                     // create an initial value.
                     DataValue value = values[ii] = new DataValue();
 
-                    value.Value = null;
-                    value.ServerTimestamp = DateTime.MinValue; // Will be set after ReadAttribute
-                    value.SourceTimestamp = DateTime.MinValue;
-                    value.StatusCode = StatusCodes.Good;
+                    value = value.WithWrappedValue(Variant.Null);
+                    value = value.WithServerTimestamp(DateTime.MinValue); // Will be set after ReadAttribute
+                    value = value.WithSourceTimestamp(DateTime.MinValue);
+                    value = value.WithStatus(StatusCodes.Good);
 
                     // check if the node is a area in memory.
                     if (handle.Node == null)
@@ -1652,28 +1662,39 @@ namespace Technosoftware.UaServer
                         nodeToRead.AttributeId,
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
-                        value);
+                        ref value);
 
-                    // Set timestamps after ReadAttribute. ServerTimestamp reflects
-                    // when the Server verified the value. A value whose
-                    // SourceTimestamp was produced as part of this read (e.g.
-                    // ServerStatus children) keeps ServerTimestamp aligned with
-                    // SourceTimestamp; a stored/static value is verified now, so
-                    // ServerTimestamp is stamped with the current read time.
+                    // Set timestamps after ReadAttribute to ensure consistency
+                    // For Value attributes, match ServerTimestamp to SourceTimestamp
+                    // For other attributes, just ensure ServerTimestamp is set
                     if (nodeToRead.AttributeId == Attributes.Value)
                     {
                         if (value.SourceTimestamp == DateTime.MinValue)
                         {
-                            value.SourceTimestamp = readTime;
+                            value = value.WithSourceTimestamp(readTime);
                         }
-                        value.ServerTimestamp = value.SourceTimestamp >= readTime
-                            ? value.SourceTimestamp
-                            : readTime;
+
+                        // ServerTimestamp reflects when the Server verified the value. A
+                        // value whose SourceTimestamp was produced as part of this read (e.g.
+                        // ServerStatus children) keeps ServerTimestamp aligned with
+                        // SourceTimestamp; a stored/static value is verified now, so
+                        // ServerTimestamp is stamped with the current read time.
+                        if (value.SourceTimestamp >= readTime)
+                        {
+                            value = value.WithServerTimestamp(value.SourceTimestamp);
+                        }
+                        else
+                        {
+                            value = value.WithServerTimestamp(readTime);
+                        }
                     }
-                    else if (value.ServerTimestamp == DateTime.MinValue)
+                    else
                     {
                         // For non-value attributes, only ServerTimestamp is relevant
-                        value.ServerTimestamp = readTime;
+                        if (value.ServerTimestamp == DateTime.MinValue)
+                        {
+                            value = value.WithServerTimestamp(readTime);
+                        }
                     }
 #if DEBUG
                     if (nodeToRead.AttributeId == Attributes.Value)
@@ -1686,6 +1707,10 @@ namespace Technosoftware.UaServer
                             nodeToRead.IndexRange);
                     }
 #endif
+
+                    // DataValue is a struct in 2.0, so the value the read
+                    // filled in is a local copy and has to be written back.
+                    values[ii] = value;
                 }
 
                 // check for nothing to do.
@@ -1805,7 +1830,7 @@ namespace Technosoftware.UaServer
         /// <param name="cache">The cache.</param>
         protected virtual void Read(
             UaServerContext context,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToValidate,
@@ -1834,7 +1859,10 @@ namespace Technosoftware.UaServer
                         nodeToRead.AttributeId,
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
-                        value);
+                        ref value);
+
+                    // DataValue is a struct, so the filled value is a copy.
+                    values[handle.Index] = value;
                 }
             }
         }
@@ -1844,7 +1872,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public virtual void Write(
             UaServerOperationContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors)
         {
             UaServerContext systemContext = SystemContext.Copy(context);
@@ -1903,7 +1931,7 @@ namespace Technosoftware.UaServer
                     {
                         try
                         {
-                            if (nodeToWrite.Value.Value is Array array)
+                            if (nodeToWrite.Value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy) is Array array)
                             {
                                 bool isOutOfRange = false;
                                 foreach (object arrayValue in array)
@@ -1927,7 +1955,7 @@ namespace Technosoftware.UaServer
                             else
                             {
                                 double newValue = Convert.ToDouble(
-                                    nodeToWrite.Value.Value,
+                                    nodeToWrite.Value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
                                     CultureInfo.InvariantCulture);
 
                                 if (newValue > analogItemState.InstrumentRange.Value.High ||
@@ -1953,21 +1981,11 @@ namespace Technosoftware.UaServer
                         nodeToWrite.IndexRange);
 #endif
                     var propertyState = handle.Node as PropertyState;
-                    object previousPropertyValue = null;
+                    // Variant carries the extension object's body itself, so
+                    // the old unwrap-if-ExtensionObject step is unnecessary.
+                    Variant previousPropertyValue = propertyState?.Value ?? default;
 
-                    if (propertyState != null)
-                    {
-                        if (propertyState.Value is ExtensionObject extension)
-                        {
-                            previousPropertyValue = extension.Body;
-                        }
-                        else
-                        {
-                            previousPropertyValue = propertyState.Value;
-                        }
-                    }
-
-                    DataValue oldValue = null;
+                    DataValue oldValue = default;
 
                     if (ServerData?.Auditing == true)
                     {
@@ -1978,8 +1996,8 @@ namespace Technosoftware.UaServer
                             systemContext,
                             nodeToWrite.AttributeId,
                             nodeToWrite.ParsedIndexRange,
-                            null,
-                            oldValue);
+                            default,
+                            ref oldValue);
                     }
 
                     // write the attribute value.
@@ -1993,7 +2011,7 @@ namespace Technosoftware.UaServer
                     ServerData.ReportAuditWriteUpdateEvent(
                         systemContext,
                         nodeToWrite,
-                        oldValue?.Value,
+                        oldValue.WrappedValue,
                         errors[ii]?.StatusCode ?? StatusCodes.Good,
                         m_logger);
 
@@ -2004,21 +2022,10 @@ namespace Technosoftware.UaServer
 
                     if (propertyState != null)
                     {
-                        object propertyValue;
-
-                        if (nodeToWrite.Value.Value is ExtensionObject extension)
-                        {
-                            propertyValue = extension.Body;
-                        }
-                        else
-                        {
-                            propertyValue = nodeToWrite.Value.Value;
-                        }
-
                         CheckIfSemanticsHaveChanged(
                             systemContext,
                             propertyState,
-                            propertyValue,
+                            nodeToWrite.Value.WrappedValue,
                             previousPropertyValue);
                     }
 
@@ -2044,8 +2051,8 @@ namespace Technosoftware.UaServer
         private void CheckIfSemanticsHaveChanged(
             UaServerContext systemContext,
             PropertyState property,
-            object newPropertyValue,
-            object previousPropertyValue)
+            Variant newPropertyValue,
+            Variant previousPropertyValue)
         {
             // check if the changed property is one that can trigger semantic changes
             string propertyName = property.BrowseName.Name;
@@ -2156,14 +2163,18 @@ namespace Technosoftware.UaServer
                     {
                         monitoredItem.SetSemanticsChanged();
 
-                        var value = new DataValue { ServerTimestamp = DateTime.UtcNow };
+                        var value = new DataValue(
+                            Variant.Null,
+                            StatusCodes.Good,
+                            DateTimeUtc.MinValue,
+                            DateTime.UtcNow);
 
                         node.ReadAttribute(
                             systemContext,
                             Attributes.Value,
                             monitoredItem.IndexRange,
-                            null,
-                            value);
+                            default,
+                            ref value);
 
                         monitoredItem.QueueValue(value, ServiceResult.Good, true);
                     }
@@ -2181,7 +2192,7 @@ namespace Technosoftware.UaServer
         /// <param name="cache">The cache.</param>
         protected virtual void Write(
             UaServerContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToValidate,
             IDictionary<NodeId, NodeState> cache)
@@ -2224,7 +2235,7 @@ namespace Technosoftware.UaServer
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors)
         {
@@ -2262,7 +2273,7 @@ namespace Technosoftware.UaServer
                     HistoryReadResult result = results[ii] = new HistoryReadResult();
 
                     result.HistoryData = default;
-                    result.ContinuationPoint = null;
+                    result.ContinuationPoint = default;
                     result.StatusCode = StatusCodes.Good;
 
                     // check if the node is a area in memory.
@@ -2324,7 +2335,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected virtual void HistoryReleaseContinuationPoints(
             UaServerContext context,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
             IDictionary<NodeId, NodeState> cache)
@@ -2352,7 +2363,7 @@ namespace Technosoftware.UaServer
             UaServerContext context,
             ReadRawModifiedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2381,7 +2392,7 @@ namespace Technosoftware.UaServer
             UaServerContext context,
             ReadProcessedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2410,7 +2421,7 @@ namespace Technosoftware.UaServer
             UaServerContext context,
             ReadAtTimeDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2439,7 +2450,7 @@ namespace Technosoftware.UaServer
             UaServerContext context,
             ReadEventDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2470,7 +2481,7 @@ namespace Technosoftware.UaServer
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -2547,8 +2558,7 @@ namespace Technosoftware.UaServer
             if (details is ReadProcessedDetails readProcessedDetails)
             {
                 // check the list of aggregates.
-                if (readProcessedDetails.AggregateType == null ||
-                    readProcessedDetails.AggregateType.Count != nodesToRead.Count)
+                if (readProcessedDetails.AggregateType.Count != nodesToRead.Count)
                 {
                     throw new ServiceResultException(StatusCodes.BadAggregateListMismatch);
                 }
@@ -2637,7 +2647,7 @@ namespace Technosoftware.UaServer
         public virtual void HistoryUpdate(
             UaServerOperationContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors)
         {
@@ -2732,7 +2742,7 @@ namespace Technosoftware.UaServer
         protected virtual void HistoryUpdate(
             UaServerContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -3000,7 +3010,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public virtual void Call(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors)
         {
@@ -3019,7 +3029,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected virtual async ValueTask CallInternalAsync(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors,
             bool sync,
@@ -3132,7 +3142,7 @@ namespace Technosoftware.UaServer
         {
             var systemContext = context as UaServerContext;
             var argumentErrors = new List<ServiceResult>();
-            var outputArguments = new VariantCollection();
+            var outputArguments = new List<Variant>();
 
             ServiceResult callResult;
 
@@ -3165,53 +3175,56 @@ namespace Technosoftware.UaServer
             // check for argument errors.
             bool argumentsValid = true;
 
+            var inputArgumentResults = new List<StatusCode>(argumentErrors.Count);
+            var inputArgumentDiagnosticInfos = new List<DiagnosticInfo>(argumentErrors.Count);
+
             for (int jj = 0; jj < argumentErrors.Count; jj++)
             {
                 ServiceResult argumentError = argumentErrors[jj];
 
                 if (argumentError != null)
                 {
-                    result.InputArgumentResults.Add(argumentError.StatusCode);
+                    inputArgumentResults.Add(argumentError.StatusCode);
 
                     if (ServiceResult.IsBad(argumentError))
                     {
                         argumentsValid = false;
                     }
 
-                // only fill in diagnostic info if it is requested.
-                if (systemContext.OperationContext != null &&
-                    (systemContext.OperationContext.DiagnosticsMask &
-                        DiagnosticsMasks.OperationAll) != 0)
-                {
-                    if (ServiceResult.IsBad(argumentError))
+                    // only fill in diagnostic info if it is requested.
+                    if (systemContext.OperationContext != null &&
+                        (systemContext.OperationContext.DiagnosticsMask &
+                            DiagnosticsMasks.OperationAll) != 0)
                     {
-                        result.InputArgumentDiagnosticInfos.Add(
-                            new DiagnosticInfo(
-                                argumentError,
-                                systemContext.OperationContext.DiagnosticsMask,
-                                false,
-                                systemContext.OperationContext.StringTable,
-                                m_logger));
-                    }
-                    else
-                    {
-                        result.InputArgumentDiagnosticInfos.Add(null);
+                        if (ServiceResult.IsBad(argumentError))
+                        {
+                            inputArgumentDiagnosticInfos.Add(
+                                new DiagnosticInfo(
+                                    argumentError,
+                                    systemContext.OperationContext.DiagnosticsMask,
+                                    false,
+                                    systemContext.OperationContext.StringTable,
+                                    m_logger));
+                        }
+                        else
+                        {
+                            inputArgumentDiagnosticInfos.Add(null);
+                        }
                     }
                 }
-            }
             }
 
             // check for validation errors.
             if (!argumentsValid)
             {
+                result.InputArgumentResults = inputArgumentResults.ToArrayOf();
+                result.InputArgumentDiagnosticInfos = inputArgumentDiagnosticInfos.ToArrayOf();
                 result.StatusCode = StatusCodes.BadInvalidArgument;
                 return result.StatusCode;
             }
 
             // Per OPC UA Part 4, Section 5.12: InputArgumentResults must be empty when StatusCode is Good.
-            // Clear diagnostics and argument results if there are no errors.
-            result.InputArgumentDiagnosticInfos.Clear();
-            result.InputArgumentResults.Clear();
+            // Neither collection is assigned in that case; both stay empty.
 
             // return output arguments.
             result.OutputArguments = outputArguments;
@@ -3725,7 +3738,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors,
             IList<IUaMonitoredItem> monitoredItems,
@@ -3972,20 +3985,18 @@ namespace Technosoftware.UaServer
             UaNodeHandle handle,
             IUaDataChangeMonitoredItem2 monitoredItem)
         {
-            var initialValue = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.BadWaitingForInitialData
-            };
+            var initialValue = new DataValue()
+                .WithWrappedValue(Variant.Null)
+                .WithServerTimestamp(DateTime.UtcNow)
+                .WithSourceTimestamp(DateTime.MinValue)
+                .WithStatus(StatusCodes.BadWaitingForInitialData);
 
             ServiceResult error = handle.Node.ReadAttribute(
                 context,
                 monitoredItem.AttributeId,
                 monitoredItem.IndexRange,
                 monitoredItem.DataEncoding,
-                initialValue);
+                ref initialValue);
 
             monitoredItem.QueueValue(initialValue, error, true);
 
@@ -4102,7 +4113,7 @@ namespace Technosoftware.UaServer
             result = null;
 
             // nothing to do if the filter is not specified.
-            if (ExtensionObject.IsNull(filter))
+            if (filter.IsNull)
             {
                 return StatusCodes.Good;
             }
@@ -4190,12 +4201,12 @@ namespace Technosoftware.UaServer
             if (deadbandFilter.DeadbandType == (uint)DeadbandType.Percent)
             {
                 if (handle.Node
-                    .FindChild(context, BrowseNames.EURange) is not PropertyState property)
+                    .FindChild(context, new QualifiedName(BrowseNames.EURange)) is not PropertyState property)
                 {
                     return StatusCodes.BadMonitoredItemFilterUnsupported;
                 }
 
-                range = property.Value as Opc.Ua.Range;
+                range = property.Value.GetStructure<Opc.Ua.Range>();
 
                 if (range == null)
                 {
@@ -4261,7 +4272,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors)
         {
@@ -4800,7 +4811,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             object targetHandle,
             BrowseResultMask resultMask,
-            Dictionary<NodeId, List<object>> uniqueNodesServiceAttributesCache,
+            Dictionary<NodeId, Variant[]> uniqueNodesServiceAttributesCache,
             bool permissionsOnly)
         {
             UaServerContext systemContext = SystemContext.Copy(context);
@@ -4823,7 +4834,7 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                List<object> values = null;
+                ArrayOf<Variant> values = default;
 
                 // construct the meta-data object.
                 var metadata = new UaNodeMetadata(target, target.NodeId);
@@ -4834,7 +4845,7 @@ namespace Technosoftware.UaServer
                     NodeId key = handle.NodeId;
                     if (uniqueNodesServiceAttributesCache.ContainsKey(key))
                     {
-                        if (uniqueNodesServiceAttributesCache[key].Count == 0)
+                        if (uniqueNodesServiceAttributesCache[key].Length == 0)
                         {
                             values = ReadAndCacheValidationAttributes(
                                 uniqueNodesServiceAttributesCache,
@@ -4886,7 +4897,7 @@ namespace Technosoftware.UaServer
 
             if (namespaceMetadataState != null)
             {
-                List<object> namespaceMetadataValues;
+                ArrayOf<Variant> namespaceMetadataValues;
 
                 if (namespaceMetadataState.DefaultAccessRestrictions != null)
                 {
@@ -4896,12 +4907,10 @@ namespace Technosoftware.UaServer
                             systemContext,
                             Attributes.Value);
 
-                    if (namespaceMetadataValues[0] != null)
+                    if (namespaceMetadataValues[0].TryGetValue(
+                        out AccessRestrictionType accessRestrictions))
                     {
-                        metadata.DefaultAccessRestrictions = (AccessRestrictionType)
-                            Enum.ToObject(
-                                typeof(AccessRestrictionType),
-                                namespaceMetadataValues[0]);
+                        metadata.DefaultAccessRestrictions = accessRestrictions;
                     }
                 }
 
@@ -4913,13 +4922,10 @@ namespace Technosoftware.UaServer
                             systemContext,
                             Attributes.Value);
 
-                    if (namespaceMetadataValues[0] != null)
+                    if (namespaceMetadataValues[0].TryGetStructure(
+                        out ArrayOf<RolePermissionType> rolePermissions))
                     {
-                        metadata.DefaultRolePermissions =
-                        [
-                            .. ExtensionObject.ToList<RolePermissionType>(
-                                namespaceMetadataValues[0])
-                        ];
+                        metadata.DefaultRolePermissions = rolePermissions;
                     }
                 }
 
@@ -4931,13 +4937,10 @@ namespace Technosoftware.UaServer
                             systemContext,
                             Attributes.Value);
 
-                    if (namespaceMetadataValues[0] != null)
+                    if (namespaceMetadataValues[0].TryGetStructure(
+                        out ArrayOf<RolePermissionType> userRolePermissions))
                     {
-                        metadata.DefaultUserRolePermissions =
-                        [
-                            .. ExtensionObject.ToList<RolePermissionType>(
-                                namespaceMetadataValues[0])
-                        ];
+                        metadata.DefaultUserRolePermissions = userRolePermissions;
                     }
                 }
             }
@@ -5107,7 +5110,7 @@ namespace Technosoftware.UaServer
                 // skip Variant Null
                 if (value is Variant variant)
                 {
-                    if (variant.Value == null)
+                    if (variant.IsNull)
                     {
                         value = null;
                     }

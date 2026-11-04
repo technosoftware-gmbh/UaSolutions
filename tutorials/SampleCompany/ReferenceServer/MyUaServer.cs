@@ -22,6 +22,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using SampleCompany.Common;
 using Technosoftware.UaConfiguration;
 using Technosoftware.UaServer;
@@ -34,7 +35,7 @@ namespace SampleCompany.ReferenceServer
     /// </summary>
     /// <typeparam name="T">Any class based on the UaStandardServer class.</typeparam>
     public class MyUaServer<T>
-        where T : UaStandardServer, new()
+        where T : UaStandardServer
     {
         #region Public Properties
         /// <summary>
@@ -73,9 +74,15 @@ namespace SampleCompany.ReferenceServer
         /// Ctor of the server.
         /// </summary>
         /// <param name="telemetry">The telemetry context.</param>
-        public MyUaServer(ITelemetryContext telemetry)
+        /// <remarks>
+        /// UaStandardServer takes an ITelemetryContext in 2.0, which a new()
+        /// constraint cannot express, so the server is built by a factory the
+        /// caller supplies.
+        /// </remarks>
+        public MyUaServer(ITelemetryContext telemetry, Func<ITelemetryContext, T> factory)
         {
             m_telemetry = telemetry;
+            m_factory = factory;
             m_logger = telemetry.CreateLogger<MyUaServer<T>>();
         }
 
@@ -137,9 +144,9 @@ namespace SampleCompany.ReferenceServer
 
                 if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
                 {
-                    config.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(
-                        OnCertificateValidation
-                    );
+                    // 2.0 replaces the CertificateValidation event with a
+                    // single AcceptError callback on the certificate manager.
+                    config.CertificateManager.AcceptError = AcceptCertificate;
                 }
             }
             catch (Exception ex)
@@ -152,12 +159,14 @@ namespace SampleCompany.ReferenceServer
         /// Create server instance and add node managers.
         /// </summary>
         /// <exception cref="ErrorExitException"></exception>
-        public void Create(IList<IUaNodeManagerFactory> nodeManagerFactories)
+        public void Create(IEnumerable<IUaNodeManagerFactory> nodeManagerFactories)
         {
             try
             {
-                // create the server.
-                Server = new T();
+                // create the server. UaStandardServer takes an
+                // ITelemetryContext in 2.0, which a new() constraint cannot
+                // express, so T is constructed through its telemetry ctor.
+                Server = (T)Activator.CreateInstance(typeof(T), m_telemetry);
                 if (nodeManagerFactories != null)
                 {
                     foreach (IUaNodeManagerFactory factory in nodeManagerFactories)
@@ -181,7 +190,7 @@ namespace SampleCompany.ReferenceServer
             try
             {
                 // create the server.
-                Server ??= new T();
+                Server ??= m_factory(m_telemetry);
 
                 // start the server
                 await Application.StartAsync(Server).ConfigureAwait(false);
@@ -190,7 +199,7 @@ namespace SampleCompany.ReferenceServer
                 ExitCode = ExitCode.ErrorRunning;
 
                 // print endpoint info
-                foreach (string endpoint in Application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct())
+                foreach (string endpoint in Application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct())
                 {
                     Console.WriteLine(endpoint);
                 }
@@ -240,27 +249,24 @@ namespace SampleCompany.ReferenceServer
         /// The certificate validator is used
         /// if auto accept is not selected in the configuration.
         /// </summary>
-        private void OnCertificateValidation(
-            CertificateValidator validator,
-            CertificateValidationEventArgs e
-        )
+        private bool AcceptCertificate(Certificate certificate, ServiceResult error)
         {
-            if (e.Error.StatusCode == StatusCodes.BadCertificateUntrusted && AutoAccept)
+            if (error.StatusCode == StatusCodes.BadCertificateUntrusted && AutoAccept)
             {
                 m_logger.LogInformation(
                     "Accepted Certificate: [{Subject}] [{Thumbprint}]",
-                    e.Certificate.Subject,
-                    e.Certificate.Thumbprint
+                    certificate.Subject,
+                    certificate.Thumbprint
                 );
-                e.Accept = true;
-                return;
+                return true;
             }
             m_logger.LogInformation(
                 "Rejected Certificate: {Error} [{Subject}] [{Thumbprint}]",
-                e.Error,
-                e.Certificate.Subject,
-                e.Certificate.Thumbprint
+                error,
+                certificate.Subject,
+                certificate.Thumbprint
             );
+            return false;
         }
 
         /// <summary>
@@ -382,6 +388,7 @@ namespace SampleCompany.ReferenceServer
         }
 
         #region Private Fields
+        private readonly Func<ITelemetryContext, T> m_factory;
         private readonly ITelemetryContext m_telemetry;
         private readonly ILogger m_logger;
         private Task m_status;

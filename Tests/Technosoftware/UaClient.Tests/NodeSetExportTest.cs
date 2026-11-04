@@ -100,14 +100,16 @@ namespace Technosoftware.UaClient.Tests
                 NodeClassMask = 0
             };
 
-            var nodesToBrowse = new NodeIdCollection { ObjectIds.Server };
+            var nodesToBrowse = new List<NodeId> { ObjectIds.Server };
             var allNodes = new List<INode>();
 
             // Browse starting from Server object
-            ReferenceDescriptionCollection references = await browser.BrowseAsync(nodesToBrowse[0]).ConfigureAwait(false);
+            ArrayOf<ReferenceDescription> references = await browser.BrowseAsync(nodesToBrowse[0]).ConfigureAwait(false);
 
             // Fetch the actual nodes
-            foreach (ReferenceDescription reference in references)
+            // ArrayOf's enumerator is a span enumerator and cannot cross an
+            // await, so the references are materialised first.
+            foreach (ReferenceDescription reference in references.ToArray())
             {
                 INode node = await Session.NodeCache.FindAsync(reference.NodeId).ConfigureAwait(false);
                 if (node != null)

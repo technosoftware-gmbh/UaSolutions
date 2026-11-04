@@ -55,18 +55,22 @@ namespace Technosoftware.UaServer
         /// <param name="serverDescription">The server description.</param>
         /// <param name="configuration">The configuration.</param>
         /// <param name="messageContext">The message context.</param>
-        /// <param name="certificateValidator">The certificate validator.</param>
-        /// <param name="instanceCertificateProvider">The certificate type provider.</param>
+        /// <param name="timeProvider">
+        /// The time source to measure durations and timestamps with, so a test
+        /// can drive the publishing and sampling clocks. Defaults to
+        /// <see cref="TimeProvider.System"/>.
+        /// </param>
+
         public GenericServerData(
             ServerProperties serverDescription,
             ApplicationConfiguration configuration,
             IServiceMessageContext messageContext,
-            CertificateValidator certificateValidator,
-            CertificateTypesProvider instanceCertificateProvider)
+            TimeProvider timeProvider = null)
         {
             m_serverDescription = serverDescription;
             m_configuration = configuration;
             MessageContext = messageContext;
+            TimeProvider = timeProvider ?? TimeProvider.System;
 
             m_endpointAddresses = [];
 
@@ -110,14 +114,14 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(ResourceManager);
-                Utils.SilentDispose(RequestManager);
-                Utils.SilentDispose(AggregateManager);
-                Utils.SilentDispose(ModellingRulesManager);
-                Utils.SilentDispose(NodeManager);
-                Utils.SilentDispose(SessionManager);
-                Utils.SilentDispose(SubscriptionManager);
-                Utils.SilentDispose(MonitoredItemQueueFactory);
+                ResourceManager?.Dispose();
+                RequestManager?.Dispose();
+                AggregateManager?.Dispose();
+                ModellingRulesManager?.Dispose();
+                NodeManager?.Dispose();
+                SessionManager?.Dispose();
+                SubscriptionManager?.Dispose();
+                MonitoredItemQueueFactory?.Dispose();
             }
         }
 
@@ -234,6 +238,9 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <value>The message context.</value>
         public IServiceMessageContext MessageContext { get; }
+
+        /// <inheritdoc/>
+        public TimeProvider TimeProvider { get; }
 
         /// <summary>
         /// The default system context for the server.
@@ -356,14 +363,14 @@ namespace Technosoftware.UaServer
         {
             get
             {
-                lock (NonThreadSafeStatus.Lock)
+                lock (DiagnosticsLock)
                 {
                     return NonThreadSafeStatus.Value.State;
                 }
             }
             set
             {
-                lock (NonThreadSafeStatus.Lock)
+                lock (DiagnosticsLock)
                 {
                     NonThreadSafeStatus.Value.State = value;
                 }
@@ -380,14 +387,14 @@ namespace Technosoftware.UaServer
         /// Used to synchronize access to the server diagnostics.
         /// </summary>
         /// <value>The diagnostics lock.</value>
-        public object DiagnosticsLock { get; } = new object();
+        public Lock DiagnosticsLock { get; } = new();
 
         /// <summary>
         /// Used to synchronize write access to
         /// the server diagnostics.
         /// </summary>
         /// <value>The diagnostics lock.</value>
-        public object DiagnosticsWriteLock
+        public Lock DiagnosticsWriteLock
         {
             get
             {
@@ -422,7 +429,7 @@ namespace Technosoftware.UaServer
                     return false;
                 }
 
-                lock (NonThreadSafeStatus.Lock)
+                lock (DiagnosticsLock)
                 {
                     if (NonThreadSafeStatus.Value.State == ServerState.Running)
                     {
@@ -692,7 +699,7 @@ namespace Technosoftware.UaServer
                 BaseVariableState default_PubSubState =
                     DiagnosticsNodeManager.FindPredefinedNode<BaseVariableState>(
                         VariableIds.PublishSubscribe_Status_State);
-                default_PubSubState.Value = pubSubState;
+                default_PubSubState.Value = Variant.From(pubSubState);
 
                 // setup value for SupportedTransportProfiles
                 BaseVariableState default_SupportedTransportProfiles =
@@ -849,9 +856,9 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadNamespaceArray(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
-            value = NamespaceUris.ToArray();
+            value = NamespaceUris.ToArrayOf();
             return ServiceResult.Good;
         }
 
@@ -861,9 +868,9 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadServerArray(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
-            value = ServerUris.ToArray();
+            value = ServerUris.ToArrayOf();
             return ServiceResult.Good;
         }
 
@@ -873,7 +880,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadDiagnosticsEnabledFlag(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             value = DiagnosticsNodeManager.DiagnosticsEnabled;
             return ServiceResult.Good;
@@ -885,7 +892,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnWriteDiagnosticsEnabledFlag(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             bool enabled = (bool)value;
             DiagnosticsNodeManager.SetDiagnosticsEnabled(DefaultSystemContext, enabled);
@@ -899,7 +906,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnWriteAuditing(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             Auditing = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
             return ServiceResult.Good;
@@ -911,7 +918,7 @@ namespace Technosoftware.UaServer
         private ServiceResult OnReadAuditing(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             value = Auditing;
             return ServiceResult.Good;
@@ -923,11 +930,11 @@ namespace Technosoftware.UaServer
         private ServiceResult OnUpdateDiagnostics(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
-            lock (ServerDiagnostics)
+            lock (DiagnosticsLock)
             {
-                value = Utils.Clone(ServerDiagnostics);
+                value = Variant.FromStructure(ServerDiagnostics, copy: true);
             }
 
             return ServiceResult.Good;

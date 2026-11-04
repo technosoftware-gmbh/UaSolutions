@@ -14,8 +14,10 @@
 #endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
+using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient
@@ -38,10 +40,10 @@ namespace Technosoftware.UaClient
             ITransportChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
-            EndpointDescriptionCollection availableEndpoints,
-            StringCollection discoveryProfileUris)
+            Certificate clientCertificate = null,
+            CertificateCollection clientCertificateChain = null,
+            ArrayOf<EndpointDescription> availableEndpoints = default,
+            List<string> discoveryProfileUris = null)
         {
             return new TraceableRequestHeaderClientSession(
                 channel,

@@ -35,18 +35,18 @@ namespace Technosoftware.UaServer.Tests
             RequestHeader requestHeader,
             ViewDescription view,
             uint requestedMaxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken ct = default);
 
         ValueTask<BrowseNextResponse> BrowseNextAsync(
             RequestHeader requestHeader,
             bool releaseContinuationPoints,
-            ByteStringCollection continuationPoints,
+            ArrayOf<ByteString> continuationPoints,
             CancellationToken ct = default);
 
         ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
             RequestHeader requestHeader,
-            BrowsePathCollection browsePaths,
+            ArrayOf<BrowsePath> browsePaths,
             CancellationToken ct = default);
 
         ValueTask<CreateSubscriptionResponse> CreateSubscriptionAsync(
@@ -63,7 +63,7 @@ namespace Technosoftware.UaServer.Tests
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken ct = default);
 
         ValueTask<ModifySubscriptionResponse> ModifySubscriptionAsync(
@@ -80,25 +80,25 @@ namespace Technosoftware.UaServer.Tests
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken ct = default);
 
         ValueTask<PublishResponse> PublishAsync(
             RequestHeader requestHeader,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             CancellationToken ct = default);
 
         ValueTask<SetPublishingModeResponse> SetPublishingModeAsync(
             RequestHeader requestHeader,
             bool publishingEnabled,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default);
 
         ValueTask<SetMonitoringModeResponse> SetMonitoringModeAsync(
             RequestHeader requestHeader,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken ct = default);
 
         ValueTask<RepublishResponse> RepublishAsync(
@@ -109,12 +109,12 @@ namespace Technosoftware.UaServer.Tests
 
         ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default);
 
         ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool sendInitialValues,
             CancellationToken ct = default);
     }
@@ -140,37 +140,39 @@ namespace Technosoftware.UaServer.Tests
             SecureChannelContext = secureChannelContext;
         }
 
-        public ValueTask<BrowseResponse> BrowseAsync(
+        public async ValueTask<BrowseResponse> BrowseAsync(
             RequestHeader requestHeader,
             ViewDescription view,
             uint requestedMaxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken ct = default)
         {
-            return new ValueTask<BrowseResponse>(m_server.BrowseAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.BrowseAsync(
                 SecureChannelContext,
                 requestHeader,
                 view,
                 requestedMaxReferencesPerNode,
                 nodesToBrowse,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<BrowseNextResponse> BrowseNextAsync(
+        public async ValueTask<BrowseNextResponse> BrowseNextAsync(
             RequestHeader requestHeader,
             bool releaseContinuationPoints,
-            ByteStringCollection continuationPoints,
+            ArrayOf<ByteString> continuationPoints,
             CancellationToken ct = default)
         {
-            return new ValueTask<BrowseNextResponse>(m_server.BrowseNextAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.BrowseNextAsync(
                 SecureChannelContext,
                 requestHeader,
                 releaseContinuationPoints,
                 continuationPoints,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<CreateSubscriptionResponse> CreateSubscriptionAsync(
+        public async ValueTask<CreateSubscriptionResponse> CreateSubscriptionAsync(
             RequestHeader requestHeader,
             double requestedPublishingInterval,
             uint requestedLifetimeCount,
@@ -180,7 +182,8 @@ namespace Technosoftware.UaServer.Tests
             byte priority,
             CancellationToken ct = default)
         {
-            return new ValueTask<CreateSubscriptionResponse>(m_server.CreateSubscriptionAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.CreateSubscriptionAsync(
                 SecureChannelContext,
                 requestHeader,
                 requestedPublishingInterval,
@@ -189,26 +192,27 @@ namespace Technosoftware.UaServer.Tests
                 maxNotificationsPerPublish,
                 publishingEnabled,
                 priority,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
+        public async ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken ct = default)
         {
-            return new ValueTask<CreateMonitoredItemsResponse>(m_server.CreateMonitoredItemsAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.CreateMonitoredItemsAsync(
                 SecureChannelContext,
                 requestHeader,
                 subscriptionId,
                 timestampsToReturn,
                 itemsToCreate,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<ModifySubscriptionResponse> ModifySubscriptionAsync(
+        public async ValueTask<ModifySubscriptionResponse> ModifySubscriptionAsync(
             RequestHeader requestHeader,
             uint subscriptionId,
             double requestedPublishingInterval,
@@ -218,7 +222,8 @@ namespace Technosoftware.UaServer.Tests
             byte priority,
             CancellationToken ct = default)
         {
-            return new ValueTask<ModifySubscriptionResponse>(m_server.ModifySubscriptionAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.ModifySubscriptionAsync(
                 SecureChannelContext,
                 requestHeader,
                 subscriptionId,
@@ -227,118 +232,125 @@ namespace Technosoftware.UaServer.Tests
                 requestedMaxKeepAliveCount,
                 maxNotificationsPerPublish,
                 priority,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
+        public async ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken ct = default)
         {
-            return new ValueTask<ModifyMonitoredItemsResponse>(m_server.ModifyMonitoredItemsAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.ModifyMonitoredItemsAsync(
                 SecureChannelContext,
                 requestHeader,
                 subscriptionId,
                 timestampsToReturn,
                 itemsToModify,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<PublishResponse> PublishAsync(
+        public async ValueTask<PublishResponse> PublishAsync(
             RequestHeader requestHeader,
-            SubscriptionAcknowledgementCollection subscriptionAcknowledgements,
+            ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             CancellationToken ct = default)
         {
-            return new ValueTask<PublishResponse>(m_server.PublishAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.PublishAsync(
                 SecureChannelContext,
                 requestHeader,
                 subscriptionAcknowledgements,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<SetPublishingModeResponse> SetPublishingModeAsync(
+        public async ValueTask<SetPublishingModeResponse> SetPublishingModeAsync(
             RequestHeader requestHeader,
             bool publishingEnabled,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default)
         {
-            return new ValueTask<SetPublishingModeResponse>(m_server.SetPublishingModeAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.SetPublishingModeAsync(
                 SecureChannelContext,
                 requestHeader,
                 publishingEnabled,
                 subscriptionIds,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<SetMonitoringModeResponse> SetMonitoringModeAsync(
+        public async ValueTask<SetMonitoringModeResponse> SetMonitoringModeAsync(
             RequestHeader requestHeader,
             uint subscriptionId,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken ct = default)
         {
-            return new ValueTask<SetMonitoringModeResponse>(
-                m_server.SetMonitoringModeAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.SetMonitoringModeAsync(
                 SecureChannelContext,
                 requestHeader,
                 subscriptionId,
                 monitoringMode,
                 monitoredItemIds,
-                    ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<RepublishResponse> RepublishAsync(
+        public async ValueTask<RepublishResponse> RepublishAsync(
             RequestHeader requestHeader,
             uint subscriptionId,
             uint retransmitSequenceNumber,
             CancellationToken ct = default)
         {
-            return new ValueTask<RepublishResponse>(m_server.RepublishAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.RepublishAsync(
                 SecureChannelContext,
                 requestHeader,
                 subscriptionId,
                 retransmitSequenceNumber,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
+        public async ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             CancellationToken ct = default)
         {
-            return new ValueTask<DeleteSubscriptionsResponse>(m_server.DeleteSubscriptionsAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.DeleteSubscriptionsAsync(
                 SecureChannelContext,
                 requestHeader,
                 subscriptionIds,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
+        public async ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             RequestHeader requestHeader,
-            UInt32Collection subscriptionIds,
+            ArrayOf<uint> subscriptionIds,
             bool sendInitialValues,
             CancellationToken ct = default)
         {
-            return new ValueTask<TransferSubscriptionsResponse>(m_server.TransferSubscriptionsAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.TransferSubscriptionsAsync(
                 SecureChannelContext,
                 requestHeader,
                 subscriptionIds,
                 sendInitialValues,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
 
-        public ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
+        public async ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
             RequestHeader requestHeader,
-            BrowsePathCollection browsePaths,
+            ArrayOf<BrowsePath> browsePaths,
             CancellationToken ct = default)
         {
-            return new ValueTask<TranslateBrowsePathsToNodeIdsResponse>(m_server.TranslateBrowsePathsToNodeIdsAsync(
+            using var lifetime = new RequestLifetime(ct);
+            return await m_server.TranslateBrowsePathsToNodeIdsAsync(
                 SecureChannelContext,
                 requestHeader,
                 browsePaths,
-                ct));
+                lifetime).ConfigureAwait(false);
         }
     }
 }

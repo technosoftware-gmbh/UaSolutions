@@ -51,7 +51,7 @@ namespace Technosoftware.UaClient.Tests
                 Session = sessionMock.Object
             };
 
-            ReferenceDescriptionCollection references = await browser
+            ArrayOf<ReferenceDescription> references = await browser
                 .BrowseAsync(ObjectIds.ObjectsFolder)
                 .ConfigureAwait(false);
 
@@ -62,7 +62,7 @@ namespace Technosoftware.UaClient.Tests
                 x => x.BrowseNextAsync(
                     It.IsAny<RequestHeader>(),
                     It.IsAny<bool>(),
-                    It.IsAny<ByteStringCollection>(),
+                    It.IsAny<ArrayOf<ByteString>>(),
                     It.IsAny<CancellationToken>()),
                 Times.Never);
         }
@@ -84,7 +84,7 @@ namespace Technosoftware.UaClient.Tests
                 ContinueUntilDone = true
             };
 
-            ReferenceDescriptionCollection references = await browser
+            ArrayOf<ReferenceDescription> references = await browser
                 .BrowseAsync(ObjectIds.ObjectsFolder)
                 .ConfigureAwait(false);
 
@@ -96,14 +96,14 @@ namespace Technosoftware.UaClient.Tests
                 x => x.BrowseNextAsync(
                     It.IsAny<RequestHeader>(),
                     false,
-                    It.IsAny<ByteStringCollection>(),
+                    It.IsAny<ArrayOf<ByteString>>(),
                     It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
         private static void SetupBrowse(
             Mock<ISessionClient> sessionMock,
-            ReferenceDescriptionCollection references,
+            ArrayOf<ReferenceDescription> references,
             byte[] continuationPoint)
         {
             sessionMock
@@ -111,7 +111,7 @@ namespace Technosoftware.UaClient.Tests
                     It.IsAny<RequestHeader>(),
                     It.IsAny<ViewDescription>(),
                     It.IsAny<uint>(),
-                    It.IsAny<BrowseDescriptionCollection>(),
+                    It.IsAny<ArrayOf<BrowseDescription>>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseResponse
                 {
@@ -123,14 +123,14 @@ namespace Technosoftware.UaClient.Tests
 
         private static void SetupBrowseNext(
             Mock<ISessionClient> sessionMock,
-            ReferenceDescriptionCollection references,
+            ArrayOf<ReferenceDescription> references,
             byte[] continuationPoint)
         {
             sessionMock
                 .Setup(x => x.BrowseNextAsync(
                     It.IsAny<RequestHeader>(),
                     It.IsAny<bool>(),
-                    It.IsAny<ByteStringCollection>(),
+                    It.IsAny<ArrayOf<ByteString>>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new BrowseNextResponse
                 {
@@ -140,8 +140,8 @@ namespace Technosoftware.UaClient.Tests
                 });
         }
 
-        private static BrowseResultCollection CreateResults(
-            ReferenceDescriptionCollection references,
+        private static ArrayOf<BrowseResult> CreateResults(
+            ArrayOf<ReferenceDescription> references,
             byte[] continuationPoint)
         {
             return
@@ -149,20 +149,20 @@ namespace Technosoftware.UaClient.Tests
                 new BrowseResult
                 {
                     StatusCode = StatusCodes.Good,
-                    ContinuationPoint = continuationPoint,
+                    ContinuationPoint = ByteString.From(continuationPoint),
                     References = references
                 }
             ];
         }
 
-        private static ReferenceDescriptionCollection CreateReferences(string displayName)
+        private static ArrayOf<ReferenceDescription> CreateReferences(string displayName)
         {
             return
             [
                 new ReferenceDescription
                 {
                     NodeId = new ExpandedNodeId(new NodeId(displayName, 1)),
-                    DisplayName = displayName,
+                    DisplayName = LocalizedText.From(displayName),
                     BrowseName = new QualifiedName(displayName, 1),
                     ReferenceTypeId = ReferenceTypeIds.HasComponent,
                     IsForward = true,

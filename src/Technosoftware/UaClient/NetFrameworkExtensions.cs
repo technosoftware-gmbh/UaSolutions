@@ -85,6 +85,14 @@ namespace Technosoftware.UaClient
         }
 
         /// <summary>
+        /// Writes the bytes to the stream.
+        /// </summary>
+        public static Task WriteAsync(this Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken ct)
+        {
+            return stream.WriteAsync(buffer.ToArray(), ct);
+        }
+
+        /// <summary>
         /// Disposes the stream.
         /// </summary>
         public static ValueTask DisposeAsync(this Stream stream)

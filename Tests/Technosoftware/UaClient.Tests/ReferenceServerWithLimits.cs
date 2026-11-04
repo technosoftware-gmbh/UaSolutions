@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using Technosoftware.UaServer;
 using SampleCompany.NodeManagers.Reference;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient.Tests
@@ -46,17 +47,26 @@ namespace Technosoftware.UaClient.Tests
     /// </summary>
     public class ReferenceServerWithLimits : ReferenceServer
     {
+        /// <summary>
+        /// Initializes the server with the telemetry context ReferenceServer
+        /// requires in 2.0.
+        /// </summary>
+        public ReferenceServerWithLimits(ITelemetryContext telemetry)
+            : base(telemetry)
+        {
+        }
+
         public uint TestMaxBrowseReferencesPerNode { get; set; } = 10u;
         private MasterNodeManager MasterNodeManagerReference { get; set; }
         private SessionManagerWithLimits SessionManagerForTest { get; set; }
 
-        public override Task<BrowseResponse> BrowseAsync(
+        public override ValueTask<BrowseResponse> BrowseAsync(
             SecureChannelContext secureChannelContext,
             RequestHeader requestHeader,
             ViewDescription view,
             uint requestedMaxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
-            CancellationToken ct)
+            ArrayOf<BrowseDescription> nodesToBrowse,
+            RequestLifetime requestLifetime)
         {
             return base.BrowseAsync(
                 secureChannelContext,
@@ -64,7 +74,7 @@ namespace Technosoftware.UaClient.Tests
                 view,
                 TestMaxBrowseReferencesPerNode,
                 nodesToBrowse,
-                ct);
+                requestLifetime);
         }
 
         public void SetMaxNumberOfContinuationPoints(uint maxNumberOfContinuationPoints)
@@ -133,15 +143,15 @@ namespace Technosoftware.UaClient.Tests
         public ServerSessionWithLimits(
             UaServerOperationContext context,
             IUaServerData server,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             NodeId authenticationToken,
-            byte[] clientNonce,
+            ByteString clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double sessionTimeout,
             uint maxResponseMessageSize,
             double maxRequestAge,
@@ -200,15 +210,15 @@ namespace Technosoftware.UaClient.Tests
         protected override UaServer.IUaSession CreateSession(
             UaServerOperationContext context,
             IUaServerData server,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             NodeId sessionCookie,
-            byte[] clientNonce,
+            ByteString clientNonce,
             Nonce serverNonce,
             string sessionName,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double sessionTimeout,
             uint maxResponseMessageSize,
             int maxRequestAge, // TBD - Remove unused parameter.
@@ -257,11 +267,11 @@ namespace Technosoftware.UaClient.Tests
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
-        public override async ValueTask<(BrowseResultCollection results, DiagnosticInfoCollection diagnosticInfos)> BrowseAsync(
+        public override async ValueTask<(List<BrowseResult> results, List<DiagnosticInfo> diagnosticInfos)> BrowseAsync(
             UaServerOperationContext context,
             ViewDescription view,
             uint maxReferencesPerNode,
-            BrowseDescriptionCollection nodesToBrowse,
+            ArrayOf<BrowseDescription> nodesToBrowse,
             CancellationToken cancellationToken = default)
         {
             if (context == null)
@@ -269,12 +279,7 @@ namespace Technosoftware.UaClient.Tests
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (nodesToBrowse == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToBrowse));
-            }
-
-            if (view != null && !NodeId.IsNull(view.ViewId))
+            if (view != null && !view.ViewId.IsNull)
             {
                 (object viewHandle, IUaStandardAsyncNodeManager viewManager) =
                     await GetManagerHandleAsync(view.ViewId, cancellationToken)
@@ -315,8 +320,8 @@ namespace Technosoftware.UaClient.Tests
             }
 
             bool diagnosticsExist = false;
-            var results = new BrowseResultCollection(nodesToBrowse.Count);
-            var diagnosticInfos = new DiagnosticInfoCollection(nodesToBrowse.Count);
+            var results = new List<BrowseResult>(nodesToBrowse.Count);
+            var diagnosticInfos = new List<DiagnosticInfo>(nodesToBrowse.Count);
 
             uint continuationPointsAssigned = 0;
 
@@ -329,7 +334,6 @@ namespace Technosoftware.UaClient.Tests
                     foreach (BrowseResult current in results)
                     {
                         if (current != null &&
-                            current.ContinuationPoint != null &&
                             current.ContinuationPoint.Length > 0)
                         {
                             UaContinuationPoint cp = context.Session
@@ -371,7 +375,7 @@ namespace Technosoftware.UaClient.Tests
                 }
 
                 // check for continuation point.
-                if (result.ContinuationPoint != null && result.ContinuationPoint.Length > 0)
+                if (result.ContinuationPoint.Length > 0)
                 {
                     continuationPointsAssigned++;
                 }
@@ -396,7 +400,7 @@ namespace Technosoftware.UaClient.Tests
             // clear the diagnostics array if no diagnostics requested or no errors occurred.
             UpdateDiagnostics(context, diagnosticsExist, ref diagnosticInfos);
 
-            return (results, diagnosticInfos);
+            return ([.. results], diagnosticInfos);
         }
 
         private readonly ILogger m_logger;

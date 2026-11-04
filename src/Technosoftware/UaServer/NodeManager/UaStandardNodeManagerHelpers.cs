@@ -76,33 +76,23 @@ namespace Technosoftware.UaServer
         protected FolderState CreateFolderState(NodeState parent, string browseName, LocalizedText displayName,
             LocalizedText description, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var folderState = new FolderState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = ObjectTypeIds.FolderType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -121,8 +111,8 @@ namespace Technosoftware.UaServer
             }
             else
             {
-                folderState.AddReference(ReferenceTypes.Organizes, true, ObjectIds.ObjectsFolder);
-                References.Add(new NodeStateReference(ReferenceTypes.Organizes, false, folderState.NodeId));
+                folderState.AddReference(new NodeId(ReferenceTypes.Organizes), true, ObjectIds.ObjectsFolder);
+                References.Add(new NodeStateReference(new NodeId(ReferenceTypes.Organizes), false, folderState.NodeId));
                 folderState.EventNotifier = EventNotifiers.SubscribeToEvents;
                 AddRootNotifier(folderState);
             }
@@ -166,33 +156,23 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description,
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var baseObjectState = new BaseObjectState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = ObjectTypeIds.BaseObjectType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -266,27 +246,17 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description, BuiltInType dataType, int valueRank, byte accessLevel,
             object initialValue, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var propertyState = new PropertyState(parent)
@@ -302,7 +272,7 @@ namespace Technosoftware.UaServer
                 UserWriteMask = userWriteMask,
                 RolePermissions = rolePermissions,
                 UserRolePermissions = userRolePermissions,
-                DataType = (uint)dataType,
+                DataType = new NodeId((uint)dataType),
                 ValueRank = valueRank,
                 AccessLevel = accessLevel,
                 UserAccessLevel = accessLevel,
@@ -311,7 +281,7 @@ namespace Technosoftware.UaServer
 
             if (initialValue != null)
             {
-                propertyState.Value = initialValue;
+                propertyState.Value = VariantHelper.CastFromWithReflectionFallback(initialValue);
             }
 
             parent?.AddChild(propertyState);
@@ -367,27 +337,17 @@ namespace Technosoftware.UaServer
             IDictionary<NodeId, IList<IReference>> externalReferences, string browseName, LocalizedText displayName,
             LocalizedText description, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var viewState = new ViewState
@@ -416,8 +376,8 @@ namespace Technosoftware.UaServer
 
             if (parent != null)
             {
-                parent.AddReference(ReferenceTypes.Organizes, false, viewState.NodeId);
-                viewState.AddReference(ReferenceTypes.Organizes, true, parent.NodeId);
+                parent.AddReference(new NodeId(ReferenceTypes.Organizes), false, viewState.NodeId);
+                viewState.AddReference(new NodeId(ReferenceTypes.Organizes), true, parent.NodeId);
             }
 
             AddPredefinedNode(SystemContext, viewState);
@@ -470,33 +430,23 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description, BuiltInType dataType, int valueRank, byte accessLevel,
             object initialValue, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var baseDataVariableTypeState = new BaseDataVariableState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -506,24 +456,25 @@ namespace Technosoftware.UaServer
                 UserWriteMask = userWriteMask,
                 RolePermissions = rolePermissions,
                 UserRolePermissions = userRolePermissions,
-                DataType = (uint)dataType,
+                DataType = new NodeId((uint)dataType),
                 ValueRank = valueRank,
                 AccessLevel = accessLevel,
                 UserAccessLevel = accessLevel,
                 Historizing = false
             };
 
-            baseDataVariableTypeState.Value = initialValue ?? GetNewValue(baseDataVariableTypeState);
+            baseDataVariableTypeState.Value = VariantHelper.CastFromWithReflectionFallback(
+                initialValue ?? GetNewValue(baseDataVariableTypeState));
             baseDataVariableTypeState.StatusCode = StatusCodes.Good;
             baseDataVariableTypeState.Timestamp = DateTime.UtcNow;
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0 }];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0, 0 }];
             }
 
             parent?.AddChild(baseDataVariableTypeState);
@@ -576,33 +527,23 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description, NodeId dataType, int valueRank, byte accessLevel,
             object initialValue, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var baseDataVariableTypeState = new BaseDataVariableState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -619,17 +560,18 @@ namespace Technosoftware.UaServer
                 Historizing = false
             };
 
-            baseDataVariableTypeState.Value = initialValue ?? GetNewValue(baseDataVariableTypeState);
+            baseDataVariableTypeState.Value = VariantHelper.CastFromWithReflectionFallback(
+                initialValue ?? GetNewValue(baseDataVariableTypeState));
             baseDataVariableTypeState.StatusCode = StatusCodes.Good;
             baseDataVariableTypeState.Timestamp = DateTime.UtcNow;
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0 }];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0, 0 }];
             }
 
             parent?.AddChild(baseDataVariableTypeState);
@@ -682,33 +624,23 @@ namespace Technosoftware.UaServer
             LocalizedText displayName, LocalizedText description, ExpandedNodeId dataType, int valueRank,
             byte accessLevel, object initialValue, AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var baseDataVariableTypeState = new BaseDataVariableState(parent)
             {
                 SymbolicName = displayName.ToString(),
-                ReferenceTypeId = ReferenceTypes.Organizes,
+                ReferenceTypeId = new NodeId(ReferenceTypes.Organizes),
                 TypeDefinitionId = VariableTypeIds.BaseDataVariableType,
                 NodeId = new NodeId(browseName, NamespaceIndex),
                 BrowseName = new QualifiedName(browseName, NamespaceIndex),
@@ -725,17 +657,18 @@ namespace Technosoftware.UaServer
                 Historizing = false
             };
 
-            baseDataVariableTypeState.Value = initialValue ?? GetNewValue(baseDataVariableTypeState);
+            baseDataVariableTypeState.Value = VariantHelper.CastFromWithReflectionFallback(
+                initialValue ?? GetNewValue(baseDataVariableTypeState));
             baseDataVariableTypeState.StatusCode = StatusCodes.Good;
             baseDataVariableTypeState.Timestamp = DateTime.UtcNow;
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0 }];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                baseDataVariableTypeState.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                baseDataVariableTypeState.ArrayDimensions = [.. new List<uint> { 0, 0 }];
             }
 
             parent?.AddChild(baseDataVariableTypeState);
@@ -808,50 +741,40 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null, double? valuePrecision = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new DataItemState(parent);
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             if (valuePrecision != null)
             {
-                variable.ValuePrecision = new PropertyState<double>(variable);
+                _ = variable.CreateOrReplaceValuePrecision(SystemContext, null, false);
             }
 
             variable.Create(
                 SystemContext,
-                null,
+                default,
                 variable.BrowseName,
-                null,
+                default,
                 true);
 
             variable.SymbolicName = displayName.ToString();
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.TypeDefinitionId = VariableTypeIds.BaseDataVariableType;
             variable.NodeId = new NodeId(browseName, NamespaceIndex);
             variable.BrowseName = new QualifiedName(browseName, NamespaceIndex);
@@ -861,24 +784,28 @@ namespace Technosoftware.UaServer
             variable.UserWriteMask = userWriteMask;
             variable.RolePermissions = rolePermissions;
             variable.UserRolePermissions = userRolePermissions;
-            variable.DataType = (uint)dataType;
+            variable.DataType = new NodeId((uint)dataType);
             variable.ValueRank = valueRank;
             variable.AccessLevel = accessLevel;
             variable.UserAccessLevel = accessLevel;
             variable.Historizing = false;
 
-            variable.Value = initialValue ??
-                             Opc.Ua.TypeInfo.GetDefaultValue((uint)dataType, valueRank, ServerData.TypeTree);
+            variable.Value = initialValue != null
+                ? VariantHelper.CastFromWithReflectionFallback(initialValue)
+                : Opc.Ua.TypeInfo.GetDefaultVariantValue(
+                    new NodeId((uint)dataType),
+                    valueRank,
+                    ServerData.TypeTree);
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
 
             switch (valueRank)
             {
                 case ValueRanks.OneDimension:
-                    variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                    variable.ArrayDimensions = [.. new List<uint> { 0 }];
                     break;
                 case ValueRanks.TwoDimensions:
-                    variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                    variable.ArrayDimensions = [.. new List<uint> { 0, 0 }];
                     break;
                 default:
                     break;
@@ -983,10 +910,11 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null, double? valuePrecision = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            return CreateAnalogItemState(parent, browseName, displayName, description, (uint)dataType, valueRank,
+            return CreateAnalogItemState(parent, browseName, displayName, description,
+                new NodeId((uint)dataType), valueRank,
                 accessLevel, initialValue, euRange, engineeringUnit, instrumentRange, writeMask, userWriteMask,
                 definition, valuePrecision, rolePermissions, userRolePermissions);
         }
@@ -1070,27 +998,17 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null, double? valuePrecision = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new AnalogItemState(parent)
@@ -1100,29 +1018,29 @@ namespace Technosoftware.UaServer
 
             if (engineeringUnit != null)
             {
-                variable.EngineeringUnits = new PropertyState<EUInformation>(variable);
+                _ = variable.CreateOrReplaceEngineeringUnits(SystemContext, null, false);
             }
 
             if (instrumentRange != null)
             {
-                variable.InstrumentRange = new PropertyState<Opc.Ua.Range>(variable);
+                _ = variable.CreateOrReplaceInstrumentRange(SystemContext, null, false);
             }
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             if (valuePrecision != null)
             {
-                variable.ValuePrecision = new PropertyState<double>(variable);
+                _ = variable.CreateOrReplaceValuePrecision(SystemContext, null, false);
             }
 
             variable.Create(
                 SystemContext,
                 new NodeId(browseName, NamespaceIndex),
                 variable.BrowseName,
-                null,
+                default,
                 true);
 
             if (engineeringUnit != null)
@@ -1161,7 +1079,7 @@ namespace Technosoftware.UaServer
             variable.UserWriteMask = userWriteMask;
             variable.RolePermissions = rolePermissions;
             variable.UserRolePermissions = userRolePermissions;
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = dataType;
             variable.ValueRank = valueRank;
             variable.AccessLevel = accessLevel;
@@ -1170,18 +1088,20 @@ namespace Technosoftware.UaServer
 
             if (valueRank == ValueRanks.OneDimension)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0 });
+                variable.ArrayDimensions = [.. new List<uint> { 0 }];
             }
             else if (valueRank == ValueRanks.TwoDimensions)
             {
-                variable.ArrayDimensions = new ReadOnlyList<uint>(new List<uint> { 0, 0 });
+                variable.ArrayDimensions = [.. new List<uint> { 0, 0 }];
             }
 
             variable.EURange.Value = euRange ?? new Opc.Ua.Range(100, 0);
             variable.EURange.AccessLevel = accessLevel;
             variable.EURange.UserAccessLevel = accessLevel;
 
-            variable.Value = initialValue ?? Opc.Ua.TypeInfo.GetDefaultValue(dataType, valueRank, ServerData.TypeTree);
+            variable.Value = initialValue != null
+                ? VariantHelper.CastFromWithReflectionFallback(initialValue)
+                : Opc.Ua.TypeInfo.GetDefaultVariantValue(dataType, valueRank, ServerData.TypeTree);
 
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
@@ -1241,34 +1161,24 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new TwoStateDiscreteState(parent);
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             variable.Create(
@@ -1286,7 +1196,7 @@ namespace Technosoftware.UaServer
             }
 
             variable.SymbolicName = displayName.ToString();
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = DataTypeIds.Boolean;
             variable.ValueRank = ValueRanks.Scalar;
             variable.Description = description;
@@ -1302,11 +1212,11 @@ namespace Technosoftware.UaServer
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
 
-            variable.TrueState.Value = trueState;
+            variable.TrueState.Value = new LocalizedText(trueState);
             variable.TrueState.AccessLevel = accessLevel;
             variable.TrueState.UserAccessLevel = accessLevel;
 
-            variable.FalseState.Value = falseState;
+            variable.FalseState.Value = new LocalizedText(falseState);
             variable.FalseState.AccessLevel = accessLevel;
             variable.FalseState.UserAccessLevel = accessLevel;
 
@@ -1357,34 +1267,24 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null, params LocalizedText[] values)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default, params LocalizedText[] values)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new MultiStateDiscreteState(parent);
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             variable.Create(
@@ -1402,7 +1302,7 @@ namespace Technosoftware.UaServer
             }
 
             variable.SymbolicName = displayName.ToString();
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
             variable.DataType = DataTypeIds.UInt32;
             variable.ValueRank = ValueRanks.Scalar;
             variable.Description = description;
@@ -1414,7 +1314,7 @@ namespace Technosoftware.UaServer
             variable.UserAccessLevel = accessLevel;
             variable.Historizing = false;
 
-            variable.Value = initialValue ?? (uint)0;
+            variable.Value = VariantHelper.CastFromWithReflectionFallback(initialValue ?? (uint)0);
 
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
@@ -1479,34 +1379,24 @@ namespace Technosoftware.UaServer
             AttributeWriteMask writeMask = AttributeWriteMask.None,
             AttributeWriteMask userWriteMask = AttributeWriteMask.None,
             string definition = null,
-            RolePermissionTypeCollection rolePermissions = null,
-            RolePermissionTypeCollection userRolePermissions = null, params LocalizedText[] enumNames)
+            ArrayOf<RolePermissionType> rolePermissions = default,
+            ArrayOf<RolePermissionType> userRolePermissions = default, params LocalizedText[] enumNames)
         {
-            if (displayName == null)
+            if (displayName.IsNull)
             {
                 displayName = new LocalizedText("");
             }
 
-            if (description == null)
+            if (description.IsNull)
             {
                 description = new LocalizedText("");
-            }
-
-            if (rolePermissions == null)
-            {
-                rolePermissions = new RolePermissionTypeCollection();
-            }
-
-            if (userRolePermissions == null)
-            {
-                userRolePermissions = new RolePermissionTypeCollection();
             }
 
             var variable = new MultiStateValueDiscreteState(parent);
 
             if (definition != null)
             {
-                variable.Definition = new PropertyState<string>(variable);
+                _ = variable.CreateOrReplaceDefinition(SystemContext, null, false);
             }
 
             variable.Create(
@@ -1524,8 +1414,8 @@ namespace Technosoftware.UaServer
             }
 
             variable.SymbolicName = displayName.ToString();
-            variable.ReferenceTypeId = ReferenceTypes.Organizes;
-            variable.DataType = dataType ?? DataTypeIds.UInt32;
+            variable.ReferenceTypeId = new NodeId(ReferenceTypes.Organizes);
+            variable.DataType = dataType.IsNull ? DataTypeIds.UInt32 : dataType;
             variable.ValueRank = ValueRanks.Scalar;
             variable.Description = description;
             variable.WriteMask = writeMask;
@@ -1536,7 +1426,7 @@ namespace Technosoftware.UaServer
             variable.UserAccessLevel = accessLevel;
             variable.Historizing = false;
 
-            variable.Value = initialValue ?? (uint)0;
+            variable.Value = VariantHelper.CastFromWithReflectionFallback(initialValue ?? (uint)0);
 
             variable.StatusCode = StatusCodes.Good;
             variable.Timestamp = DateTime.UtcNow;
@@ -1642,7 +1532,13 @@ namespace Technosoftware.UaServer
         /// <returns>The created argument</returns>
         protected Argument CreateArgument(string name, string description, BuiltInType dataType, int valueRank)
         {
-            var argument = new Argument { Name = name, Description = description, DataType = (uint)dataType, ValueRank = valueRank };
+            var argument = new Argument
+            {
+                Name = name,
+                Description = new LocalizedText(description),
+                DataType = new NodeId((uint)dataType),
+                ValueRank = valueRank
+            };
 
             return argument;
         }
@@ -1655,17 +1551,20 @@ namespace Technosoftware.UaServer
         {
             if (parent != null)
             {
-                parent.InputArguments = new PropertyState<Argument[]>(parent)
-                {
-                    NodeId = new NodeId(parent.BrowseName.Name + "InArgs", NamespaceIndex),
-                    BrowseName = BrowseNames.InputArguments
-                };
-                parent.InputArguments.DisplayName = parent.InputArguments.BrowseName.Name;
-                parent.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
-                parent.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
-                parent.InputArguments.DataType = DataTypeIds.Argument;
-                parent.InputArguments.ValueRank = ValueRanks.OneDimension;
-                parent.InputArguments.Value = inputArguments;
+                // PropertyState<T> is abstract in 2.0; the state class's own
+                // factory builds the concrete instance with the right builder.
+                PropertyState<ArrayOf<Argument>> arguments = parent
+                    .CreateOrReplaceInputArguments(SystemContext, null, false);
+                arguments.NodeId = new NodeId(
+                    parent.BrowseName.Name + "InArgs",
+                    NamespaceIndex);
+                arguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
+                arguments.DisplayName = new LocalizedText(arguments.BrowseName.Name);
+                arguments.TypeDefinitionId = VariableTypeIds.PropertyType;
+                arguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+                arguments.DataType = DataTypeIds.Argument;
+                arguments.ValueRank = ValueRanks.OneDimension;
+                arguments.Value = inputArguments.ToArrayOf();
 
                 return StatusCodes.Good;
             }
@@ -1681,17 +1580,20 @@ namespace Technosoftware.UaServer
         {
             if (parent != null)
             {
-                parent.OutputArguments = new PropertyState<Argument[]>(parent)
-                {
-                    NodeId = new NodeId(parent.BrowseName.Name + "OutArgs", NamespaceIndex),
-                    BrowseName = BrowseNames.OutputArguments
-                };
-                parent.OutputArguments.DisplayName = parent.OutputArguments.BrowseName.Name;
-                parent.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
-                parent.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
-                parent.OutputArguments.DataType = DataTypeIds.Argument;
-                parent.OutputArguments.ValueRank = ValueRanks.OneDimension;
-                parent.OutputArguments.Value = outputArguments;
+                // PropertyState<T> is abstract in 2.0; the state class's own
+                // factory builds the concrete instance with the right builder.
+                PropertyState<ArrayOf<Argument>> arguments = parent
+                    .CreateOrReplaceOutputArguments(SystemContext, null, false);
+                arguments.NodeId = new NodeId(
+                    parent.BrowseName.Name + "OutArgs",
+                    NamespaceIndex);
+                arguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
+                arguments.DisplayName = new LocalizedText(arguments.BrowseName.Name);
+                arguments.TypeDefinitionId = VariableTypeIds.PropertyType;
+                arguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+                arguments.DataType = DataTypeIds.Argument;
+                arguments.ValueRank = ValueRanks.OneDimension;
+                arguments.Value = outputArguments.ToArrayOf();
 
                 return StatusCodes.Good;
             }

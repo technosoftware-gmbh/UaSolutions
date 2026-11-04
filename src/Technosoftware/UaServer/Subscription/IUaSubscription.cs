@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
@@ -70,12 +71,12 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Gets the lock that must be acquired before accessing the contents of the Diagnostics property.
         /// </summary>
-        object DiagnosticsLock { get; }
+        Lock DiagnosticsLock { get; }
 
         /// <summary>
         /// Gets the lock that must be acquired before updating the contents of the Diagnostics property.
         /// </summary>
-        object DiagnosticsWriteLock { get; }
+        Lock DiagnosticsWriteLock { get; }
 
         /// <summary>
         /// Gets the current diagnostics for the subscription.
@@ -106,7 +107,7 @@ namespace Technosoftware.UaServer
         /// Returns the available sequence numbers for retransmission
         /// For example used in Transfer Subscription
         /// </summary>
-        UInt32Collection AvailableSequenceNumbersForRetransmission();
+        ArrayOf<uint> AvailableSequenceNumbersForRetransmission();
 
         /// <summary>
         /// Refreshes the conditions.
@@ -132,10 +133,10 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Changes the monitoring mode for a set of items.
         /// </summary>
-        ValueTask<(StatusCodeCollection results, DiagnosticInfoCollection diagnosticInfos)> SetMonitoringModeAsync(
+        ValueTask<(List<StatusCode> results, List<DiagnosticInfo> diagnosticInfos)> SetMonitoringModeAsync(
             UaServerOperationContext context,
             MonitoringMode monitoringMode,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -148,7 +149,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             UaServerOperationContext context,
-            UInt32Collection monitoredItemIds,
+            ArrayOf<uint> monitoredItemIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -157,7 +158,7 @@ namespace Technosoftware.UaServer
         ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemModifyRequestCollection itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -166,13 +167,15 @@ namespace Technosoftware.UaServer
         ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequestCollection itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the monitored items for the subscription.
         /// </summary>
-        void GetMonitoredItems(out uint[] serverHandles, out uint[] clientHandles);
+        void GetMonitoredItems(
+            out ArrayOf<uint> serverHandles,
+            out ArrayOf<uint> clientHandles);
 
         /// <summary>
         /// Sets the subscription to durable mode.
@@ -229,7 +232,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         NotificationMessage Publish(
             UaServerOperationContext context,
-            out UInt32Collection availableSequenceNumbers,
+            out ArrayOf<uint> availableSequenceNumbers,
             out bool moreNotifications);
 
         /// <summary>
@@ -246,12 +249,12 @@ namespace Technosoftware.UaServer
         void SetTriggering(
             UaServerOperationContext context,
             uint triggeringItemId,
-            UInt32Collection linksToAdd,
-            UInt32Collection linksToRemove,
-            out StatusCodeCollection addResults,
-            out DiagnosticInfoCollection addDiagnosticInfos,
-            out StatusCodeCollection removeResults,
-            out DiagnosticInfoCollection removeDiagnosticInfos);
+            ArrayOf<uint> linksToAdd,
+            ArrayOf<uint> linksToRemove,
+            out List<StatusCode> addResults,
+            out List<DiagnosticInfo> addDiagnosticInfos,
+            out List<StatusCode> removeResults,
+            out List<DiagnosticInfo> removeDiagnosticInfos);
 
         /// <summary>
         /// Return a StorableSubscription for restore after a server restart

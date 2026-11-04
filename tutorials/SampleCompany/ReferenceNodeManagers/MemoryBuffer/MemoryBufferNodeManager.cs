@@ -36,7 +36,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
             => [Namespaces.MemoryBuffer, Namespaces.MemoryBuffer + "/Instance"];
     }
 
@@ -96,7 +96,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                 namespaceIndex = Server.NamespaceUris
                     .GetIndexOrAppend(Namespaces.MemoryBuffer + "/Instance");
 
-                if (m_configuration != null && m_configuration.Buffers != null)
+                if (m_configuration != null)
                 {
                     for (int ii = 0; ii < m_configuration.Buffers.Count; ii++)
                     {
@@ -110,7 +110,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                             SystemContext,
                             new NodeId(bufferNode.SymbolicName, namespaceIndex),
                             new QualifiedName(bufferNode.SymbolicName, namespaceIndex),
-                            null,
+                            default,
                             true);
 
                         bufferNode.CreateBuffer(instance.DataType, instance.TagCount);
@@ -131,13 +131,11 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
         /// </summary>
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
-            var predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(
-                context,
-                "SampleCompany.NodeManagers.MemoryBuffer.Generated.SampleCompany.NodeManagers.MemoryBuffer.PredefinedNodes.uanodes",
-                GetType().GetTypeInfo().Assembly,
-                true);
-            return predefinedNodes;
+            // The model source generator builds the predefined nodes from
+            // MemoryBufferDesign.xml at compile time, so there is no .uanodes
+            // resource to load and no reflection on the way in.
+            return new NodeStateCollection()
+                .AddSampleCompanyNodeManagersMemoryBuffer(context);
         }
 
         /// <summary>
@@ -171,7 +169,7 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
                     return null;
                 }
 
-                if (nodeId.Identifier is string id)
+                if (nodeId.TryGetValue(out string id))
                 {
                     // check for a reference to the buffer.
 
@@ -284,32 +282,30 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             }
 
             // index range not supported.
-            if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Empty)
+            if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Null)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
 
             // data encoding not supported.
-            if (!QualifiedName.IsNull(itemToCreate.ItemToMonitor.DataEncoding))
+            if (!itemToCreate.ItemToMonitor.DataEncoding.IsNull)
             {
                 return StatusCodes.BadDataEncodingUnsupported;
             }
 
             // read initial value.
-            var initialValue = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.Good
-            };
+            var initialValue = new DataValue(
+                Variant.Null,
+                StatusCodes.Good,
+                DateTimeUtc.MinValue,
+                DateTime.UtcNow);
 
             ServiceResult error = source.ReadAttribute(
                 context,
                 itemToCreate.ItemToMonitor.AttributeId,
                 itemToCreate.ItemToMonitor.ParsedIndexRange,
                 itemToCreate.ItemToMonitor.DataEncoding,
-                initialValue);
+                ref initialValue);
 
             if (ServiceResult.IsBad(error))
             {
@@ -508,22 +504,20 @@ namespace SampleCompany.NodeManagers.MemoryBuffer
             if (previousMode == MonitoringMode.Disabled &&
                 monitoringMode != MonitoringMode.Disabled)
             {
-                var initialValue = new DataValue
-                {
-                    Value = null,
-                    ServerTimestamp = DateTime.UtcNow,
-                    SourceTimestamp = DateTime.MinValue,
-                    StatusCode = StatusCodes.Good
-                };
+                var initialValue = new DataValue(
+                    Variant.Null,
+                    StatusCodes.Good,
+                    DateTimeUtc.MinValue,
+                    DateTime.UtcNow);
 
                 var tag = new MemoryTagState(buffer, datachangeItem.Offset);
 
                 ServiceResult error = tag.ReadAttribute(
                     context,
                     datachangeItem.AttributeId,
-                    NumericRange.Empty,
-                    null,
-                    initialValue);
+                    NumericRange.Null,
+                    default,
+                    ref initialValue);
 
                 datachangeItem.QueueValue(initialValue, error);
             }

@@ -355,14 +355,14 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             var value = new DataValue();
 
             ServiceResult error = m_source.Node
-                .ReadAttribute(context, AttributeId, NumericRange.Empty, null, value);
+                .ReadAttribute(context, AttributeId, NumericRange.Null, default, ref value);
 
             if (ServiceResult.IsBad(error))
             {
-                value = new DataValue(error.StatusCode);
+                value = DataValue.FromStatusCode(error.StatusCode);
             }
 
-            value.ServerTimestamp = DateTime.UtcNow;
+            value = value.WithServerTimestamp(DateTime.UtcNow);
 
             QueueValue(value, error, false);
         }
@@ -626,24 +626,12 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                     return;
                 }
 
-                // make a shallow copy of the value.
-                if (value != null)
+                // DataValue is immutable in 2.0, so the shallow copy that used
+                // to defend against later mutation is unnecessary.
+                if (!value.IsNull && error != null && error.StatusCode.Code != 0)
                 {
-                    value = new DataValue
-                    {
-                        WrappedValue = value.WrappedValue,
-                        StatusCode = value.StatusCode,
-                        SourceTimestamp = value.SourceTimestamp,
-                        SourcePicoseconds = value.SourcePicoseconds,
-                        ServerTimestamp = value.ServerTimestamp,
-                        ServerPicoseconds = value.ServerPicoseconds
-                    };
-
                     // ensure the data value matches the error status code.
-                    if (error != null && error.StatusCode.Code != 0)
-                    {
-                        value.StatusCode = error.StatusCode;
-                    }
+                    value = value.WithStatus(error.StatusCode);
                 }
 
                 m_lastValue = value;
@@ -704,7 +692,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
                 {
                     m_nextSampleTime = DateTime.UtcNow.Ticks;
                     m_lastError = null;
-                    m_lastValue = null;
+                    m_lastValue = default;
                 }
 
                 MonitoringMode = monitoringMode;
@@ -826,7 +814,7 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             // set semantics changed bit.
             if (m_semanticsChanged)
             {
-                value?.StatusCode = value.StatusCode.SetSemanticsChanged(true);
+                value = value.WithStatus(value.StatusCode.SetSemanticsChanged(true));
 
                 m_semanticsChanged = false;
             }
@@ -834,24 +822,25 @@ namespace SampleCompany.NodeManagers.SampleNodeManager
             // set structure changed bit.
             if (m_structureChanged)
             {
-                value?.StatusCode = value.StatusCode.SetStructureChanged(true);
+                value = value.WithStatus(value.StatusCode.SetStructureChanged(true));
 
                 m_structureChanged = false;
             }
 
-            // copy data value.
-            var item = new MonitoredItemNotification { ClientHandle = ClientHandle, Value = value };
-
-            // apply timestamp filter.
+            // apply timestamp filter before the value is handed to the
+            // notification, since DataValue is immutable.
             if (m_timestampsToReturn is not TimestampsToReturn.Server and not TimestampsToReturn.Both)
             {
-                item.Value.ServerTimestamp = DateTime.MinValue;
+                value = value.WithServerTimestamp(DateTime.MinValue);
             }
 
             if (m_timestampsToReturn is not TimestampsToReturn.Source and not TimestampsToReturn.Both)
             {
-                item.Value.SourceTimestamp = DateTime.MinValue;
+                value = value.WithSourceTimestamp(DateTime.MinValue);
             }
+
+            // copy data value.
+            var item = new MonitoredItemNotification { ClientHandle = ClientHandle, Value = value };
 
             notifications.Enqueue(item);
 

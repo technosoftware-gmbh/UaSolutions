@@ -36,29 +36,29 @@ namespace Technosoftware.UaClient
         /// Reads the values for a set of variables.
         /// </summary>
         public static async ValueTask<(
-            IList<object>,
+            IList<object?>,
             IList<ServiceResult>
             )> ReadValuesAsync(
                 this ISessionClient session,
-                IList<NodeId> variableIds,
+                ArrayOf<NodeId> variableIds,
                 IList<Type> expectedTypes,
                 CancellationToken ct = default)
         {
-            (DataValueCollection dataValues, IList<ServiceResult> errors) =
+            (IList<DataValue> dataValues, IList<ServiceResult> errors) =
                 await session.ReadValuesAsync(
                     variableIds,
-                    ct).ConfigureAwait(false);
+                    ct: ct).ConfigureAwait(false);
 
-            object[] values = new object[dataValues.Count];
+            object?[] values = new object?[dataValues.Count];
             for (int ii = 0; ii < variableIds.Count; ii++)
             {
-                object value = dataValues[ii].Value;
+                object? value = dataValues[ii].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
 
                 // extract the body from extension objects.
                 if (value is ExtensionObject extension &&
-                    extension.Body is IEncodeable)
+                    extension.TryGetValue(out IEncodeable? body))
                 {
-                    value = extension.Body;
+                    value = body;
                 }
 
                 // check expected type.
@@ -68,7 +68,7 @@ namespace Technosoftware.UaClient
                     errors[ii] = ServiceResult.Create(
                         StatusCodes.BadTypeMismatch,
                         "Value {0} does not have expected type: {1}.",
-                        value,
+                        value ?? "(null)",
                         expectedTypes[ii].Name);
                     continue;
                 }
@@ -85,8 +85,8 @@ namespace Technosoftware.UaClient
         /// <exception cref="ServiceResultException"></exception>
         public static async ValueTask<(
             ResponseHeader,
-            byte[],
-            ReferenceDescriptionCollection
+            ByteString,
+            ArrayOf<ReferenceDescription>
             )> BrowseAsync(
                 this ISessionClient session,
                 RequestHeader? requestHeader,
@@ -101,8 +101,8 @@ namespace Technosoftware.UaClient
         {
             ResponseHeader responseHeader;
             IList<ServiceResult> errors;
-            IList<ReferenceDescriptionCollection> referencesList;
-            ByteStringCollection continuationPoints;
+            IList<ArrayOf<ReferenceDescription>> referencesList;
+            List<ByteString> continuationPoints;
             (responseHeader, continuationPoints, referencesList, errors) =
                 await session.BrowseAsync(
                     requestHeader,
@@ -132,20 +132,20 @@ namespace Technosoftware.UaClient
         /// <exception cref="ServiceResultException"></exception>
         public static async ValueTask<(
             ResponseHeader,
-            byte[],
-            ReferenceDescriptionCollection
+            ByteString,
+            ArrayOf<ReferenceDescription>
             )> BrowseNextAsync(
                 this ISessionClient session,
                 RequestHeader? requestHeader,
                 bool releaseContinuationPoint,
-                byte[]? continuationPoint,
+                ByteString continuationPoint,
                 CancellationToken ct = default)
         {
             ResponseHeader responseHeader;
             IList<ServiceResult> errors;
-            IList<ReferenceDescriptionCollection> referencesList;
+            IList<ArrayOf<ReferenceDescription>> referencesList;
 
-            ByteStringCollection revisedContinuationPoints;
+            List<ByteString> revisedContinuationPoints;
             (responseHeader, revisedContinuationPoints, referencesList, errors) =
                 await session.BrowseNextAsync(
                     requestHeader,
@@ -167,13 +167,13 @@ namespace Technosoftware.UaClient
         /// Managed browsing using browser
         /// </summary>
         public static async Task<(
-            IList<ReferenceDescriptionCollection>,
+            IList<ArrayOf<ReferenceDescription>>,
             IList<ServiceResult>
             )> ManagedBrowseAsync(
                 this ISessionClient session,
                 RequestHeader? requestHeader,
                 ViewDescription? view,
-                IList<NodeId> nodesToBrowse,
+                ArrayOf<NodeId> nodesToBrowse,
                 uint maxResultsToReturn,
                 BrowseDirection browseDirection,
                 NodeId? referenceTypeId,
@@ -191,7 +191,7 @@ namespace Technosoftware.UaClient
                 IncludeSubtypes = includeSubtypes,
                 NodeClassMask = (int)nodeClassMask
             });
-            ResultSet<ReferenceDescriptionCollection> result =
+            ResultSet<ArrayOf<ReferenceDescription>> result =
                 await browser.BrowseAsync([.. nodesToBrowse], ct).ConfigureAwait(false);
             return (result.Results.ToList(), result.Errors.ToList());
         }
@@ -202,12 +202,12 @@ namespace Technosoftware.UaClient
         /// <param name="session">session to use</param>
         /// <param name="nodeId">The node id.</param>
         /// <param name="ct">Cancellation token to cancel operation with</param>
-        public static async Task<ReferenceDescriptionCollection> FetchReferencesAsync(
+        public static async Task<ArrayOf<ReferenceDescription>> FetchReferencesAsync(
             this ISessionClient session,
             NodeId nodeId,
             CancellationToken ct = default)
         {
-            (IList<ReferenceDescriptionCollection> descriptions, _) =
+            (IList<ArrayOf<ReferenceDescription>> descriptions, _) =
                 await session.ManagedBrowseAsync(
                     null,
                     null,
@@ -231,11 +231,11 @@ namespace Technosoftware.UaClient
         /// <returns>A list of reference collections and the errors reported
         /// by the server.</returns>
         public static Task<(
-            IList<ReferenceDescriptionCollection>,
+            IList<ArrayOf<ReferenceDescription>>,
             IList<ServiceResult>
             )> FetchReferencesAsync(
                 this ISessionClient session,
-                IList<NodeId> nodeIds,
+                ArrayOf<NodeId> nodeIds,
                 CancellationToken ct = default)
         {
             return session.ManagedBrowseAsync(
@@ -268,7 +268,7 @@ namespace Technosoftware.UaClient
         /// <returns>The node collection and associated errors.</returns>
         public static async Task<(IList<Node>, IList<ServiceResult>)> ReadNodesAsync(
             this ISessionClient session,
-            IList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             NodeClass nodeClass,
             bool optionalAttributes = false,
             CancellationToken ct = default)
@@ -294,7 +294,7 @@ namespace Technosoftware.UaClient
         /// <param name="ct">The cancellation token.</param>
         public static async Task<(IList<Node>, IList<ServiceResult>)> ReadNodesAsync(
             this ISessionClient session,
-            IList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             bool optionalAttributes = false,
             CancellationToken ct = default)
         {
@@ -357,27 +357,21 @@ namespace Technosoftware.UaClient
         /// <returns>Paired list of displaynames and potential errors per node</returns>
         public static async Task<(IList<string>, IList<ServiceResult>)> ReadDisplayNameAsync(
             this ISessionClient session,
-            IList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             CancellationToken ct = default)
         {
             var displayNames = new List<string>();
             var errors = new List<ServiceResult>();
 
             // build list of values to read.
-            var valuesToRead = new ReadValueIdCollection();
-
-            for (int ii = 0; ii < nodeIds.Count; ii++)
-            {
-                var valueToRead = new ReadValueId
+            ArrayOf<ReadValueId> valuesToRead = nodeIds.ConvertAll(
+                nodeId => new ReadValueId
                 {
-                    NodeId = nodeIds[ii],
+                    NodeId = nodeId,
                     AttributeId = Attributes.DisplayName,
                     IndexRange = null,
                     DataEncoding = QualifiedName.Null
-                };
-
-                valuesToRead.Add(valueToRead);
-            }
+                });
 
             // read the values.
 
@@ -388,8 +382,8 @@ namespace Technosoftware.UaClient
                 valuesToRead,
                 ct).ConfigureAwait(false);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<DataValue> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
 
             // verify that the server returned the correct number of results.
@@ -415,9 +409,9 @@ namespace Technosoftware.UaClient
                 // extract the name.
                 LocalizedText displayName = results[ii].GetValue(LocalizedText.Null);
 
-                if (!LocalizedText.IsNullOrEmpty(displayName))
+                if (!displayName.IsNullOrEmpty)
                 {
-                    displayNames[ii] = displayName.Text;
+                    displayNames[ii] = displayName.Text!;
                 }
             }
 
@@ -444,7 +438,7 @@ namespace Technosoftware.UaClient
                 NodeClassMask = 0
             });
 
-            ReferenceDescriptionCollection references =
+            ArrayOf<ReferenceDescription> references =
                 await browser.BrowseAsync(encodingId, ct).ConfigureAwait(false);
 
             if (references.Count == 0)
@@ -471,11 +465,12 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             DataValue dataValue = await session.ReadValueAsync(nodeId, ct).ConfigureAwait(false);
-            object value = dataValue.Value;
+            object? value = dataValue.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
 
-            if (value is ExtensionObject extension)
+            if (value is ExtensionObject extension &&
+                extension.TryGetValue(out IEncodeable? body))
             {
-                value = extension.Body;
+                value = body;
             }
 
             if (!typeof(T).IsInstanceOfType(value))
@@ -485,7 +480,7 @@ namespace Technosoftware.UaClient
                     "Server returned value unexpected type: {0}",
                     value != null ? value.GetType().Name : "(null)");
             }
-            return (T)value;
+            return (T)value!;
         }
 
         /// <summary>
@@ -513,9 +508,9 @@ namespace Technosoftware.UaClient
         /// <param name="session">The session to use</param>
         /// <param name="nodeIds">The node Id.</param>
         /// <param name="ct">The cancellation token for the request.</param>
-        public static async Task<(DataValueCollection, IList<ServiceResult>)> ReadValuesAsync(
+        public static async Task<(List<DataValue>, IList<ServiceResult>)> ReadValuesAsync(
             this ISessionClient session,
-            IList<NodeId> nodeIds,
+            ArrayOf<NodeId> nodeIds,
             CancellationToken ct = default)
         {
             var nodeCacheContext = new NodeCacheContext(session);
@@ -523,7 +518,7 @@ namespace Technosoftware.UaClient
                 null,
                 [.. nodeIds],
                 ct).ConfigureAwait(false);
-            return (new DataValueCollection(result.Results), result.Errors.ToList());
+            return ([.. result.Results], [.. result.Errors]);
         }
 
         /// <summary>
@@ -542,14 +537,14 @@ namespace Technosoftware.UaClient
         /// <returns></returns>
         public static async Task<(
             ResponseHeader responseHeader,
-            ByteStringCollection continuationPoints,
-            IList<ReferenceDescriptionCollection> referencesList,
+            List<ByteString> continuationPoints,
+            IList<ArrayOf<ReferenceDescription>> referencesList,
             IList<ServiceResult> errors
         )> BrowseAsync(
             this ISessionClient session,
             RequestHeader? requestHeader,
             ViewDescription? view,
-            IList<NodeId> nodesToBrowse,
+            ArrayOf<NodeId> nodesToBrowse,
             uint maxResultsToReturn,
             BrowseDirection browseDirection,
             NodeId referenceTypeId,
@@ -557,10 +552,8 @@ namespace Technosoftware.UaClient
             uint nodeClassMask,
             CancellationToken ct = default)
         {
-            var browseDescriptions = new BrowseDescriptionCollection();
-            foreach (NodeId nodeToBrowse in nodesToBrowse)
-            {
-                var description = new BrowseDescription
+            ArrayOf<BrowseDescription> browseDescriptions = nodesToBrowse.ConvertAll(
+                nodeToBrowse => new BrowseDescription
                 {
                     NodeId = nodeToBrowse,
                     BrowseDirection = browseDirection,
@@ -568,10 +561,7 @@ namespace Technosoftware.UaClient
                     IncludeSubtypes = includeSubtypes,
                     NodeClassMask = nodeClassMask,
                     ResultMask = (uint)BrowseResultMask.All
-                };
-
-                browseDescriptions.Add(description);
-            }
+                });
 
             BrowseResponse browseResponse = await session.BrowseAsync(
                 requestHeader,
@@ -580,16 +570,16 @@ namespace Technosoftware.UaClient
                 browseDescriptions,
                 ct).ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
-            DiagnosticInfoCollection diagnosticInfos = browseResponse.DiagnosticInfos;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = browseResponse.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, browseDescriptions);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, browseDescriptions);
 
             int ii = 0;
             var errors = new List<ServiceResult>();
-            var continuationPoints = new ByteStringCollection();
-            var referencesList = new List<ReferenceDescriptionCollection>();
+            var continuationPoints = new List<ByteString>();
+            var referencesList = new List<ArrayOf<ReferenceDescription>>();
             foreach (BrowseResult result in results)
             {
                 if (StatusCode.IsBad(result.StatusCode))
@@ -624,13 +614,13 @@ namespace Technosoftware.UaClient
         /// <returns></returns>
         public static async Task<(
             ResponseHeader responseHeader,
-            ByteStringCollection revisedContinuationPoints,
-            IList<ReferenceDescriptionCollection> referencesList,
+            List<ByteString> revisedContinuationPoints,
+            IList<ArrayOf<ReferenceDescription>> referencesList,
             IList<ServiceResult> errors
         )> BrowseNextAsync(
             this ISessionClient session,
             RequestHeader? requestHeader,
-            ByteStringCollection continuationPoints,
+            ArrayOf<ByteString> continuationPoints,
             bool releaseContinuationPoint,
             CancellationToken ct = default)
         {
@@ -640,16 +630,16 @@ namespace Technosoftware.UaClient
                 continuationPoints,
                 ct).ConfigureAwait(false);
 
-            BrowseResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<BrowseResult> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, continuationPoints);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
 
             int ii = 0;
             var errors = new List<ServiceResult>();
-            var revisedContinuationPoints = new ByteStringCollection();
-            var referencesList = new List<ReferenceDescriptionCollection>();
+            var revisedContinuationPoints = new List<ByteString>();
+            var referencesList = new List<ArrayOf<ReferenceDescription>>();
             foreach (BrowseResult result in results)
             {
                 if (StatusCode.IsBad(result.StatusCode))
@@ -720,7 +710,7 @@ namespace Technosoftware.UaClient
                             offset + maxByteStringLength - 1).ToString(),
                         DataEncoding = QualifiedName.Null
                     };
-                    var readValueIds = new ReadValueIdCollection { valueToRead };
+                    ArrayOf<ReadValueId> readValueIds = ArrayOf.Wrapped(valueToRead);
 
                     ReadResponse result = await session.ReadAsync(
                         null,
@@ -731,8 +721,8 @@ namespace Technosoftware.UaClient
                         .ConfigureAwait(false);
 
                     ResponseHeader responseHeader = result.ResponseHeader;
-                    DataValueCollection results = result.Results;
-                    DiagnosticInfoCollection diagnosticInfos = result.DiagnosticInfos;
+                    ArrayOf<DataValue> results = result.Results;
+                    ArrayOf<DiagnosticInfo> diagnosticInfos = result.DiagnosticInfos;
                     ClientBase.ValidateResponse(results, readValueIds);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, readValueIds);
 
@@ -764,7 +754,13 @@ namespace Technosoftware.UaClient
                         throw new ServiceResultException(serviceResult);
                     }
 
-                    if (results[0].Value is not byte[] chunk || chunk.Length == 0)
+                    // A scalar ByteString does not box as a byte[] - it boxes
+                    // as a ByteString - so the chunk has to be read through the
+                    // typed accessor. Testing the boxed value for byte[] never
+                    // matched, and every read ended after the first chunk with
+                    // an empty result.
+                    if (!wrappedValue.TryGetValue(out ByteString chunk) ||
+                        chunk.Length == 0)
                     {
                         // End of stream - fast path (no stream allocated yet)
                         // will return empty array constant.
@@ -773,10 +769,10 @@ namespace Technosoftware.UaClient
                     if (chunk.Length < maxByteStringLength && offset == 0)
                     {
                         // Fast path for small values, just return the chunk
-                        return chunk;
+                        return chunk.ToArray();
                     }
                     stream ??= new MemoryStream();
-                    await stream.WriteAsync(chunk, ct).ConfigureAwait(false);
+                    await stream.WriteAsync(chunk.Memory, ct).ConfigureAwait(false);
                     if (chunk.Length < maxByteStringLength)
                     {
                         break;
@@ -804,20 +800,20 @@ namespace Technosoftware.UaClient
         /// <param name="args">The input arguments.</param>
         /// <returns>The list of output argument values.</returns>
         /// <exception cref="ServiceResultException"></exception>
-        public static async Task<IList<object>> CallAsync(
+        public static async Task<IList<object?>> CallAsync(
             this ISessionClient session,
             NodeId objectId,
             NodeId methodId,
             CancellationToken ct = default,
             params object[] args)
         {
-            var inputArguments = new VariantCollection();
+            var inputArguments = new List<Variant>();
 
             if (args != null)
             {
                 for (int ii = 0; ii < args.Length; ii++)
                 {
-                    inputArguments.Add(new Variant(args[ii]));
+                    inputArguments.Add(VariantHelper.CastFromWithReflectionFallback(args[ii]));
                 }
             }
 
@@ -828,15 +824,12 @@ namespace Technosoftware.UaClient
                 InputArguments = inputArguments
             };
 
-            var requests = new CallMethodRequestCollection { request };
-
-            CallMethodResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
+            ArrayOf<CallMethodRequest> requests = ArrayOf.Wrapped(request);
 
             CallResponse response = await session.CallAsync(null, requests, ct).ConfigureAwait(false);
 
-            results = response.Results;
-            diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<CallMethodResult> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, requests);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, requests);
@@ -850,11 +843,11 @@ namespace Technosoftware.UaClient
                     response.ResponseHeader.StringTable);
             }
 
-            var outputArguments = new List<object>();
+            var outputArguments = new List<object?>();
 
             foreach (Variant arg in results[0].OutputArguments)
             {
-                outputArguments.Add(arg.Value);
+                outputArguments.Add(arg.AsBoxedObject(Variant.BoxingBehavior.Legacy));
             }
 
             return outputArguments;
@@ -868,12 +861,12 @@ namespace Technosoftware.UaClient
             IEnumerable<uint> subscriptionIds,
             CancellationToken ct = default)
         {
-            CallMethodRequestCollection requests = CreateCallRequestsForResendData(subscriptionIds);
+            ArrayOf<CallMethodRequest> requests = CreateCallRequestsForResendData(subscriptionIds);
 
             var errors = new List<ServiceResult>(requests.Count);
             CallResponse response = await session.CallAsync(null, requests, ct).ConfigureAwait(false);
-            CallMethodResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<CallMethodResult> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
             ResponseHeader responseHeader = response.ResponseHeader;
             ClientBase.ValidateResponse(results, requests);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, requests);
@@ -897,25 +890,17 @@ namespace Technosoftware.UaClient
         /// Creates resend data call requests for the subscriptions.
         /// </summary>
         /// <param name="subscriptionIds">The subscriptions to call resend data.</param>
-        private static CallMethodRequestCollection CreateCallRequestsForResendData(
+        private static ArrayOf<CallMethodRequest> CreateCallRequestsForResendData(
             IEnumerable<uint> subscriptionIds)
         {
-            var requests = new CallMethodRequestCollection();
-
-            foreach (uint subscriptionId in subscriptionIds)
-            {
-                var inputArguments = new VariantCollection { new Variant(subscriptionId) };
-
-                var request = new CallMethodRequest
+            return subscriptionIds
+                .Select(subscriptionId => new CallMethodRequest
                 {
                     ObjectId = ObjectIds.Server,
                     MethodId = MethodIds.Server_ResendData,
-                    InputArguments = inputArguments
-                };
-
-                requests.Add(request);
-            }
-            return requests;
+                    InputArguments = ArrayOf.Wrapped(new Variant(subscriptionId))
+                })
+                .ToArrayOf();
         }
     }
 }

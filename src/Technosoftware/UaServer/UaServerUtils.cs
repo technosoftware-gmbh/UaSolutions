@@ -89,7 +89,7 @@ namespace Technosoftware.UaServer
                     EventType = EventType.WriteValue,
                     NodeId = nodeId,
                     ServerHandle = 0,
-                    Timestamp = HiResClock.UtcNow,
+                    Timestamp = DateTime.UtcNow,
                     Value = value,
                     Parameters = null,
                     MonitoringMode = MonitoringMode.Disabled
@@ -97,7 +97,7 @@ namespace Technosoftware.UaServer
 
                 if (StatusCode.IsBad(error))
                 {
-                    e.Value = new DataValue(error) { WrappedValue = value.WrappedValue };
+                    e.Value = DataValue.FromStatusCode(error);
                 }
 
                 s_events.Enqueue(e);
@@ -121,7 +121,7 @@ namespace Technosoftware.UaServer
                     EventType = EventType.QueueValue,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
-                    Timestamp = HiResClock.UtcNow,
+                    Timestamp = DateTime.UtcNow,
                     Value = value,
                     Parameters = null,
                     MonitoringMode = MonitoringMode.Disabled
@@ -147,7 +147,7 @@ namespace Technosoftware.UaServer
                     EventType = EventType.FilterValue,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
-                    Timestamp = HiResClock.UtcNow,
+                    Timestamp = DateTime.UtcNow,
                     Value = value,
                     Parameters = null,
                     MonitoringMode = MonitoringMode.Disabled
@@ -173,7 +173,7 @@ namespace Technosoftware.UaServer
                     EventType = EventType.DiscardValue,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
-                    Timestamp = HiResClock.UtcNow,
+                    Timestamp = DateTime.UtcNow,
                     Value = value,
                     Parameters = null,
                     MonitoringMode = MonitoringMode.Disabled
@@ -199,7 +199,7 @@ namespace Technosoftware.UaServer
                     EventType = EventType.PublishValue,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
-                    Timestamp = HiResClock.UtcNow,
+                    Timestamp = DateTime.UtcNow,
                     Value = value,
                     Parameters = null,
                     MonitoringMode = MonitoringMode.Disabled
@@ -232,8 +232,8 @@ namespace Technosoftware.UaServer
                     EventType = EventType.CreateItem,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
-                    Timestamp = HiResClock.UtcNow,
-                    Value = null,
+                    Timestamp = DateTime.UtcNow,
+                    Value = default,
                     Parameters = new MonitoringParameters
                     {
                         SamplingInterval = samplingInterval,
@@ -271,8 +271,8 @@ namespace Technosoftware.UaServer
                     EventType = EventType.ModifyItem,
                     NodeId = nodeId,
                     ServerHandle = serverHandle,
-                    Timestamp = HiResClock.UtcNow,
-                    Value = null,
+                    Timestamp = DateTime.UtcNow,
+                    Value = default,
                     Parameters = new MonitoringParameters
                     {
                         SamplingInterval = samplingInterval,
@@ -292,7 +292,7 @@ namespace Technosoftware.UaServer
         public static uint CreateError(
             uint code,
             UaServerOperationContext context,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<DiagnosticInfo> diagnosticInfos,
             int index,
             ILogger logger)
         {
@@ -316,8 +316,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         public static bool CreateError(
             uint code,
-            StatusCodeCollection results,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<StatusCode> results,
+            List<DiagnosticInfo> diagnosticInfos,
             UaServerOperationContext context,
             ILogger logger)
         {
@@ -339,8 +339,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         public static bool CreateError(
             uint code,
-            StatusCodeCollection results,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<StatusCode> results,
+            List<DiagnosticInfo> diagnosticInfos,
             int index,
             UaServerOperationContext context,
             ILogger logger)
@@ -366,8 +366,8 @@ namespace Technosoftware.UaServer
         /// Creates a place holder in the lists for the results.
         /// </summary>
         public static void CreateSuccess(
-            StatusCodeCollection results,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<StatusCode> results,
+            List<DiagnosticInfo> diagnosticInfos,
             UaServerOperationContext context)
         {
             results.Add(StatusCodes.Good);
@@ -381,7 +381,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Creates a collection of diagnostics from a set of errors.
         /// </summary>
-        public static DiagnosticInfoCollection CreateDiagnosticInfoCollection(
+        public static List<DiagnosticInfo> CreateDiagnosticInfoCollection(
             UaServerOperationContext context,
             IList<ServiceResult> errors,
             ILogger logger)
@@ -393,7 +393,7 @@ namespace Technosoftware.UaServer
             }
 
             // create diagnostics.
-            var results = new DiagnosticInfoCollection(errors.Count);
+            var results = new List<DiagnosticInfo>(errors.Count);
 
             foreach (ServiceResult error in errors)
             {
@@ -418,16 +418,16 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Creates a collection of status codes and diagnostics from a set of errors.
         /// </summary>
-        public static StatusCodeCollection CreateStatusCodeCollection(
+        public static List<StatusCode> CreateStatusCodeCollection(
             UaServerOperationContext context,
             IList<ServiceResult> errors,
-            out DiagnosticInfoCollection diagnosticInfos,
+            out List<DiagnosticInfo> diagnosticInfos,
             ILogger logger)
         {
             diagnosticInfos = null;
 
             bool noErrors = true;
-            var results = new StatusCodeCollection(errors.Count);
+            var results = new List<StatusCode>(errors.Count);
 
             foreach (ServiceResult error in errors)
             {

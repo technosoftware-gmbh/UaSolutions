@@ -46,7 +46,7 @@ namespace Technosoftware.UaClient.Tests
         [OneTimeTearDown]
         public override Task OneTimeTearDownAsync()
         {
-            Utils.SilentDispose(ClientFixture);
+            ClientFixture?.Dispose();
             return base.OneTimeTearDownAsync();
         }
 
@@ -103,9 +103,9 @@ namespace Technosoftware.UaClient.Tests
         public async Task ReadValuesWithTracingAsync()
         {
             NamespaceTable namespaceUris = Session.NamespaceUris;
-            var testSet = new NodeIdCollection(GetTestSetStatic(namespaceUris));
+            var testSet = new List<NodeId>(GetTestSetStatic(namespaceUris));
             testSet.AddRange(GetTestSetFullSimulation(namespaceUris));
-            DataValueCollection values;
+            ArrayOf<DataValue> values;
             IList<ServiceResult> errors;
             (values, errors) = await Session.ReadValuesAsync(testSet).ConfigureAwait(false);
             Assert.AreEqual(testSet.Count, values.Count);

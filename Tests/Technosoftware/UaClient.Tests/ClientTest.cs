@@ -135,7 +135,7 @@ namespace Technosoftware.UaClient.Tests
                 ServerUrl,
                 endpointConfiguration,
                 telemetry).ConfigureAwait(false);
-            Endpoints = await client.GetEndpointsAsync(null, CancellationToken.None)
+            Endpoints = await client.GetEndpointsAsync(default, CancellationToken.None)
                 .ConfigureAwait(false);
             StatusCode statusCode = await client.CloseAsync(CancellationToken.None)
                 .ConfigureAwait(false);
@@ -154,10 +154,10 @@ namespace Technosoftware.UaClient.Tests
                     endpoint.SecurityMode,
                     endpoint.SecurityPolicyUri);
 
-                if (endpoint.ServerCertificate != null)
+                if (!endpoint.ServerCertificate.IsEmpty)
                 {
-                    using X509Certificate2 cert = CertificateFactory.Create(
-                        endpoint.ServerCertificate);
+                    using Certificate cert = Certificate.FromRawData(
+                        endpoint.ServerCertificate.Memory);
                     TestContext.Out.WriteLine("  [{0}]", cert.Thumbprint);
                 }
                 else
@@ -187,7 +187,7 @@ namespace Technosoftware.UaClient.Tests
                 ServerUrl,
                 endpointConfiguration,
                 telemetry).ConfigureAwait(false);
-            ApplicationDescriptionCollection servers = await client.FindServersAsync(null)
+            ArrayOf<ApplicationDescription> servers = await client.FindServersAsync(default)
                 .ConfigureAwait(false);
             StatusCode statusCode = await client.CloseAsync(CancellationToken.None)
                 .ConfigureAwait(false);
@@ -222,7 +222,7 @@ namespace Technosoftware.UaClient.Tests
             try
             {
                 FindServersOnNetworkResponse response = await client
-                    .FindServersOnNetworkAsync(null, 0, 100, null, CancellationToken.None)
+                    .FindServersOnNetworkAsync(null, 0, 100, default, CancellationToken.None)
                     .ConfigureAwait(false);
                 StatusCode statusCode = await client.CloseAsync(CancellationToken.None)
                     .ConfigureAwait(false);
@@ -261,8 +261,8 @@ namespace Technosoftware.UaClient.Tests
                 ServerUrl,
                 endpointConfiguration,
                 telemetry).ConfigureAwait(false);
-            EndpointDescriptionCollection endpoints =
-                await client.GetEndpointsAsync(null).ConfigureAwait(false);
+            ArrayOf<EndpointDescription> endpoints =
+                await client.GetEndpointsAsync(default).ConfigureAwait(false);
             Assert.NotNull(endpoints);
 
             ITransportChannel channel = client.TransportChannel;
@@ -279,7 +279,7 @@ namespace Technosoftware.UaClient.Tests
                 AttributeId = Attributes.Value
             };
 
-            var readValues = new ReadValueIdCollection();
+            var readValues = new List<ReadValueId>();
             for (int i = 0; i < readCount; i++)
             {
                 readValues.Add(readValueId);
@@ -325,7 +325,7 @@ namespace Technosoftware.UaClient.Tests
                 ServerUrl,
                 endpointConfiguration,
                 telemetry).ConfigureAwait(false);
-            var profileUris = new StringCollection();
+            var profileUris = new List<string>();
             for (int i = 0; i < 10000; i++)
             {
                 // dummy uri to create a bigger message
@@ -369,7 +369,7 @@ namespace Technosoftware.UaClient.Tests
             };
             Assert.NotNull(applicationInstance);
 
-            CertificateIdentifierCollection applicationCerts =
+            List<CertificateIdentifier> applicationCerts =
                 ApplicationConfigurationManager.CreateDefaultApplicationCertificates(
                     ClientFixture.Config.SecurityConfiguration.ApplicationCertificate.SubjectName);
 
@@ -512,7 +512,9 @@ namespace Technosoftware.UaClient.Tests
 
             // keep channel opened but detach so no comm goes through
             ITransportChannel channel = session.TransportChannel;
+#pragma warning disable CS0618 // the test detaches the channel on purpose; there is no non-obsolete equivalent
             session.DetachChannel();
+#pragma warning restore CS0618
 
             int waitTime =
                 ServerFixture.Application.ApplicationConfiguration.TransportQuotas.ChannelLifetime +
@@ -525,7 +527,7 @@ namespace Technosoftware.UaClient.Tests
             // Channel handling checked for TcpTransportChannel only
             if (channel is TcpTransportChannel tcp)
             {
-                Assert.IsNull(tcp.Socket);
+                Assert.IsNull(tcp.Transport);
             }
         }
 
@@ -613,13 +615,11 @@ namespace Technosoftware.UaClient.Tests
         {
             byte[] identityToken = "fakeTokenString"u8.ToArray();
 
-            var issuedToken = new IssuedIdentityToken
-            {
-                IssuedTokenType = IssuedTokenType.JWT,
-                PolicyId = Profiles.JwtUserToken,
-                DecryptedTokenData = identityToken
-            };
-
+            // 2.0 keeps the issued token's data on the handler rather than on
+            // the token itself.
+            var issuedToken = new IssuedIdentityTokenHandler(
+                Profiles.JwtUserToken,
+                identityToken);
             var userIdentity = new UserIdentity(issuedToken);
 
             IUaSession session = await ClientFixture
@@ -643,13 +643,9 @@ namespace Technosoftware.UaClient.Tests
         {
             static UserIdentity CreateUserIdentity(byte[] tokenData)
             {
-                var issuedToken = new IssuedIdentityToken
-                {
-                    IssuedTokenType = IssuedTokenType.JWT,
-                    PolicyId = Profiles.JwtUserToken,
-                    DecryptedTokenData = tokenData
-                };
-
+                var issuedToken = new IssuedIdentityTokenHandler(
+                    Profiles.JwtUserToken,
+                    tokenData);
                 return new UserIdentity(issuedToken);
             }
 
@@ -703,14 +699,18 @@ namespace Technosoftware.UaClient.Tests
                 VariableIds.Server_ServerStatus).ConfigureAwait(false);
 
             await session1.CloseAsync(closeChannel: false).ConfigureAwait(false);
+#pragma warning disable CS0618 // the test detaches the channel on purpose; there is no non-obsolete equivalent
             session1.DetachChannel();
+#pragma warning restore CS0618
             session1.Dispose();
 
             await session2.ReadValueAsync<ServerStatusDataType>(
                 VariableIds.Server_ServerStatus).ConfigureAwait(false);
 
             await session2.CloseAsync(closeChannel: false).ConfigureAwait(false);
+#pragma warning disable CS0618 // the test detaches the channel on purpose; there is no non-obsolete equivalent
             session2.DetachChannel();
+#pragma warning restore CS0618
             session2.Dispose();
 
             //Recreate session using same channel
@@ -758,7 +758,9 @@ namespace Technosoftware.UaClient.Tests
             // test case: close the channel before reconnecting
             if (closeChannel)
             {
+#pragma warning disable CS0618 // the test detaches the channel on purpose; there is no non-obsolete equivalent
                 session1.DetachChannel();
+#pragma warning restore CS0618
                 channel1.Dispose();
 
                 // cannot read using a detached channel
@@ -950,11 +952,11 @@ namespace Technosoftware.UaClient.Tests
 
             session1.DeleteSubscriptionsOnClose = true;
             await session1.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session1);
+            session1?.Dispose();
 
             session2.DeleteSubscriptionsOnClose = true;
             await session2.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session2);
+            session2?.Dispose();
         }
 
         /// <summary>
@@ -1021,7 +1023,7 @@ namespace Technosoftware.UaClient.Tests
             {
                 session1.DeleteSubscriptionsOnClose = true;
                 await session1.CloseAsync(1000).ConfigureAwait(false);
-                Utils.SilentDispose(session1);
+                session1?.Dispose();
             }
         }
 
@@ -1093,15 +1095,15 @@ namespace Technosoftware.UaClient.Tests
 
             session1.DeleteSubscriptionsOnClose = true;
             await session1.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session1);
+            session1?.Dispose();
 
             session2.DeleteSubscriptionsOnClose = true;
             await session2.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session2);
+            session2?.Dispose();
 
             session3.DeleteSubscriptionsOnClose = true;
             await session3.CloseAsync(1000).ConfigureAwait(false);
-            Utils.SilentDispose(session3);
+            session3?.Dispose();
         }
 
         [Test]
@@ -1182,7 +1184,7 @@ namespace Technosoftware.UaClient.Tests
         public async Task ChangePreferredLocalesAsync()
         {
             // change locale
-            var localeCollection = new StringCollection { "de-de", "en-us" };
+            var localeCollection = new List<string> { "de-de", "en-us" };
             await Session.ChangePreferredLocalesAsync(localeCollection).ConfigureAwait(false);
         }
 
@@ -1222,7 +1224,7 @@ namespace Technosoftware.UaClient.Tests
             {
                 DataValue dataValue = await Session.ReadValueAsync(nodeId).ConfigureAwait(false);
                 Assert.NotNull(dataValue);
-                Assert.NotNull(dataValue.Value);
+                Assert.NotNull(dataValue.BoxedValue());
                 Assert.AreNotEqual(DateTime.MinValue, dataValue.SourceTimestamp);
                 Assert.AreNotEqual(DateTime.MinValue, dataValue.ServerTimestamp);
             }
@@ -1234,7 +1236,7 @@ namespace Technosoftware.UaClient.Tests
             NamespaceTable namespaceUris = Session.NamespaceUris;
             var testSet = GetTestSetStatic(namespaceUris).ToList();
             testSet.AddRange(GetTestSetFullSimulation(namespaceUris));
-            DataValueCollection values;
+            ArrayOf<DataValue> values;
             IList<ServiceResult> errors;
             (values, errors) = await Session.ReadValuesAsync([.. testSet]).ConfigureAwait(false);
             Assert.AreEqual(testSet.Count, values.Count);
@@ -1278,9 +1280,8 @@ namespace Technosoftware.UaClient.Tests
             Assert.NotNull(dataTypeNode);
             ExtensionObject dataTypeDefinition = dataTypeNode.DataTypeDefinition;
             Assert.NotNull(dataTypeDefinition);
-            Assert.NotNull(dataTypeDefinition.Body);
-            Assert.True(dataTypeDefinition.Body is StructureDefinition);
-            var structureDefinition = dataTypeDefinition.Body as StructureDefinition;
+            Assert.True(
+                dataTypeDefinition.TryGetValue(out StructureDefinition structureDefinition));
             Assert.AreEqual(
                 ObjectIds.ProgramDiagnosticDataType_Encoding_DefaultBinary,
                 structureDefinition.DefaultEncodingId);
@@ -1341,12 +1342,12 @@ namespace Technosoftware.UaClient.Tests
         [NonParallelizable]
         public async Task ReadDisplayNamesAsync()
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
             var nodeIds = ReferenceDescriptions
-                .Select(n => ExpandedNodeId.ToNodeId(n.NodeId, Session.NamespaceUris))
+                .ToArray().Select(n => ExpandedNodeId.ToNodeId(n.NodeId, Session.NamespaceUris))
                 .ToList();
             if (OperationLimits.MaxNodesPerRead > 0 &&
                 nodeIds.Count > OperationLimits.MaxNodesPerRead)
@@ -1413,12 +1414,12 @@ namespace Technosoftware.UaClient.Tests
         [Order(550)]
         public async Task ReadNodeSyncAsync()
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
 
-            foreach (ReferenceDescription reference in ReferenceDescriptions.Take(MaxReferences))
+            foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
                 var nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, Session.NamespaceUris);
                 Node node = await Session.ReadNodeAsync(nodeId).ConfigureAwait(false);
@@ -1444,12 +1445,12 @@ namespace Technosoftware.UaClient.Tests
         [Order(550)]
         public async Task ReadNodeAsync()
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
 
-            foreach (ReferenceDescription reference in ReferenceDescriptions.Take(MaxReferences))
+            foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
                 var nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, Session.NamespaceUris);
                 INode node = await Session.ReadNodeAsync(nodeId).ConfigureAwait(false);
@@ -1478,14 +1479,14 @@ namespace Technosoftware.UaClient.Tests
         [TestCase(MaxReferences)]
         public async Task ReadNodesSyncAsync(int nodeCount)
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
 
-            var nodes = new NodeIdCollection(
+            var nodes = new List<NodeId>(
                 ReferenceDescriptions
-                    .Take(nodeCount)
+                    .ToArray().Take(nodeCount)
                     .Select(reference => ExpandedNodeId.ToNodeId(
                         reference.NodeId,
                         Session.NamespaceUris)));
@@ -1507,7 +1508,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.AreEqual(nodes.Count, errors.Count);
 
             int ii = 0;
-            var variableNodes = new NodeIdCollection();
+            var variableNodes = new List<NodeId>();
             foreach (Node node in nodeCollection)
             {
                 Assert.NotNull(node);
@@ -1531,7 +1532,7 @@ namespace Technosoftware.UaClient.Tests
                 ii++;
             }
 
-            (DataValueCollection values, errors) = await Session.ReadValuesAsync(nodes)
+            (ArrayOf<DataValue> values, errors) = await Session.ReadValuesAsync(nodes)
                 .ConfigureAwait(false);
 
             Assert.NotNull(values);
@@ -1552,14 +1553,14 @@ namespace Technosoftware.UaClient.Tests
         [TestCase(MaxReferences)]
         public async Task ReadNodesAsync(int nodeCount)
         {
-            if (ReferenceDescriptions == null)
+            if (ReferenceDescriptions.IsEmpty)
             {
                 await BrowseFullAddressSpaceAsync(null).ConfigureAwait(false);
             }
 
-            var nodes = new NodeIdCollection(
+            var nodes = new List<NodeId>(
                 ReferenceDescriptions
-                    .Where(reference => reference.NodeClass == NodeClass.Variable)
+                    .ToArray().Where(reference => reference.NodeClass == NodeClass.Variable)
                     .Take(nodeCount)
                     .Select(reference => ExpandedNodeId.ToNodeId(
                         reference.NodeId,
@@ -1582,7 +1583,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.AreEqual(nodes.Count, errors.Count);
 
             int ii = 0;
-            var variableNodes = new NodeIdCollection();
+            var variableNodes = new List<NodeId>();
             foreach (Node node in nodeCollection)
             {
                 Assert.NotNull(node);
@@ -1606,7 +1607,7 @@ namespace Technosoftware.UaClient.Tests
                 ii++;
             }
 
-            DataValueCollection values;
+            ArrayOf<DataValue> values;
             (values, errors) = await Session.ReadValuesAsync(nodes).ConfigureAwait(false);
 
             Assert.NotNull(values);
@@ -1630,7 +1631,7 @@ namespace Technosoftware.UaClient.Tests
                 async () => await Session.ReadAvailableEncodingsAsync(DataTypeIds.BaseDataType)
                     .ConfigureAwait(false));
             Assert.AreEqual((StatusCode)StatusCodes.BadNodeIdInvalid, (StatusCode)sre.StatusCode);
-            ReferenceDescriptionCollection encoding = await Session.ReadAvailableEncodingsAsync(
+            ArrayOf<ReferenceDescription> encoding = await Session.ReadAvailableEncodingsAsync(
                 VariableIds.Server_ServerStatus_CurrentTime).ConfigureAwait(false);
             Assert.NotNull(encoding);
             Assert.AreEqual(0, encoding.Count);
@@ -1667,7 +1668,7 @@ namespace Technosoftware.UaClient.Tests
                         .Select(n => ExpandedNodeId.ToNodeId(n, namespaceUris))
                 ];
                 var clientTestServices = new ClientTestServices(Session, telemetry);
-                UInt32Collection subscriptionIds = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
+                ArrayOf<uint> subscriptionIds = await CommonTestWorkers.CreateSubscriptionForTransferAsync(
                     clientTestServices,
                     requestHeader,
                     testSet,
@@ -1751,8 +1752,8 @@ namespace Technosoftware.UaClient.Tests
                 {
                     continue;
                 }
-                if (item.Value.Value is ExtensionObject eo &&
-                    eo.Body is SpanContextDataType spanContext)
+                if (item.Value.AsBoxedObject(Variant.BoxingBehavior.Legacy) is ExtensionObject eo &&
+                    eo.TryGetValue(out SpanContextDataType spanContext))
                 {
                     Span<byte> spanIdBytes = stackalloc byte[8];
                     Span<byte> traceIdBytes = stackalloc byte[16];
@@ -1800,7 +1801,7 @@ namespace Technosoftware.UaClient.Tests
 
                     // Mock the channel and session
                     var channelMock = new Mock<ITransportChannel>();
-                    var messageContext = new ServiceMessageContext(telemetry);
+                    var messageContext = ServiceMessageContext.Create(telemetry);
                     channelMock.Setup(mock => mock.MessageContext).Returns(messageContext);
 
                     var testableTraceableRequestHeaderClientSession
@@ -1820,8 +1821,9 @@ namespace Technosoftware.UaClient.Tests
                     Assert.NotNull(additionalHeader);
 
                     // Simulate extraction
+                    additionalHeader.TryGetValue(out AdditionalParametersType headerParameters);
                     ActivityContext extractedContext = TestExtractActivityContextFromParameters(
-                        additionalHeader.Body as AdditionalParametersType);
+                        headerParameters);
 
                     // Verify that the trace context is propagated.
                     Assert.AreEqual(activity.TraceId, extractedContext.TraceId);
@@ -1844,7 +1846,7 @@ namespace Technosoftware.UaClient.Tests
         [Order(10000)]
         public async Task ReadBuildInfoAsync()
         {
-            var nodes = new NodeIdCollection
+            var nodes = new List<NodeId>
             {
                 VariableIds.Server_ServerStatus_BuildInfo,
                 VariableIds.Server_ServerStatus_BuildInfo_ProductName,
@@ -1864,7 +1866,7 @@ namespace Technosoftware.UaClient.Tests
             Assert.AreEqual(nodes.Count, nodeCollection.Count);
             Assert.AreEqual(nodes.Count, errors.Count);
 
-            DataValueCollection values;
+            ArrayOf<DataValue> values;
             IList<ServiceResult> errors2;
             (values, errors2) =
                 await Session.ReadValuesAsync(nodes).ConfigureAwait(false);
@@ -1877,14 +1879,15 @@ namespace Technosoftware.UaClient.Tests
             Assert.NotNull(variableNodes);
 
             // test build info contains the equal values as the properties
-            var buildInfo = (values[0].Value as ExtensionObject)?.Body as BuildInfo;
+            // Variant carries the extension object's body itself in 2.0.
+            Assert.IsTrue(values[0].WrappedValue.TryGetStructure(out BuildInfo buildInfo));
             Assert.NotNull(buildInfo);
-            Assert.AreEqual(buildInfo.ProductName, values[1].Value);
-            Assert.AreEqual(buildInfo.ProductUri, values[2].Value);
-            Assert.AreEqual(buildInfo.ManufacturerName, values[3].Value);
-            Assert.AreEqual(buildInfo.SoftwareVersion, values[4].Value);
-            Assert.AreEqual(buildInfo.BuildNumber, values[5].Value);
-            Assert.AreEqual(buildInfo.BuildDate, values[6].Value);
+            Assert.AreEqual(buildInfo.ProductName, values[1].BoxedValue());
+            Assert.AreEqual(buildInfo.ProductUri, values[2].BoxedValue());
+            Assert.AreEqual(buildInfo.ManufacturerName, values[3].BoxedValue());
+            Assert.AreEqual(buildInfo.SoftwareVersion, values[4].BoxedValue());
+            Assert.AreEqual(buildInfo.BuildNumber, values[5].BoxedValue());
+            Assert.AreEqual(buildInfo.BuildDate, values[6].BoxedValue());
         }
 
         /// <summary>
@@ -1956,13 +1959,9 @@ namespace Technosoftware.UaClient.Tests
             {
                 const string identityToken = "fakeTokenString";
 
-                var issuedToken = new IssuedIdentityToken
-                {
-                    IssuedTokenType = IssuedTokenType.JWT,
-                    PolicyId = Profiles.JwtUserToken,
-                    DecryptedTokenData = Encoding.UTF8.GetBytes(identityToken)
-                };
-
+                var issuedToken = new IssuedIdentityTokenHandler(
+                    Profiles.JwtUserToken,
+                    Encoding.UTF8.GetBytes(identityToken));
                 var userIdentity = new UserIdentity(issuedToken);
 
                 // the first channel determines the endpoint
@@ -2035,12 +2034,24 @@ namespace Technosoftware.UaClient.Tests
                 if (eccurveHashPair.Curve.Oid.FriendlyName
                     .Contains(extractedFriendlyNamae, StringComparison.Ordinal))
                 {
-                    X509Certificate2 cert = CertificateBuilder
+                    Certificate cert = CertificateBuilder
                         .Create("CN=Client Test ECC Subject, O=OPC Foundation")
                         .SetECCurve(eccurveHashPair.Curve)
                         .CreateForECDsa();
 
-                    var userIdentity = new UserIdentity(cert);
+                    // 2.0 does the token's crypto through a handler, which
+                    // reaches the private key through a certificate provider.
+                    using var inProcProvider = new InProcessCertificateProvider(cert);
+                    var certIdentifier = new CertificateIdentifier
+                    {
+                        Thumbprint = cert.Thumbprint,
+                        SubjectName = cert.Subject
+                    };
+                    var userIdentity = new UserIdentity(
+                        new X509IdentityTokenHandler(
+                            certIdentifier,
+                            new CertificatePasswordProvider(),
+                            inProcProvider));
 
                     // the first channel determines the endpoint
                     ConfiguredEndpoint endpoint = await ClientFixture
@@ -2090,7 +2101,7 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                 .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(outputParameters.ToResponse());
 
@@ -2122,7 +2133,7 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                  .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceResultException(StatusCodes.BadSubscriptionIdInvalid));
 
@@ -2150,7 +2161,7 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                  .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(outputParameters.ToResponse());
 
@@ -2178,7 +2189,7 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                 .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(outputParameters.ToResponse());
 
@@ -2208,7 +2219,7 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                 .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint), typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(outputParameters.ToResponse());
 
@@ -2239,14 +2250,14 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                 .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(outputParameters.ToResponse());
 
             var subscription = new Subscription(telemetry) { Session = sessionMock.Object };
 
-            UInt32Collection serverHandles;
-            UInt32Collection clientHandles;
+            ArrayOf<uint> serverHandles;
+            ArrayOf<uint> clientHandles;
             (bool success, serverHandles, clientHandles) =
                 await subscription.GetMonitoredItemsAsync().ConfigureAwait(false);
             Assert.IsTrue(success);
@@ -2268,14 +2279,14 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                 .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceResultException(StatusCodes.BadSubscriptionIdInvalid));
 
             var subscription = new Subscription(telemetry) { Session = sessionMock.Object };
 
-            UInt32Collection serverHandles;
-            UInt32Collection clientHandles;
+            ArrayOf<uint> serverHandles;
+            ArrayOf<uint> clientHandles;
             (bool success, serverHandles, clientHandles) =
                 await subscription.GetMonitoredItemsAsync().ConfigureAwait(false);
             Assert.IsFalse(success);
@@ -2298,14 +2309,14 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                 .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(outputParameters.ToResponse());
 
             var subscription = new Subscription(telemetry) { Session = sessionMock.Object };
 
-            UInt32Collection serverHandles;
-            UInt32Collection clientHandles;
+            ArrayOf<uint> serverHandles;
+            ArrayOf<uint> clientHandles;
             (bool success, serverHandles, clientHandles) =
                 await subscription.GetMonitoredItemsAsync().ConfigureAwait(false);
             Assert.IsFalse(success);
@@ -2328,14 +2339,14 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                 .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(outputParameters.ToResponse());
 
             var subscription = new Subscription(telemetry) { Session = sessionMock.Object };
 
-            UInt32Collection serverHandles;
-            UInt32Collection clientHandles;
+            ArrayOf<uint> serverHandles;
+            ArrayOf<uint> clientHandles;
             (bool success, serverHandles, clientHandles) =
                 await subscription.GetMonitoredItemsAsync().ConfigureAwait(false);
             Assert.IsFalse(success);
@@ -2363,14 +2374,14 @@ namespace Technosoftware.UaClient.Tests
             sessionMock
                  .Setup(mock => mock.CallAsync(
                     It.IsAny<RequestHeader>(),
-                    It.Is<CallMethodRequestCollection>(c => c.HasArgsOfType(typeof(uint))),
+                    It.Is<ArrayOf<CallMethodRequest>>(c => c.HasArgsOfType(typeof(uint))),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(outputParameters.ToResponse());
 
             var subscription = new Subscription(telemetry) { Session = sessionMock.Object };
 
-            UInt32Collection serverHandles;
-            UInt32Collection clientHandles;
+            ArrayOf<uint> serverHandles;
+            ArrayOf<uint> clientHandles;
             (bool success, serverHandles, clientHandles) =
                 await subscription.GetMonitoredItemsAsync().ConfigureAwait(false);
 

@@ -142,13 +142,13 @@ namespace Technosoftware.UaClient.Tests
         public async Task NodeCacheBrowseAllVariablesAsync()
         {
             var result = new List<INode>();
-            var nodesToBrowse = new ExpandedNodeIdCollection { ObjectIds.ObjectsFolder };
+            var nodesToBrowse = new List<ExpandedNodeId> { ObjectIds.ObjectsFolder };
 
             await Session.FetchTypeTreeAsync(ReferenceTypeIds.References).ConfigureAwait(false);
 
             while (nodesToBrowse.Count > 0)
             {
-                var nextNodesToBrowse = new ExpandedNodeIdCollection();
+                var nextNodesToBrowse = new List<ExpandedNodeId>();
                 foreach (ExpandedNodeId node in nodesToBrowse)
                 {
                     try
@@ -190,14 +190,14 @@ namespace Technosoftware.UaClient.Tests
         public async Task NodeCacheBrowseAllVariablesMultipleNodesAsync()
         {
             var result = new List<INode>();
-            var nodesToBrowse = new ExpandedNodeIdCollection { ObjectIds.ObjectsFolder };
+            var nodesToBrowse = new List<ExpandedNodeId> { ObjectIds.ObjectsFolder };
 
             await Session.FetchTypeTreeAsync(ReferenceTypeIds.References).ConfigureAwait(false);
 
-            var referenceTypeIds = new NodeIdCollection { ReferenceTypeIds.HierarchicalReferences };
+            var referenceTypeIds = new List<NodeId> { ReferenceTypeIds.HierarchicalReferences };
             while (nodesToBrowse.Count > 0)
             {
-                var nextNodesToBrowse = new ExpandedNodeIdCollection();
+                var nextNodesToBrowse = new List<ExpandedNodeId>();
                 try
                 {
                     IList<INode> organizers = await Session
@@ -277,7 +277,7 @@ namespace Technosoftware.UaClient.Tests
                     NodeId.ToExpandedNodeId(DataTypeIds.Byte, Session.NamespaceUris))
                     .ConfigureAwait(false);
                 Assert.IsFalse(isTypeOf);
-                IList<NodeId> subTypes = await nodeCache.FindSubTypesAsync(
+                ArrayOf<NodeId> subTypes = await nodeCache.FindSubTypesAsync(
                     NodeId.ToExpandedNodeId(refId, Session.NamespaceUris))
                     .ConfigureAwait(false);
                 Assert.NotNull(subTypes);
@@ -288,12 +288,9 @@ namespace Technosoftware.UaClient.Tests
         [Order(720)]
         public async Task NodeCacheFindAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
-            foreach (ReferenceDescription reference in ReferenceDescriptions.Take(MaxReferences))
+            foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
                 var nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, Session.NamespaceUris);
                 INode node = await Session.NodeCache.FindAsync(reference.NodeId)
@@ -306,12 +303,9 @@ namespace Technosoftware.UaClient.Tests
         [Order(730)]
         public async Task NodeCacheFetchNodeAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
-            foreach (ReferenceDescription reference in ReferenceDescriptions.Take(MaxReferences))
+            foreach (ReferenceDescription reference in ReferenceDescriptions.ToArray().Take(MaxReferences))
             {
                 var nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, Session.NamespaceUris);
                 INode node = await Session.NodeCache.FetchNodeAsync(reference.NodeId)
@@ -324,12 +318,9 @@ namespace Technosoftware.UaClient.Tests
         [Order(740)]
         public async Task NodeCacheFetchNodesAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
-            var testSet = ReferenceDescriptions.Take(MaxReferences).Select(r => r.NodeId).ToList();
+            var testSet = ReferenceDescriptions.ToArray().Take(MaxReferences).Select(r => r.NodeId).ToList();
             IList<Node> nodeCollection = await Session.NodeCache.FetchNodesAsync(testSet)
                 .ConfigureAwait(false);
             foreach (Node node in nodeCollection)
@@ -343,12 +334,9 @@ namespace Technosoftware.UaClient.Tests
         [Order(750)]
         public async Task NodeCacheFindReferencesAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
-            var testSet = ReferenceDescriptions.Take(MaxReferences).Select(r => r.NodeId).ToList();
+            var testSet = ReferenceDescriptions.ToArray().Take(MaxReferences).Select(r => r.NodeId).ToList();
             IList<INode> nodes = await Session
                 .NodeCache.FindReferencesAsync(
                     testSet,
@@ -397,13 +385,10 @@ namespace Technosoftware.UaClient.Tests
         [Order(1000)]
         public async Task NodeCacheFetchNodesConcurrentAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSet = ReferenceDescriptions
-                .OrderBy(_ => UnsecureRandom.Shared.Next())
+                .ToArray().OrderBy(_ => UnsecureRandom.Shared.Next())
                 .Take(kTestSetSize)
                 .Select(r => r.NodeId)
                 .ToList();
@@ -427,13 +412,10 @@ namespace Technosoftware.UaClient.Tests
         [Order(1100)]
         public async Task NodeCacheFindNodesConcurrentAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSet = ReferenceDescriptions
-                .OrderBy(_ => UnsecureRandom.Shared.Next())
+                .ToArray().OrderBy(_ => UnsecureRandom.Shared.Next())
                 .Take(kTestSetSize)
                 .Select(r => r.NodeId)
                 .ToList();
@@ -456,13 +438,10 @@ namespace Technosoftware.UaClient.Tests
         [Order(1200)]
         public async Task NodeCacheFindReferencesConcurrentAsync()
         {
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSet = ReferenceDescriptions
-                .OrderBy(_ => UnsecureRandom.Shared.Next())
+                .ToArray().OrderBy(_ => UnsecureRandom.Shared.Next())
                 .Take(kTestSetSize)
                 .Select(r => r.NodeId)
                 .ToList();
@@ -491,13 +470,10 @@ namespace Technosoftware.UaClient.Tests
             const int testCases = 10;
             const int testCaseRunTime = 5_000;
 
-            if (ReferenceDescriptions == null)
-            {
-                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
-            }
+            await EnsureReferenceDescriptionsAsync().ConfigureAwait(false);
 
             var testSetAll = ReferenceDescriptions
-                .Where(r => r.NodeClass == NodeClass.Variable)
+                .ToArray().Where(r => r.NodeClass == NodeClass.Variable)
                 .OrderBy(_ => UnsecureRandom.Shared.Next())
                 .Select(r => r.NodeId)
                 .ToList();
@@ -596,7 +572,7 @@ namespace Technosoftware.UaClient.Tests
                                     .ConfigureAwait(false);
                                 Assert.AreEqual(DataTypeIds.Structure, nodeId);
                                 Assert.AreEqual(DataTypeIds.Structure, nodeId2);
-                                IList<NodeId> subTypes = await Session.NodeCache.FindSubTypesAsync(
+                                ArrayOf<NodeId> subTypes = await Session.NodeCache.FindSubTypesAsync(
                                     new ExpandedNodeId((int)BuiltInType.Number)).ConfigureAwait(false);
                                 bool isTypeOf = await Session.NodeCache.IsTypeOfAsync(
                                     new ExpandedNodeId((int)BuiltInType.Int32),
@@ -612,7 +588,8 @@ namespace Technosoftware.UaClient.Tests
                                 Assert.False(isEncodingOf);
                                 bool isEncodingFor = await Session.NodeCache.IsEncodingForAsync(
                                     DataTypeIds.Structure,
-                                    new SampleCompany.NodeManagers.TestData.ScalarStructureDataType()).ConfigureAwait(false);
+                                    Variant.FromStructure(
+                                        new SampleCompany.NodeManagers.TestData.ScalarStructureDataType())).ConfigureAwait(false);
                                 Assert.True(isEncodingFor);
                                 bool isEncodingFor2 = await Session.NodeCache.IsEncodingForAsync(
                                     new NodeId((int)BuiltInType.UInt32),
@@ -633,6 +610,18 @@ namespace Technosoftware.UaClient.Tests
                 taskList.Add(t);
             }
             await Task.WhenAll([.. taskList]).ConfigureAwait(false);
+        }
+
+        /// <remarks>
+        /// The guard this replaces compared an ArrayOf against null, which a
+        /// struct never is, so it never browsed at all.
+        /// </remarks>
+        private async Task EnsureReferenceDescriptionsAsync()
+        {
+            if (ReferenceDescriptions.IsEmpty)
+            {
+                await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
+            }
         }
 
         private async Task BrowseFullAddressSpaceAsync()

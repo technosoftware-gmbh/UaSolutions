@@ -29,8 +29,8 @@ namespace Technosoftware.UaServer.UserDatabase
     /// <summary>
     /// Implementation of a serializable user database using a concurrent dictionary for users.
     /// </summary>
-    [DataContract(Namespace = Namespaces.UserDatabase)]
-    public class LinqUserDatabase : IUaUserDatabase
+    [DataType]
+    public partial class LinqUserDatabase : IUaUserDatabase
     {
         /// <summary>
         /// 128 bit
@@ -50,31 +50,31 @@ namespace Technosoftware.UaServer.UserDatabase
         /// <summary>
         /// The representation of a user in the Linq database.
         /// </summary>
-        [DataContract(Namespace = Namespaces.UserDatabase)]
-        public class User
+        [DataType]
+        public partial class User
         {
             /// <summary>
             /// A guid to distinguish users.
             /// </summary>
-            [DataMember(Name = "Id", IsRequired = true, Order = 10)]
+            [DataTypeField(Order = 10)]
             public Guid ID { get; set; }
 
             /// <summary>
             /// The user name.
             /// </summary>
-            [DataMember(Name = "UserName", IsRequired = true, Order = 20)]
+            [DataTypeField(Order = 20)]
             public string UserName { get; set; }
 
             /// <summary>
             /// The hashed password.
             /// </summary>
-            [DataMember(Name = "Hash", IsRequired = true, Order = 30)]
+            [DataTypeField(Order = 30)]
             public string Hash { get; set; }
 
             /// <summary>
             /// The associated roles with the user.
             /// </summary>
-            [DataMember(Name = "Roles", IsRequired = false, Order = 40)]
+            [DataTypeField(Order = 40)]
             public ICollection<Role> Roles { get; set; }
         }
 
@@ -215,7 +215,7 @@ namespace Technosoftware.UaServer.UserDatabase
         /// <summary>
         /// Users in the database.
         /// </summary>
-        [DataMember(Name = "Users", IsRequired = true, Order = 10)]
+        [DataTypeField(Order = 10)]
         public User[] Users
         {
             get => [.. m_users.Values];

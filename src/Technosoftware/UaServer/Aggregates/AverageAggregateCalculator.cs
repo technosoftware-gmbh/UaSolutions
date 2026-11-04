@@ -58,13 +58,11 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected override DataValue ComputeValue(TimeSlice slice)
         {
-            uint? id = AggregateId.Identifier as uint?;
-
-            if (id == null)
+            if (!AggregateId.TryGetValue(out uint id))
             {
                 return base.ComputeValue(slice);
             }
-            switch (id.Value)
+            switch (id)
             {
                 case Objects.AggregateFunction_Average:
                     return ComputeAverage(slice);
@@ -128,14 +126,12 @@ namespace Technosoftware.UaServer
             double result = total / count;
 
             // set the timestamp and status.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(result, TypeInfo.Scalars.Double),
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
-            value.StatusCode = GetValueBasedStatusCode(slice, values, value.StatusCode);
+            var value = new DataValue()
+                .WithWrappedValue(Variant.From(result))
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
+            value = value.WithStatus(GetValueBasedStatusCode(slice, values, value.StatusCode));
 
             // return result.
             return value;
@@ -209,28 +205,26 @@ namespace Technosoftware.UaServer
             }
 
             // set the timestamp and status.
-            var value = new DataValue
-            {
-                WrappedValue = new Variant(result, TypeInfo.Scalars.Double),
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
+            var value = new DataValue()
+                .WithWrappedValue(Variant.From(result))
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
 
             if (useSimpleBounds)
             {
-                value.StatusCode = GetTimeBasedStatusCode(regions, value.StatusCode);
+                value = value.WithStatus(GetTimeBasedStatusCode(regions, value.StatusCode));
             }
             else
             {
-                value.StatusCode = StatusCodes.Good;
+                value = value.WithStatus(StatusCodes.Good);
 
                 if (nonGoodRegionsExists)
                 {
-                    value.StatusCode = StatusCodes.UncertainDataSubNormal;
+                    value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
                 }
             }
 
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // return result.
             return value;

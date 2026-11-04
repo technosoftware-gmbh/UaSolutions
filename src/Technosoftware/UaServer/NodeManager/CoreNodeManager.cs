@@ -94,10 +94,10 @@ namespace Technosoftware.UaServer
 
                 foreach (INode node in nodes)
                 {
-                    Utils.SilentDispose(node);
+                    (node as IDisposable)?.Dispose();
                 }
 
-                Utils.SilentDispose(m_samplingGroupManager);
+                m_samplingGroupManager?.Dispose();
             }
         }
 
@@ -190,7 +190,7 @@ namespace Technosoftware.UaServer
         {
             lock (DataLock)
             {
-                if (NodeId.IsNull(nodeId))
+                if (nodeId.IsNull)
                 {
                     return null;
                 }
@@ -335,8 +335,8 @@ namespace Technosoftware.UaServer
 
                     // silently ignore bad values.
                     if (reference == null ||
-                        NodeId.IsNull(reference.ReferenceTypeId) ||
-                        NodeId.IsNull(reference.TargetId))
+                        reference.ReferenceTypeId.IsNull ||
+                        reference.TargetId.IsNull)
                     {
                         continue;
                     }
@@ -433,7 +433,7 @@ namespace Technosoftware.UaServer
             }
 
             // check reference type filter.
-            if (!NodeId.IsNull(referenceTypeId) && reference.ReferenceTypeId != referenceTypeId)
+            if (!referenceTypeId.IsNull && reference.ReferenceTypeId != referenceTypeId)
             {
                 return includeSubtypes &&
                     Server.TypeTree.IsTypeOf(reference.ReferenceTypeId, referenceTypeId);
@@ -481,7 +481,7 @@ namespace Technosoftware.UaServer
                     metadata.DisplayName = target.DisplayName;
 
                     // check if the display name can be localized.
-                    if (!string.IsNullOrEmpty(metadata.DisplayName.Key))
+                    if (!string.IsNullOrEmpty(metadata.DisplayName.TranslationInfo.Key))
                     {
                         metadata.DisplayName = Server.ResourceManager.Translate(
                             context.PreferredLocales,
@@ -494,7 +494,7 @@ namespace Technosoftware.UaServer
                 if (metadata.WriteMask != AttributeWriteMask.None)
                 {
                     var value = new DataValue((uint)(int)target.UserWriteMask);
-                    ServiceResult result = target.Read(context, Attributes.UserWriteMask, value);
+                    ServiceResult result = target.Read(context, Attributes.UserWriteMask, ref value);
 
                     if (ServiceResult.IsBad(result))
                     {
@@ -503,7 +503,7 @@ namespace Technosoftware.UaServer
                     else
                     {
                         metadata.WriteMask = (AttributeWriteMask)
-                            (int)((uint)(int)metadata.WriteMask & (uint)value.Value);
+                            (int)((uint)(int)metadata.WriteMask & (uint)value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy));
                     }
                 }
 
@@ -531,7 +531,7 @@ namespace Technosoftware.UaServer
                         ServiceResult result = variable.Read(
                             context,
                             Attributes.UserAccessLevel,
-                            value);
+                            ref value);
 
                         if (ServiceResult.IsBad(result))
                         {
@@ -539,7 +539,7 @@ namespace Technosoftware.UaServer
                             break;
                         }
 
-                        metadata.AccessLevel = (byte)(metadata.AccessLevel & (byte)value.Value);
+                        metadata.AccessLevel = (byte)(metadata.AccessLevel & (byte)value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy));
                         break;
                     }
                     case NodeClass.Method:
@@ -553,7 +553,7 @@ namespace Technosoftware.UaServer
                             ServiceResult result = method.Read(
                                 context,
                                 Attributes.UserExecutable,
-                                value);
+                                ref value);
 
                             if (ServiceResult.IsBad(result))
                             {
@@ -561,7 +561,7 @@ namespace Technosoftware.UaServer
                                 break;
                             }
 
-                            metadata.Executable = (bool)value.Value;
+                            metadata.Executable = (bool)value.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
                         }
 
                         break;
@@ -650,18 +650,13 @@ namespace Technosoftware.UaServer
         public void Read(
             UaServerOperationContext context,
             double maxAge,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (nodesToRead == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToRead));
             }
 
             if (values == null)
@@ -696,10 +691,10 @@ namespace Technosoftware.UaServer
 
                     DataValue value = values[ii] = new DataValue();
 
-                    value.Value = null;
-                    value.ServerTimestamp = DateTime.MinValue; // Will be set later
-                    value.SourceTimestamp = DateTime.MinValue;
-                    value.StatusCode = StatusCodes.BadAttributeIdInvalid;
+                    value = value.WithWrappedValue(Variant.Null);
+                    value = value.WithServerTimestamp(DateTime.MinValue); // Will be set later
+                    value = value.WithSourceTimestamp(DateTime.MinValue);
+                    value = value.WithStatus(StatusCodes.BadAttributeIdInvalid);
 
                     // owned by this node manager.
                     nodeToRead.Processed = true;
@@ -707,7 +702,7 @@ namespace Technosoftware.UaServer
                     DateTime readTime = DateTime.UtcNow;
 
                     // read the default value (also verifies that the attribute id is valid for the node).
-                    ServiceResult error = node.Read(context, nodeToRead.AttributeId, value);
+                    ServiceResult error = node.Read(context, nodeToRead.AttributeId, ref value);
 
                     if (ServiceResult.IsBad(error))
                     {
@@ -739,19 +734,19 @@ namespace Technosoftware.UaServer
                     // apply index range to value attributes.
                     if (nodeToRead.AttributeId == Attributes.Value)
                     {
-                        object defaultValue = value.Value;
+                        Variant defaultValue = value.WrappedValue;
 
                         error = nodeToRead.ParsedIndexRange.ApplyRange(ref defaultValue);
 
                         if (ServiceResult.IsBad(error))
                         {
-                            value.Value = null;
+                            value = value.WithWrappedValue(Variant.Null);
                             errors[ii] = error;
                             continue;
                         }
 
                         // apply data encoding.
-                        if (!QualifiedName.IsNull(nodeToRead.DataEncoding))
+                        if (!nodeToRead.DataEncoding.IsNull)
                         {
                             error = EncodeableObject.ApplyDataEncoding(
                                 Server.MessageContext,
@@ -760,27 +755,33 @@ namespace Technosoftware.UaServer
 
                             if (ServiceResult.IsBad(error))
                             {
-                                value.Value = null;
+                                value = value.WithWrappedValue(Variant.Null);
                                 errors[ii] = error;
                                 continue;
                             }
                         }
 
-                        value.Value = defaultValue;
+                        value = value.WithWrappedValue(defaultValue);
 
                         // Set SourceTimestamp if not already set by the node
                         if (value.SourceTimestamp == DateTime.MinValue)
                         {
-                            value.SourceTimestamp = readTime;
+                            value = value.WithSourceTimestamp(readTime);
                         }
 
-                        // Set timestamps after ReadAttribute. ServerTimestamp reflects
-                        // when the Server verified the value. A value whose
-                        // SourceTimestamp was produced as part of this read (e.g.
+                        // ServerTimestamp reflects when the Server verified the value. A
+                        // value whose SourceTimestamp was produced as part of this read (e.g.
                         // ServerStatus children) keeps ServerTimestamp aligned with
                         // SourceTimestamp; a stored/static value is verified now, so
                         // ServerTimestamp is stamped with the current read time.
-                        value.ServerTimestamp = value.SourceTimestamp >= readTime ? value.SourceTimestamp : readTime;
+                        if (value.SourceTimestamp >= readTime)
+                        {
+                            value = value.WithServerTimestamp(value.SourceTimestamp);
+                        }
+                        else
+                        {
+                            value = value.WithServerTimestamp(readTime);
+                        }
                     }
                 }
             }
@@ -792,7 +793,7 @@ namespace Technosoftware.UaServer
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors)
         {
@@ -804,11 +805,6 @@ namespace Technosoftware.UaServer
             if (details == null)
             {
                 throw new ArgumentNullException(nameof(details));
-            }
-
-            if (nodesToRead == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToRead));
             }
 
             if (results == null)
@@ -852,17 +848,12 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public void Write(
             UaServerOperationContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (nodesToWrite == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToWrite));
             }
 
             if (errors == null)
@@ -961,7 +952,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // check whether value being written is an instance of the expected data type.
-                    object valueToWrite = nodeToWrite.Value.Value;
+                    Variant valueToWrite = nodeToWrite.Value.WrappedValue;
 
                     var typeInfo = TypeInfo.IsInstanceOfDataType(
                         valueToWrite,
@@ -970,7 +961,7 @@ namespace Technosoftware.UaServer
                         Server.NamespaceUris,
                         Server.TypeTree);
 
-                    if (typeInfo == null)
+                    if (typeInfo.IsUnknown)
                     {
                         errors[ii] = StatusCodes.BadTypeMismatch;
                         continue;
@@ -985,9 +976,8 @@ namespace Technosoftware.UaServer
                             errors[ii] = StatusCodes.BadIndexRangeInvalid;
                             continue;
                         }
-                        var array = (Array)valueToWrite;
-
-                        if (nodeToWrite.ParsedIndexRange.Count != array.Length)
+                        if (valueToWrite.AsBoxedObject(Variant.BoxingBehavior.Legacy) is not Array array ||
+                            nodeToWrite.ParsedIndexRange.Count != array.Length)
                         {
                             errors[ii] = StatusCodes.BadIndexRangeInvalid;
                             continue;
@@ -1009,18 +999,13 @@ namespace Technosoftware.UaServer
         public void HistoryUpdate(
             UaServerOperationContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (nodesToUpdate == null)
-            {
-                throw new ArgumentNullException(nameof(nodesToUpdate));
             }
 
             if (results == null)
@@ -1064,18 +1049,13 @@ namespace Technosoftware.UaServer
         /// <inheritdoc/>
         public void Call(
             UaServerOperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (methodsToCall == null)
-            {
-                throw new ArgumentNullException(nameof(methodsToCall));
             }
 
             if (results == null)
@@ -1234,7 +1214,7 @@ namespace Technosoftware.UaServer
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors,
             IList<IUaMonitoredItem> monitoredItems,
@@ -1244,11 +1224,6 @@ namespace Technosoftware.UaServer
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
-            }
-
-            if (itemsToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToCreate));
             }
 
             if (errors == null)
@@ -1301,7 +1276,7 @@ namespace Technosoftware.UaServer
                     }
 
                     // check value rank against index range.
-                    if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Empty)
+                    if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Null)
                     {
                         int valueRank = metadata.ValueRank;
 
@@ -1489,20 +1464,18 @@ namespace Technosoftware.UaServer
             ILocalNode node,
             IUaDataChangeMonitoredItem2 monitoredItem)
         {
-            var initialValue = new DataValue
-            {
-                Value = null,
-                ServerTimestamp = DateTime.UtcNow,
-                SourceTimestamp = DateTime.MinValue,
-                StatusCode = StatusCodes.BadWaitingForInitialData
-            };
+            var initialValue = new DataValue()
+                .WithWrappedValue(Variant.Null)
+                .WithServerTimestamp(DateTime.UtcNow)
+                .WithSourceTimestamp(DateTime.MinValue)
+                .WithStatus(StatusCodes.BadWaitingForInitialData);
 
-            ServiceResult error = node.Read(context, monitoredItem.AttributeId, initialValue);
+            ServiceResult error = node.Read(context, monitoredItem.AttributeId, ref initialValue);
 
             if (ServiceResult.IsBad(error))
             {
-                initialValue.Value = null;
-                initialValue.StatusCode = error.StatusCode;
+                initialValue = initialValue.WithWrappedValue(Variant.Null);
+                initialValue = initialValue.WithStatus(error.StatusCode);
             }
 
             monitoredItem.QueueValue(initialValue, error, true);
@@ -1518,7 +1491,7 @@ namespace Technosoftware.UaServer
             UaServerOperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IUaMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors)
         {
@@ -1530,11 +1503,6 @@ namespace Technosoftware.UaServer
             if (monitoredItems == null)
             {
                 throw new ArgumentNullException(nameof(monitoredItems));
-            }
-
-            if (itemsToModify == null)
-            {
-                throw new ArgumentNullException(nameof(itemsToModify));
             }
 
             if (errors == null)
@@ -1855,11 +1823,9 @@ namespace Technosoftware.UaServer
                     if (previousMode == MonitoringMode.Disabled &&
                         monitoringMode != MonitoringMode.Disabled)
                     {
-                        var initialValue = new DataValue
-                        {
-                            ServerTimestamp = DateTime.UtcNow,
-                            StatusCode = StatusCodes.BadWaitingForInitialData
-                        };
+                        var initialValue = new DataValue()
+                            .WithServerTimestamp(DateTime.UtcNow)
+                            .WithStatus(StatusCodes.BadWaitingForInitialData);
 
                         // read the initial value.
 
@@ -1868,12 +1834,12 @@ namespace Technosoftware.UaServer
                             ServiceResult error = node.Read(
                                 context,
                                 monitoredItem.AttributeId,
-                                initialValue);
+                                ref initialValue);
 
                             if (ServiceResult.IsBad(error))
                             {
-                                initialValue.Value = null;
-                                initialValue.StatusCode = error.StatusCode;
+                                initialValue = initialValue.WithWrappedValue(Variant.Null);
+                                initialValue = initialValue.WithStatus(error.StatusCode);
                             }
                         }
 
@@ -1938,17 +1904,17 @@ namespace Technosoftware.UaServer
         /// Returns all targets of the specified reference.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="sourceId"/> is <c>null</c>.</exception>
-        public NodeIdCollection FindLocalNodes(
+        public List<NodeId> FindLocalNodes(
             NodeId sourceId,
             NodeId referenceTypeId,
             bool isInverse)
         {
-            if (sourceId == null)
+            if (sourceId.IsNull)
             {
                 throw new ArgumentNullException(nameof(sourceId));
             }
 
-            if (referenceTypeId == null)
+            if (referenceTypeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(referenceTypeId));
             }
@@ -1960,7 +1926,7 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                var targets = new NodeIdCollection();
+                var targets = new List<NodeId>();
 
                 foreach (IReference reference in source.References)
                 {
@@ -1994,12 +1960,12 @@ namespace Technosoftware.UaServer
             bool isInverse,
             QualifiedName browseName)
         {
-            if (sourceId == null)
+            if (sourceId.IsNull)
             {
                 throw new ArgumentNullException(nameof(sourceId));
             }
 
-            if (referenceTypeId == null)
+            if (referenceTypeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(referenceTypeId));
             }
@@ -2031,7 +1997,7 @@ namespace Technosoftware.UaServer
                         continue;
                     }
 
-                    if (QualifiedName.IsNull(browseName) || target.BrowseName == browseName)
+                    if (browseName.IsNull || target.BrowseName == browseName)
                     {
                         return (NodeId)targetId;
                     }
@@ -2128,7 +2094,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ArgumentNullException"><paramref name="nodeId"/> is <c>null</c>.</exception>
         public void RegisterSource(NodeId nodeId, object source, object handle, bool isEventSource)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(nodeId));
             }
@@ -2455,7 +2421,7 @@ namespace Technosoftware.UaServer
                 return;
             }
 
-            if (!NodeId.IsNull(existingTypeId))
+            if (!existingTypeId.IsNull)
             {
                 if (m_nodes.TypeTree.IsTypeOf(existingTypeId, typeDefinitionId))
                 {
@@ -2838,7 +2804,7 @@ namespace Technosoftware.UaServer
         /// <exception cref="ServiceResultException"></exception>
         public void DeleteNode(NodeId nodeId, bool deleteChildren, bool silent)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(nodeId));
             }
@@ -2911,7 +2877,7 @@ namespace Technosoftware.UaServer
                 // check need to connect subtypes to the supertype if they are being deleted.
                 ExpandedNodeId supertypeId = Server.TypeTree.FindSuperType(node.NodeId);
 
-                if (!NodeId.IsNull(supertypeId))
+                if (!supertypeId.IsNull)
                 {
                     Server.TypeTree.Remove(node.NodeId);
                 }
@@ -3159,7 +3125,7 @@ namespace Technosoftware.UaServer
                             referenceTypeId,
                             true,
                             isInverse ? BrowseDirection.Inverse : BrowseDirection.Forward,
-                            null,
+                            default,
                             null,
                             true);
 
@@ -3258,12 +3224,12 @@ namespace Technosoftware.UaServer
                 throw new ArgumentNullException(nameof(sourceHandle));
             }
 
-            if (referenceTypeId == null)
+            if (referenceTypeId.IsNull)
             {
                 throw new ArgumentNullException(nameof(referenceTypeId));
             }
 
-            if (targetId == null)
+            if (targetId.IsNull)
             {
                 throw new ArgumentNullException(nameof(targetId));
             }
@@ -3325,7 +3291,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public ILocalNode GetLocalNode(ExpandedNodeId nodeId)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -3345,7 +3311,7 @@ namespace Technosoftware.UaServer
                     return null;
                 }
 
-                return GetLocalNode(new NodeId(nodeId.Identifier, (ushort)namespaceIndex));
+                return GetLocalNode(((NodeId)nodeId).WithNamespaceIndex((ushort)namespaceIndex));
             }
 
             return GetLocalNode((NodeId)nodeId);
@@ -3471,7 +3437,7 @@ namespace Technosoftware.UaServer
                     continue;
                 }
 
-                if (QualifiedName.IsNull(browseName) || browseName == target.BrowseName)
+                if (browseName.IsNull || browseName == target.BrowseName)
                 {
                     return target;
                 }
@@ -3553,7 +3519,7 @@ namespace Technosoftware.UaServer
         {
             lock (DataLock)
             {
-                if (nodeId == null || nodeId.IsAbsolute)
+                if (nodeId.IsNull || nodeId.IsAbsolute)
                 {
                     return null;
                 }
@@ -3572,13 +3538,13 @@ namespace Technosoftware.UaServer
         {
             range = null;
 
-            if (GetTargetNode(node, ReferenceTypes.HasProperty, false, true, BrowseNames.EURange)
+            if (GetTargetNode(node, new NodeId(ReferenceTypes.HasProperty), false, true, new QualifiedName(BrowseNames.EURange))
                 is not IVariable target)
             {
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            range = target.Value as Opc.Ua.Range;
+            range = target.Value.GetStructure<Opc.Ua.Range>();
 
             if (range == null)
             {
@@ -3602,9 +3568,11 @@ namespace Technosoftware.UaServer
             // check filter.
             DataChangeFilter datachangeFilter = null;
 
-            if (filter != null)
+            if (!filter.IsNull)
             {
-                datachangeFilter = filter.Body as DataChangeFilter;
+                datachangeFilter = filter.TryGetValue(out DataChangeFilter parsedFilter)
+                    ? parsedFilter
+                    : null;
             }
 
             if (datachangeFilter != null)
@@ -3631,7 +3599,7 @@ namespace Technosoftware.UaServer
                 {
                     ExpandedNodeId typeDefinitionId = metadata.TypeDefinition;
 
-                    if (typeDefinitionId == null)
+                    if (typeDefinitionId.IsNull)
                     {
                         return StatusCodes.BadDeadbandFilterInvalid;
                     }

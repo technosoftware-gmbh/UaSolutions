@@ -1,6 +1,122 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 7.0.0
+
+### Breaking Changes
+
+- The NuGet package IDs no longer carry `UaSolutions`. Update your package references:
+
+  | 6.x                                          | 7.0                              |
+  |----------------------------------------------|----------------------------------|
+  | `Technosoftware.UaSolutions.UaClient`        | `Technosoftware.UaClient`        |
+  | `Technosoftware.UaSolutions.UaServer`        | `Technosoftware.UaServer`        |
+  | `Technosoftware.UaSolutions.UaConfiguration` | `Technosoftware.UaConfiguration` |
+  | `Technosoftware.UaSolutions.UaUtilities`     | `Technosoftware.UaUtilities`     |
+  | `Technosoftware.UaSolutions.ClientGateway`   | `Technosoftware.ClientGateway`   |
+
+  The package IDs now match the assembly names; namespaces and assembly names are unchanged.
+  The four libraries are published to nuget.org and GitHub Packages. The 6.x packages remain
+  available on GitHub Packages under their old IDs.
+- `UaStandardServer.CreateSessionAsync` now applies the client nonce rules of OPC 10000-4 5.7.2.3.
+  On a secured channel a missing or empty nonce is rejected with `BadNonceInvalid`, where a missing
+  one used to be accepted. A nonce longer than 128 bytes is rejected on every channel. Clients that
+  do not send a nonce on a secured channel must now do so.
+- `RequestManager.CancelRequests` takes the session ID of the Cancel request, and Cancel now only
+  matches requests of that session. A session could cancel another session's requests before.
+- Security: certificate renewal (`ServerConfiguration.UpdateCertificate`) for the default application
+  group ignores the issuer certificates supplied in the request, as OPC 10000-12 7.10.5 requires, and
+  validates the new certificate against the group's configured trusted and issuer stores. A certificate
+  whose CA is not in those stores is rejected with `BadCertificateChainIncomplete`; the issuers a client
+  sends are no longer trusted or imported for this group (upstream #4678, ported the way upstream 2.0.1
+  does it in #4683). Install the issuing CA in the trust list before pushing a CA-signed certificate.
+- An event monitored item that asks for a queue size of 0 or 1 now gets the server default of 1000
+  (`EventManager.DefaultEventQueueSize`), as OPC 10000-4 7.21 defines for events. It used to get a
+  queue of one.
+- History reads: a read-modified request with returnBounds set returns `BadInvalidArgument`, and a
+  ReadRawModified request without the times it needs returns `BadHistoryOperationInvalid` instead of
+  `BadInvalidTimestampArgument`. `TimestampsToReturn.Neither` is rejected for history reads.
+
+### Changes
+
+- The built-in evaluation license is issued for 7.0. A license for an earlier major version does not
+  unlock 7.0.
+- Supports .NET 4.8 again, as in 6.1. The UaClient, UaServer, UaConfiguration and UaUtilities packages
+  target .NET 10.0, .NET 9.0, .NET 8.0 and .NET 4.8.
+- Moved to version 2.0.1 of the OPC Foundation .NET Standard stack, which needs the
+  `Microsoft.Extensions.*` and `System.*` packages at 10.0.12.
+- X509 user tokens now calculate their signature the way the OPC Foundation stack does:
+  - The client uses the security policy of the user token instead of the channel. This also
+    changes the signature on a secured channel whose security policy differs from the token's.
+  - On a None channel with an enhanced user token policy, client and server sign and verify
+    `ServerNonce | Hash(ServerCertificate) | ClientNonce`.
+  - The server keeps the client nonce sent on a None channel, which that signature covers. A
+    short nonce stays accepted there.
+
+  A session of this kind failed between this version and the OPC Foundation stack before.
+- The durable subscription sample in `tutorials/SampleCompany/ReferenceNodeManagers` could not store
+  batches and queues on the 2.0 stack and only logged the error. It now writes them with the UA binary
+  encoder as `.bin` files, so existing `.txt` files are not read.
+- On .NET 4.8 the client could stall for 10 seconds or more during reconnects and subscription
+  transfers, long enough to close the session. Each publish response blocked a thread pool thread
+  while a reconnect held its lock; it now waits for the lock asynchronously.
+- Ported the fixes of the OPC Foundation 1.5.378 maintenance line, which the client and server
+  sources are based on:
+  - Security: the server always issues random authentication tokens, also on secured channels; user
+    identity token decryption errors no longer reveal their cause to the client; the session nonce is
+    at least 32 bytes, which fixes connections with Basic128Rsa15; history continuation points have a
+    limit, with the new `Session.TrySaveHistoryContinuationPoint`.
+  - Server publishing: a publish request could be stranded so that notifications stopped; publish
+    queue timestamp ordering; a publish with the maximum TimeoutHint; MaxNotificationsPerPublish 0 now
+    means unlimited; queued data is delivered right after a durable subscription transfer; only the
+    excess sent messages are evicted when the retransmission queue is full.
+  - Server events: the trailing event of a filtered-retain item carries Retain = false; RefreshRequired
+    is sent after an event queue overflow lost Condition events; the OpenSecureChannel audit event
+    carries the ClientAuditEntryId; triggered items are set for items already queued for publishing.
+  - Server browse and read: browse continuation point limits; no continuation point is returned with
+    BadNoContinuationPoints or once a browse is finished; ServerTimestamp is the read time for stored
+    values; the ServerConfiguration ApplicationUri and ProductUri are filled; aggregate fixes found by
+    the CTT.
+  - Client: the endpoint list of CreateSession is validated regardless of order; reverse connections
+    are held for their own hold time when several servers share one listener.
+  - Cancelling a request that has no session yet, such as an ActivateSession, no longer throws.
+- The libraries build with warnings as errors again. The OPC Foundation migration analyzer, which the
+  move to 2.0 used, is no longer referenced. The calls to `TraceConfiguration.ApplySettings`, which 2.0
+  removed, are gone; logging is configured through the `ITelemetryContext`.
+- Nullability annotations of the public UaClient API now match what it returns and accepts. The
+  signatures are unchanged:
+  - `SessionClientExtensions.ReadValuesAsync` and `SessionClientExtensions.CallAsync` return
+    `IList<object?>`; an element is `null` when the value or output argument is null.
+  - `ReverseConnectManager.OnUpdateConfigurationAsync` accepts a `null` `ReverseConnectClientConfiguration`.
+    A configuration without a `ClientConfiguration` now stops the reverse connect service instead of
+    throwing a `NullReferenceException`.
+  - The `timeProvider` parameter of the `ReverseConnectManager` constructor is `TimeProvider?`.
+- When a user token policy names no security policy and the endpoint has none either, the client uses
+  `SecurityPolicies.None` for the user token, as the OPC Foundation stack does.
+- Compared with 6.2.0, which ports the same 1.5.378 maintenance fixes onto the 1.5.378.182 stack, 7.0
+  differs in these points:
+  - A certificate renewal whose CA is not in the trust list is rejected with
+    `BadCertificateChainIncomplete`; 6.2.0 reports `BadSecurityChecksFailed`.
+  - The certificate-push hardening of 6.2.0 (private key resolved once before retries, key copies kept
+    alive until the store has exported the certificate) is not part of 7.0, whose certificate update
+    uses the 2.0 certificate types.
+  - Old overloads are removed rather than marked `[Obsolete]`: `RequestManager.CancelRequests(uint, out
+    uint)` and the three-parameter `UaMonitoredItem.CanSendFilteredAlarm` no longer exist.
+  - `SetOutputFilePath`, `SetDeleteOnLoad` and `SetTraceMasks` of the application configuration builder
+    are not marked `[Obsolete]`, since the 2.0.1 stack does not obsolete `TraceConfiguration`.
+
+### Known Issues
+
+- On .NET 4.8, a dropped connection can freeze the whole process for several seconds, in rare cases for
+  up to a minute. When the client's channel loses its connection, the OPC Foundation stack 2.0.1 disposes
+  the socket inside the socket's own receive completion. .NET Framework then spins until the socket handle
+  is released, and a garbage collection that starts meanwhile cannot complete, so every thread in the
+  process waits. Sessions with a short timeout can expire during such a freeze. Running client and server
+  in separate processes makes it much rarer, but does not rule it out. .NET 8, 9 and 10 are not affected.
+  The fix belongs in the OPC Foundation stack and is tracked upstream in
+  [UA-.NETStandard#4981](https://github.com/OPCFoundation/UA-.NETStandard/issues/4981).
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.2.0
 
 Update to the OPC Foundation Stack Version 1.5.378.182, together with the server and client fixes of the

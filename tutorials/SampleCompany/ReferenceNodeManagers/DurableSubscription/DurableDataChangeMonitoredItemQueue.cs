@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Opc.Ua;
 using Technosoftware.UaServer;
 #endregion Using Directives
@@ -60,10 +61,12 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             IBatchPersistor batchPersistor)
         {
             m_batchPersistor = batchPersistor;
+            m_logger = NullLogger<DurableDataChangeMonitoredItemQueue>.Instance;
             MonitoredItemId = queue.MonitoredItemId;
             IsDurable = queue.IsDurable;
             m_enqueueBatch = queue.EnqueueBatch;
-            m_dequeueBatch = queue.DequeueBatch;
+            // a null dequeue batch means it was the enqueue batch when the queue was stored
+            m_dequeueBatch = queue.DequeueBatch ?? m_enqueueBatch;
             m_dataChangeBatches = queue.DataChangeBatches;
             QueueSize = queue.QueueSize;
             ItemsInQueue = queue.ItemsInQueue;
@@ -207,7 +210,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         {
             if (ItemsInQueue == 0)
             {
-                return null;
+                return default;
             }
 
             if (m_enqueueBatch.Values.Count > 0)
@@ -228,7 +231,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
         /// <inheritdoc/>
         public bool Dequeue(out DataValue value, out ServiceResult error)
         {
-            value = null;
+            value = default;
             error = null;
 
             // check for empty queue.
@@ -300,7 +303,7 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             // check for empty queue.
             if (ItemsInQueue == 0)
             {
-                return null;
+                return default;
             }
 
             return m_dequeueBatch.Values[0].Item1;
@@ -342,6 +345,19 @@ namespace SampleCompany.NodeManagers.DurableSubscription
             uint batchSize,
             uint monitoredItemId)
             : base(batchSize, monitoredItemId)
+        {
+            Values = values;
+        }
+
+        /// <summary>
+        /// Creates a batch restored from disk, which keeps the Id it was stored with
+        /// </summary>
+        public DataChangeBatch(
+            Guid id,
+            List<(DataValue, ServiceResult)> values,
+            uint batchSize,
+            uint monitoredItemId)
+            : base(id, batchSize, monitoredItemId)
         {
             Values = values;
         }

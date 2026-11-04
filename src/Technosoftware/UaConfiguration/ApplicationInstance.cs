@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaConfiguration
@@ -200,11 +201,12 @@ namespace Technosoftware.UaConfiguration
             configuration.ApplicationUri = Utils.ReplaceLocalhost(configuration.ApplicationUri);
             if (configuration.ServerConfiguration != null)
             {
-                for (int i = 0; i < configuration.ServerConfiguration.BaseAddresses.Count; i++)
+                List<string> baseAddresses = [.. configuration.ServerConfiguration.BaseAddresses];
+                for (int i = 0; i < baseAddresses.Count; i++)
                 {
-                    configuration.ServerConfiguration.BaseAddresses[i] = Utils.ReplaceLocalhost(
-                        configuration.ServerConfiguration.BaseAddresses[i]);
+                    baseAddresses[i] = Utils.ReplaceLocalhost(baseAddresses[i]);
                 }
+                configuration.ServerConfiguration.BaseAddresses = baseAddresses;
             }
             return configuration;
         }
@@ -221,16 +223,12 @@ namespace Technosoftware.UaConfiguration
                 ApplicationType = ApplicationType,
                 ApplicationUri = applicationUri,
                 ProductUri = productUri,
-#pragma warning disable CS0618 // Type or member is obsolete
                 TraceConfiguration = new TraceConfiguration { TraceMasks = Utils.TraceMasks.None },
-#pragma warning restore CS0618 // Type or member is obsolete
                 TransportQuotas = new TransportQuotas()
             };
 
-            // Trace off
-#pragma warning disable CS0618 // Type or member is obsolete
-            ApplicationConfiguration.TraceConfiguration.ApplySettings();
-#pragma warning restore CS0618 // Type or member is obsolete
+            // TraceConfiguration.ApplySettings was removed in 2.0: logging is configured
+            // through the ITelemetryContext, so the trace masks above are all there is.
 
             return new ApplicationConfigurationManager(this);
         }
@@ -246,9 +244,14 @@ namespace Technosoftware.UaConfiguration
                 throw new ArgumentException("Missing configuration.");
             }
 
-            foreach (CertificateIdentifier id in ApplicationConfiguration.SecurityConfiguration
-                .ApplicationCertificates)
+            // ArrayOf<T> enumerates as a ReadOnlySpan<T>.Enumerator, which cannot be held
+            // across an await, so index the collection instead of using foreach.
+            ArrayOf<CertificateIdentifier> applicationCertificates = ApplicationConfiguration
+                .SecurityConfiguration
+                .ApplicationCertificates;
+            for (int i = 0; i < applicationCertificates.Count; i++)
             {
+                CertificateIdentifier id = applicationCertificates[i];
                 await DeleteApplicationInstanceCertificateAsync(ApplicationConfiguration, id, ct)
                     .ConfigureAwait(false);
             }
@@ -283,8 +286,12 @@ namespace Technosoftware.UaConfiguration
             // in CheckApplicationInstanceCertificateAsync (called via CheckOrCreateCertificateAsync) to ensure it contains
             // the configuration's ApplicationUri.
             bool result = true;
-            foreach (CertificateIdentifier certId in securityConfiguration.ApplicationCertificates)
+            // Indexed for the same reason as above: the enumerator cannot cross an await.
+            ArrayOf<CertificateIdentifier> applicationCertificates =
+                securityConfiguration.ApplicationCertificates;
+            for (int i = 0; i < applicationCertificates.Count; i++)
             {
+                CertificateIdentifier certId = applicationCertificates[i];
                 ushort minimumKeySize = certId.GetMinKeySize(securityConfiguration);
                 bool nextResult = await CheckOrCreateCertificateAsync(
                         certId,
@@ -341,12 +348,11 @@ namespace Technosoftware.UaConfiguration
             ICertificatePasswordProvider passwordProvider = configuration
                 .SecurityConfiguration
                 .CertificatePasswordProvider;
-            await id.LoadPrivateKeyExAsync(passwordProvider, configuration.ApplicationUri, m_telemetry, ct)
-                .ConfigureAwait(false);
-
-            // load the certificate
-            X509Certificate2 certificate = await id.FindAsync(
-                true,
+            // load the certificate together with its private key. LoadPrivateKeyAsync both
+            // reloads from disk and resolves, so the separate reload call is gone.
+            Certificate certificate = await CertificateIdentifierResolver.LoadPrivateKeyAsync(
+                id,
+                passwordProvider,
                 configuration.ApplicationUri,
                 m_telemetry,
                 ct)
@@ -355,7 +361,7 @@ namespace Technosoftware.UaConfiguration
             // check that it is ok.
             if (certificate != null)
             {
-                m_logger.LogInformation("Check certificate: {Certificate}", certificate.AsLogSafeString());
+                m_logger.LogInformation("Check certificate: {Certificate}", certificate);
                 bool certificateValid = await CheckApplicationInstanceCertificateAsync(
                         configuration,
                         id,
@@ -377,7 +383,13 @@ namespace Technosoftware.UaConfiguration
             else
             {
                 // check for missing private key.
-                certificate = await id.FindAsync(false, configuration.ApplicationUri, m_telemetry, ct)
+                certificate = await CertificateIdentifierResolver.ResolveAsync(
+                        id,
+                        configuration.CertificateManager,
+                        needPrivateKey: false,
+                        configuration.ApplicationUri,
+                        m_telemetry,
+                        ct)
                     .ConfigureAwait(false);
 
                 if (certificate != null)
@@ -398,7 +410,12 @@ namespace Technosoftware.UaConfiguration
                             StorePath = id.StorePath,
                             SubjectName = id.SubjectName
                         };
-                        certificate = await id2.FindAsync(true, configuration.ApplicationUri, m_telemetry, ct)
+                        certificate = await CertificateIdentifierResolver.LoadPrivateKeyAsync(
+                                id2,
+                                passwordProvider,
+                                configuration.ApplicationUri,
+                                m_telemetry,
+                                ct)
                             .ConfigureAwait(false);
                     }
 
@@ -467,7 +484,7 @@ namespace Technosoftware.UaConfiguration
 
         /// <inheritdoc/>
         public async Task AddOwnCertificateToTrustedStoreAsync(
-            X509Certificate2 certificate,
+            Certificate certificate,
             CancellationToken ct)
         {
             await AddToTrustedStoreAsync(ApplicationConfiguration, certificate, ct).ConfigureAwait(
@@ -576,7 +593,7 @@ namespace Technosoftware.UaConfiguration
         private async Task<bool> CheckApplicationInstanceCertificateAsync(
             ApplicationConfiguration configuration,
             CertificateIdentifier id,
-            X509Certificate2 certificate,
+            Certificate certificate,
             bool silent,
             ushort minimumKeySize,
             CancellationToken ct)
@@ -596,32 +613,43 @@ namespace Technosoftware.UaConfiguration
                     StatusCodes.BadCertificateRevocationUnknown,
                     StatusCodes.BadCertificateIssuerRevocationUnknown
             ];
-            void OnCertificateValidation(object sender, CertificateValidationEventArgs e)
+            bool AcceptError(Certificate cert, ServiceResult error)
             {
-                if (approvedCodes.Contains(e.Error.StatusCode))
+                if (approvedCodes.Contains(error.StatusCode))
                 {
                     m_logger.LogWarning(
                         "Application Certificate Validation suppressed {ErrorMessage}",
-                        e.Error.StatusCode);
-                    e.Accept = true;
+                        error.StatusCode);
+                    return true;
                 }
+                return false;
             }
 
             m_logger.LogInformation(
                 "Check application instance certificate {Certificate}.",
-                certificate.AsLogSafeString());
+                certificate);
 
+            Func<Certificate, ServiceResult, bool> previousAcceptError =
+                configuration.CertificateManager.AcceptError;
             try
             {
-                // validate certificate.
-                configuration.CertificateValidator.CertificateValidation += OnCertificateValidation;
-                await configuration
-                    .CertificateValidator.ValidateAsync(
-                        certificate.HasPrivateKey
-                            ? CertificateFactory.Create(certificate.RawData)
-                            : certificate,
-                        ct)
+                // validate certificate. ValidateAsync now reports the outcome instead of
+                // throwing, so the failure is turned back into an exception to keep the
+                // "ask the operator whether to continue" flow below.
+                configuration.CertificateManager.AcceptError = AcceptError;
+
+                using Certificate publicKeyOnly = certificate.HasPrivateKey
+                    ? DefaultCertificateFactory.Instance.CreateFromRawData(certificate.RawData)
+                    : null;
+
+                var validationResult = await configuration
+                    .CertificateManager.ValidateAsync(publicKeyOnly ?? certificate, ct: ct)
                     .ConfigureAwait(false);
+
+                if (!validationResult.IsValid)
+                {
+                    throw new ServiceResultException(validationResult.StatusCode);
+                }
             }
             catch (Exception ex)
             {
@@ -635,7 +663,7 @@ namespace Technosoftware.UaConfiguration
             }
             finally
             {
-                configuration.CertificateValidator.CertificateValidation -= OnCertificateValidation;
+                configuration.CertificateManager.AcceptError = previousAcceptError;
             }
 
             // check key size
@@ -694,11 +722,18 @@ namespace Technosoftware.UaConfiguration
 
             m_logger.LogInformation(
                 "Certificate {Certificate} validated for ApplicationUri: {ApplicationUri}",
-                certificate.AsLogSafeString(),
+                certificate,
                 configuration.ApplicationUri);
 
-            // update configuration.
-            id.Certificate = certificate;
+            // The identifier no longer holds the certificate it resolved to, so
+            // the metadata a later lookup goes by has to be written back; a
+            // configured identifier often carries no thumbprint at all.
+            id.Thumbprint = certificate.Thumbprint;
+            id.SubjectName = certificate.Subject;
+            if (id.CertificateType.IsNull)
+            {
+                id.CertificateType = CertificateIdentifier.GetCertificateType(certificate);
+            }
 
             return true;
         }
@@ -708,15 +743,15 @@ namespace Technosoftware.UaConfiguration
         /// </summary>
         private async Task<bool> CheckDomainsInCertificateAsync(
             ApplicationConfiguration configuration,
-            X509Certificate2 certificate,
+            Certificate certificate,
             bool silent,
             CancellationToken ct)
         {
             m_logger.LogInformation("Check domains in certificate.");
 
             bool valid = true;
-            IList<string> serverDomainNames = configuration.GetServerDomainNames();
-            IList<string> certificateDomainNames = X509Utils.GetDomainsFromCertificate(certificate);
+            ArrayOf<string> serverDomainNames = configuration.GetServerDomainNames();
+            List<string> certificateDomainNames = [.. X509Utils.GetDomainsFromCertificate(certificate)];
 
             m_logger.LogInformation("Server Domain names:");
             foreach (string name in serverDomainNames)
@@ -804,7 +839,7 @@ namespace Technosoftware.UaConfiguration
         /// <param name="ct">Cancellation token to cancel operation with</param>
         /// <returns>The new certificate</returns>
         /// <exception cref="ServiceResultException"></exception>
-        private async Task<X509Certificate2> CreateApplicationInstanceCertificateAsync(
+        private async Task<Certificate> CreateApplicationInstanceCertificateAsync(
             ApplicationConfiguration configuration,
             CertificateIdentifier id,
             ushort minimumKeySize,
@@ -818,11 +853,11 @@ namespace Technosoftware.UaConfiguration
             m_logger.LogInformation("Creating application instance certificate.");
 
             // get the domains from the configuration file.
-            IList<string> serverDomainNames = configuration.GetServerDomainNames();
+            ArrayOf<string> serverDomainNames = configuration.GetServerDomainNames();
 
-            if (serverDomainNames.Count == 0)
+            if (serverDomainNames.IsEmpty)
             {
-                serverDomainNames.Add(Utils.GetHostName());
+                serverDomainNames = [Utils.GetHostName()];
             }
 
             // ensure the certificate store directory exists.
@@ -831,49 +866,55 @@ namespace Technosoftware.UaConfiguration
                 Utils.GetAbsoluteDirectoryPath(id.StorePath, true, true, true);
             }
 
-            Opc.Ua.Security.Certificates.ICertificateBuilder builder = CertificateFactory
-                .CreateCertificate(
+            Opc.Ua.Security.Certificates.ICertificateBuilder builder = DefaultCertificateFactory
+                .Instance.CreateApplicationCertificate(
                     configuration.ApplicationUri,
                     configuration.ApplicationName,
                     id.SubjectName,
-                    serverDomainNames)
+                    serverDomainNames.ToList())
                 .SetLifeTime(lifeTimeInMonths);
 
-            if (id.CertificateType == null ||
+            Certificate newCertificate = DefaultKeyPairGenerator.Instance.CreateCertificate(
+                builder,
+                id.CertificateType,
+                minimumKeySize);
+
+            if (id.CertificateType.IsNull ||
                 id.CertificateType == ObjectTypeIds.ApplicationCertificateType ||
                 id.CertificateType == ObjectTypeIds.RsaMinApplicationCertificateType ||
                 id.CertificateType == ObjectTypeIds.RsaSha256ApplicationCertificateType)
             {
-                ushort keySize = minimumKeySize == 0
-                    ? CertificateFactory.DefaultKeySize
-                    : minimumKeySize;
-
-                id.Certificate = builder.SetRSAKeySize(keySize).CreateForRSA();
-
                 m_logger.LogInformation(
                     "Certificate {Certificate} created for RSA with key size {KeySize} bits.",
-                    id.Certificate.AsLogSafeString(),
-                    keySize);
+                    newCertificate,
+                    minimumKeySize == 0 ? CertificateFactory.DefaultKeySize : minimumKeySize);
             }
             else
             {
                 ECCurve? curve =
-                    EccUtils.GetCurveFromCertificateTypeId(id.CertificateType)
+                    CryptoUtils.GetCurveFromCertificateTypeId(id.CertificateType)
                     ?? throw ServiceResultException.ConfigurationError("The Ecc certificate type is not supported.");
-
-                id.Certificate = builder.SetECCurve(curve.Value).CreateForECDsa();
 
                 m_logger.LogInformation(
                     "Certificate {Certificate} created for {Curve}.",
-                    id.Certificate.AsLogSafeString(),
+                    newCertificate,
                     curve.Value.Oid.FriendlyName);
+            }
+
+            // The identifier is metadata only in 2.0, so the freshly generated certificate
+            // cannot be parked on it. Update the fields the resolver keys on instead, so a
+            // later lookup finds this certificate in the store.
+            id.SubjectName = newCertificate.Subject;
+            id.Thumbprint = newCertificate.Thumbprint;
+            if (id.CertificateType.IsNull)
+            {
+                id.CertificateType = CertificateIdentifier.GetCertificateType(newCertificate);
             }
 
             ICertificatePasswordProvider passwordProvider = configuration
                 .SecurityConfiguration
                 .CertificatePasswordProvider;
-            await id
-                .Certificate.AddToStoreAsync(
+            await newCertificate.AddToStoreAsync(
                     id.StoreType,
                     id.StorePath,
                     passwordProvider?.GetPassword(id),
@@ -884,30 +925,44 @@ namespace Technosoftware.UaConfiguration
             // ensure the certificate is trusted.
             if (configuration.SecurityConfiguration.AddAppCertToTrustedStore)
             {
-                await AddToTrustedStoreAsync(configuration, id.Certificate, ct).ConfigureAwait(
+                await AddToTrustedStoreAsync(configuration, newCertificate, ct).ConfigureAwait(
                     false);
             }
 
-            // reload the certificate from disk.
-            id.Certificate = await id.LoadPrivateKeyExAsync(
-                passwordProvider,
-                configuration.ApplicationUri,
-                m_telemetry,
-                ct)
+            // reload the certificate from disk to pick up the durable private-key handle;
+            // what the builder produced is an ephemeral in-memory instance.
+            Certificate reloaded = await CertificateIdentifierResolver
+                .LoadPrivateKeyAsync(
+                    id,
+                    passwordProvider,
+                    configuration.ApplicationUri,
+                    m_telemetry,
+                    ct)
                 .ConfigureAwait(false);
+            if (reloaded != null)
+            {
+                newCertificate.Dispose();
+                newCertificate = reloaded;
+            }
 
-            await configuration
-                .CertificateValidator.UpdateAsync(configuration.SecurityConfiguration, applicationUri: null, ct)
-                .ConfigureAwait(false);
+            if (configuration.CertificateManager != null)
+            {
+                await configuration
+                    .CertificateManager.UpdateAsync(
+                        configuration.SecurityConfiguration,
+                        configuration.ApplicationUri,
+                        ct)
+                    .ConfigureAwait(false);
+            }
 
             m_logger.LogInformation(
                 "Certificate {Certificate} created for {ApplicationUri}.",
-                id.Certificate.AsLogSafeString(),
+                newCertificate,
                 configuration.ApplicationUri);
 
             // do not dispose temp cert, or X509Store certs become unusable
 
-            return id.Certificate;
+            return newCertificate;
         }
 
         /// <summary>
@@ -927,14 +982,20 @@ namespace Technosoftware.UaConfiguration
             }
 
             // delete certificate and private key.
-            X509Certificate2 certificate = await id.FindAsync(configuration.ApplicationUri, m_telemetry, ct)
+            Certificate certificate = await CertificateIdentifierResolver.ResolveAsync(
+                    id,
+                    configuration.CertificateManager,
+                    needPrivateKey: false,
+                    configuration.ApplicationUri,
+                    m_telemetry,
+                    ct)
                 .ConfigureAwait(false);
             if (certificate != null)
             {
                 m_logger.LogInformation(
                     Utils.TraceMasks.Security,
                     "Deleting application instance certificate {Certificate} and private key.",
-                    certificate.AsLogSafeString());
+                    certificate);
             }
 
             // delete trusted peer certificate.
@@ -978,7 +1039,7 @@ namespace Technosoftware.UaConfiguration
             // delete certificate and private key from owner store.
             if (certificate != null)
             {
-                using ICertificateStore store = id.OpenStore(m_telemetry);
+                using ICertificateStore store = CertificateIdentifierResolver.OpenStore(id, m_telemetry);
                 bool deleted = await store.DeleteAsync(certificate.Thumbprint, ct)
                     .ConfigureAwait(false);
                 if (deleted)
@@ -986,12 +1047,11 @@ namespace Technosoftware.UaConfiguration
                     m_logger.LogInformation(
                         Utils.TraceMasks.Security,
                         "Application certificate {Certificate} and private key deleted.",
-                        certificate.AsLogSafeString());
+                        certificate);
                 }
             }
 
-            // erase the memory copy of the deleted certificate
-            id.Certificate = null;
+            // nothing to erase: the identifier never held the certificate.
         }
 
         /// <summary>
@@ -1003,7 +1063,7 @@ namespace Technosoftware.UaConfiguration
         /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <c>null</c>.</exception>
         private async Task AddToTrustedStoreAsync(
             ApplicationConfiguration configuration,
-            X509Certificate2 certificate,
+            Certificate certificate,
             CancellationToken ct)
         {
             if (certificate == null)
@@ -1041,7 +1101,7 @@ namespace Technosoftware.UaConfiguration
                 try
                 {
                     // check if it already exists.
-                    X509Certificate2Collection existingCertificates = await store
+                    CertificateCollection existingCertificates = await store
                         .FindByThumbprintAsync(certificate.Thumbprint, ct)
                         .ConfigureAwait(false);
 
@@ -1052,13 +1112,13 @@ namespace Technosoftware.UaConfiguration
 
                     m_logger.LogInformation(
                         "Adding application certificate {Certificate} to trusted peer store.",
-                        certificate.AsLogSafeString());
+                        certificate);
 
                     List<string> subjectName = X509Utils.ParseDistinguishedName(
                         certificate.Subject);
 
                     // check for old certificate.
-                    X509Certificate2Collection certificates = await store.EnumerateAsync(ct)
+                    CertificateCollection certificates = await store.EnumerateAsync(ct)
                         .ConfigureAwait(false);
 
                     for (int ii = 0; ii < certificates.Count; ii++)
@@ -1093,7 +1153,7 @@ namespace Technosoftware.UaConfiguration
                             {
                                 m_logger.LogInformation(
                                     "Delete Certificate {Certificate} from trusted store.",
-                                    certificate.AsLogSafeString());
+                                    certificate);
                                 await store.DeleteAsync(certificates[ii].Thumbprint, ct)
                                     .ConfigureAwait(false);
                                 break;
@@ -1102,7 +1162,7 @@ namespace Technosoftware.UaConfiguration
                     }
 
                     // add new certificate.
-                    using X509Certificate2 publicKey = CertificateFactory.Create(certificate.RawData);
+                    using Certificate publicKey = DefaultCertificateFactory.Instance.CreateFromRawData(certificate.RawData);
                     await store.AddAsync(publicKey, ct: ct).ConfigureAwait(false);
 
                     m_logger.LogInformation("Added application certificate to trusted peer store.");

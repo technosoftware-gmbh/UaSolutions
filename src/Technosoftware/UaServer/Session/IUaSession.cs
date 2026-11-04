@@ -15,9 +15,11 @@
 
 #region Using Directives
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -35,7 +37,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The application instance certificate associated with the client.
         /// </summary>
-        X509Certificate2 ClientCertificate { get; }
+        Certificate ClientCertificate { get; }
 
         /// <summary>
         /// The last time the session was contacted by the client.
@@ -45,12 +47,12 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The client Nonce associated with the session.
         /// </summary>
-        byte[] ClientNonce { get; }
+        ByteString ClientNonce { get; }
 
         /// <summary>
         /// A lock which must be acquired before accessing the diagnostics.
         /// </summary>
-        object DiagnosticsLock { get; }
+        Lock DiagnosticsLock { get; }
 
         /// <summary>
         /// The application defined mapping for user identity provided by the client.
@@ -105,7 +107,7 @@ namespace Technosoftware.UaServer
             UserIdentityToken identityToken,
             IUserIdentity identity,
             IUserIdentity effectiveIdentity,
-            StringCollection localeIds,
+            ArrayOf<string> localeIds,
             Nonce serverNonce);
 
         /// <summary>
@@ -130,14 +132,14 @@ namespace Technosoftware.UaServer
         /// <remarks>
         /// The caller is responsible for disposing the continuation point returned.
         /// </remarks>
-        UaContinuationPoint RestoreContinuationPoint(byte[] continuationPoint);
+        UaContinuationPoint RestoreContinuationPoint(ByteString continuationPoint);
 
         /// <summary>
         /// Restores a previously saves history continuation point.
         /// </summary>
         /// <param name="continuationPoint">The identifier for the continuation point.</param>
         /// <returns>The save continuation point. null if not found.</returns>
-        object RestoreHistoryContinuationPoint(byte[] continuationPoint);
+        object RestoreHistoryContinuationPoint(ByteString continuationPoint);
 
         /// <summary>
         /// Saves a continuation point for a session.
@@ -167,18 +169,19 @@ namespace Technosoftware.UaServer
         /// Updates the requested locale ids.
         /// </summary>
         /// <returns>true if the new locale ids are different from the old locale ids.</returns>
-        bool UpdateLocaleIds(StringCollection localeIds);
+        bool UpdateLocaleIds(ArrayOf<string> localeIds);
 
         /// <summary>
         /// Activates the session and binds it to the current secure channel.
         /// </summary>
-        void ValidateBeforeActivate(
+        ValueTask<(
+            IUserIdentityTokenHandler IdentityTokenHandler,
+            UserTokenPolicy UserTokenPolicy)> ValidateBeforeActivateAsync(
             UaServerOperationContext context,
             SignatureData clientSignature,
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
-            out UserIdentityToken identityToken,
-            out UserTokenPolicy userTokenPolicy);
+            CancellationToken ct = default);
 
         /// <summary>
         /// Validate the diagnostic info.

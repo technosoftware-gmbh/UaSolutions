@@ -14,6 +14,7 @@
 #endregion Copyright (c) 2026 Technosoftware GmbH. All rights reserved
 
 #region Using Directives
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -43,7 +44,7 @@ namespace Technosoftware.UaServer.Tests
         [OneTimeSetUp]
         public async Task OneTimeSetUpAsync()
         {
-            m_fixture = new ServerFixture<ReferenceServer>
+            m_fixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry))
             {
                 AllNodeManagers = true,
                 OperationLimits = true
@@ -98,16 +99,16 @@ namespace Technosoftware.UaServer.Tests
                 ResultMask = (uint)BrowseResultMask.All
             };
 
-            var browseDescriptions = new BrowseDescriptionCollection { browseRequest };
+            var browseDescriptions = new List<BrowseDescription> { browseRequest };
 
             BrowseResponse browseResponse = await m_server.BrowseAsync(
                 m_secureChannelContext,
                 m_requestHeader,
                 null,
                 0,
-                browseDescriptions, CancellationToken.None).ConfigureAwait(false);
+                browseDescriptions, RequestLifetime.None).ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
             Assert.That(results, Is.Not.Null);
             Assert.That(results.Count, Is.EqualTo(1));
             Assert.That(results[0].References.Count, Is.GreaterThan(0), "ModellingRules folder should not be empty");
@@ -161,16 +162,16 @@ namespace Technosoftware.UaServer.Tests
                 ResultMask = (uint)BrowseResultMask.All
             };
 
-            var browseDescriptions = new BrowseDescriptionCollection { browseRequest };
+            var browseDescriptions = new List<BrowseDescription> { browseRequest };
 
             BrowseResponse browseResponse = await m_server.BrowseAsync(
                 m_secureChannelContext,
                 m_requestHeader,
                 null,
                 0,
-                browseDescriptions, CancellationToken.None).ConfigureAwait(false);
+                browseDescriptions, RequestLifetime.None).ConfigureAwait(false);
 
-            BrowseResultCollection results = browseResponse.Results;
+            ArrayOf<BrowseResult> results = browseResponse.Results;
             Assert.That(results, Is.Not.Null);
             Assert.That(results.Count, Is.EqualTo(1));
             Assert.That(results[0].References.Count, Is.GreaterThan(0));

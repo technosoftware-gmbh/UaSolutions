@@ -65,19 +65,19 @@ namespace Technosoftware.UaServer
 
         /// <inheritdoc/>
         public virtual LocalizedText Translate(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             string key,
             string text,
             params object[] args)
         {
             return Translate(
                 preferredLocales,
-                null,
+                default,
                 new TranslationInfo(key, string.Empty, text, args));
         }
 
         /// <inheritdoc/>
-        public LocalizedText Translate(IList<string> preferredLocales, LocalizedText text)
+        public LocalizedText Translate(ArrayOf<string> preferredLocales, LocalizedText text)
         {
             return Translate(preferredLocales, text, text.TranslationInfo);
         }
@@ -85,7 +85,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Translates a service result.
         /// </summary>
-        public ServiceResult Translate(IList<string> preferredLocales, ServiceResult result)
+        public ServiceResult Translate(ArrayOf<string> preferredLocales, ServiceResult result)
         {
             if (result == null)
             {
@@ -93,16 +93,16 @@ namespace Technosoftware.UaServer
             }
             // translate localized text.
             LocalizedText translatedText;
-            if (LocalizedText.IsNullOrEmpty(result.LocalizedText))
+            if (result.LocalizedText.IsNullOrEmpty)
             {
                 // extract any additional arguments from the translation info.
                 object[] args = null;
 
-                if (result.LocalizedText != null && result.LocalizedText.TranslationInfo != null)
+                if (!result.LocalizedText.IsNull && !result.LocalizedText.TranslationInfo.IsNull)
                 {
                     TranslationInfo info = result.LocalizedText.TranslationInfo;
 
-                    if (info != null && info.Args != null && info.Args.Length > 0)
+                    if (!info.IsNull && info.Args != null && info.Args.Length > 0)
                     {
                         args = info.Args;
                     }
@@ -123,7 +123,7 @@ namespace Technosoftware.UaServer
             }
             else
             {
-                if (preferredLocales == null || preferredLocales.Count == 0)
+                if (preferredLocales.Count == 0)
                 {
                     return result;
                 }
@@ -298,26 +298,29 @@ namespace Technosoftware.UaServer
         /// Translates the text provided.
         /// </summary>
         protected virtual LocalizedText Translate(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             LocalizedText defaultText,
             TranslationInfo info)
         {
-            defaultText = FilterByPreferredLocales(defaultText, preferredLocales);
-
-            bool isMultilanguageRequested =
-                preferredLocales?.Count > 0 &&
-                preferredLocales[0].ToLowerInvariant() is "mul" or "qst";
-
             // check for trivial case.
-            if (info == null || (string.IsNullOrEmpty(info.Text) && string.IsNullOrEmpty(info.Key)))
+            if (string.IsNullOrEmpty(info.Text) && string.IsNullOrEmpty(info.Key))
             {
-                return defaultText;
+                return FilterByPreferredLocales(defaultText, preferredLocales);
             }
 
+            // The default text is not filtered before the exact-match checks
+            // below: filtering reorders the translations into the requested
+            // order, and an exact match has to hand back what it was given.
+            defaultText = defaultText.WithTranslationInfo(info);
+
+            bool isMultilanguageRequested =
+                preferredLocales.Count > 0 &&
+                preferredLocales[0].ToLowerInvariant() is "mul" or "qst";
+
             // check for exact match.
-            if (preferredLocales != null && preferredLocales.Count > 0)
+            if (preferredLocales.Count > 0)
             {
-                if (defaultText != null &&
+                if (!defaultText.IsNullOrEmpty &&
                     !isMultilanguageRequested &&
                     preferredLocales[0] == defaultText.Locale)
                 {
@@ -327,9 +330,9 @@ namespace Technosoftware.UaServer
                 // MultiLanguageText requested, specified numer of locales was found in the default text.
                 if (isMultilanguageRequested &&
                     preferredLocales.Count > 1 &&
-                    defaultText?.Translations?.Count == preferredLocales.Count - 1)
+                    defaultText.Translations?.Count == preferredLocales.Count - 1)
                 {
-                    return defaultText;
+                    return defaultText.AsMultiLanguage();
                 }
 
                 if (preferredLocales[0] == info.Locale)
@@ -342,7 +345,7 @@ namespace Technosoftware.UaServer
             if (isMultilanguageRequested)
             {
                 Dictionary<string, string> translations =
-                    defaultText?.Translations != null
+                    defaultText.Translations != null
                         ? defaultText.Translations.ToDictionary(pair => pair.Key, pair => pair.Value)
                         : [];
                 // If only mul/qst is requested, return all available translations for the key.
@@ -409,7 +412,13 @@ namespace Technosoftware.UaServer
                         }
                     }
                 }
-                return new LocalizedText(translations);
+                // 2.0 renders the MultiLanguageText form - the {"t":[...]}
+                // text with the "mul" locale - through AsMultiLanguage rather
+                // than by constructing a LocalizedText from the translations.
+                return FilterByPreferredLocales(
+                        defaultText.WithTranslations(translations),
+                        preferredLocales)
+                    .AsMultiLanguage();
             }
             // single locale requested.
             else
@@ -463,7 +472,7 @@ namespace Technosoftware.UaServer
                 }
 
                 // construct translated localized text.
-                return new LocalizedText(culture.Name, formattedText) { TranslationInfo = info };
+                return new LocalizedText(culture.Name, formattedText, info);
             }
         }
 
@@ -475,9 +484,9 @@ namespace Technosoftware.UaServer
         /// <returns></returns>
         protected virtual LocalizedText FilterByPreferredLocales(
             LocalizedText localizedText,
-            IList<string> preferredLocales)
+            ArrayOf<string> preferredLocales)
         {
-            return localizedText?.FilterByPreferredLocales(preferredLocales);
+            return localizedText.FilterByPreferredLocales(preferredLocales);
         }
 
         /// <summary>
@@ -519,14 +528,14 @@ namespace Technosoftware.UaServer
         /// Finds the best translation for the requested locales.
         /// </summary>
         private string FindBestTranslation(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             string key,
             out CultureInfo culture)
         {
             culture = null;
             TranslationTable match = null;
 
-            if (preferredLocales == null || preferredLocales.Count == 0)
+            if (preferredLocales.Count == 0)
             {
                 return null;
             }
@@ -588,7 +597,7 @@ namespace Technosoftware.UaServer
         /// Translates a status code.
         /// </summary>
         private LocalizedText TranslateStatusCode(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             StatusCode statusCode,
             object[] args)
         {
@@ -603,18 +612,18 @@ namespace Technosoftware.UaServer
                         info = new TranslationInfo(info.Key, info.Locale, info.Text, args);
                     }
 
-                    return Translate(preferredLocales, null, info);
+                    return Translate(preferredLocales, default, info);
                 }
             }
 
-            return Utils.Format("{0:X8}", statusCode.Code);
+            return new LocalizedText(Utils.Format("{0:X8}", statusCode.Code));
         }
 
         /// <summary>
         /// Translates a symbolic id.
         /// </summary>
         private LocalizedText TranslateSymbolicId(
-            IList<string> preferredLocales,
+            ArrayOf<string> preferredLocales,
             string symbolicId,
             string namespaceUri,
             object[] args)
@@ -632,11 +641,11 @@ namespace Technosoftware.UaServer
                         info = new TranslationInfo(info.Key, info.Locale, info.Text, args);
                     }
 
-                    return Translate(preferredLocales, null, info);
+                    return Translate(preferredLocales, default, info);
                 }
             }
 
-            return symbolicId;
+            return new LocalizedText(symbolicId);
         }
 
         private readonly Lock m_lock = new();

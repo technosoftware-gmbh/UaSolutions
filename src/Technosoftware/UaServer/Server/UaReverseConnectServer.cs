@@ -148,7 +148,8 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Creates a reverse connect server based on a StandardServer.
         /// </summary>
-        public UaReverseConnectServer()
+        public UaReverseConnectServer(ITelemetryContext telemetry)
+            : base(telemetry)
         {
             m_connectInterval = DefaultReverseConnectInterval;
             m_connectTimeout = DefaultReverseConnectTimeout;
@@ -409,7 +410,7 @@ namespace Technosoftware.UaServer
             {
                 if (m_reverseConnectTimer != null)
                 {
-                    Utils.SilentDispose(m_reverseConnectTimer);
+                    m_reverseConnectTimer?.Dispose();
                     m_reverseConnectTimer = null;
                 }
             }
@@ -459,9 +460,8 @@ namespace Technosoftware.UaServer
                         reverseConnect.RejectTimeout > 0
                             ? reverseConnect.RejectTimeout
                             : DefaultReverseConnectRejectTimeout;
-                    if (reverseConnect.Clients != null)
+                    foreach (ReverseConnectClient client in reverseConnect.Clients)
                     {
-                        foreach (ReverseConnectClient client in reverseConnect.Clients)
                         {
                             Uri uri = Utils.ParseUri(client.EndpointUrl);
                             if (uri != null)

@@ -15,6 +15,7 @@
 
 #region Using Directives
 using Opc.Ua;
+using System.Threading;
 #endregion Using Directives
 
 namespace SampleCompany.NodeManagers.TestData
@@ -24,9 +25,12 @@ namespace SampleCompany.NodeManagers.TestData
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
-        protected override void OnAfterCreate(ISystemContext context, NodeState node)
+        protected override void OnAfterCreate(
+            ISystemContext context,
+            NodeState node,
+            CancellationToken ct = default)
         {
-            base.OnAfterCreate(context, node);
+            base.OnAfterCreate(context, node, ct);
             MonitoredNodeCount.OnSimpleReadValue = OnReadMonitoredNodeCount;
         }
 
@@ -36,7 +40,7 @@ namespace SampleCompany.NodeManagers.TestData
         protected virtual ServiceResult OnReadMonitoredNodeCount(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             if (context?.SystemHandle is not TestDataSystem system)
             {

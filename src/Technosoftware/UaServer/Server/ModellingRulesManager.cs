@@ -62,7 +62,7 @@ namespace Technosoftware.UaServer
         /// <returns>True if the modelling rule is supported.</returns>
         public bool IsSupported(NodeId modellingRuleId)
         {
-            if (NodeId.IsNull(modellingRuleId))
+            if (modellingRuleId.IsNull)
             {
                 return false;
             }

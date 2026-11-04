@@ -23,6 +23,7 @@ using System.Threading;
 using System;
 using NUnit.Framework;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using Technosoftware.UaServer;
 #endregion Using Directives
 
@@ -45,10 +46,11 @@ namespace Technosoftware.UaServer.Tests
         public async Task OneTimeSetUpAsync()
         {
             m_pkiRoot = Path.GetTempPath() + Path.GetRandomFileName() + Path.DirectorySeparatorChar;
-            m_fixture = new ServerFixture<UaStandardServer>();
+            m_fixture = new ServerFixture<UaStandardServer>(telemetry => new UaStandardServer(telemetry));
             await m_fixture.LoadConfigurationAsync(m_pkiRoot).ConfigureAwait(false);
-            m_fixture.Config.ServerConfiguration.UserTokenPolicies
-                .Add(new UserTokenPolicy(UserTokenType.UserName));
+            m_fixture.Config.ServerConfiguration.UserTokenPolicies =
+                m_fixture.Config.ServerConfiguration.UserTokenPolicies
+                    .AddItem(new UserTokenPolicy(UserTokenType.UserName));
             await m_fixture.StartAsync(m_pkiRoot).ConfigureAwait(false);
         }
 
@@ -79,18 +81,19 @@ namespace Technosoftware.UaServer.Tests
         public async Task SharedSecuredChannelGetsRandomTokenAsync()
         {
             // one channel id for both clients, as with the HTTPS ListenerId.
-            SecureChannelContext sharedChannel = CreateSecuredContext("https-listener");
+            using SecuredClientChannel sharedChannel = CreateSecuredChannel("https-listener");
 
             NodeId victim = (await CreateSessionAsync(sharedChannel, "Victim")
-                .ConfigureAwait(false)).AuthenticationToken;
+                .ConfigureAwait(false)).Response.AuthenticationToken;
             NodeId attacker = (await CreateSessionAsync(sharedChannel, "Attacker")
-                .ConfigureAwait(false)).AuthenticationToken;
+                .ConfigureAwait(false)).Response.AuthenticationToken;
 
             foreach (NodeId token in new[] { victim, attacker })
             {
                 Assert.That(token.IdType, Is.EqualTo(IdType.Opaque),
                     "The token on a shared secured channel must be a random opaque value.");
-                Assert.That(((byte[])token.Identifier).Length, Is.GreaterThanOrEqualTo(32));
+                Assert.That(token.TryGetValue(out ByteString identifier), Is.True);
+                Assert.That(identifier.Length, Is.GreaterThanOrEqualTo(32));
             }
             Assert.That(victim, Is.Not.EqualTo(attacker));
         }
@@ -105,12 +108,12 @@ namespace Technosoftware.UaServer.Tests
         [Test]
         public async Task PasswordDecryptionFailuresAreIndistinguishableAsync()
         {
-            SecureChannelContext channel = CreateSecuredContext("oracle-channel");
-            CreateSessionResponse created = await CreateSessionAsync(channel, "Oracle")
+            using SecuredClientChannel channel = CreateSecuredChannel("oracle-channel");
+            (CreateSessionResponse created, ByteString clientNonce) = await CreateSessionAsync(channel, "Oracle")
                 .ConfigureAwait(false);
 
-            X509Certificate2 serverCertificate = Utils.ParseCertificateChainBlob(
-                channel.EndpointDescription.ServerCertificate,
+            Certificate serverCertificate = Utils.ParseCertificateChainBlob(
+                channel.Context.EndpointDescription.ServerCertificate,
                 m_fixture.Server.MessageContext.Telemetry)[0];
             using RSA rsa = serverCertificate.GetRSAPublicKey();
 
@@ -125,9 +128,9 @@ namespace Technosoftware.UaServer.Tests
             badPadding[^1] = 0x01;
 
             ServiceResultException lengthError = await ActivateWithPasswordAsync(
-                channel, created, badLength).ConfigureAwait(false);
+                channel, created, clientNonce, badLength).ConfigureAwait(false);
             ServiceResultException paddingError = await ActivateWithPasswordAsync(
-                channel, created, badPadding).ConfigureAwait(false);
+                channel, created, clientNonce, badPadding).ConfigureAwait(false);
 
             foreach (ServiceResultException error in new[] { lengthError, paddingError })
             {
@@ -140,46 +143,40 @@ namespace Technosoftware.UaServer.Tests
             Assert.That(lengthError.Message, Is.EqualTo(paddingError.Message));
         }
 
-        private SecureChannelContext CreateSecuredContext(string channelId)
+        private SecuredClientChannel CreateSecuredChannel(string channelId)
         {
-            EndpointDescription endpoint = m_fixture.Server.GetEndpoints().First(e =>
+            EndpointDescription endpoint = m_fixture.Server.GetEndpoints().ToArray().First(e =>
                 e.SecurityMode == MessageSecurityMode.SignAndEncrypt &&
                 e.SecurityPolicyUri == SecurityPolicies.Basic256Sha256);
-            return new SecureChannelContext(channelId, endpoint, RequestEncoding.Binary);
+            // 2.0 needs a client nonce and certificate for CreateSession on a
+            // secured channel and a client signature for ActivateSession.
+            return SecuredClientChannel.Create(m_fixture.Server, endpoint, channelId);
         }
 
-        private async Task<CreateSessionResponse> CreateSessionAsync(
-            SecureChannelContext context,
+        private static async Task<(CreateSessionResponse Response, ByteString ClientNonce)> CreateSessionAsync(
+            SecuredClientChannel channel,
             string sessionName)
         {
-            CreateSessionResponse response = await m_fixture.Server.CreateSessionAsync(
-                context,
-                new RequestHeader(),
-                null,
-                null,
-                null,
-                sessionName,
-                null,
-                null,
-                ServerFixtureUtils.DefaultSessionTimeout,
-                ServerFixtureUtils.DefaultMaxResponseMessageSize,
-                CancellationToken.None).ConfigureAwait(false);
+            (CreateSessionResponse response, ByteString clientNonce) = await channel
+                .CreateSessionAsync(new RequestHeader(), sessionName)
+                .ConfigureAwait(false);
             ServerFixtureUtils.ValidateResponse(response.ResponseHeader);
-            return response;
+            return (response, clientNonce);
         }
 
         private async Task<ServiceResultException> ActivateWithPasswordAsync(
-            SecureChannelContext context,
+            SecuredClientChannel channel,
             CreateSessionResponse created,
+            ByteString clientNonce,
             byte[] password)
         {
-            UserTokenPolicy policy = context.EndpointDescription.UserIdentityTokens
-                .First(p => p.TokenType == UserTokenType.UserName);
+            UserTokenPolicy policy = channel.Context.EndpointDescription.UserIdentityTokens
+                .ToArray().First(p => p.TokenType == UserTokenType.UserName);
             var token = new UserNameIdentityToken
             {
                 PolicyId = policy.PolicyId,
                 UserName = "user1",
-                Password = password,
+                Password = ByteString.From(password),
                 EncryptionAlgorithm = SecurityAlgorithms.RsaOaep
             };
             var requestHeader = new RequestHeader
@@ -190,14 +187,14 @@ namespace Technosoftware.UaServer.Tests
             try
             {
                 await m_fixture.Server.ActivateSessionAsync(
-                    context,
+                    channel.Context,
                     requestHeader,
-                    null,
+                    channel.CreateClientSignature(created, clientNonce),
                     [],
                     [],
                     new ExtensionObject(token),
                     null,
-                    CancellationToken.None).ConfigureAwait(false);
+                    RequestLifetime.None).ConfigureAwait(false);
             }
             catch (ServiceResultException sre)
             {

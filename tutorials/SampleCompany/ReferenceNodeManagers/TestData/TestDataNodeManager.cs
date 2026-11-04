@@ -36,7 +36,7 @@ namespace SampleCompany.NodeManagers.TestData
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
             => [Namespaces.TestData, Namespaces.TestData + "Instance"];
     }
 
@@ -85,20 +85,20 @@ namespace SampleCompany.NodeManagers.TestData
             if (disposing)
             {
 #if CONDITION_SAMPLES
-                Utils.SilentDispose(m_systemStatusTimer);
-                Utils.SilentDispose(m_systemStatusCondition);
-                Utils.SilentDispose(m_dialog);
+                m_systemStatusTimer?.Dispose();
+                m_systemStatusCondition?.Dispose();
+                m_dialog?.Dispose();
 
                 m_systemStatusTimer = null;
                 m_systemStatusCondition = null;
                 m_dialog = null;
 #endif
-                Utils.SilentDispose(m_dataStaticStructureScalarStructure);
-                Utils.SilentDispose(m_dataDynamicStructureScalarStructure);
-                Utils.SilentDispose(m_dataStaticStructureVectorStructure);
-                Utils.SilentDispose(m_dataDynamicStructureVectorStructure);
-                Utils.SilentDispose(m_dataStaticVectorScalarValue);
-                Utils.SilentDispose(m_dataDynamicVectorScalarValue);
+                (m_dataStaticStructureScalarStructure as IDisposable)?.Dispose();
+                (m_dataDynamicStructureScalarStructure as IDisposable)?.Dispose();
+                (m_dataStaticStructureVectorStructure as IDisposable)?.Dispose();
+                (m_dataDynamicStructureVectorStructure as IDisposable)?.Dispose();
+                (m_dataStaticVectorScalarValue as IDisposable)?.Dispose();
+                (m_dataDynamicVectorScalarValue as IDisposable)?.Dispose();
 
                 m_dataStaticStructureScalarStructure = null;
                 m_dataDynamicStructureScalarStructure = null;
@@ -115,7 +115,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         public void OnDataChange(
             BaseVariableState variable,
-            object value,
+            Variant value,
             StatusCode statusCode,
             DateTime timestamp)
         {
@@ -183,7 +183,7 @@ namespace SampleCompany.NodeManagers.TestData
 
                 if (m_systemStatusCondition != null)
                 {
-                    Utils.SilentDispose(m_systemStatusTimer);
+                    m_systemStatusTimer?.Dispose();
                     m_systemStatusTimer = new Timer(OnCheckSystemStatus, null, 5000, 5000);
                     m_systemStatusCondition.Retain.Value = true;
                 }
@@ -271,13 +271,11 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
-            var predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(
-                context,
-                "SampleCompany.NodeManagers.TestData.Generated.SampleCompany.NodeManagers.TestData.PredefinedNodes.uanodes",
-                GetType().GetTypeInfo().Assembly,
-                true);
-            return predefinedNodes;
+            // The model source generator builds the predefined nodes from
+            // TestDataDesign.xml at compile time, so there is no .uanodes
+            // resource to load and no reflection on the way in.
+            return new NodeStateCollection()
+                .AddSampleCompanyNodeManagersTestData(context);
         }
 
         /// <summary>
@@ -291,12 +289,13 @@ namespace SampleCompany.NodeManagers.TestData
             {
                 NodeId typeId = passiveNode.TypeDefinitionId;
 
-                if (!IsNodeIdInNamespace(typeId) || typeId.IdType != IdType.Numeric)
+                if (!IsNodeIdInNamespace(typeId) ||
+                    !typeId.TryGetValue(out uint numericTypeId))
                 {
                     return predefinedNode;
                 }
 
-                switch ((uint)typeId.Identifier)
+                switch (numericTypeId)
                 {
                     case ObjectTypes.TestSystemConditionType:
                     {
@@ -431,12 +430,13 @@ namespace SampleCompany.NodeManagers.TestData
             {
                 NodeId typeId = variableNode.TypeDefinitionId;
 
-                if (!IsNodeIdInNamespace(typeId) || typeId.IdType != IdType.Numeric)
+                if (!IsNodeIdInNamespace(typeId) ||
+                    !typeId.TryGetValue(out uint numericTypeId))
                 {
                     return predefinedNode;
                 }
 
-                switch ((uint)typeId.Identifier)
+                switch (numericTypeId)
                 {
                     case VariableTypes.ScalarStructureVariableType:
                     {
@@ -477,7 +477,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         protected virtual HistoryDataReader RestoreDataReader(
             UaServerContext context,
-            byte[] continuationPoint)
+            ByteString continuationPoint)
         {
             if (context == null ||
                 context.OperationContext == null ||
@@ -544,8 +544,12 @@ namespace SampleCompany.NodeManagers.TestData
 
             var data = new HistoryData();
 
+            // HistoryData.DataValues is an immutable ArrayOf in 2.0, so the
+            // reader fills a list that is assigned to it once reading is done.
+            var dataValues = new List<DataValue>();
+
             HistoryDataReader reader;
-            if (nodeToRead.ContinuationPoint != null && nodeToRead.ContinuationPoint.Length > 0)
+            if (nodeToRead.ContinuationPoint.Length > 0)
             {
                 // restore the continuation point.
                 reader = RestoreDataReader(serverContext, nodeToRead.ContinuationPoint);
@@ -558,14 +562,14 @@ namespace SampleCompany.NodeManagers.TestData
                 // node id must match previous node id.
                 if (reader.VariableId != nodeToRead.NodeId)
                 {
-                    Utils.SilentDispose(reader);
+                    reader?.Dispose();
                     return StatusCodes.BadContinuationPointInvalid;
                 }
 
                 // check if releasing continuation points.
                 if (releaseContinuationPoints)
                 {
-                    Utils.SilentDispose(reader);
+                    reader?.Dispose();
                     return ServiceResult.Good;
                 }
             }
@@ -592,7 +596,7 @@ namespace SampleCompany.NodeManagers.TestData
                     timestampsToReturn,
                     nodeToRead.ParsedIndexRange,
                     nodeToRead.DataEncoding,
-                    data.DataValues);
+                    dataValues);
             }
 
             // continue reading data until done or max values reached.
@@ -601,7 +605,9 @@ namespace SampleCompany.NodeManagers.TestData
                 timestampsToReturn,
                 nodeToRead.ParsedIndexRange,
                 nodeToRead.DataEncoding,
-                data.DataValues);
+                dataValues);
+
+            data.DataValues = dataValues;
 
             // save continuation point.
             if (!complete)
@@ -623,7 +629,7 @@ namespace SampleCompany.NodeManagers.TestData
             UaServerContext context,
             ReadRawModifiedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
@@ -665,7 +671,7 @@ namespace SampleCompany.NodeManagers.TestData
         /// </summary>
         protected override void HistoryReleaseContinuationPoints(
             UaServerContext context,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<ServiceResult> errors,
             List<UaNodeHandle> nodesToProcess,
             IDictionary<NodeId, NodeState> cache)

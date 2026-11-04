@@ -15,6 +15,7 @@
 
 #region Using Directives
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -65,7 +66,7 @@ namespace Technosoftware.UaClient.Tests
             PkiRoot = Path.GetTempPath() + Path.GetRandomFileName();
 
             // start ref server with reverse connect
-            ServerFixture = new ServerFixture<ReferenceServer>
+            ServerFixture = new ServerFixture<ReferenceServer>(telemetry => new ReferenceServer(telemetry))
             {
                 AutoAccept = true,
                 SecurityNone = true,
@@ -96,7 +97,7 @@ namespace Technosoftware.UaClient.Tests
         [OneTimeTearDown]
         public override Task OneTimeTearDownAsync()
         {
-            Utils.SilentDispose(ClientFixture);
+            ClientFixture?.Dispose();
             return base.OneTimeTearDownAsync();
         }
 
@@ -155,7 +156,7 @@ namespace Technosoftware.UaClient.Tests
                     connection,
                     endpointConfiguration,
                     ct: cancellationTokenSource.Token).ConfigureAwait(false);
-                Endpoints = await client.GetEndpointsAsync(null, cancellationTokenSource.Token)
+                Endpoints = await client.GetEndpointsAsync(default, cancellationTokenSource.Token)
                     .ConfigureAwait(false);
                 await client.CloseAsync(cancellationTokenSource.Token).ConfigureAwait(false);
             }
@@ -231,7 +232,7 @@ namespace Technosoftware.UaClient.Tests
                     "Reverse Connect Client",
                     MaxTimeout,
                     new UserIdentity(),
-                    null)
+                    default)
                 .ConfigureAwait(false);
             Assert.NotNull(session);
 
@@ -244,7 +245,7 @@ namespace Technosoftware.UaClient.Tests
 
             // Browse
             var clientTestServices = new ClientTestServices(session, telemetry);
-            ReferenceDescriptionCollection referenceDescriptions = await CommonTestWorkers
+            ArrayOf<ReferenceDescription> referenceDescriptions = await CommonTestWorkers
                 .BrowseFullAddressSpaceWorkerAsync(
                     clientTestServices,
                     requestHeader)
@@ -296,7 +297,7 @@ namespace Technosoftware.UaClient.Tests
                     "Reverse Connect Client",
                     MaxTimeout,
                     new UserIdentity(),
-                    null)
+                    default)
                 .ConfigureAwait(false);
 
             Assert.NotNull(session);
@@ -310,7 +311,7 @@ namespace Technosoftware.UaClient.Tests
 
             // Browse
             var clientTestServices = new ClientTestServices(session, telemetry);
-            ReferenceDescriptionCollection referenceDescriptions = await CommonTestWorkers
+            ArrayOf<ReferenceDescription> referenceDescriptions = await CommonTestWorkers
                 .BrowseFullAddressSpaceWorkerAsync(
                     clientTestServices,
                     requestHeader)
@@ -328,7 +329,7 @@ namespace Technosoftware.UaClient.Tests
             await m_requiredLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (Endpoints == null)
+                if (Endpoints.IsEmpty)
                 {
                     await GetEndpointsInternalAsync().ConfigureAwait(false);
                 }

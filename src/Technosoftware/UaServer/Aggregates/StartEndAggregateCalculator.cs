@@ -57,13 +57,11 @@ namespace Technosoftware.UaServer
         /// </summary>
         protected override DataValue ComputeValue(TimeSlice slice)
         {
-            uint? id = AggregateId.Identifier as uint?;
-
-            if (id == null)
+            if (!AggregateId.TryGetValue(out uint id))
             {
                 return base.ComputeValue(slice);
             }
-            switch (id.Value)
+            switch (id)
             {
                 case Objects.AggregateFunction_Start:
                     return ComputeStartEnd(slice, false);
@@ -122,7 +120,7 @@ namespace Technosoftware.UaServer
             }
 
             double startValue = double.NaN;
-            TypeInfo originalType = null;
+            TypeInfo originalType = default;
             bool badDataSkipped = false;
 
             for (int ii = 0; ii < values.Count; ii++)
@@ -178,38 +176,29 @@ namespace Technosoftware.UaServer
                 return GetNoDataValue(slice);
             }
 
-            var value = new DataValue
-            {
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
+            var value = new DataValue()
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
 
             // set status code.
             if (badDataSkipped)
             {
-                value.StatusCode = StatusCodes.UncertainDataSubNormal;
+                value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // calculate delta.
             double delta = endValue - startValue;
 
-            if (originalType != null && originalType.BuiltInType != BuiltInType.Double)
+            if (originalType.IsUnknown)
             {
-                object delta2 = TypeInfo.Cast(
-                    delta,
-                    TypeInfo.Scalars.Double,
-                    originalType.BuiltInType);
-                value.WrappedValue = new Variant(delta2, originalType);
-            }
-            else
-            {
-                value.WrappedValue = new Variant(delta, TypeInfo.Scalars.Double);
+                originalType = TypeInfo.Scalars.Double;
             }
 
             // return result.
-            return value;
+            return value.WithWrappedValue(
+                new Variant(delta).ConvertTo(originalType.BuiltInType));
         }
 
         /// <summary>
@@ -241,17 +230,17 @@ namespace Technosoftware.UaServer
 
             if (!IsGood(value))
             {
-                value.StatusCode = StatusCodes.BadNoData;
+                value = value.WithStatus(StatusCodes.BadNoData);
             }
 
             if (returnEnd)
             {
-                value.SourceTimestamp = GetTimestamp(slice);
-                value.ServerTimestamp = GetTimestamp(slice);
+                value = value.WithSourceTimestamp(GetTimestamp(slice));
+                value = value.WithServerTimestamp(GetTimestamp(slice));
 
                 if (StatusCode.IsNotBad(value.StatusCode))
                 {
-                    value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+                    value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
                 }
             }
 
@@ -311,37 +300,28 @@ namespace Technosoftware.UaServer
                 return GetNoDataValue(slice);
             }
 
-            var value = new DataValue
-            {
-                SourceTimestamp = GetTimestamp(slice),
-                ServerTimestamp = GetTimestamp(slice)
-            };
+            var value = new DataValue()
+                .WithSourceTimestamp(GetTimestamp(slice))
+                .WithServerTimestamp(GetTimestamp(slice));
 
             if (!IsGood(start) || !IsGood(end))
             {
-                value.StatusCode = StatusCodes.UncertainDataSubNormal;
+                value = value.WithStatus(StatusCodes.UncertainDataSubNormal);
             }
 
-            value.StatusCode = value.StatusCode.SetAggregateBits(AggregateBits.Calculated);
+            value = value.WithStatus(value.StatusCode.WithAggregateBits(AggregateBits.Calculated));
 
             // calculate delta.
             double delta = endValue - startValue;
 
-            if (originalType != null && originalType.BuiltInType != BuiltInType.Double)
+            if (originalType.IsUnknown)
             {
-                object delta2 = TypeInfo.Cast(
-                    delta,
-                    TypeInfo.Scalars.Double,
-                    originalType.BuiltInType);
-                value.WrappedValue = new Variant(delta2, originalType);
-            }
-            else
-            {
-                value.WrappedValue = new Variant(delta, TypeInfo.Scalars.Double);
+                originalType = TypeInfo.Scalars.Double;
             }
 
             // return result.
-            return value;
+            return value.WithWrappedValue(
+                new Variant(delta).ConvertTo(originalType.BuiltInType));
         }
         #endregion Protected Methods
     }

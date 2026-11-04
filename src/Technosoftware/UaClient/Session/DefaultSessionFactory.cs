@@ -16,10 +16,10 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient
@@ -51,7 +51,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             return CreateAsync(
@@ -75,7 +75,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             return CreateAsync(
@@ -102,7 +102,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             return CreateAsync(
@@ -129,7 +129,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? userIdentity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             CancellationToken ct = default)
         {
             if (reverseConnectManager == null)
@@ -151,7 +151,7 @@ namespace Technosoftware.UaClient
             {
                 connection = await reverseConnectManager
                     .WaitForConnectionAsync(
-                        endpoint.EndpointUrl,
+                        endpoint.EndpointUrl!,
                         endpoint.ReverseConnect?.ServerUri,
                         ct)
                     .ConfigureAwait(false);
@@ -159,10 +159,10 @@ namespace Technosoftware.UaClient
                 if (updateBeforeConnect)
                 {
                     await endpoint.UpdateFromServerAsync(
-                        endpoint.EndpointUrl,
+                        endpoint.EndpointUrl!,
                         connection,
                         endpoint.Description.SecurityMode,
-                        endpoint.Description.SecurityPolicyUri,
+                        endpoint.Description.SecurityPolicyUri!,
                         Telemetry,
                         ct).ConfigureAwait(false);
                     updateBeforeConnect = false;
@@ -197,7 +197,7 @@ namespace Technosoftware.UaClient
             EndpointDescription endpointDescription = endpoint.Description;
 
             // create the endpoint configuration (use the application configuration to provide default values).
-            EndpointConfiguration endpointConfiguration = endpoint.Configuration;
+            EndpointConfiguration? endpointConfiguration = endpoint.Configuration;
 
             if (endpointConfiguration == null)
             {
@@ -218,16 +218,16 @@ namespace Technosoftware.UaClient
 
             // checks the domains in the certificate.
             if (checkDomain &&
-                endpoint.Description.ServerCertificate != null &&
+                !endpoint.Description.ServerCertificate.IsNull &&
                 endpoint.Description.ServerCertificate.Length > 0)
             {
-                configuration.CertificateValidator?.ValidateDomains(
-                    CertificateFactory.Create(endpoint.Description.ServerCertificate),
+                configuration.CertificateManager?.ValidateDomains(
+                    DefaultCertificateFactory.Instance.CreateFromRawData(endpoint.Description.ServerCertificate),
                     endpoint);
             }
 
-            X509Certificate2? clientCertificate = null;
-            X509Certificate2Collection? clientCertificateChain = null;
+            Certificate? clientCertificate = null;
+            CertificateCollection? clientCertificateChain = null;
             if (endpointDescription.SecurityPolicyUri is not null and not SecurityPolicies.None)
             {
                 clientCertificate = await Session.LoadInstanceCertificateAsync(
@@ -248,7 +248,7 @@ namespace Technosoftware.UaClient
                     configuration,
                     connection,
                     endpointDescription,
-                    endpointConfiguration,
+                    endpointConfiguration!,
                     clientCertificate,
                     clientCertificateChain,
                     messageContext,
@@ -258,7 +258,7 @@ namespace Technosoftware.UaClient
             return await UaChannelBase.CreateUaBinaryChannelAsync(
                 configuration,
                 endpointDescription,
-                endpointConfiguration,
+                endpointConfiguration!,
                 clientCertificate,
                 clientCertificateChain,
                 messageContext,
@@ -323,10 +323,10 @@ namespace Technosoftware.UaClient
             ITransportChannel channel,
             ApplicationConfiguration configuration,
             ConfiguredEndpoint endpoint,
-            X509Certificate2? clientCertificate = null,
-            X509Certificate2Collection? clientCertificateChain = null,
-            EndpointDescriptionCollection? availableEndpoints = null,
-            StringCollection? discoveryProfileUris = null)
+            Certificate? clientCertificate = null,
+            CertificateCollection? clientCertificateChain = null,
+            ArrayOf<EndpointDescription> availableEndpoints = default,
+            List<string>? discoveryProfileUris = null)
         {
             return new Session(
                 channel,
@@ -367,7 +367,7 @@ namespace Technosoftware.UaClient
             string sessionName,
             uint sessionTimeout,
             IUserIdentity? identity,
-            IList<string>? preferredLocales,
+            ArrayOf<string> preferredLocales,
             DiagnosticsMasks returnDiagnostics,
             CancellationToken ct = default)
         {

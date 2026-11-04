@@ -147,7 +147,7 @@ namespace Technosoftware.UaServer.Tests
             ResetKeepAlive(subscription);
 
             // Set expiry in far future
-            SetExpiryTime(subscription, HiResClock.TickCount64 + 100000);
+            SetExpiryTime(subscription, TimeProvider.System.GetTimestampMilliseconds() + 100000);
 
             PublishingState state = subscription.PublishTimerExpired();
 
@@ -160,7 +160,7 @@ namespace Technosoftware.UaServer.Tests
             using Subscription subscription = CreateSubscription(1000);
             // Don't reset keepalive, it should be maxKeepAliveCount initially.
 
-            SetExpiryTime(subscription, HiResClock.TickCount64 - 100);
+            SetExpiryTime(subscription, TimeProvider.System.GetTimestampMilliseconds() - 100);
 
             PublishingState state = subscription.PublishTimerExpired();
 
@@ -172,7 +172,7 @@ namespace Technosoftware.UaServer.Tests
         {
             using Subscription subscription = CreateSubscription(1000);
             ResetKeepAlive(subscription);
-            SetExpiryTime(subscription, HiResClock.TickCount64 - 100);
+            SetExpiryTime(subscription, TimeProvider.System.GetTimestampMilliseconds() - 100);
 
             // Mock Monitored Item
             var itemMock = new Mock<IUaMonitoredItem>();
@@ -192,7 +192,7 @@ namespace Technosoftware.UaServer.Tests
         {
             using Subscription subscription = CreateSubscription(1000);
             ResetKeepAlive(subscription);
-            SetExpiryTime(subscription, HiResClock.TickCount64 - 100);
+            SetExpiryTime(subscription, TimeProvider.System.GetTimestampMilliseconds() - 100);
 
             // Mock Monitored Item
             var itemMock = new Mock<IUaMonitoredItem>();
@@ -212,7 +212,7 @@ namespace Technosoftware.UaServer.Tests
         {
             using Subscription subscription = CreateSubscription(1000);
             ResetKeepAlive(subscription);
-            SetExpiryTime(subscription, HiResClock.TickCount64 - 100);
+            SetExpiryTime(subscription, TimeProvider.System.GetTimestampMilliseconds() - 100);
 
             Assert.That(subscription.Diagnostics.CurrentKeepAliveCount, Is.Zero);
 
@@ -226,7 +226,7 @@ namespace Technosoftware.UaServer.Tests
         {
             using Subscription subscription = CreateSubscription(1000);
             ResetKeepAlive(subscription);
-            SetExpiryTime(subscription, HiResClock.TickCount64 - 100);
+            SetExpiryTime(subscription, TimeProvider.System.GetTimestampMilliseconds() - 100);
 
             // Item A: Triggering item. Ready to publish, Ready to trigger.
             var itemAMock = new Mock<IUaMonitoredItem>();
@@ -321,7 +321,7 @@ namespace Technosoftware.UaServer.Tests
             itemMock.SetupGet(i => i.MonitoredItemType).Returns(MonitoredItemTypeMask.DataChange);
 
             AddMonitoredItem(subscription, itemMock.Object);
-            SetExpiryTime(subscription, HiResClock.TickCount64 - 100);
+            SetExpiryTime(subscription, TimeProvider.System.GetTimestampMilliseconds() - 100);
             PublishingState state = subscription.PublishTimerExpired();
 
             AddMonitoredItemToPublish(subscription, itemMock.Object);

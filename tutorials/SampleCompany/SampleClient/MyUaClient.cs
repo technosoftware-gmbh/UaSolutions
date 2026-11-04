@@ -20,6 +20,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 using Technosoftware.UaClient;
 #endregion Using Directives
 
@@ -59,7 +60,9 @@ namespace SampleCompany.SampleClient
             m_logger = telemetry.CreateLogger<MyUaClient>();
             m_telemetry = telemetry;
             m_configuration = configuration;
-            m_configuration.CertificateValidator.CertificateValidation += OnCertificateValidation;
+            // 2.0 replaces the CertificateValidation event with a single
+            // AcceptError callback on the certificate manager.
+            m_configuration.CertificateManager.AcceptError = AcceptCertificate;
             m_reverseConnectManager = reverseConnectManager;
         }
         #endregion Constructors, Destructor, Initialization
@@ -84,8 +87,8 @@ namespace SampleCompany.SampleClient
             }
             if (disposing)
             {
-                Utils.SilentDispose(Session);
-                m_configuration.CertificateValidator.CertificateValidation -= OnCertificateValidation;
+                Session?.Dispose();
+                m_configuration.CertificateManager.AcceptError = null;
             }
             m_disposed = true;
         }
@@ -265,7 +268,7 @@ namespace SampleCompany.SampleClient
                             m_configuration.ApplicationName,
                             SessionLifeTime,
                             UserIdentity,
-                            null,
+                            default,
                             ct)
                         .ConfigureAwait(false);
 
@@ -329,7 +332,9 @@ namespace SampleCompany.SampleClient
                     {
                         // detach the channel, so it doesn't get
                         // closed when the session is disposed.
+#pragma warning disable CS0618 // leaveChannelOpen keeps the channel; there is no non-obsolete equivalent
                         Session.DetachChannel();
+#pragma warning restore CS0618
                     }
                     Session.Dispose();
                     Session = null;
@@ -435,7 +440,7 @@ namespace SampleCompany.SampleClient
                         );
                         IUaSession session = Session;
                         Session = m_reconnectHandler.Session;
-                        Utils.SilentDispose(session);
+                        session?.Dispose();
                     }
                     else
                     {
@@ -455,38 +460,32 @@ namespace SampleCompany.SampleClient
         /// Handles the certificate validation event.
         /// This event is triggered every time an untrusted certificate is received from the server.
         /// </summary>
-        protected virtual void OnCertificateValidation(
-            CertificateValidator sender,
-            CertificateValidationEventArgs e)
+        protected virtual bool AcceptCertificate(Certificate certificate, ServiceResult error)
         {
-            bool certificateAccepted = false;
-
             // ****
             // Implement a custom logic to decide if the certificate should be
-            // accepted or not and set certificateAccepted flag accordingly.
-            // The certificate can be retrieved from the e.Certificate field
+            // accepted or not. Return true to accept, false to reject.
             // ***
 
-            ServiceResult error = e.Error;
             m_logger.LogInformation("{Error}", error);
-            if (error.StatusCode == StatusCodes.BadCertificateUntrusted && AutoAccept)
-            {
-                certificateAccepted = true;
-            }
+
+            bool certificateAccepted =
+                error.StatusCode == StatusCodes.BadCertificateUntrusted && AutoAccept;
 
             if (certificateAccepted)
             {
                 m_logger.LogInformation(
                     "Untrusted Certificate accepted. Subject = {Subject}",
-                    e.Certificate.Subject);
-                e.Accept = true;
+                    certificate.Subject);
             }
             else
             {
                 m_logger.LogInformation(
                     "Untrusted Certificate rejected. Subject = {Subject}",
-                    e.Certificate.Subject);
+                    certificate.Subject);
             }
+
+            return certificateAccepted;
         }
 
         private readonly Lock m_lock = new();

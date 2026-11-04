@@ -16,10 +16,10 @@
 #region Using Directives
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
+using Opc.Ua.Security.Certificates;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -96,13 +96,13 @@ namespace Technosoftware.UaServer
         /// </summary>
         ValueTask<CreateSessionResult> CreateSessionAsync(
             UaServerOperationContext context,
-            X509Certificate2 serverCertificate,
+            Certificate serverCertificate,
             string sessionName,
-            byte[] clientNonce,
+            ByteString clientNonce,
             ApplicationDescription clientDescription,
             string endpointUrl,
-            X509Certificate2 clientCertificate,
-            X509Certificate2Collection clientCertificateChain,
+            Certificate clientCertificate,
+            CertificateCollection clientCertificateChain,
             double requestedSessionTimeout,
             uint maxResponseMessageSize,
             CancellationToken cancellationToken = default);
@@ -110,13 +110,13 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Activates an existing session
         /// </summary>
-        ValueTask<(bool IdentityContextChanged, byte[] ServerNonce)> ActivateSessionAsync(
+        ValueTask<(bool IdentityContextChanged, ByteString ServerNonce)> ActivateSessionAsync(
             UaServerOperationContext context,
             NodeId authenticationToken,
             SignatureData clientSignature,
             ExtensionObject userIdentityToken,
             SignatureData userTokenSignature,
-            StringCollection localeIds,
+            ArrayOf<string> localeIds,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The server nonce of the session.
         /// </summary>
-        public required byte[] ServerNonce { get; init; }
+        public required ByteString ServerNonce { get; init; }
 
         /// <summary>
         /// The revised session timeout.
@@ -220,19 +220,30 @@ namespace Technosoftware.UaServer
         /// Creates a new instance.
         /// </summary>
         public ImpersonateUserEventArgs(
-            UserIdentityToken newIdentity,
+            IUserIdentityTokenHandler newIdentityTokenHandler,
             UserTokenPolicy userTokenPolicy,
             EndpointDescription endpointDescription = null)
         {
-            NewIdentity = newIdentity;
+            NewIdentityTokenHandler = newIdentityTokenHandler;
             UserTokenPolicy = userTokenPolicy;
             EndpointDescription = endpointDescription;
         }
 
         /// <summary>
+        /// The handler for the new user identity token.
+        /// </summary>
+        /// <remarks>
+        /// 2.0 keeps a decrypted secret on the handler rather than writing it
+        /// back onto the token - <see cref="UserNameIdentityToken.Password"/>
+        /// stays as it arrived on the wire - so a handler that needs the
+        /// plaintext password, or the token's signature, reaches it here.
+        /// </remarks>
+        public IUserIdentityTokenHandler NewIdentityTokenHandler { get; }
+
+        /// <summary>
         /// The new user identity for the session.
         /// </summary>
-        public UserIdentityToken NewIdentity { get; }
+        public UserIdentityToken NewIdentity => NewIdentityTokenHandler?.Token;
 
         /// <summary>
         /// The user token policy selected by the client.

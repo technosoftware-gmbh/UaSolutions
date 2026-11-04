@@ -49,7 +49,7 @@ namespace Technosoftware.UaServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(Data);
+                (Data as IDisposable)?.Dispose();
             }
         }
 

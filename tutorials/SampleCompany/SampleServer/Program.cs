@@ -138,7 +138,9 @@ namespace SampleCompany.SampleServer
                 }
 
                 // create the UA server
-                var server = new MyUaServer<NodeManagers.Simulation.SimulationServer>(telemetry)
+                var server = new MyUaServer<NodeManagers.Simulation.SimulationServer>(
+                    telemetry,
+                    serverTelemetry => new NodeManagers.Simulation.SimulationServer(serverTelemetry))
                 {
                     AutoAccept = autoAccept,
                     Password = password
