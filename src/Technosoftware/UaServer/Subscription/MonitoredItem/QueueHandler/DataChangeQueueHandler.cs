@@ -106,6 +106,11 @@ namespace Technosoftware.UaServer
         /// Create a DatachangeQueueHandler from an existing queue
         /// Used for restore after a server restart
         /// </summary>
+        /// <param name="dataValueQueue">The restored queue.</param>
+        /// <param name="discardOldest">Whether the oldest value is discarded when the queue overflows.</param>
+        /// <param name="samplingInterval">The sampling interval of the monitored item.</param>
+        /// <param name="telemetry">The telemetry context.</param>
+        /// <param name="discardedValueHandler">Called when a value is discarded.</param>
         /// <param name="timeProvider">
         /// The time source the sampling interval is measured against. Defaults
         /// to <see cref="TimeProvider.System"/>.

@@ -1532,7 +1532,13 @@ namespace Technosoftware.UaServer
         /// <returns>The created argument</returns>
         protected Argument CreateArgument(string name, string description, BuiltInType dataType, int valueRank)
         {
-            var argument = new Argument { Name = name, Description = new LocalizedText(description), DataType = new NodeId((uint)dataType), ValueRank = valueRank };
+            var argument = new Argument
+            {
+                Name = name,
+                Description = new LocalizedText(description),
+                DataType = new NodeId((uint)dataType),
+                ValueRank = valueRank
+            };
 
             return argument;
         }

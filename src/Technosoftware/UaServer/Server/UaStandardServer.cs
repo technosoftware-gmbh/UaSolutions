@@ -94,14 +94,14 @@ namespace Technosoftware.UaServer
         /// <param name="endpointUrl">The endpoint URL.</param>
         /// <param name="localeIds">The locale ids.</param>
         /// <param name="serverUris">The server uris.</param>
-        /// <param name="ct">The cancellation token</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="FindServersResponse"/> object
         /// </returns>
         public override async ValueTask<FindServersResponse> FindServersAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
-            string? endpointUrl,
+            RequestHeader requestHeader,
+            string endpointUrl,
             ArrayOf<string> localeIds,
             ArrayOf<string> serverUris,
             RequestLifetime requestLifetime)
@@ -196,14 +196,14 @@ namespace Technosoftware.UaServer
         /// <param name="endpointUrl">The endpoint URL.</param>
         /// <param name="localeIds">The locale ids.</param>
         /// <param name="profileUris">The profile uris.</param>
-        /// <param name="ct">The cancellation token</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="GetEndpointsResponse"/> object
         /// </returns>
         public override async ValueTask<GetEndpointsResponse> GetEndpointsAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
-            string? endpointUrl,
+            RequestHeader requestHeader,
+            string endpointUrl,
             ArrayOf<string> localeIds,
             ArrayOf<string> profileUris,
             RequestLifetime requestLifetime)
@@ -330,17 +330,17 @@ namespace Technosoftware.UaServer
         /// <param name="clientCertificate">The client certificate.</param>
         /// <param name="requestedSessionTimeout">The requested session timeout.</param>
         /// <param name="maxResponseMessageSize">Size of the max response message.</param>
-        /// <param name="ct">The cancellation token</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="CreateSessionResponse"/> object
         /// </returns>
         public override async ValueTask<CreateSessionResponse> CreateSessionAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
-            ApplicationDescription? clientDescription,
-            string? serverUri,
-            string? endpointUrl,
-            string? sessionName,
+            RequestHeader requestHeader,
+            ApplicationDescription clientDescription,
+            string serverUri,
+            string endpointUrl,
+            string sessionName,
             ByteString clientNonce,
             ByteString clientCertificate,
             double requestedSessionTimeout,
@@ -748,18 +748,18 @@ namespace Technosoftware.UaServer
         /// <param name="localeIds">The locale ids.</param>
         /// <param name="userIdentityToken">The user identity token.</param>
         /// <param name="userTokenSignature">The user token signature.</param>
-        /// <param name="ct">The cancellationToken</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="ActivateSessionResponse"/> object
         /// </returns>
         public override async ValueTask<ActivateSessionResponse> ActivateSessionAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
-            SignatureData? clientSignature,
+            RequestHeader requestHeader,
+            SignatureData clientSignature,
             ArrayOf<SignedSoftwareCertificate> clientSoftwareCertificates,
             ArrayOf<string> localeIds,
             ExtensionObject userIdentityToken,
-            SignatureData? userTokenSignature,
+            SignatureData userTokenSignature,
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
@@ -925,10 +925,10 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="deleteSubscriptions">if set to <c>true</c> subscriptions are deleted.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         public override async ValueTask<CloseSessionResponse> CloseSessionAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             bool deleteSubscriptions,
             RequestLifetime requestLifetime)
         {
@@ -978,18 +978,20 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="requestHandle">The request handle assigned to the request.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="CancelResponse"/> object
         /// </returns>
         public override ValueTask<CancelResponse> CancelAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             uint requestHandle,
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Cancel);
+
+            CancelResponse response;
 
             try
             {
@@ -998,11 +1000,11 @@ namespace Technosoftware.UaServer
                     requestHandle,
                     out uint cancelCount);
 
-                return ValueTask.FromResult(new CancelResponse
+                response = new CancelResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable),
                     CancelCount = cancelCount
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1022,6 +1024,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1029,8 +1033,8 @@ namespace Technosoftware.UaServer
         /// </summary>
         public override async ValueTask<BrowseResponse> BrowseAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
-            ViewDescription? view,
+            RequestHeader requestHeader,
+            ViewDescription view,
             uint requestedMaxReferencesPerNode,
             ArrayOf<BrowseDescription> nodesToBrowse,
             RequestLifetime requestLifetime)
@@ -1083,7 +1087,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public override async ValueTask<BrowseNextResponse> BrowseNextAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             bool releaseContinuationPoints,
             ArrayOf<ByteString> continuationPoints,
             RequestLifetime requestLifetime)
@@ -1136,18 +1140,20 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="nodesToRegister">The list of NodeIds to register.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="RegisterNodesResponse"/> object
         /// </returns>
         public override ValueTask<RegisterNodesResponse> RegisterNodesAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ArrayOf<NodeId> nodesToRegister,
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.RegisterNodes);
+
+            RegisterNodesResponse response;
 
             try
             {
@@ -1156,11 +1162,11 @@ namespace Technosoftware.UaServer
                 m_serverInternal.NodeManager
                     .RegisterNodes(context, nodesToRegister, out ArrayOf<NodeId> registeredNodeIds);
 
-                return ValueTask.FromResult(new RegisterNodesResponse
+                response = new RegisterNodesResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable),
                     RegisteredNodeIds = registeredNodeIds
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1180,6 +1186,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1188,18 +1196,20 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="nodesToUnregister">The list of NodeIds to unregister</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="UnregisterNodesResponse"/> object
         /// </returns>
         public override ValueTask<UnregisterNodesResponse> UnregisterNodesAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ArrayOf<NodeId> nodesToUnregister,
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.UnregisterNodes);
+
+            UnregisterNodesResponse response;
 
             try
             {
@@ -1209,10 +1219,10 @@ namespace Technosoftware.UaServer
 
                 m_serverInternal.NodeManager.UnregisterNodes(context, nodesToUnregister);
 
-                return ValueTask.FromResult(new UnregisterNodesResponse
+                response = new UnregisterNodesResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1232,6 +1242,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1239,7 +1251,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public override async ValueTask<TranslateBrowsePathsToNodeIdsResponse> TranslateBrowsePathsToNodeIdsAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ArrayOf<BrowsePath> browsePaths,
             RequestLifetime requestLifetime)
         {
@@ -1301,7 +1313,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public override async ValueTask<ReadResponse> ReadAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             double maxAge,
             TimestampsToReturn timestampsToReturn,
             ArrayOf<ReadValueId> nodesToRead,
@@ -1356,7 +1368,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public override async ValueTask<HistoryReadResponse> HistoryReadAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ExtensionObject historyReadDetails,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
@@ -1425,7 +1437,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public override async ValueTask<WriteResponse> WriteAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ArrayOf<WriteValue> nodesToWrite,
             RequestLifetime requestLifetime)
         {
@@ -1473,7 +1485,7 @@ namespace Technosoftware.UaServer
         /// </summary>
         public override async ValueTask<HistoryUpdateResponse> HistoryUpdateAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ArrayOf<ExtensionObject> historyUpdateDetails,
             RequestLifetime requestLifetime)
         {
@@ -1528,13 +1540,13 @@ namespace Technosoftware.UaServer
         /// <param name="maxNotificationsPerPublish">The maximum number of notifications that the Client wishes to receive in a single Publish response.</param>
         /// <param name="publishingEnabled">If set to <c>true</c> publishing is enabled for the Subscription.</param>
         /// <param name="priority">The relative priority of the Subscription.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="CreateSubscriptionResponse"/> object
         /// </returns>
         public override async ValueTask<CreateSubscriptionResponse> CreateSubscriptionAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             double requestedPublishingInterval,
             uint requestedLifetimeCount,
             uint requestedMaxKeepAliveCount,
@@ -1592,10 +1604,10 @@ namespace Technosoftware.UaServer
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionIds">The list of Subscriptions to transfer.</param>
         /// <param name="sendInitialValues">If the initial values should be sent.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         public override async ValueTask<TransferSubscriptionsResponse> TransferSubscriptionsAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ArrayOf<uint> subscriptionIds,
             bool sendInitialValues,
             RequestLifetime requestLifetime)
@@ -1646,13 +1658,13 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionIds">The list of Subscriptions to delete.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="DeleteSubscriptionsResponse"/> object
         /// </returns>
         public override async ValueTask<DeleteSubscriptionsResponse> DeleteSubscriptionsAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ArrayOf<uint> subscriptionIds,
             RequestLifetime requestLifetime)
         {
@@ -1701,13 +1713,13 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context.</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionAcknowledgements">The list of acknowledgements for one or more Subscriptions.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="PublishResponse"/>
         /// </returns>
         public override async ValueTask<PublishResponse> PublishAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ArrayOf<SubscriptionAcknowledgement> subscriptionAcknowledgements,
             RequestLifetime requestLifetime)
         {
@@ -1780,19 +1792,21 @@ namespace Technosoftware.UaServer
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionId">The subscription id.</param>
         /// <param name="retransmitSequenceNumber">The sequence number of a specific NotificationMessage to be republished.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="RepublishResponse"/> object
         /// </returns>
         public override ValueTask<RepublishResponse> RepublishAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             uint subscriptionId,
             uint retransmitSequenceNumber,
             RequestLifetime requestLifetime)
         {
             CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.Republish);
+
+            RepublishResponse response;
 
             try
             {
@@ -1801,11 +1815,11 @@ namespace Technosoftware.UaServer
                     subscriptionId,
                     retransmitSequenceNumber);
 
-                return ValueTask.FromResult(new RepublishResponse
+                response = new RepublishResponse
                 {
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable),
                     NotificationMessage = notificationMessage
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1825,6 +1839,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1838,13 +1854,13 @@ namespace Technosoftware.UaServer
         /// <param name="requestedMaxKeepAliveCount">The requested max keep alive count.</param>
         /// <param name="maxNotificationsPerPublish">The maximum number of notifications that the Client wishes to receive in a single Publish response.</param>
         /// <param name="priority">The relative priority of the Subscription.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="ModifySubscriptionResponse"/> object
         /// </returns>
         public override ValueTask<ModifySubscriptionResponse> ModifySubscriptionAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             uint subscriptionId,
             double requestedPublishingInterval,
             uint requestedLifetimeCount,
@@ -1858,6 +1874,8 @@ namespace Technosoftware.UaServer
                 secureChannelContext,
                 requestHeader,
                 RequestType.ModifySubscription);
+
+            ModifySubscriptionResponse response;
 
             try
             {
@@ -1873,13 +1891,13 @@ namespace Technosoftware.UaServer
                     out uint revisedLifetimeCount,
                     out uint revisedMaxKeepAliveCount);
 
-                return ValueTask.FromResult(new ModifySubscriptionResponse
+                response = new ModifySubscriptionResponse
                 {
                     RevisedPublishingInterval = revisedPublishingInterval,
                     RevisedLifetimeCount = revisedLifetimeCount,
                     RevisedMaxKeepAliveCount = revisedMaxKeepAliveCount,
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1899,6 +1917,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1908,13 +1928,13 @@ namespace Technosoftware.UaServer
         /// <param name="requestHeader">The request header.</param>
         /// <param name="publishingEnabled">If set to <c>true</c> publishing of NotificationMessages is enabled for the Subscription.</param>
         /// <param name="subscriptionIds">The list of subscription ids.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="SetPublishingModeResponse"/> object
         /// </returns>
         public override ValueTask<SetPublishingModeResponse> SetPublishingModeAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             bool publishingEnabled,
             ArrayOf<uint> subscriptionIds,
             RequestLifetime requestLifetime)
@@ -1924,6 +1944,8 @@ namespace Technosoftware.UaServer
                 secureChannelContext,
                 requestHeader,
                 RequestType.SetPublishingMode);
+
+            SetPublishingModeResponse response;
 
             try
             {
@@ -1936,12 +1958,12 @@ namespace Technosoftware.UaServer
                     out List<StatusCode> results,
                     out List<DiagnosticInfo> diagnosticInfos);
 
-                return ValueTask.FromResult(new SetPublishingModeResponse
+                response = new SetPublishingModeResponse
                 {
                     Results = results,
                     DiagnosticInfos = diagnosticInfos,
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -1961,6 +1983,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -1972,13 +1996,13 @@ namespace Technosoftware.UaServer
         /// <param name="triggeringItemId">The id for the MonitoredItem used as the triggering item.</param>
         /// <param name="linksToAdd">The list of ids of the items to report that are to be added as triggering links.</param>
         /// <param name="linksToRemove">The list of ids of the items to report for the triggering links to be deleted.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="SetTriggeringResponse"/> object
         /// </returns>
         public override ValueTask<SetTriggeringResponse> SetTriggeringAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             uint subscriptionId,
             uint triggeringItemId,
             ArrayOf<uint> linksToAdd,
@@ -1987,6 +2011,8 @@ namespace Technosoftware.UaServer
         {
             CancellationToken ct = requestLifetime.CancellationToken;
             UaServerOperationContext context = ValidateRequest(secureChannelContext, requestHeader, RequestType.SetTriggering);
+
+            SetTriggeringResponse response;
 
             try
             {
@@ -2011,14 +2037,14 @@ namespace Technosoftware.UaServer
                     out List<StatusCode> removeResults,
                     out List<DiagnosticInfo> removeDiagnosticInfos);
 
-                return ValueTask.FromResult(new SetTriggeringResponse
+                response = new SetTriggeringResponse
                 {
                     AddResults = addResults,
                     AddDiagnosticInfos = addDiagnosticInfos,
                     RemoveResults = removeResults,
                     RemoveDiagnosticInfos = removeDiagnosticInfos,
                     ResponseHeader = CreateResponse(requestHeader, context.StringTable)
-                });
+                };
             }
             catch (ServiceResultException e)
             {
@@ -2038,6 +2064,8 @@ namespace Technosoftware.UaServer
             {
                 OnRequestComplete(context);
             }
+
+            return ValueTask.FromResult(response);
         }
 
         /// <summary>
@@ -2048,13 +2076,13 @@ namespace Technosoftware.UaServer
         /// <param name="subscriptionId">The subscription id that will report notifications.</param>
         /// <param name="timestampsToReturn">The type of timestamps to be returned for the MonitoredItems.</param>
         /// <param name="itemsToCreate">The list of MonitoredItems to be created and assigned to the specified subscription</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="CreateMonitoredItemsResponse"/> object
         /// </returns>
         public override async ValueTask<CreateMonitoredItemsResponse> CreateMonitoredItemsAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
             ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
@@ -2109,13 +2137,13 @@ namespace Technosoftware.UaServer
         /// <param name="subscriptionId">The subscription id.</param>
         /// <param name="timestampsToReturn">The type of timestamps to be returned for the MonitoredItems.</param>
         /// <param name="itemsToModify">The list of MonitoredItems to modify.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="ModifyMonitoredItemsResponse"/> object
         /// </returns>
         public override async ValueTask<ModifyMonitoredItemsResponse> ModifyMonitoredItemsAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             uint subscriptionId,
             TimestampsToReturn timestampsToReturn,
             ArrayOf<MonitoredItemModifyRequest> itemsToModify,
@@ -2169,13 +2197,13 @@ namespace Technosoftware.UaServer
         /// <param name="requestHeader">The request header.</param>
         /// <param name="subscriptionId">The subscription id.</param>
         /// <param name="monitoredItemIds">The list of MonitoredItems to delete.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="DeleteMonitoredItemsResponse"/> object
         /// </returns>
         public override async ValueTask<DeleteMonitoredItemsResponse> DeleteMonitoredItemsAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             uint subscriptionId,
             ArrayOf<uint> monitoredItemIds,
             RequestLifetime requestLifetime)
@@ -2228,13 +2256,13 @@ namespace Technosoftware.UaServer
         /// <param name="subscriptionId">The subscription id.</param>
         /// <param name="monitoringMode">The monitoring mode to be set for the MonitoredItems.</param>
         /// <param name="monitoredItemIds">The list of MonitoredItems to modify.</param>
-        /// <param name="ct">The cancellation token.</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="SetMonitoringModeResponse"/>
         /// </returns>
         public override async ValueTask<SetMonitoringModeResponse> SetMonitoringModeAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             uint subscriptionId,
             MonitoringMode monitoringMode,
             ArrayOf<uint> monitoredItemIds,
@@ -2292,13 +2320,13 @@ namespace Technosoftware.UaServer
         /// <param name="secureChannelContext">The secure channel context</param>
         /// <param name="requestHeader">The request header.</param>
         /// <param name="methodsToCall">The methods to call.</param>
-        /// <param name="ct">The cancellation token</param>
+        /// <param name="requestLifetime">The request lifetime, which carries the cancellation of the request.</param>
         /// <returns>
         /// Returns a <see cref="ResponseHeader"/> object
         /// </returns>
         public override async ValueTask<CallResponse> CallAsync(
             SecureChannelContext secureChannelContext,
-            RequestHeader? requestHeader,
+            RequestHeader requestHeader,
             ArrayOf<CallMethodRequest> methodsToCall,
             RequestLifetime requestLifetime)
         {
@@ -2921,9 +2949,8 @@ namespace Technosoftware.UaServer
                 Configuration.TraceConfiguration = configuration.TraceConfiguration ??
                     new TraceConfiguration();
 
-#pragma warning disable CS0618 // Type or member is obsolete
-                Configuration.TraceConfiguration.ApplySettings();
-#pragma warning restore CS0618 // Type or member is obsolete
+                // TraceConfiguration.ApplySettings was removed in 2.0: logging is configured
+                // through the ITelemetryContext.
             }
             catch (Exception e)
             {
@@ -2963,10 +2990,9 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         /// <param name="bindingFactory">The transport listener binding factory.</param>
-        /// <param name="serverDescription">The server description.</param>
-        /// <param name="endpoints">The endpoints.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>
-        /// Returns IList of a host for a UA service.
+        /// The hosts for the UA services, with the server description and the endpoints.
         /// </returns>
         protected override async ValueTask<ServiceHostInitializationResult> InitializeServiceHostsAsync(
             ApplicationConfiguration configuration,

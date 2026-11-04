@@ -118,7 +118,12 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public void Read(UaServerOperationContext context, double maxAge, ArrayOf<ReadValueId> nodesToRead, IList<DataValue> values, IList<ServiceResult> errors)
+        public void Read(
+            UaServerOperationContext context,
+            double maxAge,
+            ArrayOf<ReadValueId> nodesToRead,
+            IList<DataValue> values,
+            IList<ServiceResult> errors)
         {
             m_nodeManager.ReadAsync(context, maxAge, nodesToRead, values, errors).AsTask().GetAwaiter().GetResult();
         }
@@ -155,7 +160,11 @@ namespace Technosoftware.UaServer
         }
 
         /// <inheritdoc/>
-        public void Call(UaServerOperationContext context, ArrayOf<CallMethodRequest> methodsToCall, IList<CallMethodResult> results, IList<ServiceResult> errors)
+        public void Call(
+            UaServerOperationContext context,
+            ArrayOf<CallMethodRequest> methodsToCall,
+            IList<CallMethodResult> results,
+            IList<ServiceResult> errors)
         {
             m_nodeManager.CallAsync(context, methodsToCall, results, errors).AsTask().GetAwaiter().GetResult();
         }
