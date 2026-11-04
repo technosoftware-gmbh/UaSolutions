@@ -6,8 +6,10 @@
 |-------------|-------------|--------------------------------------|
 | 6.0         | 04-JUL-2026 | Updated to cover version 6.0         |
 | 6.1         | 17-OCT-2026 | Updated to cover version 6.1         |
+| 7.0         | 04-NOV-2026 | Updated to cover version 7.0         |
 
 - [Migration Guide](#migration-guide)
+  - [Migrating from 6.x to 7.0](#migrating-from-6x-to-70)
   - [Migrating from 6.0 to 6.1](#migrating-from-60-to-61)
   - [Migrating from 5.0 to 6.0](#migrating-from-50-to-60)
     - [General Upgrades to 6.0](#general-upgrades-to-60)
@@ -17,6 +19,26 @@
     - [General Upgrades to 5.0](#general-upgrades-to-50)
     - [Upgrade client application to 5.0](#upgrade-client-application-to-50)
     - [Upgrade server application to 5.0](#upgrade-server-application-to-50)
+
+## Migrating from 6.x to 7.0
+
+Version 7.0 uses version 2.0.1 of the OPC Foundation .NET Standard stack. Most of the work of a migration
+comes from the stack itself; the [OPC Foundation migration guide](https://github.com/OPCFoundation/UA-.NETStandard/blob/2.0.1/docs/MigrationGuide.md)
+and its migration analyzer (`OPCFoundation.NetStandard.Opc.Ua.MigrationAnalyzer`) cover the changed types,
+such as `DataValue`, `NodeId`, `StatusCode` and the removed collection classes.
+
+The NuGet package IDs no longer carry `UaSolutions`:
+
+| 6.x                                          | 7.0                              |
+|----------------------------------------------|----------------------------------|
+| `Technosoftware.UaSolutions.UaClient`        | `Technosoftware.UaClient`        |
+| `Technosoftware.UaSolutions.UaServer`        | `Technosoftware.UaServer`        |
+| `Technosoftware.UaSolutions.UaConfiguration` | `Technosoftware.UaConfiguration` |
+| `Technosoftware.UaSolutions.UaUtilities`     | `Technosoftware.UaUtilities`     |
+
+The OPC Foundation packages move to 2.0.1, which needs the `Microsoft.Extensions.*` and `System.*`
+packages at 10.0.12. A license for an earlier major version does not unlock 7.0. The
+[changelog](../changelog/index.md) lists the breaking changes of the libraries themselves.
 
 ## Migrating from 6.0 to 6.1
 

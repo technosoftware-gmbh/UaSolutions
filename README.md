@@ -16,7 +16,9 @@ Develop OPC UA compliant Clients and Servers with C# targeting .NET 10.0, .NET 9
 
 Version 6.0 has the same functionality as version 5.0 and uses also the same OPC Foundation Stack Version 1.5.378.134. The only differences are that version 6.0 only supports .NET 10.0, .NET 9.0 and .NET 8.0 and uses the original OPC Foundation Stack instead of a slightly modified version.
 
-Version 6.1 adds support for .NET 4.8 to the client, server, configuration and utilities packages. The upcoming version 7 will support .NET 4.8 as well.
+Version 6.1 adds support for .NET 4.8 to the client, server, configuration and utilities packages.
+
+Version 7.0 moves to the OPC Foundation Stack Version 2.0.1 and keeps .NET 4.8 support. The NuGet packages are now `Technosoftware.UaClient`, `Technosoftware.UaServer`, `Technosoftware.UaConfiguration` and `Technosoftware.UaUtilities`; see the [changelog](https://technosoftware-gmbh.github.io/UaSolutions/changelog/index.html) for the breaking changes.
 
 If you need support for .NET 4.7.2 or want to use the UA Client Gateway please use version 5. You find them in the subdirectory [legacy](https://github.com/technosoftware-gmbh/UaSolutions/tree/main/legacy). Version 5 will be supported for customers with license and valid support subscription until 31-MAY-2027.
 
