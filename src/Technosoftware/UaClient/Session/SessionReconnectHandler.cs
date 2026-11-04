@@ -471,7 +471,9 @@ namespace Technosoftware.UaClient
                         else if (sre.StatusCode == StatusCodes.BadSessionIdInvalid)
                         {
                             transportChannel = Session.NullableTransportChannel;
+#pragma warning disable CS0618 // legacy reconnect flow keeps the channel, as upstream 2.0.1 does
                             Session.DetachChannel();
+#pragma warning restore CS0618
                         }
                         else
                         {
