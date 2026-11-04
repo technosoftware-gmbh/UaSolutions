@@ -1,7 +1,7 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
-## OPC UA Solutions .NET - 7.0.0 (unreleased)
+## OPC UA Solutions .NET - 7.0.0
 
 ### Breaking Changes
 
@@ -80,6 +80,19 @@
   - Client: the endpoint list of CreateSession is validated regardless of order; reverse connections
     are held for their own hold time when several servers share one listener.
   - Cancelling a request that has no session yet, such as an ActivateSession, no longer throws.
+- The libraries build with warnings as errors again. The OPC Foundation migration analyzer, which the
+  move to 2.0 used, is no longer referenced. The calls to `TraceConfiguration.ApplySettings`, which 2.0
+  removed, are gone; logging is configured through the `ITelemetryContext`.
+- Nullability annotations of the public UaClient API now match what it returns and accepts. The
+  signatures are unchanged:
+  - `SessionClientExtensions.ReadValuesAsync` and `SessionClientExtensions.CallAsync` return
+    `IList<object?>`; an element is `null` when the value or output argument is null.
+  - `ReverseConnectManager.OnUpdateConfigurationAsync` accepts a `null` `ReverseConnectClientConfiguration`.
+    A configuration without a `ClientConfiguration` now stops the reverse connect service instead of
+    throwing a `NullReferenceException`.
+  - The `timeProvider` parameter of the `ReverseConnectManager` constructor is `TimeProvider?`.
+- When a user token policy names no security policy and the endpoint has none either, the client uses
+  `SecurityPolicies.None` for the user token, as the OPC Foundation stack does.
 - Compared with 6.2.0, which ports the same 1.5.378 maintenance fixes onto the 1.5.378.182 stack, 7.0
   differs in these points:
   - A certificate renewal whose CA is not in the trust list is rejected with
