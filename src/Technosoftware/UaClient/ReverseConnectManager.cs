@@ -182,7 +182,7 @@ namespace Technosoftware.UaClient
         /// </summary>
         public ReverseConnectManager(
             ITelemetryContext telemetry,
-            TimeProvider timeProvider = null)
+            TimeProvider? timeProvider = null)
         {
             m_timeProvider = timeProvider ?? TimeProvider.System;
             m_telemetry = telemetry;
@@ -288,6 +288,7 @@ namespace Technosoftware.UaClient
         /// Called when the configuration is changed on disk.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
+        /// <param name="ct">The cancellation token.</param>
         protected virtual ValueTask OnUpdateConfigurationAsync(
             ApplicationConfiguration configuration,
             CancellationToken ct = default)
@@ -297,7 +298,7 @@ namespace Technosoftware.UaClient
             m_configType = configuration.GetType();
 
             return OnUpdateConfigurationAsync(
-                configuration.ClientConfiguration.ReverseConnect,
+                configuration.ClientConfiguration?.ReverseConnect,
                 ct);
         }
 
@@ -308,8 +309,9 @@ namespace Technosoftware.UaClient
         ///  An empty configuration or null stops service on all configured endpoints.
         /// </remarks>
         /// <param name="configuration">The client endpoint configuration.</param>
+        /// <param name="ct">The cancellation token.</param>
         protected virtual async ValueTask OnUpdateConfigurationAsync(
-            ReverseConnectClientConfiguration configuration,
+            ReverseConnectClientConfiguration? configuration,
             CancellationToken ct = default)
         {
             bool restartService;
@@ -337,7 +339,7 @@ namespace Technosoftware.UaClient
                 {
                     foreach (ReverseConnectClientEndpoint endpoint in configuration.ClientEndpoints)
                     {
-                        Uri uri = Utils.ParseUri(endpoint.EndpointUrl);
+                        Uri? uri = Utils.ParseUri(endpoint.EndpointUrl);
                         if (uri != null)
                         {
                             AddEndpointInternal(uri, true);
@@ -466,6 +468,7 @@ namespace Technosoftware.UaClient
         /// Starts the server application.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
+        /// <param name="ct">The cancellation token.</param>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
         public async Task StartServiceAsync(
@@ -512,6 +515,7 @@ namespace Technosoftware.UaClient
         /// Starts the server application.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
+        /// <param name="ct">The cancellation token.</param>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is <c>null</c>.</exception>
         /// <exception cref="ServiceResultException"></exception>
         public async Task StartServiceAsync(

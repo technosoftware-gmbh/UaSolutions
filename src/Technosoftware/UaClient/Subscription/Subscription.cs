@@ -1879,15 +1879,15 @@ namespace Technosoftware.UaClient
             var clientHandles = new List<uint>();
             try
             {
-                IList<object> outputArguments = await Session.CallAsync(
+                IList<object?> outputArguments = await Session.CallAsync(
                     ObjectIds.Server,
                     MethodIds.Server_GetMonitoredItems,
                     ct,
                     TransferId).ConfigureAwait(false);
                 if (outputArguments != null && outputArguments.Count == 2)
                 {
-                    serverHandles.AddRange((uint[])outputArguments[0]);
-                    clientHandles.AddRange((uint[])outputArguments[1]);
+                    serverHandles.AddRange((uint[])outputArguments[0]!);
+                    clientHandles.AddRange((uint[])outputArguments[1]!);
                     return (true, serverHandles, clientHandles);
                 }
             }
@@ -1914,7 +1914,7 @@ namespace Technosoftware.UaClient
 
             try
             {
-                IList<object> outputArguments = await Session
+                IList<object?> outputArguments = await Session
                     .CallAsync(
                         ObjectIds.Server,
                         MethodIds.Server_SetSubscriptionDurable,
@@ -1925,7 +1925,7 @@ namespace Technosoftware.UaClient
 
                 if (outputArguments != null && outputArguments.Count == 1)
                 {
-                    revisedLifetimeInHours = (uint)outputArguments[0];
+                    revisedLifetimeInHours = (uint)outputArguments[0]!;
                     return (true, revisedLifetimeInHours);
                 }
             }
@@ -2588,7 +2588,7 @@ namespace Technosoftware.UaClient
                         {
                             foreach (ExtensionObject notificationData in message.NotificationData)
                             {
-                                if (notificationData.TryGetValue(out DataChangeNotification datachange))
+                                if (notificationData.TryGetValue(out DataChangeNotification? datachange))
                                 {
                                     datachange.PublishTime = message.PublishTime;
                                     datachange.SequenceNumber = message.SequenceNumber;
@@ -2606,7 +2606,7 @@ namespace Technosoftware.UaClient
                                         datachange,
                                         message.StringTable);
                                 }
-                                else if (notificationData.TryGetValue(out EventNotificationList events))
+                                else if (notificationData.TryGetValue(out EventNotificationList? events))
                                 {
                                     events.PublishTime = message.PublishTime;
                                     events.SequenceNumber = message.SequenceNumber;
@@ -2622,7 +2622,7 @@ namespace Technosoftware.UaClient
                                     eventCallback?.Invoke(this, events, message.StringTable);
                                 }
                                 else if (notificationData
-                                    .TryGetValue(out StatusChangeNotification statusChanged))
+                                    .TryGetValue(out StatusChangeNotification? statusChanged))
                                 {
                                     statusChanged.PublishTime = message.PublishTime;
                                     statusChanged.SequenceNumber = message.SequenceNumber;
@@ -2968,7 +2968,7 @@ namespace Technosoftware.UaClient
                         try
                         {
                             browsePath.RelativePath = RelativePath.Parse(
-                                monitoredItem.RelativePath,
+                                monitoredItem.RelativePath!,
                                 Session!.TypeTree);
                         }
                         catch (Exception e)

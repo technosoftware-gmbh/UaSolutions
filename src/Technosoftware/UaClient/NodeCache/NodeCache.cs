@@ -92,7 +92,7 @@ namespace Technosoftware.UaClient
             }
 
             m_cacheLock.EnterReadLock();
-            INode node;
+            INode? node;
             try
             {
                 // check if node already exists.
@@ -146,7 +146,7 @@ namespace Technosoftware.UaClient
             int ii;
             for (ii = 0; ii < count; ii++)
             {
-                INode node;
+                INode? node;
 
                 m_cacheLock.EnterReadLock();
                 try

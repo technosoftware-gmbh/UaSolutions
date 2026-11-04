@@ -21,7 +21,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
-using Opc.Ua.Client;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient

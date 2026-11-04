@@ -1154,6 +1154,10 @@ namespace Technosoftware.UaServer
             return sequenceNumbers.ToArrayOf();
         }
 
+        /// <summary>
+        /// Returns the sequence numbers of the sent messages that are still available for
+        /// retransmission.
+        /// </summary>
         public ArrayOf<uint> AvailableSequenceNumbersForRetransmission()
         {
             var availableSequenceNumbers = new List<uint>();

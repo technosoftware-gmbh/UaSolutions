@@ -512,7 +512,9 @@ namespace Technosoftware.UaClient.Tests
 
             // keep channel opened but detach so no comm goes through
             ITransportChannel channel = session.TransportChannel;
+#pragma warning disable CS0618 // the test detaches the channel on purpose; there is no non-obsolete equivalent
             session.DetachChannel();
+#pragma warning restore CS0618
 
             int waitTime =
                 ServerFixture.Application.ApplicationConfiguration.TransportQuotas.ChannelLifetime +
@@ -697,14 +699,18 @@ namespace Technosoftware.UaClient.Tests
                 VariableIds.Server_ServerStatus).ConfigureAwait(false);
 
             await session1.CloseAsync(closeChannel: false).ConfigureAwait(false);
+#pragma warning disable CS0618 // the test detaches the channel on purpose; there is no non-obsolete equivalent
             session1.DetachChannel();
+#pragma warning restore CS0618
             session1.Dispose();
 
             await session2.ReadValueAsync<ServerStatusDataType>(
                 VariableIds.Server_ServerStatus).ConfigureAwait(false);
 
             await session2.CloseAsync(closeChannel: false).ConfigureAwait(false);
+#pragma warning disable CS0618 // the test detaches the channel on purpose; there is no non-obsolete equivalent
             session2.DetachChannel();
+#pragma warning restore CS0618
             session2.Dispose();
 
             //Recreate session using same channel
@@ -752,7 +758,9 @@ namespace Technosoftware.UaClient.Tests
             // test case: close the channel before reconnecting
             if (closeChannel)
             {
+#pragma warning disable CS0618 // the test detaches the channel on purpose; there is no non-obsolete equivalent
                 session1.DetachChannel();
+#pragma warning restore CS0618
                 channel1.Dispose();
 
                 // cannot read using a detached channel

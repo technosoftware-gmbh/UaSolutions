@@ -332,7 +332,9 @@ namespace SampleCompany.ReferenceClient
                     {
                         // detach the channel, so it doesn't get
                         // closed when the session is disposed.
+#pragma warning disable CS0618 // leaveChannelOpen keeps the channel; there is no non-obsolete equivalent
                         Session.DetachChannel();
+#pragma warning restore CS0618
                     }
                     Session.Dispose();
                     Session = null;

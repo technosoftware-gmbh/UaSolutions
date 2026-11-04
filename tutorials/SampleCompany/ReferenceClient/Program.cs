@@ -312,9 +312,8 @@ namespace SampleCompany.ReferenceClient
                         StringComparison.Ordinal
                     );
                     config.TraceConfiguration.DeleteOnLoad = true;
-#pragma warning disable CS0618 // Type or member is obsolete
-                    config.TraceConfiguration.ApplySettings();
-#pragma warning restore CS0618 // Type or member is obsolete
+                    // the trace configuration is applied by the logging setup below;
+                    // TraceConfiguration.ApplySettings was removed in 2.0.
                 }
 
                 // setup the logging
