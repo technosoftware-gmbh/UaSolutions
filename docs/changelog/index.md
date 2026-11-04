@@ -98,9 +98,10 @@
   up to a minute. When the client's channel loses its connection, the OPC Foundation stack 2.0.1 disposes
   the socket inside the socket's own receive completion. .NET Framework then spins until the socket handle
   is released, and a garbage collection that starts meanwhile cannot complete, so every thread in the
-  process waits. Sessions with a short timeout can expire during such a freeze. .NET 8, 9 and 10 are not
-  affected. The fix belongs in the OPC Foundation stack and is tracked upstream in
-  [UA-.NETStandard#TBD](https://github.com/OPCFoundation/UA-.NETStandard/issues).
+  process waits. Sessions with a short timeout can expire during such a freeze. Running client and server
+  in separate processes makes it much rarer, but does not rule it out. .NET 8, 9 and 10 are not affected.
+  The fix belongs in the OPC Foundation stack and is tracked upstream in
+  [UA-.NETStandard#4981](https://github.com/OPCFoundation/UA-.NETStandard/issues/4981).
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.2.0
