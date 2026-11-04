@@ -58,6 +58,10 @@ namespace Technosoftware.UaClient
         /// by server in GetEndpoints() response.</param>
         /// <param name="discoveryProfileUris">The value of profileUris used in
         /// GetEndpoints() request.</param>
+        /// <param name="timeProvider">
+        /// The time source for the session's timers and tick counts. Defaults to
+        /// <see cref="TimeProvider.System"/>.
+        /// </param>
         /// <remarks>
         /// The application configuration is used to look up the certificate if none
         /// is provided. The clientCertificate must have the private key. This will
@@ -704,7 +708,7 @@ namespace Technosoftware.UaClient
         }
 
         /// <summary>
-        /// Gets the TickCount in ms of the last keep alive based on <see cref="m_timeProvider.GetTickCount()"/>.
+        /// Gets the TickCount in ms of the last keep alive based on the <c>GetTickCount()</c> of the session's time provider.
         /// Independent of system time changes.
         /// </summary>
         public int LastKeepAliveTickCount { get; private set; }
@@ -2512,7 +2516,7 @@ namespace Technosoftware.UaClient
                     dataToSign);
 
                 // check that the user identity is supported by the endpoint.
-                UserTokenPolicy identityPolicy = endpoint.FindUserTokenPolicy(
+                UserTokenPolicy? identityPolicy = endpoint.FindUserTokenPolicy(
                     m_identity.TokenType,
                     m_identity.IssuedTokenType,
                     m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri);
@@ -4315,7 +4319,7 @@ namespace Technosoftware.UaClient
             for (int ii = 0; ii < endpointDescriptions.Count; ii++)
             {
                 EndpointDescription serverEndpoint = endpointDescriptions[ii];
-                Uri actualUrl = Utils.ParseUri(serverEndpoint.EndpointUrl);
+                Uri? actualUrl = Utils.ParseUri(serverEndpoint.EndpointUrl);
 
                 if (actualUrl != null &&
                     expectedUrl != null &&

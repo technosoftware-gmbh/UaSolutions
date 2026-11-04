@@ -85,6 +85,9 @@ namespace Technosoftware.UaClient
         ///     The upper limit for the reconnect period after exponential backoff.
         ///     -1 (default) indicates that no exponential backoff should be used.
         /// </param>
+        /// <param name="timeProvider">
+        /// The time source for the reconnect timer. Defaults to <see cref="TimeProvider.System"/>.
+        /// </param>
         public SessionReconnectHandler(
             ITelemetryContext telemetry,
             bool reconnectAbort = false,

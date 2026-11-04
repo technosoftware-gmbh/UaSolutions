@@ -2588,7 +2588,7 @@ namespace Technosoftware.UaClient
                         {
                             foreach (ExtensionObject notificationData in message.NotificationData)
                             {
-                                if (notificationData.TryGetValue(out DataChangeNotification datachange))
+                                if (notificationData.TryGetValue(out DataChangeNotification? datachange))
                                 {
                                     datachange.PublishTime = message.PublishTime;
                                     datachange.SequenceNumber = message.SequenceNumber;
@@ -2606,7 +2606,7 @@ namespace Technosoftware.UaClient
                                         datachange,
                                         message.StringTable);
                                 }
-                                else if (notificationData.TryGetValue(out EventNotificationList events))
+                                else if (notificationData.TryGetValue(out EventNotificationList? events))
                                 {
                                     events.PublishTime = message.PublishTime;
                                     events.SequenceNumber = message.SequenceNumber;
@@ -2622,7 +2622,7 @@ namespace Technosoftware.UaClient
                                     eventCallback?.Invoke(this, events, message.StringTable);
                                 }
                                 else if (notificationData
-                                    .TryGetValue(out StatusChangeNotification statusChanged))
+                                    .TryGetValue(out StatusChangeNotification? statusChanged))
                                 {
                                     statusChanged.PublishTime = message.PublishTime;
                                     statusChanged.SequenceNumber = message.SequenceNumber;

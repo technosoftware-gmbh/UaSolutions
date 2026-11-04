@@ -253,7 +253,7 @@ namespace Technosoftware.UaClient
 
         /// <summary>
         /// Select the best supported endpoint from an
-        /// ArrayOf<EndpointDescription>, with or without security.
+        /// <see cref="ArrayOf{T}"/> of <see cref="EndpointDescription"/>, with or without security.
         /// </summary>
         public static EndpointDescription? SelectEndpoint(
             ApplicationConfiguration configuration,

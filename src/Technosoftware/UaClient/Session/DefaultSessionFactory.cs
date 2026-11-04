@@ -197,7 +197,7 @@ namespace Technosoftware.UaClient
             EndpointDescription endpointDescription = endpoint.Description;
 
             // create the endpoint configuration (use the application configuration to provide default values).
-            EndpointConfiguration endpointConfiguration = endpoint.Configuration;
+            EndpointConfiguration? endpointConfiguration = endpoint.Configuration;
 
             if (endpointConfiguration == null)
             {

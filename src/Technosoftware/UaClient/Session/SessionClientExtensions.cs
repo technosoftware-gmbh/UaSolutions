@@ -52,11 +52,11 @@ namespace Technosoftware.UaClient
             object[] values = new object[dataValues.Count];
             for (int ii = 0; ii < variableIds.Count; ii++)
             {
-                object value = dataValues[ii].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
+                object? value = dataValues[ii].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
 
                 // extract the body from extension objects.
                 if (value is ExtensionObject extension &&
-                    extension.TryGetValue(out IEncodeable body))
+                    extension.TryGetValue(out IEncodeable? body))
                 {
                     value = body;
                 }
@@ -465,10 +465,10 @@ namespace Technosoftware.UaClient
             CancellationToken ct = default)
         {
             DataValue dataValue = await session.ReadValueAsync(nodeId, ct).ConfigureAwait(false);
-            object value = dataValue.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
+            object? value = dataValue.WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
 
             if (value is ExtensionObject extension &&
-                extension.TryGetValue(out IEncodeable body))
+                extension.TryGetValue(out IEncodeable? body))
             {
                 value = body;
             }
