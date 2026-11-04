@@ -1732,7 +1732,19 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         BuiltInType.QualifiedName,
                         ValueRanks.OneDimension,
-                        new QualifiedName[] { new QualifiedName("q0"), new QualifiedName("q1"), new QualifiedName("q2"), new QualifiedName("q3"), new QualifiedName("q4"), new QualifiedName("q5"), new QualifiedName("q6"), new QualifiedName("q7"), new QualifiedName("q8"), new QualifiedName("q9" )});
+                        new QualifiedName[]
+                        {
+                            new QualifiedName("q0"),
+                            new QualifiedName("q1"),
+                            new QualifiedName("q2"),
+                            new QualifiedName("q3"),
+                            new QualifiedName("q4"),
+                            new QualifiedName("q5"),
+                            new QualifiedName("q6"),
+                            new QualifiedName("q7"),
+                            new QualifiedName("q8"),
+                            new QualifiedName("q9")
+                        });
                     _ = CreateAnalogItemVariable(
                         analogArrayFolder,
                         daAnalogArray + "SByte",
@@ -1830,7 +1842,11 @@ namespace SampleCompany.NodeManagers.Simulation
                     #region DataAccess_DiscreteType
                     ResetRandomGenerator(12);
                     FolderState discreteTypeFolder = CreateFolderState(daFolder, "DataAccess_DiscreteType", new LocalizedText("DiscreteType"), default);
-                    FolderState twoStateDiscreteFolder = CreateFolderState(discreteTypeFolder, "DataAccess_TwoStateDiscreteType", new LocalizedText("TwoStateDiscreteType"), default);
+                    FolderState twoStateDiscreteFolder = CreateFolderState(
+                        discreteTypeFolder,
+                        "DataAccess_TwoStateDiscreteType",
+                        new LocalizedText("TwoStateDiscreteType"),
+                        default);
                     const string daTwoStateDiscrete = "DataAccess_TwoStateDiscreteType_";
 
                     // Add our Nodes to the folder, and specify their customized discrete enumerations
@@ -2026,7 +2042,14 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         default,
                         default,
-                        new LocalizedText[] { new LocalizedText("lolo"), new LocalizedText("lo"), new LocalizedText("normal"), new LocalizedText("hi"), new LocalizedText("hihi" )});
+                        new LocalizedText[]
+                        {
+                            new LocalizedText("lolo"),
+                            new LocalizedText("lo"),
+                            new LocalizedText("normal"),
+                            new LocalizedText("hi"),
+                            new LocalizedText("hihi")
+                        });
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
@@ -2103,7 +2126,14 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         default,
                         default,
-                        new LocalizedText[] { new LocalizedText("lolo"), new LocalizedText("lo"), new LocalizedText("normal"), new LocalizedText("hi"), new LocalizedText("hihi" )});
+                        new LocalizedText[]
+                        {
+                            new LocalizedText("lolo"),
+                            new LocalizedText("lo"),
+                            new LocalizedText("normal"),
+                            new LocalizedText("hi"),
+                            new LocalizedText("hihi")
+                        });
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
@@ -2163,7 +2193,14 @@ namespace SampleCompany.NodeManagers.Simulation
                         null,
                         default,
                         default,
-                        new LocalizedText[] { new LocalizedText("lolo"), new LocalizedText("lo"), new LocalizedText("normal"), new LocalizedText("hi"), new LocalizedText("hihi" )});
+                        new LocalizedText[]
+                        {
+                            new LocalizedText("lolo"),
+                            new LocalizedText("lo"),
+                            new LocalizedText("normal"),
+                            new LocalizedText("hi"),
+                            new LocalizedText("hihi")
+                        });
                     valueDiscreteVariable.OnWriteValue = OnWriteValueDiscrete;
                     valueDiscreteVariable = CreateMultiStateValueDiscreteState(
                         multiStateValueDiscreteFolder,
@@ -2273,7 +2310,11 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(accessRightsInstructions);
 
                     // sub-folder for "AccessAll"
-                    FolderState folderAccessRightsAccessAll = CreateFolderState(folderAccessRights, "AccessRights_AccessAll", new LocalizedText("AccessAll"), default);
+                    FolderState folderAccessRightsAccessAll = CreateFolderState(
+                        folderAccessRights,
+                        "AccessRights_AccessAll",
+                        new LocalizedText("AccessAll"),
+                        default);
                     const string accessRightsAccessAll = "AccessRights_AccessAll_";
 
                     BaseDataVariableState arAllRo = CreateBaseDataVariableState(
@@ -2374,7 +2415,11 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(arAllRoGroupRw);
 
                     // sub-folder for "AccessUser1"
-                    FolderState folderAccessRightsAccessUser1 = CreateFolderState(folderAccessRights, "AccessRights_AccessUser1", new LocalizedText("AccessUser1"), default);
+                    FolderState folderAccessRightsAccessUser1 = CreateFolderState(
+                        folderAccessRights,
+                        "AccessRights_AccessUser1",
+                        new LocalizedText("AccessUser1"),
+                        default);
                     const string accessRightsAccessUser1 = "AccessRights_AccessUser1_";
 
                     BaseDataVariableState arUserRo = CreateBaseDataVariableState(
@@ -2415,7 +2460,11 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(arUserRw);
 
                     // sub-folder for "AccessGroup1"
-                    FolderState folderAccessRightsAccessGroup1 = CreateFolderState(folderAccessRights, "AccessRights_AccessGroup1", new LocalizedText("AccessGroup1"), default);
+                    FolderState folderAccessRightsAccessGroup1 = CreateFolderState(
+                        folderAccessRights,
+                        "AccessRights_AccessGroup1",
+                        new LocalizedText("AccessGroup1"),
+                        default);
                     const string accessRightsAccessGroup1 = "AccessRights_AccessGroup1_";
 
                     BaseDataVariableState arGroupRo = CreateBaseDataVariableState(
@@ -2456,7 +2505,11 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(arGroupRw);
 
                     // sub folder for "RolePermissions"
-                    FolderState folderRolePermissions = CreateFolderState(folderAccessRights, "AccessRights_RolePermissions", new LocalizedText("RolePermissions"), default);
+                    FolderState folderRolePermissions = CreateFolderState(
+                        folderAccessRights,
+                        "AccessRights_RolePermissions",
+                        new LocalizedText("RolePermissions"),
+                        default);
                     const string rolePermissions = "AccessRights_RolePermissions_";
 
                     BaseDataVariableState rpAnonymous = CreateBaseDataVariableState(
@@ -2510,7 +2563,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
                         null);
-                    rpSecurityAdminUser.Description = new LocalizedText("This node can be accessed by users that have SecurityAdmin Role over an encrypted connection");
+                    rpSecurityAdminUser.Description = new LocalizedText(
+                        "This node can be accessed by users that have SecurityAdmin Role over an encrypted connection");
                     rpSecurityAdminUser.AccessRestrictions = AccessRestrictionType.EncryptionRequired;
                     rpSecurityAdminUser.RolePermissions =
                     [
@@ -2532,7 +2586,8 @@ namespace SampleCompany.NodeManagers.Simulation
                         ValueRanks.Scalar,
                         AccessLevels.CurrentReadOrWrite,
                         null);
-                    rpConfigAdminUser.Description = new LocalizedText("This node can be accessed by users that have ConfigureAdmin Role over an encrypted connection");
+                    rpConfigAdminUser.Description = new LocalizedText(
+                        "This node can be accessed by users that have ConfigureAdmin Role over an encrypted connection");
                     rpConfigAdminUser.AccessRestrictions = AccessRestrictionType.EncryptionRequired;
                     rpConfigAdminUser.RolePermissions =
                     [
@@ -2546,7 +2601,11 @@ namespace SampleCompany.NodeManagers.Simulation
                     variables.Add(rpConfigAdminUser);
 
                     // sub-folder for "AccessRestrictions"
-                    FolderState folderAccessRestrictions = CreateFolderState(folderAccessRights, "AccessRights_AccessRestrictions", new LocalizedText("AccessRestrictions"), default);
+                    FolderState folderAccessRestrictions = CreateFolderState(
+                        folderAccessRights,
+                        "AccessRights_AccessRestrictions",
+                        new LocalizedText("AccessRestrictions"),
+                        default);
                     const string accessRestrictions = "AccessRights_AccessRestrictions_";
 
                     BaseDataVariableState arNone = CreateBaseDataVariableState(
@@ -2795,8 +2854,18 @@ namespace SampleCompany.NodeManagers.Simulation
                     FolderState viewsFolder = CreateFolderState(root, "Views", new LocalizedText("Views"), default);
                     const string views = "Views_";
 
-                    ViewState viewStateOperations = CreateViewState(viewsFolder, externalReferences, views + "Operations", new LocalizedText("Operations"), default);
-                    ViewState viewStateEngineering = CreateViewState(viewsFolder, externalReferences, views + "Engineering", new LocalizedText("Engineering"), default);
+                    ViewState viewStateOperations = CreateViewState(
+                        viewsFolder,
+                        externalReferences,
+                        views + "Operations",
+                        new LocalizedText("Operations"),
+                        default);
+                    ViewState viewStateEngineering = CreateViewState(
+                        viewsFolder,
+                        externalReferences,
+                        views + "Engineering",
+                        new LocalizedText("Engineering"),
+                        default);
                     #endregion Views
 
                     #region Locales
@@ -3035,7 +3104,11 @@ namespace SampleCompany.NodeManagers.Simulation
                     FolderState folderAttributes = CreateFolderState(root, "Attributes", new LocalizedText("Attributes"), default);
 
                     #region AccessAll
-                    FolderState folderAttributesAccessAll = CreateFolderState(folderAttributes, "Attributes_AccessAll", new LocalizedText("AccessAll"), default);
+                    FolderState folderAttributesAccessAll = CreateFolderState(
+                        folderAttributes,
+                        "Attributes_AccessAll",
+                        new LocalizedText("AccessAll"),
+                        default);
                     const string attributesAccessAll = "Attributes_AccessAll_";
 
                     BaseDataVariableState accessLevelAccessAll = CreateBaseDataVariableState(
@@ -3351,7 +3424,11 @@ namespace SampleCompany.NodeManagers.Simulation
                     #endregion AccessAll
 
                     #region AccessUser1
-                    FolderState folderAttributesAccessUser1 = CreateFolderState(folderAttributes, "Attributes_AccessUser1", new LocalizedText("AccessUser1"), default);
+                    FolderState folderAttributesAccessUser1 = CreateFolderState(
+                        folderAttributes,
+                        "Attributes_AccessUser1",
+                        new LocalizedText("AccessUser1"),
+                        default);
                     const string attributesAccessUser1 = "Attributes_AccessUser1_";
 
                     BaseDataVariableState accessLevelAccessUser1 = CreateBaseDataVariableState(
@@ -3716,7 +3793,11 @@ namespace SampleCompany.NodeManagers.Simulation
                         AccessLevels.CurrentReadOrWrite,
                         null);
 
-                    baseObjectState = CreateBaseObjectState(standardServerTestFolder, standardServerTest + "BaseObjectState2", new LocalizedText("BaseObjectState2"), default);
+                    baseObjectState = CreateBaseObjectState(
+                        standardServerTestFolder,
+                        standardServerTest + "BaseObjectState2",
+                        new LocalizedText("BaseObjectState2"),
+                        default);
                     propertyState = CreatePropertyState(
                         baseObjectState,
                         standardServerTest + "PropertyState2",
@@ -3727,7 +3808,12 @@ namespace SampleCompany.NodeManagers.Simulation
                         AccessLevels.CurrentReadOrWrite,
                         true);
 
-                    viewStateOperations = CreateViewState(standardServerTestFolder, externalReferences, views + "Operations 2", new LocalizedText("Operations 2"), default);
+                    viewStateOperations = CreateViewState(
+                        standardServerTestFolder,
+                        externalReferences,
+                        views + "Operations 2",
+                        new LocalizedText("Operations 2"),
+                        default);
 
                     _ = CreateBaseDataVariableState(
                         standardServerTestFolder,
@@ -4195,7 +4281,15 @@ namespace SampleCompany.NodeManagers.Simulation
                 var newName = string.Format("{0}_{1}", name, i.ToString("00"));
                 var newPath = string.Format("{0}_{1}", path, newName);
                 itemsCreated.Add(
-                    CreateBaseDataVariableState(newParentFolder, newPath, new LocalizedText(newName), default, dataType, valueRank, AccessLevels.CurrentReadOrWrite, null));
+                    CreateBaseDataVariableState(
+                        newParentFolder,
+                        newPath,
+                        new LocalizedText(newName),
+                        default,
+                        dataType,
+                        valueRank,
+                        AccessLevels.CurrentReadOrWrite,
+                        null));
             }
             return itemsCreated.ToArray();
         }
@@ -4227,7 +4321,15 @@ namespace SampleCompany.NodeManagers.Simulation
             int valueRank,
             byte accessLevel = AccessLevels.CurrentReadOrWrite)
         {
-            BaseDataVariableState variable = CreateBaseDataVariableState(parent, path, new LocalizedText(name), new LocalizedText(description), dataType, valueRank, accessLevel, null);
+            BaseDataVariableState variable = CreateBaseDataVariableState(
+                parent,
+                path,
+                new LocalizedText(name),
+                new LocalizedText(description),
+                dataType,
+                valueRank,
+                accessLevel,
+                null);
             m_dynamicNodes.Add(variable);
             return variable;
         }

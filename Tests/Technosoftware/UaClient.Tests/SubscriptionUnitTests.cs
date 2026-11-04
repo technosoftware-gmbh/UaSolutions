@@ -149,7 +149,12 @@ namespace Technosoftware.UaClient.Tests
                     SetPublishingModeResponse
                     >((requestHeader, publishingEnabled, subscriptionIds, ct) => new()
                     {
-                        Results = [.. subscriptionIds.ToArray().Select(id => id > subscriptionIdSeed ? StatusCodes.BadSubscriptionIdInvalid : StatusCodes.Good)],
+                        Results =
+                        [
+                            .. subscriptionIds.ToArray().Select(id => id > subscriptionIdSeed
+                                ? StatusCodes.BadSubscriptionIdInvalid
+                                : StatusCodes.Good)
+                        ],
                         DiagnosticInfos = [.. subscriptionIds.ToArray().Select(_ => new DiagnosticInfo())]
                     });
             setup?.Invoke(session);
