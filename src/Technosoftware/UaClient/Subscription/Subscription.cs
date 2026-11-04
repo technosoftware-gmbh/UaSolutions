@@ -1879,15 +1879,15 @@ namespace Technosoftware.UaClient
             var clientHandles = new List<uint>();
             try
             {
-                IList<object> outputArguments = await Session.CallAsync(
+                IList<object?> outputArguments = await Session.CallAsync(
                     ObjectIds.Server,
                     MethodIds.Server_GetMonitoredItems,
                     ct,
                     TransferId).ConfigureAwait(false);
                 if (outputArguments != null && outputArguments.Count == 2)
                 {
-                    serverHandles.AddRange((uint[])outputArguments[0]);
-                    clientHandles.AddRange((uint[])outputArguments[1]);
+                    serverHandles.AddRange((uint[])outputArguments[0]!);
+                    clientHandles.AddRange((uint[])outputArguments[1]!);
                     return (true, serverHandles, clientHandles);
                 }
             }
@@ -1914,7 +1914,7 @@ namespace Technosoftware.UaClient
 
             try
             {
-                IList<object> outputArguments = await Session
+                IList<object?> outputArguments = await Session
                     .CallAsync(
                         ObjectIds.Server,
                         MethodIds.Server_SetSubscriptionDurable,
@@ -1925,7 +1925,7 @@ namespace Technosoftware.UaClient
 
                 if (outputArguments != null && outputArguments.Count == 1)
                 {
-                    revisedLifetimeInHours = (uint)outputArguments[0];
+                    revisedLifetimeInHours = (uint)outputArguments[0]!;
                     return (true, revisedLifetimeInHours);
                 }
             }
@@ -2968,7 +2968,7 @@ namespace Technosoftware.UaClient
                         try
                         {
                             browsePath.RelativePath = RelativePath.Parse(
-                                monitoredItem.RelativePath,
+                                monitoredItem.RelativePath!,
                                 Session!.TypeTree);
                         }
                         catch (Exception e)

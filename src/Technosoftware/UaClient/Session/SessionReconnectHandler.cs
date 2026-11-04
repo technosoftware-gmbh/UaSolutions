@@ -517,10 +517,10 @@ namespace Technosoftware.UaClient
                             ConfiguredEndpoint endpoint = current.ConfiguredEndpoint;
                             await endpoint
                                 .UpdateFromServerAsync(
-                                    endpoint.EndpointUrl,
+                                    endpoint.EndpointUrl!,
                                     connection,
                                     endpoint.Description.SecurityMode,
-                                    endpoint.Description.SecurityPolicyUri,
+                                    endpoint.Description.SecurityPolicyUri!,
                                     m_telemetry)
                                 .ConfigureAwait(false);
                             m_updateFromServer = false;
@@ -538,9 +538,9 @@ namespace Technosoftware.UaClient
                         ConfiguredEndpoint endpoint = current.ConfiguredEndpoint;
                         await endpoint
                             .UpdateFromServerAsync(
-                                endpoint.EndpointUrl,
+                                endpoint.EndpointUrl!,
                                 endpoint.Description.SecurityMode,
-                                endpoint.Description.SecurityPolicyUri,
+                                endpoint.Description.SecurityPolicyUri!,
                                 m_telemetry)
                             .ConfigureAwait(false);
                         m_updateFromServer = false;

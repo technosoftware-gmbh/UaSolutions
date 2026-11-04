@@ -286,7 +286,7 @@ namespace Technosoftware.UaClient
                             // skip unsupported security policies
                             if (!configuration.SecurityConfiguration.SupportedSecurityPolicies
                                     .Contains(
-                                        endpoint.SecurityPolicyUri))
+                                        endpoint.SecurityPolicyUri!))
                             {
                                 continue;
                             }
@@ -295,7 +295,7 @@ namespace Technosoftware.UaClient
                         {
                             // skip unsupported security policies, for backward compatibility only
                             // may contain policies for which no certificate is available
-                            if (SecurityPolicies.Default.GetDisplayName(endpoint.SecurityPolicyUri) == null)
+                            if (SecurityPolicies.Default.GetDisplayName(endpoint.SecurityPolicyUri!) == null)
                             {
                                 continue;
                             }
@@ -314,11 +314,11 @@ namespace Technosoftware.UaClient
                     //Select endpoint if it has a higher calculated security level, than the previously selected one
                     if (SecuredApplication.CalculateSecurityLevel(
                             endpoint.SecurityMode,
-                            endpoint.SecurityPolicyUri,
+                            endpoint.SecurityPolicyUri!,
                             logger) >
                         SecuredApplication.CalculateSecurityLevel(
                             selectedEndpoint.SecurityMode,
-                            selectedEndpoint.SecurityPolicyUri,
+                            selectedEndpoint.SecurityPolicyUri!,
                             logger))
                     {
                         selectedEndpoint = endpoint;

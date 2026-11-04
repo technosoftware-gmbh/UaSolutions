@@ -198,7 +198,7 @@ namespace Technosoftware.UaClient
             m_identity = new UserIdentity();
 
             // update the default subscription.
-            DefaultSubscription.MinLifetimeInterval = (uint)m_configuration.ClientConfiguration
+            DefaultSubscription.MinLifetimeInterval = (uint)m_configuration.ClientConfiguration!
                 .MinSubscriptionLifetime;
 
             // initialize operation limits from client configuration.
@@ -637,7 +637,7 @@ namespace Technosoftware.UaClient
                 LifetimeCount = 1000,
                 Priority = 255,
                 PublishingEnabled = true,
-                MinLifetimeInterval = (uint)m_configuration.ClientConfiguration
+                MinLifetimeInterval = (uint)m_configuration.ClientConfiguration!
                   .MinSubscriptionLifetime
             });
             set
@@ -1178,7 +1178,7 @@ namespace Technosoftware.UaClient
 
             if (sessionTimeout == 0)
             {
-                sessionTimeout = (uint)m_configuration.ClientConfiguration.DefaultSessionTimeout;
+                sessionTimeout = (uint)m_configuration.ClientConfiguration!.DefaultSessionTimeout;
             }
 
             // select the security policy for the user token.
@@ -1199,7 +1199,7 @@ namespace Technosoftware.UaClient
                         null,
                         clientDescription,
                         m_endpoint.Description.Server.ApplicationUri,
-                        m_endpoint.EndpointUrl.ToString(),
+                        m_endpoint.EndpointUrl!.ToString(),
                         sessionName,
                         ByteString.From(clientNonce),
                         default,
@@ -1222,7 +1222,7 @@ namespace Technosoftware.UaClient
                     requestHeader,
                     clientDescription,
                     m_endpoint.Description.Server.ApplicationUri,
-                    m_endpoint.EndpointUrl.ToString(),
+                    m_endpoint.EndpointUrl!.ToString(),
                     sessionName,
                         ByteString.From(clientNonce),
                     clientCertificateChainData.IsEmpty
@@ -1301,7 +1301,7 @@ namespace Technosoftware.UaClient
                 string tokenSecurityPolicyUri =
                     string.IsNullOrEmpty(identityPolicy.SecurityPolicyUri)
                         ? m_endpoint.Description.SecurityPolicyUri ?? SecurityPolicies.None
-                        : identityPolicy.SecurityPolicyUri;
+                        : identityPolicy.SecurityPolicyUri!;
 
                 // save previous nonce
                 ByteString previousServerNonce = GetCurrentTokenServerNonce();
@@ -1508,7 +1508,7 @@ namespace Technosoftware.UaClient
             // the type lookup would not find it.
             UserTokenPolicy identityPolicy =
                 m_endpoint.Description.FindUserTokenPolicy(
-                    identity.TokenHandler.Token.PolicyId,
+                    identity.TokenHandler.Token.PolicyId!,
                     securityPolicyUri) ??
                 m_endpoint.Description.FindUserTokenPolicy(
                     identity.TokenType,
@@ -1519,11 +1519,10 @@ namespace Technosoftware.UaClient
                     "Endpoint does not support the user identity type provided.");
 
             // select the security policy for the user token.
-            string? tokenSecurityPolicyUri = identityPolicy.SecurityPolicyUri;
-            if (string.IsNullOrEmpty(tokenSecurityPolicyUri))
-            {
-                tokenSecurityPolicyUri = securityPolicyUri;
-            }
+            // the token's own policy, or the channel's when the token has none.
+            string tokenSecurityPolicyUri = string.IsNullOrEmpty(identityPolicy.SecurityPolicyUri)
+                ? securityPolicyUri
+                : identityPolicy.SecurityPolicyUri!;
 
             bool requireEncryption = tokenSecurityPolicyUri != SecurityPolicies.None;
 
@@ -2091,7 +2090,7 @@ namespace Technosoftware.UaClient
             ITransportChannel channel = await UaChannelBase.CreateUaBinaryChannelAsync(
                 m_configuration,
                 ConfiguredEndpoint.Description,
-                ConfiguredEndpoint.Configuration,
+                ConfiguredEndpoint.Configuration!,
                 m_instanceCertificate,
                 m_configuration.SecurityConfiguration.SendCertificateChain
                     ? m_instanceCertificateChain
@@ -2147,7 +2146,7 @@ namespace Technosoftware.UaClient
                 m_configuration,
                 connection,
                 ConfiguredEndpoint.Description,
-                ConfiguredEndpoint.Configuration,
+                ConfiguredEndpoint.Configuration!,
                 m_instanceCertificate,
                 m_configuration.SecurityConfiguration.SendCertificateChain
                     ? m_instanceCertificateChain
@@ -2425,7 +2424,7 @@ namespace Technosoftware.UaClient
                             m_configuration,
                             connection,
                             m_endpoint.Description,
-                            m_endpoint.Configuration,
+                            m_endpoint.Configuration!,
                             m_instanceCertificate,
                             m_configuration.SecurityConfiguration.SendCertificateChain
                                 ? m_instanceCertificateChain
@@ -2457,7 +2456,7 @@ namespace Technosoftware.UaClient
                         transportChannel = await UaChannelBase.CreateUaBinaryChannelAsync(
                             m_configuration,
                             m_endpoint.Description,
-                            m_endpoint.Configuration,
+                            m_endpoint.Configuration!,
                             m_instanceCertificate,
                             m_configuration.SecurityConfiguration.SendCertificateChain
                                 ? m_instanceCertificateChain
@@ -2519,7 +2518,7 @@ namespace Technosoftware.UaClient
                 UserTokenPolicy? identityPolicy = endpoint.FindUserTokenPolicy(
                     m_identity.TokenType,
                     m_identity.IssuedTokenType,
-                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri);
+                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri!);
 
                 if (identityPolicy == null)
                 {
@@ -2544,7 +2543,7 @@ namespace Technosoftware.UaClient
                 }
 
                 string userTokenSecurityPolicyUri =
-                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri;
+                    m_userTokenSecurityPolicyUri ?? endpoint.SecurityPolicyUri!;
 
                 // validate server nonce and security parameters for user identity.
                 ValidateServerNonce(
@@ -3259,7 +3258,7 @@ namespace Technosoftware.UaClient
 
                     // send notification that keep alive completed.
                     OnKeepAlive(
-                        (ServerState)(int)values[0].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy),
+                        (ServerState)(int)values[0].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy)!,
                         (DateTime)responseHeader.Timestamp);
                 }
                 catch (ServiceResultException sre)
@@ -3452,7 +3451,7 @@ namespace Technosoftware.UaClient
                     "Cannot read NamespaceArray node. Validation of returned value failed.");
             }
 
-            string[] namespaceArray = (string[])values[0].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
+            string[] namespaceArray = (string[])values[0].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy)!;
             if (namespaceArray.Length == 0)
             {
                 throw ServiceResultException.Unexpected(
@@ -3488,7 +3487,7 @@ namespace Technosoftware.UaClient
                     "Cannot read ServerArray node. Validation of returned value failed.");
             }
 
-            string[] serverArray = (string[])values[1].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
+            string[] serverArray = (string[])values[1].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy)!;
             ServerUris.Update(serverArray);
         }
 
@@ -3958,28 +3957,30 @@ namespace Technosoftware.UaClient
             identity ??= new UserIdentity();
 
             // check that the user identity is supported by the endpoint.
-            identityPolicy = m_endpoint.Description
+            UserTokenPolicy? policy = m_endpoint.Description
                 .FindUserTokenPolicy(
-                    identity.TokenHandler.Token.PolicyId,
+                    identity.TokenHandler.Token.PolicyId!,
                     securityPolicyUri);
 
-            if (identityPolicy == null)
+            if (policy == null)
             {
                 // try looking up by TokenType if the policy id was not found.
-                identityPolicy = m_endpoint.Description.FindUserTokenPolicy(
+                policy = m_endpoint.Description.FindUserTokenPolicy(
                     identity.TokenType,
                     identity.IssuedTokenType,
                     securityPolicyUri);
 
-                if (identityPolicy == null)
+                if (policy == null)
                 {
                     throw ServiceResultException.Create(
                         StatusCodes.BadIdentityTokenInvalid,
                         "Endpoint does not support the user identity type provided.");
                 }
 
-                identity.TokenHandler.UpdatePolicy(identityPolicy);
+                identity.TokenHandler.UpdatePolicy(policy);
             }
+
+            identityPolicy = policy;
 
             requireEncryption = securityPolicyUri != SecurityPolicies.None;
 
@@ -4161,7 +4162,7 @@ namespace Technosoftware.UaClient
 
                     foreach (EndpointDescription serverEndpoint in serverEndpoints)
                     {
-                        if (m_discoveryProfileUris.Contains(serverEndpoint.TransportProfileUri))
+                        if (m_discoveryProfileUris.Contains(serverEndpoint.TransportProfileUri!))
                         {
                             matchingEndpoints.Add(serverEndpoint);
                         }
@@ -4632,7 +4633,7 @@ namespace Technosoftware.UaClient
                 notificationMessage.StringTable = responseHeader.StringTable;
 
                 // update subscription cache.
-                subscription.SaveMessageInCache(availableSequenceNumbers, notificationMessage);
+                subscription.SaveMessageInCache(availableSequenceNumbers.ToArrayOf(), notificationMessage);
 
                 // raise the notification.
                 EventHandler<NotificationEventArgs>? publishEventHandler = m_Publish;
@@ -5027,11 +5028,10 @@ namespace Technosoftware.UaClient
             string? endpointSecurityPolicyUri)
         {
             var requestHeader = new RequestHeader();
-            string? userTokenSecurityPolicyUri = identityTokenSecurityPolicyUri;
-            if (string.IsNullOrEmpty(userTokenSecurityPolicyUri))
-            {
-                userTokenSecurityPolicyUri = m_endpoint.Description.SecurityPolicyUri;
-            }
+            // the token's own policy, or the endpoint's when the token has none.
+            string userTokenSecurityPolicyUri = string.IsNullOrEmpty(identityTokenSecurityPolicyUri)
+                ? m_endpoint.Description.SecurityPolicyUri ?? SecurityPolicies.None
+                : identityTokenSecurityPolicyUri!;
             m_userTokenSecurityPolicyUri = userTokenSecurityPolicyUri;
 
             // 2.0 asks the security policy registry whether the policy uses an

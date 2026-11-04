@@ -36,7 +36,7 @@ namespace Technosoftware.UaClient
         /// Reads the values for a set of variables.
         /// </summary>
         public static async ValueTask<(
-            IList<object>,
+            IList<object?>,
             IList<ServiceResult>
             )> ReadValuesAsync(
                 this ISessionClient session,
@@ -49,7 +49,7 @@ namespace Technosoftware.UaClient
                     variableIds,
                     ct: ct).ConfigureAwait(false);
 
-            object[] values = new object[dataValues.Count];
+            object?[] values = new object?[dataValues.Count];
             for (int ii = 0; ii < variableIds.Count; ii++)
             {
                 object? value = dataValues[ii].WrappedValue.AsBoxedObject(Variant.BoxingBehavior.Legacy);
@@ -68,7 +68,7 @@ namespace Technosoftware.UaClient
                     errors[ii] = ServiceResult.Create(
                         StatusCodes.BadTypeMismatch,
                         "Value {0} does not have expected type: {1}.",
-                        value,
+                        value ?? "(null)",
                         expectedTypes[ii].Name);
                     continue;
                 }
@@ -411,7 +411,7 @@ namespace Technosoftware.UaClient
 
                 if (!displayName.IsNullOrEmpty)
                 {
-                    displayNames[ii] = displayName.Text;
+                    displayNames[ii] = displayName.Text!;
                 }
             }
 
@@ -480,7 +480,7 @@ namespace Technosoftware.UaClient
                     "Server returned value unexpected type: {0}",
                     value != null ? value.GetType().Name : "(null)");
             }
-            return (T)value;
+            return (T)value!;
         }
 
         /// <summary>
@@ -800,7 +800,7 @@ namespace Technosoftware.UaClient
         /// <param name="args">The input arguments.</param>
         /// <returns>The list of output argument values.</returns>
         /// <exception cref="ServiceResultException"></exception>
-        public static async Task<IList<object>> CallAsync(
+        public static async Task<IList<object?>> CallAsync(
             this ISessionClient session,
             NodeId objectId,
             NodeId methodId,
@@ -843,7 +843,7 @@ namespace Technosoftware.UaClient
                     response.ResponseHeader.StringTable);
             }
 
-            var outputArguments = new List<object>();
+            var outputArguments = new List<object?>();
 
             foreach (Variant arg in results[0].OutputArguments)
             {

@@ -298,7 +298,7 @@ namespace Technosoftware.UaClient
             m_configType = configuration.GetType();
 
             return OnUpdateConfigurationAsync(
-                configuration.ClientConfiguration.ReverseConnect,
+                configuration.ClientConfiguration?.ReverseConnect,
                 ct);
         }
 
@@ -311,7 +311,7 @@ namespace Technosoftware.UaClient
         /// <param name="configuration">The client endpoint configuration.</param>
         /// <param name="ct">The cancellation token.</param>
         protected virtual async ValueTask OnUpdateConfigurationAsync(
-            ReverseConnectClientConfiguration configuration,
+            ReverseConnectClientConfiguration? configuration,
             CancellationToken ct = default)
         {
             bool restartService;
