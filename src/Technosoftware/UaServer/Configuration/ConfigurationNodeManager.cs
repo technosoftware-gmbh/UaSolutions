@@ -25,7 +25,6 @@ using Opc.Ua.Security.Certificates;
 using System.Security.Cryptography;
 using System.Diagnostics;
 using Opc.Ua;
-using Opc.Ua.Redaction;
 #endregion Using Directives
 
 namespace Technosoftware.UaServer
@@ -545,7 +544,7 @@ namespace Technosoftware.UaServer
                             Utils.TraceMasks.Security,
                             ex,
                             "Failed to verify integrity of the new certificate {Certificate} against the trust list.",
-                            Redact.Create(newCert));
+                            newCert);
                         throw new ServiceResultException(
                             StatusCodes.BadSecurityChecksFailed,
                             "Failed to verify integrity of the new certificate against the certificate group's TrustList.",
@@ -602,7 +601,7 @@ namespace Technosoftware.UaServer
                                 Utils.TraceMasks.Security,
                                 ex,
                                 "Failed to verify integrity of the new certificate {Certificate} and the issuer list.",
-                                Redact.Create(newCert));
+                                newCert);
                             throw new ServiceResultException(
                                 StatusCodes.BadSecurityChecksFailed,
                                 "Failed to verify integrity of the new certificate and the issuer list.",
@@ -677,7 +676,7 @@ namespace Technosoftware.UaServer
                                         Utils.TraceMasks.Security,
                                         ex,
                                         "Failed to update certificate {Certificate}. Retrying...",
-                                        Redact.Create(newCert));
+                                        newCert);
                                 }
                             }
                             break;
@@ -707,7 +706,7 @@ namespace Technosoftware.UaServer
                                         Utils.TraceMasks.Security,
                                         ex,
                                         "Failed to update certificate {Certificate} with PFX private key. Retrying...",
-                                        Redact.Create(newCert));
+                                        newCert);
                                 }
                             }
                             break;
@@ -733,7 +732,7 @@ namespace Technosoftware.UaServer
                                         Utils.TraceMasks.Security,
                                         ex,
                                         "Failed to update certificate {Certificate} with PEM private key. Retrying...",
-                                        Redact.Create(newCert));
+                                        newCert);
                                 }
                             }
                             break;
@@ -820,7 +819,7 @@ namespace Technosoftware.UaServer
                         m_logger.LogInformation(
                             Utils.TraceMasks.Security,
                             "Add new application certificate {Certificate}",
-                            Redact.Create(updateCertificate.CertificateWithPrivateKey));
+                            updateCertificate.CertificateWithPrivateKey);
                         Debug.Assert(updateCertificate.CertificateWithPrivateKey.HasPrivateKey);
                         await appStore.AddAsync(
                             updateCertificate.CertificateWithPrivateKey,
@@ -853,7 +852,7 @@ namespace Technosoftware.UaServer
                                 m_logger.LogInformation(
                                     Utils.TraceMasks.Security,
                                     "Add new issuer certificate {Certificate}",
-                                    Redact.Create(issuer));
+                                    issuer);
                                 await issuerStore.AddAsync(issuer, ct: ct).ConfigureAwait(false);
                             }
                             catch (ArgumentException)
@@ -882,7 +881,7 @@ namespace Technosoftware.UaServer
                         Utils.TraceMasks.Security,
                         ex,
                         "Failed to update certificate {Certificate}.",
-                        Redact.Create(newCert));
+                        newCert);
                     throw new ServiceResultException(
                         StatusCodes.BadSecurityChecksFailed,
                         "Failed to update certificate.",
@@ -972,7 +971,7 @@ namespace Technosoftware.UaServer
             m_logger.LogInformation(
                 Utils.TraceMasks.Security,
                 "Create signing request {Certificate}",
-                Redact.Create(certWithPrivateKey));
+                certWithPrivateKey);
             byte[] certificateRequest = s_certificateFactory.CreateSigningRequest(
                 certWithPrivateKey,
                 X509Utils.GetDomainsFromCertificate(certWithPrivateKey).ToArray());
@@ -1053,7 +1052,7 @@ namespace Technosoftware.UaServer
                         m_logger.LogInformation(
                             Utils.TraceMasks.Security,
                             "Apply Changes for certificate {Certificate}",
-                            Redact.Create(updateCertificate.CertificateWithPrivateKey));
+                            updateCertificate.CertificateWithPrivateKey);
                     }
                 }
                 finally

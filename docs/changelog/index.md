@@ -1,6 +1,34 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 7.0.1
+
+### Breaking Changes
+
+- The reverse connect setting `ReverseConnectClient.MaxSessionCount` is no longer supported by the OPC
+  Foundation stack 2.0.2 and is ignored, also when it is still in a configuration file. The
+  `UaReverseConnectServer` now follows upstream (UA-.NETStandard#4863): a reverse connection is attempted
+  whenever it is enabled and neither connecting nor rejected, independent of the number of sessions on the
+  server. The `ReverseConnectProperty` constructor with `maxSessionCount` and the `MaxSessionCount` field are
+  `[Obsolete]`; the `maxSessionCount` parameter of `AddReverseConnection` is ignored.
+- The OPC Foundation stack 2.0.2 removed `Opc.Ua.Redaction.Redact`, `RedactionWrapper<T>`,
+  `IRedactionStrategy`, `RedactionStrategies` and `SimpleRedactionStrategy`. The stack's log messages
+  classify network addresses, certificates, identities, file paths and exception texts with
+  `Microsoft.Extensions.Compliance` instead. An application that configures its own `ILoggerFactory` or
+  generic host logging must call `EnableOpcUaRedaction()` (or `EnableRedaction()`) on the
+  `ILoggingBuilder`; otherwise the stack logs `(null)` for these values. `DefaultTelemetry.Create(...)`
+  and `AddOpcUa().AddLogging(...)` do this already. The UaClient, UaServer and UaConfiguration sources log
+  the exception message where they used `Redact.Create` before.
+
+### Changes
+
+- Moved to version 2.0.2 of the OPC Foundation .NET Standard stack, which needs the
+  `Microsoft.Extensions.*` and `System.*` packages at 10.0.13.
+- Fixed: on .NET 4.8, a dropped connection could freeze the whole process for several seconds (the Known
+  Issue of 7.0.0). The stack 2.0.2 contains the fix of
+  [UA-.NETStandard#4981](https://github.com/OPCFoundation/UA-.NETStandard/issues/4981).
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 7.0.0
 
 ### Breaking Changes
@@ -115,6 +143,7 @@
   in separate processes makes it much rarer, but does not rule it out. .NET 8, 9 and 10 are not affected.
   The fix belongs in the OPC Foundation stack and is tracked upstream in
   [UA-.NETStandard#4981](https://github.com/OPCFoundation/UA-.NETStandard/issues/4981).
+  Fixed in 7.0.1, which uses the stack 2.0.2.
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.2.0

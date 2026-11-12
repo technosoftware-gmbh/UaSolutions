@@ -21,7 +21,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Opc.Ua.Redaction;
 using Opc.Ua;
 #endregion Using Directives
 
@@ -122,7 +121,7 @@ namespace Technosoftware.UaClient
                 m_logger.LogError(
                     "Could not fetch node from server: NodeId={NodeId}, Reason='{Error}'.",
                     nodeId,
-                    Redact.Create(e));
+                    e.Message);
                 // m_nodes[nodeId] = null;
                 return null;
             }
@@ -409,7 +408,7 @@ namespace Technosoftware.UaClient
                 m_logger.LogError(
                     "Could not fetch references for valid node with NodeId = {NodeId}. Error = {Error}",
                     nodeId,
-                    Redact.Create(e));
+                    e.Message);
             }
 
             InternalWriteLockedAttach(source);
