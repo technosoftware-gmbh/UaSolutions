@@ -1176,7 +1176,7 @@ namespace Technosoftware.UaConfiguration
             {
                 m_logger.LogError(
                     "Could not add certificate to trusted peer store: {ErrorMessage}",
-                    Opc.Ua.Redaction.Redact.Create(e));
+                    e.Message);
             }
         }
 

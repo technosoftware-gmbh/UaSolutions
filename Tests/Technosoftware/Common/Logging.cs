@@ -56,7 +56,7 @@ namespace Technosoftware.Tests
         /// </summary>
         private NUnitTelemetryContext(ILoggerProvider provider)
             : base(Microsoft.Extensions.Logging.LoggerFactory
-                .Create(builder => builder.AddProvider(provider)))
+                .Create(builder => builder.AddProvider(provider).EnableOpcUaRedaction()))
         {
         }
 

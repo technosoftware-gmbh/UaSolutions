@@ -22,8 +22,8 @@
 
 ## Migrating from 6.x to 7.0
 
-Version 7.0 uses version 2.0.1 of the OPC Foundation .NET Standard stack. Most of the work of a migration
-comes from the stack itself; the [OPC Foundation migration guide](https://github.com/OPCFoundation/UA-.NETStandard/blob/2.0.1/docs/MigrationGuide.md)
+Version 7.0 uses version 2.0 of the OPC Foundation .NET Standard stack (7.0.0: 2.0.1, 7.0.1: 2.0.2). Most of the work of a migration
+comes from the stack itself; the [OPC Foundation migration guide](https://github.com/OPCFoundation/UA-.NETStandard/blob/2.0.2/docs/MigrationGuide.md)
 and its migration analyzer (`OPCFoundation.NetStandard.Opc.Ua.MigrationAnalyzer`) cover the changed types,
 such as `DataValue`, `NodeId`, `StatusCode` and the removed collection classes.
 
@@ -36,8 +36,10 @@ The NuGet package IDs no longer carry `UaSolutions`:
 | `Technosoftware.UaSolutions.UaConfiguration` | `Technosoftware.UaConfiguration` |
 | `Technosoftware.UaSolutions.UaUtilities`     | `Technosoftware.UaUtilities`     |
 
-The OPC Foundation packages move to 2.0.1, which needs the `Microsoft.Extensions.*` and `System.*`
-packages at 10.0.12. A license for an earlier major version does not unlock 7.0. The
+The OPC Foundation packages move to 2.0.2, which needs the `Microsoft.Extensions.*` and `System.*`
+packages at 10.0.13. If you configure logging yourself instead of through `DefaultTelemetry.Create`, call
+`EnableOpcUaRedaction()` on the `ILoggingBuilder`; without it the stack logs `(null)` in place of addresses,
+certificates and file paths (see the 7.0.1 entry of the changelog). A license for an earlier major version does not unlock 7.0. The
 [changelog](../changelog/index.md) lists the breaking changes of the libraries themselves.
 
 ## Migrating from 6.0 to 6.1

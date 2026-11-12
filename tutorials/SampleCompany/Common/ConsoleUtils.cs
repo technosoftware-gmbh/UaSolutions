@@ -47,6 +47,9 @@ namespace SampleCompany.Common
                 .Create(builder =>
                 {
                     builder.SetMinimumLevel(LogLevel.Information);
+                    // the stack classifies addresses, certificates and file paths in its log
+                    // messages; without the redaction-aware logger they are logged as (null).
+                    builder.EnableOpcUaRedaction();
                     configure?.Invoke(builder);
                 })
                 .AddSerilog(Log.Logger);

@@ -19,7 +19,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
-using Opc.Ua.Redaction;
 #endregion Using Directives
 
 namespace Technosoftware.UaClient
@@ -359,7 +358,7 @@ namespace Technosoftware.UaClient
             }
             catch (Exception exception)
             {
-                m_logger.LogError("Unexpected error during reconnect: {Message}", Redact.Create(exception));
+                m_logger.LogError("Unexpected error during reconnect: {Message}", exception.Message);
             }
 
             // schedule the next reconnect.
@@ -572,20 +571,20 @@ namespace Technosoftware.UaClient
                     }
                     m_logger.LogError(
                         "Could not reconnect due to failed security check. Request endpoint update from server. {Message}",
-                        Redact.Create(sre));
+                        sre.Message);
                 }
                 else
                 {
                     m_logger.LogError(
                         "Could not reconnect the Session. Request endpoint update from server. {Message}",
-                        Redact.Create(sre));
+                        sre.Message);
                 }
                 m_updateFromServer = true;
                 return false;
             }
             catch (Exception exception)
             {
-                m_logger.LogError("Could not reconnect the Session. {ErrorMessage}", Redact.Create(exception));
+                m_logger.LogError("Could not reconnect the Session. {ErrorMessage}", exception.Message);
                 return false;
             }
         }

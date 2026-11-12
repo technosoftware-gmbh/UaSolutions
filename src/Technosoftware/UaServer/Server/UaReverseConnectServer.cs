@@ -67,21 +67,40 @@ namespace Technosoftware.UaServer
         /// </summary>
         /// <param name="clientUrl">The Url of the reverse connect client.</param>
         /// <param name="timeout">The timeout to use for a reverse connect attempt.</param>
-        /// <param name="maxSessionCount">The maximum number of sessions allowed to the client.</param>
         /// <param name="configEntry">If this is an application configuration entry.</param>
         /// <param name="enabled">If the connection is enabled.</param>
+        public ReverseConnectProperty(
+            Uri clientUrl,
+            int timeout,
+            bool configEntry,
+            bool enabled = true)
+        {
+            ClientUrl = clientUrl;
+            Timeout = timeout > 0 ? timeout : UaReverseConnectServer.DefaultReverseConnectTimeout;
+            ConfigEntry = configEntry;
+            Enabled = enabled;
+        }
+
+        /// <summary>
+        /// Initialize a reverse connect server property.
+        /// </summary>
+        /// <param name="clientUrl">The Url of the reverse connect client.</param>
+        /// <param name="timeout">The timeout to use for a reverse connect attempt.</param>
+        /// <param name="maxSessionCount">The maximum number of sessions allowed to the client (ignored).</param>
+        /// <param name="configEntry">If this is an application configuration entry.</param>
+        /// <param name="enabled">If the connection is enabled.</param>
+        [Obsolete("MaxSessionCount is no longer supported and has been removed from configuration.")]
         public ReverseConnectProperty(
             Uri clientUrl,
             int timeout,
             int maxSessionCount,
             bool configEntry,
             bool enabled = true)
+            : this(clientUrl, timeout, configEntry, enabled)
         {
-            ClientUrl = clientUrl;
-            Timeout = timeout > 0 ? timeout : UaReverseConnectServer.DefaultReverseConnectTimeout;
+#pragma warning disable CS0618 // Type or member is obsolete
             MaxSessionCount = maxSessionCount;
-            ConfigEntry = configEntry;
-            Enabled = enabled;
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         /// <summary>
@@ -112,6 +131,7 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// The maximum number of sessions allowed to the client.
         /// </summary>
+        [Obsolete("MaxSessionCount is no longer supported and has been removed from configuration.")]
         public int MaxSessionCount;
 
         /// <summary>
@@ -184,6 +204,10 @@ namespace Technosoftware.UaServer
         /// <summary>
         /// Add a reverse connection url.
         /// </summary>
+        /// <param name="url">The Url of the reverse connect client.</param>
+        /// <param name="timeout">The timeout to use for a reverse connect attempt.</param>
+        /// <param name="maxSessionCount">No longer supported and ignored.</param>
+        /// <param name="enabled">If the connection is enabled.</param>
         /// <exception cref="ArgumentException"></exception>
         public virtual void AddReverseConnection(
             Uri url,
@@ -191,6 +215,7 @@ namespace Technosoftware.UaServer
             int maxSessionCount = 0,
             bool enabled = true)
         {
+            _ = maxSessionCount;
             if (m_connections.ContainsKey(url))
             {
                 throw new ArgumentException(
@@ -200,7 +225,6 @@ namespace Technosoftware.UaServer
             var reverseConnection = new ReverseConnectProperty(
                 url,
                 timeout,
-                maxSessionCount,
                 false,
                 enabled);
 
@@ -276,15 +300,8 @@ namespace Technosoftware.UaServer
 
                         // try the reverse connect
                         if (reverseConnection.Enabled &&
-                            (
-                                reverseConnection.MaxSessionCount == 0 ||
-                                (
-                                    reverseConnection.MaxSessionCount == 1 &&
-                                    reverseConnection.LastState == ReverseConnectState.Closed
-                                ) ||
-                                reverseConnection.MaxSessionCount > ServerInternal.SessionManager
-                                    .GetSessions()
-                                    .Count))
+                            reverseConnection.LastState != ReverseConnectState.Connecting &&
+                            reverseConnection.LastState != ReverseConnectState.Rejected)
                         {
                             try
                             {
@@ -477,7 +494,6 @@ namespace Technosoftware.UaServer
                                     m_connections[uri] = new ReverseConnectProperty(
                                         uri,
                                         client.Timeout,
-                                        client.MaxSessionCount,
                                         true,
                                         client.Enabled);
                                     m_logger.LogInformation(

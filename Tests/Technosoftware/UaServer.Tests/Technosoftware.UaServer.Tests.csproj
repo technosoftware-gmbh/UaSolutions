@@ -33,6 +33,12 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
   </ItemGroup>   
+  <!-- Bindings.Https 2.0.2 brings Microsoft.AspNetCore.* 2.3.13 on net48, whose WebUtilities is
+       hit by GHSA-6527-9fp8-r4x6 (NU1902, an error with TreatWarningsAsErrors). Pin the fixed version
+       until the stack moves up; UaClient.Tests gets it through its UaServer.Tests reference. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Technosoftware\UaConfiguration\Technosoftware.UaConfiguration.csproj" />
     <ProjectReference Include="..\..\..\src\Technosoftware\UaClient\Technosoftware.UaClient.csproj" />
