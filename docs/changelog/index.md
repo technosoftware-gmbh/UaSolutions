@@ -27,6 +27,9 @@
 - Fixed: on .NET 4.8, a dropped connection could freeze the whole process for several seconds (the Known
   Issue of 7.0.0). The stack 2.0.2 contains the fix of
   [UA-.NETStandard#4981](https://github.com/OPCFoundation/UA-.NETStandard/issues/4981).
+- The tutorial node managers are no longer packed. `SampleNodeManagers` and `ReferenceNodeManagers` both
+  produced a `SampleCompany.NodeManagers` package, so the release packed the same file twice and failed;
+  the 7.0.0 package was whichever of the two finished last. Copy the tutorial sources instead.
 
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 7.0.0

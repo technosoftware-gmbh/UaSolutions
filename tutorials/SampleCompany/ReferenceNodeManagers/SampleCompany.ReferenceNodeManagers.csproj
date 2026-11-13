@@ -11,7 +11,10 @@
     <Copyright>Copyright © 2018 - 2026 SampleCompany</Copyright>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <NoWarn>CS1591;CS1573;RCS1139</NoWarn>
-    <IsPackable>true</IsPackable>
+    <!-- Both tutorial node manager projects have the PackageId SampleCompany.NodeManagers; packing
+         both made the parallel dotnet pack of the release write the same .nupkg twice. Samples are
+         copied, not consumed as a package. -->
+    <IsPackable>false</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
