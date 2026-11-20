@@ -31,6 +31,10 @@
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <!-- GHSA-6527-9fp8-r4x6: lift the transitive WebUtilities of the Https binding to the fixed version. -->
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" />
   </ItemGroup>   
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Technosoftware\UaConfiguration\Technosoftware.UaConfiguration.csproj" />
