@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using NUnit.Framework;
@@ -496,11 +497,19 @@ namespace Technosoftware.UaClient.Tests
                 await BrowseFullAddressSpaceAsync().ConfigureAwait(false);
             }
 
-            var testSetAll = ReferenceDescriptions
+            List<ExpandedNodeId> candidates = ReferenceDescriptions
                 .Where(r => r.NodeClass == NodeClass.Variable)
                 .OrderBy(_ => UnsecureRandom.Shared.Next())
                 .Select(r => r.NodeId)
+                .Take(kTestSetSize * 6)
                 .ToList();
+
+            // The address space may have been browsed earlier in the fixture, and the reference
+            // server creates and removes some nodes at run time (e.g. ns=9;i=1676169008, which
+            // failed a 7.0.1 release run with BadNodeIdUnknown). Only use nodes that still exist.
+            List<ExpandedNodeId> testSetAll = await RemoveMissingNodesAsync(candidates)
+                .ConfigureAwait(false);
+            Assert.GreaterOrEqual(testSetAll.Count, kTestSetSize * 3);
 
             var testSet1 = testSetAll.Take(kTestSetSize).ToList();
             var testSet2 = testSetAll.Skip(kTestSetSize).Take(kTestSetSize).ToList();
@@ -633,6 +642,35 @@ namespace Technosoftware.UaClient.Tests
                 taskList.Add(t);
             }
             await Task.WhenAll([.. taskList]).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Returns the nodes of <paramref name="nodeIds"/> whose NodeClass can still be read.
+        /// </summary>
+        private async Task<List<ExpandedNodeId>> RemoveMissingNodesAsync(List<ExpandedNodeId> nodeIds)
+        {
+            var nodesToRead = new ReadValueIdCollection(nodeIds.Select(nodeId => new ReadValueId
+            {
+                NodeId = ExpandedNodeId.ToNodeId(nodeId, Session.NamespaceUris),
+                AttributeId = Attributes.NodeClass
+            }));
+
+            ReadResponse response = await Session.ReadAsync(
+                null,
+                0,
+                TimestampsToReturn.Neither,
+                nodesToRead,
+                CancellationToken.None).ConfigureAwait(false);
+
+            var existing = new List<ExpandedNodeId>(nodeIds.Count);
+            for (int i = 0; i < nodeIds.Count; i++)
+            {
+                if (StatusCode.IsGood(response.Results[i].StatusCode))
+                {
+                    existing.Add(nodeIds[i]);
+                }
+            }
+            return existing;
         }
 
         private async Task BrowseFullAddressSpaceAsync()

@@ -9,10 +9,10 @@
     <PackageVersion Include="Technosoftware.UaSolutions.UaClient" Version="6.0.3" />
     <PackageVersion Include="Technosoftware.UaSolutions.UaServer" Version="6.0.3" />
     <PackageVersion Include="Technosoftware.UaSolutions.ClientGateway" Version="6.0.1" />
-    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Types" Version="1.5.378.182" />
-    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.5.378.182" />
-    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.5.378.182" />
-    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.5.378.182" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Types" Version="1.5.378.196" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.5.378.196" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.5.378.196" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.5.378.196" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="BitFaster.Caching" Version="2.6.0" />
@@ -24,6 +24,8 @@
     <PackageVersion Include="Microsoft.AspNetCore.Server.Kestrel.Core" Version="2.3.11" />
     <PackageVersion Include="Microsoft.AspNetCore.Server.Kestrel.Https" Version="2.3.11" />
     <PackageVersion Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.3.11" />
+    <!-- GHSA-6527-9fp8-r4x6: the net48 build of the Https binding pulls in an older WebUtilities; 2.3.14 is the first fixed version. -->
+    <PackageVersion Include="Microsoft.AspNetCore.WebUtilities" Version="2.3.14" />
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
