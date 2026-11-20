@@ -5,6 +5,7 @@
 | **Version** | **Date**    | **Comment**                          |
 |-------------|-------------|--------------------------------------|
 | 6.0         | 04-JUL-2026 | Updated to cover version 6.0         |
+| 7.0         | 20-NOV-2026 | Updated to cover version 7.0         |
 
 Our products, especially software, go through different stages during their lifetime. To make this process straightforward, we follow a clear lifecycle strategy. Each time a new release (a new minor or major version) is published, it becomes the active development line—we call this the Mainline. The previous version then moves into Long Term Support (LTS), where it continues to receive bug fixes for a limited time. Eventually, products reach End of Life (EOL), which means support for them ends.
 
@@ -12,16 +13,19 @@ Our products, especially software, go through different stages during their life
 
 ## Support Dates
 
-| **Version** | **Current State** | **Retirement Date**     | **Available Support**                                                           |
-|:------------|:------------------|:------------------------|:--------------------------------------------------------------------------------|
-| 3.4         | EOL               | 31-MAY-2026             |                                                                                 |
-| 4.3         | EOL               | 31-MAY-2026             |                                                                                 |
-| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and valid support subscription                              |
-| 6.0         | ML                | In Support              | Yes, with a license (NuGet packages only) and with a valid support subscription |
+| **Version** | **Current State** | **Retirement Date**     | **Available Support**                                                         |
+|:------------|:------------------|:------------------------|:------------------------------------------------------------------------------|
+| 3.4         | EOL               | 31-MAY-2026             |                                                                               |
+| 4.3         | EOL               | 31-MAY-2026             |                                                                               |
+| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and valid support subscription                            |
+| 6.0         | LTS               | 20-NOV-2027, In Support | Yes, with a valid support subscription                                        |
+| 7.0         | ML                | In Support              | Yes, with a license and a valid support subscription                                        |
 
-Version 6 will enter the mainline version phase on 31-MAY-2026.
+Version 7 will enter the mainline version phase on 20-NOV-2026.
 
-Version 5 is the current mainline version but will enter the long term support phase on 31-MAY-2026. This version will be supported for customers with license and valid support subscription at least until 31-MAY-2027.
+Version 6 is the current mainline version but will enter the long term support phase on 20-NOV-2026. This version will be supported for customers with license and valid support subscription at least until 30-NOV-2027.
+
+Version 5 will enter end-of-life on 31-MAY-2027.
 
 Because of too many breaking changes in the OPC Foundationn stack the following versions can no longer be maintained and are end-of-life from 31-MAY-2026 on:
 
