@@ -148,6 +148,26 @@
   [UA-.NETStandard#4981](https://github.com/OPCFoundation/UA-.NETStandard/issues/4981).
   Fixed in 7.0.1, which uses the stack 2.0.2.
 
+
+-------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 6.2.1
+
+Update to the OPC Foundation Stack Version 1.5.378.196. The server and client fixes of this stack release were
+already ported into the UaServer, UaClient and UaConfiguration source in 6.2.0; the stack packages now bring the
+matching fixes of the core stack.
+
+### Changes
+
+- Moved to version 1.5.378.196 of the OPC Foundation .NET Standard stack. Its core stack fixes include:
+  - The secure channel never answers with an expired token and accepts a just-expired one (upstream #4701).
+  - Each incoming request is completed exactly once when the server stops (upstream #4729), and the request
+    queue no longer disposes resources its workers still use (upstream #5012).
+  - The client channel checks the security policy as the specification requires (upstream #4665).
+- The tutorial node manager projects are no longer packed. Both produced `SampleCompany.NodeManagers`, and
+  packing them in parallel could fail the release build.
+- Tests: the .NET 4.8 test projects reference `Microsoft.AspNetCore.WebUtilities` 2.3.14 (GHSA-6527-9fp8-r4x6),
+  and `NodeCacheTestAllMethodsConcurrentlyAsync` only uses nodes that still exist on the server.
+  
 -------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 6.2.0
 
