@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,11 @@ namespace Technosoftware.UaUtilities
     {
         #region Constants
         private const string kProductId = "OPC UA Solutions";
+
+        /// <summary>
+        /// The first major version that accepts licenses for its own major version only.
+        /// </summary>
+        private const int kFirstSameMajorOnlyVersion = 7;
 
         private const string kMessageLicenseInvalidProductIdentity = "License is not associated with this product.";
         private const string kMessageLicenseResolve = "Please contact our Support at technosoftware.com.";
@@ -508,6 +514,17 @@ namespace Technosoftware.UaUtilities
         {
             IsLicenseValid(productType);
 
+            if (IsLicenseLoaded && !IsEvaluation && !IsProductTypeCovered(LicensedType, productType))
+            {
+                logger?.LogInformation(
+                    "Used LicensedProduct = {LicensedProduct}, LicensedType = {LicensedType}, required = {ProductType}.",
+                    LicensedProduct,
+                    LicensedType,
+                    productType);
+                throw new NotSupportedException(
+                    $"A {LicensedType} license does not cover a {productType}. You can't use this feature.");
+            }
+
             if (IsRestartRequired)
             {
                 logger?.LogInformation(
@@ -548,15 +565,7 @@ namespace Technosoftware.UaUtilities
         /// <returns>true if the support contract is valid; false if no support contract exists or is expired.</returns>
         public bool IsSupportContractValid()
         {
-            if (Support == SupportLevel.None)
-            {
-                return false;
-            }
-            if (SupportExpirationDate < PublishDate)
-            {
-                return false;
-            }
-            return true;
+            return IsSupportContractValid(Support, SupportExpirationDate, PublishDate);
         }
 
         /// <summary>
@@ -565,45 +574,125 @@ namespace Technosoftware.UaUtilities
         /// <returns>true if the license supports this version; false if not.</returns>
         public bool IsVersionSupported()
         {
-            if (LicenseVersion == null || ProductVersion == null)
+            return IsVersionSupported(LicenseVersion, ProductVersion, IsNewLicenseType, IsSupportContractValid);
+        }
+
+        /// <summary>
+        /// Checks a licence, without applying it, against a product version and type. Use it
+        /// to verify a licence before it is handed to a customer.
+        /// </summary>
+        /// <remarks>
+        /// Nothing about the running application changes: the licence in use, the evaluation
+        /// timer and every property of <see cref="Instance"/> stay as they are. The rules are
+        /// the ones <see cref="Validate"/> applies at run time for that version, including those
+        /// of earlier major versions, so the check is meaningful for any released version.
+        /// </remarks>
+        /// <param name="licenseData">The licence XML as issued.</param>
+        /// <param name="productVersion">
+        /// The released product version, e.g. 7.0.1. Only major and minor are relevant: the
+        /// patch number is carried outside the field the licence check reads (see common.props).
+        /// </param>
+        /// <param name="productType">
+        /// The product the licence must cover, e.g. <see cref="ProductType.Server"/>, or
+        /// <c>null</c> to accept any product type.
+        /// </param>
+        /// <returns>The result, with the reasons if the licence is not valid.</returns>
+        public static LicenseCheckResult CheckLicense(string licenseData, Version productVersion, ProductType? productType)
+        {
+            if (productVersion == null)
             {
-                return false;
+                throw new ArgumentNullException(nameof(productVersion));
             }
 
-            // Handling of old license types
-            if (!IsNewLicenseType && ProductVersion.Major >= 3 && ProductVersion.Build == 0)
-            {
-                // Special case for old license types where all major versions 3 and 4 with any minor version and build 0 (no service patch) are supported.
-                return true;
-            }
-            else if (!IsNewLicenseType && ProductVersion.Major >= 3 && ProductVersion.Build > 0)
-            {
-                // Special case for old license types where all major versions 3 and 4 with any minor version and build > 0 (service patch) are NOT supported.
-                return false;
-            }
+            var releasedVersion = new Version(productVersion.Major, Math.Max(productVersion.Minor, 0), 0);
+            List<string> problems = [];
 
-            if (LicenseVersion.Major == ProductVersion.Major &&
-                LicenseVersion.Minor == ProductVersion.Minor &&
-                LicenseVersion.Build == ProductVersion.Build)
+            License license = null;
+            string verifiedKey = null;
+            try
             {
-                // Exact version match
-                return true;
-            }
-
-            if (LicenseVersion.Major != 0 && LicenseVersion.Major < ProductVersion.Major)
-            {
-                // Major version upgrades are only allowed if support contract is valid
-                return IsSupportContractValid();
-            }
-            if (ProductVersion.Build != 0)
-            {
-                // Service Patches are only allowed if support contract is valid
-                if (!IsSupportContractValid())
+                if (!IsNullOrEmpty(licenseData))
                 {
-                    return false;
+                    license = License.Load(licenseData);
+                    if (license.VerifySignature(ActivePublicKey))
+                    {
+                        verifiedKey = ActivePublicKey;
+                    }
+                    else if (license.VerifySignature(PublicKeyV3))
+                    {
+                        verifiedKey = PublicKeyV3;
+                    }
                 }
             }
-            return LicenseVersion.Major != ProductVersion.Major || LicenseVersion.Minor <= ProductVersion.Minor;
+            catch (Exception e) when (e is not OutOfMemoryException)
+            {
+                license = null;
+            }
+
+            if (license == null)
+            {
+                problems.Add("The licence data could not be read.");
+                return new LicenseCheckResult(releasedVersion, productType, null, problems);
+            }
+            if (verifiedKey == null)
+            {
+                problems.Add("The signature is not valid: the licence was not issued by Technosoftware or was changed after it was issued.");
+                return new LicenseCheckResult(releasedVersion, productType, license, problems);
+            }
+
+            // Reading ProductVersion is also what sets License.IsNewLicenseType, so read them
+            // in this order, the same order IsVersionSupported() reads them at run time.
+            Version licenseVersion = license.ProductVersion;
+            bool isNewLicenseType = license.IsNewLicenseType;
+            DateTime? publishedDate = license.Product != null ? license.PublishedDate : null;
+
+            if (isNewLicenseType &&
+                SecureHash.ComputeSHA256Hash(CreateProductIdentity(kProductId, verifiedKey)) != license.ProductIdentity)
+            {
+                problems.Add(kMessageLicenseInvalidProductIdentity);
+            }
+
+            if (!IsVersionSupported(
+                licenseVersion,
+                releasedVersion,
+                isNewLicenseType,
+                () => IsSupportContractValid(license.SupportLevel, license.SupportExpirationDate, publishedDate)))
+            {
+                problems.Add(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "A licence for version {0} does not unlock version {1}.{2}.",
+                    licenseVersion?.ToString() ?? "(none)",
+                    releasedVersion.Major,
+                    releasedVersion.Minor));
+            }
+
+            DateTime expirationDate = license.LicenseExpirationDate;
+            if (expirationDate.Date != DateTime.MaxValue.Date && expirationDate.Date < DateTime.UtcNow)
+            {
+                problems.Add(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "The licence expired on {0:yyyy-MM-dd}.",
+                    expirationDate));
+            }
+
+            if (license.LicenseLevel == LicenseType.Trial)
+            {
+                problems.Add("This is a Trial licence: the libraries only run in evaluation mode with it.");
+            }
+
+            ProductType licensedType = license.Product != null && !IsNullOrEmpty(license.Product.Name)
+                ? license.ProductType
+                : ProductType.ClientAndServer;
+            if (productType.HasValue && !IsProductTypeCovered(licensedType, productType.Value))
+            {
+                problems.Add(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "A {0} licence does not cover a {1}.",
+                    licensedType,
+                    productType.Value));
+            }
+
+            return new LicenseCheckResult(releasedVersion, productType, license, problems);
         }
 
         /// <summary>
@@ -648,29 +737,112 @@ namespace Technosoftware.UaUtilities
                 return false;
             }
 
-            switch (applicationType)
+            if (applicationType.HasValue && !IsProductTypeCovered(LicensedType, applicationType.Value))
             {
-                case ProductType.Client:
-                    if (IsLicenseLoaded && LicensedType == ProductType.Client)
-                    {
-                        return true;
-                    }
-                    break;
-                case ProductType.Server:
-                    // OPC UA Client Gateway also uses the OPC UA Server part
-                    if (IsLicenseLoaded && LicensedType == ProductType.Server)
-                    {
-                        return true;
-                    }
-                    break;
-                default:
-                    return Check();
+                return false;
             }
             return Check();
         }
         #endregion Public Methods
 
         #region Private Methods
+        /// <summary>
+        /// The version rules: whether a licence for <paramref name="licenseVersion"/> unlocks
+        /// <paramref name="productVersion"/>.
+        /// </summary>
+        /// <remarks>
+        /// One rule set for every major version, so that <see cref="CheckLicense"/> can check a
+        /// licence against any released version and every branch carries the same code:
+        /// <list type="bullet">
+        /// <item>From 7.0 on, only a licence for the same major version is accepted. Old-format
+        /// licences and licences for any other major version are rejected.</item>
+        /// <item>6.x keeps the rules it shipped with: old-format licences unlock x.y.0 builds, and
+        /// a licence for an earlier major version unlocks it with a valid support contract.</item>
+        /// <item>Within the major version, the licensed minor version is the lowest one unlocked.</item>
+        /// </list>
+        /// </remarks>
+        private static bool IsVersionSupported(
+            Version licenseVersion,
+            Version productVersion,
+            bool isNewLicenseType,
+            Func<bool> isSupportContractValid)
+        {
+            if (licenseVersion == null || productVersion == null)
+            {
+                return false;
+            }
+
+            if (!isNewLicenseType)
+            {
+                // Old license types were only ever issued for versions 3 and 4. Version 6 still
+                // accepts them for builds that are not service patches; version 7 never does.
+                return productVersion.Major is >= 3 and < kFirstSameMajorOnlyVersion &&
+                    productVersion.Build == 0;
+            }
+
+            if (licenseVersion.Major == productVersion.Major &&
+                licenseVersion.Minor == productVersion.Minor &&
+                licenseVersion.Build == productVersion.Build)
+            {
+                // Exact version match
+                return true;
+            }
+
+            if (licenseVersion.Major != productVersion.Major)
+            {
+                if (productVersion.Major >= kFirstSameMajorOnlyVersion)
+                {
+                    // From 7.0 on, a license unlocks its own major version only. Customers
+                    // holding a valid support contract when a new major version is released
+                    // are issued a new license for it.
+                    return false;
+                }
+                if (licenseVersion.Major != 0 && licenseVersion.Major < productVersion.Major)
+                {
+                    // Version 6 accepts a license for an earlier major version if it came
+                    // with a valid support contract.
+                    return isSupportContractValid();
+                }
+            }
+
+            if (productVersion.Build != 0 && !isSupportContractValid())
+            {
+                // Service Patches are only allowed if support contract is valid
+                return false;
+            }
+            return licenseVersion.Major != productVersion.Major || licenseVersion.Minor <= productVersion.Minor;
+        }
+
+        /// <summary>
+        /// Whether a support contract was included that was still running when the licensed
+        /// version was published.
+        /// </summary>
+        private static bool IsSupportContractValid(SupportLevel support, DateTime supportExpirationDate, DateTime? publishDate)
+        {
+            if (support == SupportLevel.None)
+            {
+                return false;
+            }
+            return !(supportExpirationDate < publishDate);
+        }
+
+        /// <summary>
+        /// Whether a license issued for <paramref name="licensedType"/> covers an application
+        /// that requires <paramref name="requiredType"/>.
+        /// </summary>
+        /// <remarks>
+        /// A Client license never unlocks a server. A Client Gateway license covers the
+        /// OPC UA Server part the gateway is built on.
+        /// </remarks>
+        internal static bool IsProductTypeCovered(ProductType licensedType, ProductType requiredType)
+        {
+            if (licensedType == ProductType.ClientAndServer || licensedType == requiredType)
+            {
+                return true;
+            }
+            return requiredType == ProductType.Server && licensedType == ProductType.ClientGateway;
+        }
+
         /// <summary>
         /// The identity of the product and public key passed to the ValidateLicense() method.
         /// </summary>
@@ -877,6 +1049,7 @@ namespace Technosoftware.UaUtilities
             s_licenseLoaded = null;
             IsLicenseLoaded = false;
             ProductFeatures.Clear();
+            LicensedType = ProductType.ClientAndServer;
 
             lock (s_lock)
             {
