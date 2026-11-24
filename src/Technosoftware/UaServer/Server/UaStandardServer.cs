@@ -27,6 +27,7 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Security.Certificates;
 using Opc.Ua.Bindings;
+using Technosoftware.UaConfiguration;
 using KeyValuePair = Opc.Ua.KeyValuePair;
 #endregion Using Directives
 
@@ -2968,6 +2969,9 @@ namespace Technosoftware.UaServer
         /// <param name="configuration">The configuration.</param>
         protected override void OnServerStarting(ApplicationConfiguration configuration)
         {
+            // A server needs a license that covers the server; a Client license does not.
+            UaLicensing.Gate.RequireFeature(UaProduct.Server, UaFeature.None);
+
             m_semaphoreSlim.Wait();
             try
             {

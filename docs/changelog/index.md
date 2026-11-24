@@ -1,6 +1,24 @@
 # Changelog
 
 -------------------------------------------------------------------------------------------------------------
+## OPC UA Solutions .NET - 7.0.2
+
+### Breaking Changes
+
+- A server no longer starts with a Client licence. `UaStandardServer` now asks the licence gate for the server
+  product when it starts; a Client licence throws `NotSupportedException` there. Server, Client and Server, and
+  Client Gateway licences, and the evaluation licence, still start a server.
+- Version 7 only accepts licences issued for version 7. Licences for version 5, 6 or 8, and old-format
+  licences (issued before October 2025), are rejected. A 7.0 licence unlocks every 7.x release.
+
+### Changes
+
+- `LicenseHandler.CheckLicense(licenseData, productVersion, productType)` checks a licence against a product
+  version and type without applying it, and returns the reasons when it is not valid. Use it to verify a licence
+  before it is handed to a customer; the rules of earlier major versions are included, so it also answers
+  whether a licence unlocks a 6.x release.
+
+-------------------------------------------------------------------------------------------------------------
 ## OPC UA Solutions .NET - 7.0.1
 
 ### Breaking Changes
