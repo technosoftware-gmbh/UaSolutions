@@ -217,8 +217,7 @@ namespace Technosoftware.UaUtilities.Tests
         {
             string licenseData = CreateLicense("7.0.0", "Client").Replace(
                 "<Type>Client</Type>",
-                "<Type>ClientAndServer</Type>",
-                StringComparison.Ordinal);
+                "<Type>ClientAndServer</Type>");
 
             LicenseCheckResult result = LicenseHandler.CheckLicense(licenseData, new Version(7, 0, 1), null);
 
