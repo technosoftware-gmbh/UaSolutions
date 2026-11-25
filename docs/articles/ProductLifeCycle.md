@@ -17,9 +17,9 @@ Our products, especially software, go through different stages during their life
 |:------------|:------------------|:------------------------|:------------------------------------------------------------------------------|
 | 3.4         | EOL               | 31-MAY-2026             |                                                                               |
 | 4.3         | EOL               | 31-MAY-2026             |                                                                               |
-| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and valid support subscription                            |
-| 6.0         | LTS               | 20-NOV-2027, In Support | Yes, with a valid support subscription                                        |
-| 7.0         | ML                | In Support              | Yes, with a license and a valid support subscription                                        |
+| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and a valid support subscription                          |
+| 6.0         | LTS               | 31-DEC-2027, In Support | Yes, with a license and a valid support subscription                          |
+| 7.0         | ML                | In Support              | Yes, with a license and a valid support subscription                          |
 
 Version 7 will enter the mainline version phase on 20-NOV-2026.
 

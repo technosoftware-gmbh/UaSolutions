@@ -5,15 +5,17 @@
 | **Version** | **Date**    | **Comment**                          |
 |-------------|-------------|--------------------------------------|
 | 6.0         | 04-JUL-2026 | Updated to cover version 6.0         |
+| 7.0         | 20-NOV-2026 | Updated to cover version 7.0         |
 
 **Supported in the following product versions**
 
-| **Version** | **Current State** | **Retirement Date**     | **Available Support**                                                           |
-|:------------|:------------------|:------------------------|:--------------------------------------------------------------------------------|
-| 3.4         | EOL               | 31-MAY-2026             |                                                                                 |
-| 4.3         | EOL               | 31-MAY-2026             |                                                                                 |
-| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and valid support subscription                              |
-| 6.0         | ML                | In Support              | Yes, with a license (NuGet packages only) and with a valid support subscription |
+| **Version** | **Current State** | **Retirement Date**     | **Available Support**                                                         |
+|:------------|:------------------|:------------------------|:------------------------------------------------------------------------------|
+| 3.4         | EOL               | 31-MAY-2026             |                                                                               |
+| 4.3         | EOL               | 31-MAY-2026             |                                                                               |
+| 5.0         | LTS               | 31-MAY-2027, In Support | Yes, with a license and a valid support subscription                          |
+| 6.0         | LTS               | 31-DEC-2027, In Support | Yes, with a license and a valid support subscription                          |
+| 7.0         | ML                | In Support              | Yes, with a license and a valid support subscription                          |
 
 **Important Notice**
 
